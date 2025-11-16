@@ -31,7 +31,7 @@ from multiprocessing import get_context
 from tqdm import tqdm
 from io import StringIO
 
-VERBOSE = os.getenv('VERBOSE', False)
+VERBOSE = os.getenv('VERBOSE', '0').lower() in ('1', 'true', 'yes', 'on')
 
 # Configuration for each cascading timeframe
 CONFIG = [
