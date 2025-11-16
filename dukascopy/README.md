@@ -98,6 +98,8 @@ Run all via:
 
 ## Performance Benchmarks
 
+### Cold Run (Full Update)
+
 > **Hardware:** AMD Ryzen 7 (8C/16T) · 1 TB NVMe SSD · WSL2 (Ubuntu)  
 > **Workload:** 20 years of 1-minute OHLC data · **26 symbols** (~520 years total)
 
@@ -105,9 +107,28 @@ Run all via:
 |---------------|----------|---------|---------------|--------------|-------------|
 | `transform.py`| **89 s** | > 2,000 | **1.35 M**   | 7.3 GB       | **82 MB/s** |
 | `aggregate.py`| **82 s** | > 2,000 | **1.46 M**   | 6.7 GB       | **81 MB/s** |
+| `resample.py`| **122 s** | 0.21 | **1 M**   | 2.3 GB       | **19 MB/s** |
 
-**Total pipeline time:** **~2.7 minutes**  
+
+**Total pipeline time:** **~5.0 minutes**  
 **Throughput:** **> 1.3 million candles processed per second (78 million per minute)**
+
+### Incremental Run (Daily Update)
+> **Workload:** 26 symbols × 1 day of new data
+
+| Stage | Time | Throughput | Notes |
+|-------|------|------------|-------|
+| Download | 1.33s | 19.6 downloads/s | Network limited |
+| Transform | 0.01s | **2,439 files/s** | Pure I/O speed |
+| Aggregate | 0.02s | **1,422 symbols/s** | Pointer-based append |
+| Resample | 0.29s | 90 symbols/s | 10 timeframes cascaded |
+| **Total** | **1.83s** | - | **Sub-2-second updates** ⚡ |
+
+This enables:
+- ⚡ Real-time trading workflows (run every minute)
+- 🔄 Fresh backtesting data in under 2 seconds
+- 📊 Near-zero latency for strategy development
+
 
 Full 20 year run on 26 symbols:
 ![Full run (20 years, 26 symbols)](images/fullrun.png)
@@ -179,10 +200,10 @@ Check the locks directory for stale locks. Can happen if you close the laptop li
 
 ## BUG Tracking
 
-| ID | File | Description | Critical | Status |
+| ID | File | Description | Severity | Status |
 |--------|------|-------------|----------|--------|
-| 001 | transform.py | Dukascopy filters out rows with zero volume in its historical data and charting tools to focus on periods with actual trading activity, as zero volume indicates a lack of transactions at that price level or time period. This is a standard practice to clean up data for analysis and trading, as a zero-volume row would not provide meaningful insights into market behavior. Today's data contains 0 volume candles, historic data does not. Leading to pointer file imbalance during rollover. Solution is to filter out 0 volume candles in today's CSV. | YES | SOLVED |
-| 002 | aggregate.py | When f_out write is interrupted (SIGTERM, OOM, ...), the idx file may not get written and/or aggregate file may get partially updated, leading to invalid data in aggregate file. Solution is to have and idx file acting as a "single source of truth" containing both the input pointer as well as the aggregate pointer. Store aggregate pointer before write to the idx file. Always truncate to this pointer before writing. Keep track of new pointers in tmp idx file and os replace tmp to idx file at the end (atomic operation). | Not yet | UNRESOLVED |
+| 001 | transform.py | Dukascopy filters out rows with zero volume in its historical data and charting tools to focus on periods with actual trading activity, as zero volume indicates a lack of transactions at that price level or time period. This is a standard practice to clean up data for analysis and trading, as a zero-volume row would not provide meaningful insights into market behavior. Today's data contains 0 volume candles, historic data does not. Leading to pointer file imbalance during rollover. Solution is to filter out 0 volume candles in today's CSV. | SEVERE | SOLVED |
+| 002 | aggregate.py | When f_out write is interrupted (SIGTERM, OOM, ...), the idx file may not get written and/or aggregate file may get partially updated, leading to invalid data in aggregate file. Solution is to have and idx file acting as a "single source of truth" containing both the input pointer as well as the aggregate pointer. Store aggregate pointer before write to the idx file. Always truncate to this pointer before writing. Keep track of new pointers in tmp idx file and os replace tmp to idx file at the end (atomic operation). | LOW | UNRESOLVED |
 
 ## Notes and Future Work
 
