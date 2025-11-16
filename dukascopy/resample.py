@@ -34,6 +34,7 @@ from io import StringIO
 VERBOSE = os.getenv('VERBOSE', '0').lower() in ('1', 'true', 'yes', 'on')
 
 BATCH_SIZE = 500_000    # Number of raw candles to read per incremental batch.
+ROUND_DECIMALS = 8      # Round prices to this number of decimals
 
 # Configuration for each cascading timeframe
 CONFIG = [
@@ -237,7 +238,7 @@ def resample_symbol(symbol: str) -> bool:
                 }).ffill()
 
                 # Round numerical values to avoid floating drift
-                resampled = resampled.round(8)
+                resampled = resampled.round(ROUND_DECIMALS)
 
                 # Offset points to the position of the first raw input record that forms this row 
                 input_position = int(resampled.iloc[-1]['offset'])
