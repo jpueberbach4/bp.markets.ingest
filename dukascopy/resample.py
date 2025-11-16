@@ -33,6 +33,8 @@ from io import StringIO
 
 VERBOSE = os.getenv('VERBOSE', '0').lower() in ('1', 'true', 'yes', 'on')
 
+BATCH_SIZE = 500_000    # Number of raw candles to read per incremental batch.
+
 # Configuration for each cascading timeframe
 CONFIG = [
     {
@@ -193,7 +195,6 @@ def resample_symbol(symbol: str) -> bool:
                 f_output.write(header)
                 output_position = f_output.tell()
 
-            BATCH_SIZE = 500_000
             THE_END = False
 
             while True:
@@ -219,7 +220,7 @@ def resample_symbol(symbol: str) -> bool:
                 )
 
                 # Convert time column
-                df['time'] = pd.to_datetime(df['time'], format="%Y-%m-%d %H:%M:%S")
+                df['time'] = pd.to_datetime(df['time'], format="%Y-%m-%d %H:%M:%S", utc=True)
                 df.set_index('time', inplace=True)
 
                 # Fill gaps in raw OHLC data before resampling
@@ -245,7 +246,7 @@ def resample_symbol(symbol: str) -> bool:
                 resampled = resampled[resampled['volume'] != 0]
 
                 if resampled.empty:
-                    # No data in this batch after filtering
+                    # No data in this batch after filtering (should never happen, no 0 volume in input)
                     if THE_END:
                         # End of input, nothing more to process
                         if VERBOSE:
@@ -315,10 +316,10 @@ def fork_resample(args):
         resample_symbol(symbol)
 
     except (IOError, OSError, pd.errors.ParserError) as e:
-        tqdm.write(f"Resample {symbol} failed: {e}")
+        tqdm.write(f"Resample for symbol **{symbol}** failed: {type(e).__name__}: {e}")
         return False
     except Exception as e:
-        tqdm.write(f"Unexpected error {symbol}: {e}")
+        tqdm.write(f"Unexpected error for symbol **{symbol}**: {type(e).__name__}: {e}")
         raise  # Re-raise for debugging
     except KeyboardInterrupt:
         tqdm.write(f"Interrupted by user")
