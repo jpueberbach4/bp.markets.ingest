@@ -240,7 +240,7 @@ def resample_symbol(symbol: str) -> bool:
                 resampled = resampled.round(8)
 
                 # Offset points to the position of the first raw input record that forms this row 
-                input_position = resampled.iloc[-1]['offset']
+                input_position = int(resampled.iloc[-1]['offset'])
 
                 # filter zero volume
                 resampled = resampled[resampled['volume'] != 0]
@@ -277,7 +277,7 @@ def resample_symbol(symbol: str) -> bool:
                 # Write updated offsets atomically
                 index_temp_path = Path(f"{index_path}.tmp")
                 with open(index_temp_path, "w") as f_idx:
-                    f_idx.write(f"{int(input_position)}\n{int(output_position)}")
+                    f_idx.write(f"{input_position}\n{output_position}")
                     f_idx.flush()
                 os.replace(index_temp_path, index_path)
 
