@@ -152,7 +152,8 @@ After that, incremental updates on 26 symbols:
 
 ### Key Takeaways
 
-- **I/O bound, not CPU bound** → NVMe is the hero.
+- **I/O bound, not CPU bound** for aggregate and transform → NVMe is the hero.
+- **CPU bound, not I/O bound** for resample → CPU is the hero (will be fixed).
 - **> 2,000 files/sec** → Proves efficient file handling.
 - **> 80 MB/s sustained write** → Excellent for CSV appends.
 - **WSL2 performs near-native** on NVMe (minimal overhead).
