@@ -1,0 +1,8 @@
+.old/*
+__pycache__
+utils/__pycache__
+index/*
+temp/*
+data/*
+load/*
+locks/*
