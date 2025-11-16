@@ -24,10 +24,14 @@
 
 import os
 import pandas as pd
+from datetime import datetime, timezone
+from utils.locks import acquire_lock, release_lock
 from pathlib import Path
 from multiprocessing import get_context
 from tqdm import tqdm
 from io import StringIO
+
+VERBOSE = os.getenv('VERBOSE', False)
 
 # Configuration for each cascading timeframe
 CONFIG = [
@@ -36,42 +40,70 @@ CONFIG = [
         "input": "data/aggregate/1m",
         "output": "data/resample/5m",
         "index": "data/resample/5m/index",
-        "seconds": 300
+        "rule": "5T"
     },
     {
         "timeframe": "15m",
         "input": "data/resample/5m",
         "output": "data/resample/15m",
         "index": "data/resample/15m/index",
-        "seconds": 900
+        "rule": "15T"
     },
     {
         "timeframe": "30m",
         "input": "data/resample/15m",
         "output": "data/resample/30m",
         "index": "data/resample/30m/index",
-        "seconds": 1800
+        "rule": "30T"
     },
     {
         "timeframe": "1h",
         "input": "data/resample/30m",
         "output": "data/resample/1h",
         "index": "data/resample/1h/index",
-        "seconds": 3600
+        "rule": "1H"
     },
     {
         "timeframe": "4h",
         "input": "data/resample/1h",
         "output": "data/resample/4h",
         "index": "data/resample/4h/index",
-        "seconds": 14400
+        "rule": "4H"
     },
     {
         "timeframe": "8h",
         "input": "data/resample/4h",
         "output": "data/resample/8h",
         "index": "data/resample/8h/index",
-        "seconds": 28800
+        "rule": "8H"
+    },
+    {
+        "timeframe": "1d",
+        "input": "data/resample/8h",
+        "output": "data/resample/1d",
+        "index": "data/resample/1d/index",
+        "rule": "1D"
+    },
+    {
+        "timeframe": "1W",
+        "input": "data/resample/1d",
+        "output": "data/resample/1W",
+        "index": "data/resample/1W/index",
+        "rule": "1W"
+    },
+    {
+        "timeframe": "1M",
+        "input": "data/resample/1d",
+        "output": "data/resample/1M",
+        "index": "data/resample/1M/index",
+        "rule": "MS"
+    },
+    {
+        "timeframe": "1Y",
+        "input": "data/resample/1M",
+        "output": "data/resample/1Y",
+        "index": "data/resample/1Y/index",
+        "rule": "AS"
     }
 ]
 
@@ -103,8 +135,8 @@ def resample_symbol(symbol: str) -> bool:
     - Loads and updates read/write offsets from an index file.
     - Reads the input CSV in batches.
     - Adds an "offset" column to each batch row so we know where the raw candle
-      originated in the file. This enables identifying the last candle that
-      contributed to the resampled output.
+      originated in the file. This enables identifying the first candle that
+      contributed to the resampled output candle.
     - Resamples using pandas' `.resample()` into a higher timeframe.
     - Always rewrites the last candle because it may be incomplete.
     - Writes updated offsets atomically to avoid partial writes.
@@ -120,12 +152,15 @@ def resample_symbol(symbol: str) -> bool:
         Always returns False for now, but may be extended for status reporting.
     """
     for config in CONFIG:
-        timeframe, input, output, index, seconds = config.values()
+        
+        timeframe, input_dir, output_dir, index_dir, rule = (
+            config[k] for k in ("timeframe", "input", "output", "index", "rule")
+        )
 
         # Construct file paths
-        input_path = Path(f"{input}/{symbol}.csv")
-        index_path = Path(f"{index}/{symbol}.idx")
-        output_path = Path(f"{output}/{symbol}.csv")
+        input_path = Path(f"{input_dir}/{symbol}.csv")
+        index_path = Path(f"{index_dir}/{symbol}.idx")
+        output_path = Path(f"{output_dir}/{symbol}.csv")
 
         # Ensure index file exists (stores input/output file offsets)
         if not index_path.exists():
@@ -191,7 +226,7 @@ def resample_symbol(symbol: str) -> bool:
                 df[['open', 'high', 'low', 'close']] = df[['open', 'high', 'low', 'close']].ffill()
 
                 # Resample into target timeframe
-                resampled = df.resample(f'{seconds}S').agg({
+                resampled = df.resample(rule).agg({
                     'open': 'first',
                     'high': 'max',
                     'low': 'min',
@@ -203,12 +238,21 @@ def resample_symbol(symbol: str) -> bool:
                 # Round numerical values to avoid floating drift
                 resampled = resampled.round(8)
 
-                # Determine new input_position:
-                # The last resampled row always comes from the last "offset" in the batch.
+                # Offset points to the position of the first raw input record that forms this row 
                 input_position = resampled.iloc[-1]['offset']
 
                 # filter zero volume
                 resampled = resampled[resampled['volume'] != 0]
+
+                if resampled.empty:
+                    # No data in this batch after filtering
+                    if THE_END:
+                        # End of input, nothing more to process
+                        if VERBOSE:
+                            tqdm.write(f"Resample {symbol} {timeframe} (no volume data)")
+                        break
+                    # More data might exist in next batch
+                    continue
 
                 # Rewrite the output file from its last known position
                 f_output.seek(output_position)
@@ -216,6 +260,9 @@ def resample_symbol(symbol: str) -> bool:
 
                 # Remove offset column before writing out
                 resampled.drop(columns=["offset"], inplace=True)
+
+                # Force date-format YYYY-MM-DD HH:MM:SS (might drop time on 1D)
+                resampled.index = resampled.index.strftime("%Y-%m-%d %H:%M:%S")
 
                 # Write all but last candle (fully complete)
                 f_output.write(resampled.iloc[:-1].to_csv(index=True, header=False))
@@ -235,6 +282,8 @@ def resample_symbol(symbol: str) -> bool:
 
                 # Stop if EOF reached
                 if THE_END:
+                    if VERBOSE:
+                        tqdm.write(f"  ✓ {symbol} {timeframe}")
                     break
 
                 # Seek to updated offsets for next loop
@@ -258,7 +307,24 @@ def fork_resample(args):
         Tuple containing (symbol, list of dates).
     """
     symbol, = args
-    resample_symbol(symbol)
+    today = datetime.now(timezone.utc).date()
+
+    try:
+        acquire_lock(symbol, today)
+
+        resample_symbol(symbol)
+
+    except (IOError, OSError, pd.errors.ParserError) as e:
+        tqdm.write(f"Resample {symbol} failed: {e}")
+        return False
+    except Exception as e:
+        tqdm.write(f"Unexpected error {symbol}: {e}")
+        raise  # Re-raise for debugging
+    except KeyboardInterrupt:
+        tqdm.write(f"Interrupted by user")
+        return False
+    finally:
+        release_lock(symbol, today)
 
 if __name__ == "__main__":
     print(f"Resample - Cascaded resampling from 1m CSV -> 5m -> 15m -> 30m -> ... ({NUM_PROCESSES} parallelism)")
