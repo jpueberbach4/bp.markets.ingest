@@ -293,7 +293,7 @@ def resample_symbol(symbol: str) -> bool:
                 f_output.seek(output_position)
 
 
-    return False
+    return True
 
 
 def fork_resample(args):
