@@ -2,7 +2,18 @@
 
 Python toolkit to download, transform, load, and resample 1-minute OHLC data from Dukascopy into efficient, appendable CSV files.
 
-Dukascopy provides data in **delta-encoded HST** format. This suite converts them into **full OHLC CSV files** for easier offset-based resumption and incremental updates.
+**Process 520 years of market data in 5 minutes. Updates all symbols in about 2 seconds.**
+
+High-performance Python pipeline for Dukascopy OHLC data with:
+
+- ⚡ **1.83-second incremental updates** (26 symbols × 10 timeframes)
+- 🔄 **Crash-resistant** offset-based checkpoints
+- 📊 **Cascading resampling** (1m → 5m → ... → 1Y)
+- 🚀 **1M+ candles/second** throughput
+- 💾 **Zero-database** architecture
+
+Converts Dukascopy's delta-encoded HST format into appendable CSV files 
+with offset-based resumption and incremental updates.
 
 ---
 
@@ -194,7 +205,28 @@ project_root/
 
 ## Troubleshooting
 
-Check the locks directory for stale locks. Can happen if you close the laptop lid during a run. Everything else should be fine.
+### Stale Locks
+If pipeline was interrupted (laptop sleep, SIGKILL), remove stale locks:
+```bash
+rm -rf locks/*.lck
+```
+
+### Rebuild from scratch?
+
+Set START_DATE in run.py to 2005-01-01
+
+```bash
+rm -rf ./data/*
+./run.sh
+```
+
+Set START_DATE in run.py to None (enables incremental mode)
+
+### Performance Issues
+- **Slow first run?** Normal - processing 20 years of data takes time
+- **Slow incremental?** Check if NVMe/SSD. HDDs will be 10-50x slower
+- **High CPU?** Reduce `NUM_PROCESSES` in scripts
+- **Out of memory?** Reduce `BATCH_SIZE` in resample.py (default: 500K)
 
 ---
 
@@ -214,6 +246,8 @@ We will parameterize or convert this stuff into packages/classes when cascaded r
 We will implement GPU processing as well. Automated detection of capable GPU's.
 
 Build an API on top of it to support HTTP fetching of OHLC data for all timeframes (w/ from-to support).
+
+Pull requests welcome :)
 
 ## License
 
