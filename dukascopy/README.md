@@ -239,7 +239,7 @@ Set START_DATE in run.py to None (enables incremental mode)
 
 ## Notes and Future Work
 
-Add unit-tests.
+Add unit-tests. Vectorized resampling (using numpy instead of pandas, expected 20x-50x perf increase).
 
 We will parameterize or convert this stuff into packages/classes when cascaded resampling and live-tick tracking for recent minute is done.
 
