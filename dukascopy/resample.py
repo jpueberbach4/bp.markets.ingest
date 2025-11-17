@@ -200,7 +200,7 @@ def resample_symbol(symbol: str) -> bool:
 
             while True:
 
-                # Create batch including header + offset column name
+                # Create batch including header + offset column name (StringIO is cleaner)
                 sio = StringIO()
                 sio.write(f"{header.strip()},offset\n")
                 # Read a chunk of lines along with their raw input offsets
