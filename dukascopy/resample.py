@@ -199,23 +199,24 @@ def resample_symbol(symbol: str) -> bool:
             THE_END = False
 
             while True:
-                # Create batch including header + offset column name
-                batch = [f"{header.strip()},offset\n"]
 
+                # Create batch including header + offset column name
+                sio = StringIO()
+                sio.write(f"{header.strip()},offset\n")
                 # Read a chunk of lines along with their raw input offsets
                 for _ in range(BATCH_SIZE):
                     offset_before = f_input.tell()
                     line = f_input.readline()
-
                     if not line:
                         THE_END = True
                         break
-
-                    batch.append(f"{line.strip()},{offset_before}\n")
+                    sio.write(f"{line.strip()},{offset_before}\n")
+                
+                sio.seek(0)
 
                 # Load into DataFrame
                 df = pd.read_csv(
-                    StringIO(''.join(batch)),
+                    sio,
                     names=["time", "open", "high", "low", "close", "volume", "offset"],
                     header=0
                 )
@@ -247,7 +248,7 @@ def resample_symbol(symbol: str) -> bool:
                 resampled = resampled[resampled['volume'] != 0]
 
                 if resampled.empty:
-                    # No data in this batch after filtering (should never happen, no 0 volume in input)
+                    # No data in this batch after filtering (should never happen, no ONLY 0 volume in input)
                     if THE_END:
                         # End of input, nothing more to process
                         if VERBOSE:
