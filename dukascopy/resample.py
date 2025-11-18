@@ -43,70 +43,93 @@ CONFIG = [
         "input": "data/aggregate/1m",
         "output": "data/resample/5m",
         "index": "data/resample/5m/index",
-        "rule": "5T"
+        "rule": "5T",
+        "label": "left",
+        "closed": "left"
     },
     {
         "timeframe": "15m",
         "input": "data/resample/5m",
         "output": "data/resample/15m",
         "index": "data/resample/15m/index",
-        "rule": "15T"
+        "rule": "15T",
+        "label": "left",
+        "closed": "left"
     },
     {
         "timeframe": "30m",
         "input": "data/resample/15m",
         "output": "data/resample/30m",
         "index": "data/resample/30m/index",
-        "rule": "30T"
+        "rule": "30T",
+        "label": "left",
+        "closed": "left"
     },
     {
         "timeframe": "1h",
         "input": "data/resample/30m",
         "output": "data/resample/1h",
         "index": "data/resample/1h/index",
-        "rule": "1H"
+        "rule": "1H",
+        "label": "left",
+        "closed": "left"
     },
     {
         "timeframe": "4h",
         "input": "data/resample/1h",
         "output": "data/resample/4h",
         "index": "data/resample/4h/index",
-        "rule": "4H"
+        "rule": "4H",
+        "label": "left",
+        "closed": "left"
     },
     {
         "timeframe": "8h",
         "input": "data/resample/4h",
         "output": "data/resample/8h",
         "index": "data/resample/8h/index",
-        "rule": "8H"
+        "rule": "8H",
+        "label": "left",
+        "closed": "left"
     },
     {
         "timeframe": "1d",
         "input": "data/resample/8h",
         "output": "data/resample/1d",
         "index": "data/resample/1d/index",
-        "rule": "1D"
+        "rule": "1D",
+        "label": "left",
+        "closed": "left"
     },
+    # Weekly: use W-SAT in UTC to include full Friday trading
     {
         "timeframe": "1W",
         "input": "data/resample/1d",
         "output": "data/resample/1W",
         "index": "data/resample/1W/index",
-        "rule": "1W"
+        "rule": "W-SAT",
+        "label": "left",
+        "closed": "left"
     },
+    # Monthly: can use start-of-month (MS) or last business day approach
     {
         "timeframe": "1M",
         "input": "data/resample/1d",
         "output": "data/resample/1M",
         "index": "data/resample/1M/index",
-        "rule": "MS"
+        "rule": "MS",
+        "label": "left",
+        "closed": "left"
     },
+    # Yearly: start-of-year (AS)
     {
         "timeframe": "1Y",
         "input": "data/resample/1M",
         "output": "data/resample/1Y",
         "index": "data/resample/1Y/index",
-        "rule": "AS"
+        "rule": "AS",
+        "label": "left",
+        "closed": "left"
     }
 ]
 
@@ -156,8 +179,8 @@ def resample_symbol(symbol: str) -> bool:
     """
     for config in CONFIG:
         
-        timeframe, input_dir, output_dir, index_dir, rule = (
-            config[k] for k in ("timeframe", "input", "output", "index", "rule")
+        timeframe, input_dir, output_dir, index_dir, rule, label, closed = (
+            config[k] for k in ("timeframe", "input", "output", "index", "rule","label","closed")
         )
 
         # Construct file paths
@@ -229,7 +252,7 @@ def resample_symbol(symbol: str) -> bool:
                 df[['open', 'high', 'low', 'close']] = df[['open', 'high', 'low', 'close']].ffill()
 
                 # Resample into target timeframe
-                resampled = df.resample(rule).agg({
+                resampled = df.resample(rule, label=label, closed=closed).agg({
                     'open': 'first',
                     'high': 'max',
                     'low': 'min',
