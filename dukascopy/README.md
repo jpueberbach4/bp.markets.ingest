@@ -199,7 +199,7 @@ project_root/
 │       └── YYYY/
 │           └── MM/
 │               └── SYMBOL_YYYYMMDD.csv
-└── README.md                                  # Project documentation (optional)
+└── README.md                                  # Project documentation
 
 ```
 
