@@ -40,7 +40,7 @@ NUM_PROCESSES = os.cpu_count()    # Use all CPU cores for parallel processing
 
 CACHE_PATH = "cache"                # Dukascopy cached HST downloads are here
 DATA_PATH = "data/transform/1m"     # Output path for the transformed files
-TEMP_PATH = "temp"                  # Today's live data is stored here
+TEMP_PATH = "data/temp"                  # Today's live data is stored here
 ROUND_DECIMALS = 8                  # Round prices to this number of decimals
 
 def load_symbols() -> pd.Series:

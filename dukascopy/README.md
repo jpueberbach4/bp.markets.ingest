@@ -179,26 +179,26 @@ project_root/
 │   └── YYYY/
 │       └── MM/
 │           └── SYMBOL_YYYYMMDD.json
-├── temp/                                      # Live/current day data (JSON, CSV, or index)
-│   ├── SYMBOL_YYYYMMDD.idx
-│   ├── SYMBOL_YYYYMMDD.json
-│   └── SYMBOL_YYYYMMDD.csv
 ├── data/
-│   ├── transform/1m/                          # Transformed CSV output
-│   │   └── YYYY/
-│   │       └── MM/
-│   │           └── SYMBOL_YYYYMMDD.csv
 │   ├── aggregate/1m/                          # Aggregated CSV output
 │   │   ├── index/                             # Pointer/index files for incremental loading
 │   │   │   └── SYMBOL_YYYYMMDD.idx
 │   │   └── SYMBOL.csv                         # Final aggregated CSV per symbol
-│   └── resample/5m/                           # Resampled CSV output (5m, 15m, 30m, 1h, ...)
-│       ├── index/                             # Pointer/index files for incremental loading
-│       │   └── SYMBOL_1m.idx
-│       └── SYMBOL.csv                         # Final resampled CSV per symbol
-├── locks/                                     # File-based locks for concurrency control
-│   ├── run.lock                               # Protection against simultaneous run.py's  
-│   └── SYMBOL_YYYYMMDD.lck
+├── ├──locks/                                     # File-based locks for concurrency control
+│   │   ├── run.lock                               # Protection against simultaneous run.py's  
+│   │   └── SYMBOL_YYYYMMDD.lck
+│   ├── resample/5m/                           # Resampled CSV output (5m, 15m, 30m, 1h, ...)
+│   │   ├── index/                             # Pointer/index files for incremental loading
+│   │   │   └── SYMBOL_1m.idx
+│   │   └── SYMBOL.csv                         # Final resampled CSV per symbol
+├── └──temp/                                      # Live/current day data (JSON, CSV, or index)
+│   │   ├── SYMBOL_YYYYMMDD.idx
+│   │   ├── SYMBOL_YYYYMMDD.json
+│   │   └── SYMBOL_YYYYMMDD.csv
+│   └── transform/1m/                          # Transformed CSV output
+│       └── YYYY/
+│           └── MM/
+│               └── SYMBOL_YYYYMMDD.csv
 └── README.md                                  # Project documentation (optional)
 
 ```

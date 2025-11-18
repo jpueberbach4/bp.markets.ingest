@@ -37,7 +37,7 @@ DELETE_INDEX = False
 
 INDEX_PATH = "data/aggregate/1m/index"  # Use offset-pointers from this location
 DATA_PATH = "data/transform/1m"         # Data of aggregate.py is stored here
-TEMP_PATH = "temp"                      # Today's live data is stored here
+TEMP_PATH = "data/temp"                      # Today's live data is stored here
 AGGREGATE_PATH = "data/aggregate/1m"    # Output path for the aggregated files
 
 def init_process(symbols):

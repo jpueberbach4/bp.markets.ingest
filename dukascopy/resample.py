@@ -285,9 +285,6 @@ def resample_symbol(symbol: str) -> bool:
                 df['time'] = pd.to_datetime(df['time'], format="%Y-%m-%d %H:%M:%S", utc=True)
                 df.set_index('time', inplace=True)
 
-                # Fill gaps in raw OHLC data before resampling
-                df[['open', 'high', 'low', 'close']] = df[['open', 'high', 'low', 'close']].ffill()
-
                 # Resample into target timeframe
                 resampled = df.resample(rule, label=label, closed=closed).agg({
                     'open': 'first',
@@ -296,7 +293,7 @@ def resample_symbol(symbol: str) -> bool:
                     'close': 'last',
                     'volume': 'sum',
                     'offset': 'first'  # identifies source raw candle for the window
-                }).ffill()
+                })
 
                 # Round numerical values to avoid floating drift
                 resampled = resampled.round(ROUND_DECIMALS)
@@ -305,7 +302,7 @@ def resample_symbol(symbol: str) -> bool:
                 input_position = int(resampled.iloc[-1]['offset'])
 
                 # filter zero volume
-                resampled = resampled[resampled['volume'] != 0]
+                resampled = resampled[resampled['volume'].notna() & (resampled['volume'] != 0)]
 
                 if resampled.empty:
                     # No data in this batch after filtering (should never happen, no ONLY 0 volume in input)

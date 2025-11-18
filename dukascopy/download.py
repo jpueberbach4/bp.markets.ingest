@@ -38,7 +38,7 @@ START_DATE = "2025-11-01"      # Historic download start date
 NUM_PROCESSES = os.cpu_count() # Number of simultaneous downloads (parallelism)
 
 CACHE_PATH = "cache"         # Cached data of download.py is stored here
-TEMP_PATH = "temp"           # Today's live data is stored here
+TEMP_PATH = "data/temp"           # Today's live data is stored here
 
 def load_symbols() -> pd.Series:
     """

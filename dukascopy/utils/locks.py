@@ -5,7 +5,7 @@ from datetime import date
 
 locks = {}
 
-LOCK_PATH = "locks" # Locks path
+LOCK_PATH = "data/locks" # Locks path
 
 def acquire_lock(symbol: str, dt: date) -> bool:
     """

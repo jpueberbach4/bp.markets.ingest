@@ -45,7 +45,7 @@ START_DATE = None
 # Paths for cached and transformed data
 CACHE_PATH = "cache"                # Cache of downloaded JSON HST files
 DATA_PATH = "data/transform/1m"     # Output path for transformed OHLC CSV files
-LOCK_PATH = "locks"                 # Where to store run.lock
+LOCK_PATH = "data/locks"                 # Where to store run.lock
 
 # Number of worker processes for parallel stages
 NUM_PROCESSES = os.cpu_count()
