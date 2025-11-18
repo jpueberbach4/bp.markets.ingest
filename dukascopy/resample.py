@@ -5,9 +5,46 @@
  File:        resample.py
  Author:      JP Ueberbach
  Created:     2025-11-15
- Description: This script processes symbol CSV files incrementally using saved read/write
-              offsets. It supports multiple cascading timeframes (e.g., 1m → 5m → 15m → 30m → 1h)
-              without re-reading or re-writing previously processed data.
+ Description:
+     
+     Incremental, crash-resilient OHLCV resampling engine for append-only
+     time-series data. Each symbol's raw CSV file grows strictly by appending
+     new rows, and previously written data never changes. The script uses
+     forward-moving byte offsets to resume processing exactly where it left
+     off, without ever re-reading or re-writing completed candles. The last
+     resampled candle is always considered (potentially incomplete).
+
+     Core properties:
+
+         • Append-only input model:
+             Raw symbol CSVs are strictly append-only. Byte offsets stored in
+             per-symbol index files remain permanently valid.
+
+         • Deterministic incremental resampling:
+             New rows are processed in batches, aggregated into higher
+             timeframes (1m → 5m → 15m → 30m → 1h → …), and written exactly
+             once. Finished candles are never touched again.
+
+         • Crash-safe last-candle rewrite:
+             Only the final, potentially incomplete resampled candle is ever
+             truncated and regenerated. On restart, the engine reconstructs
+             this candle from upstream offsets with no risk of corrupting any
+             historical output.
+
+         • Zero backtracking:
+             The pipeline never reprocesses historical data, never scans from
+             the beginning of a file, and never rewrites completed output.
+
+         • Cascading multi-timeframe pipeline:
+             Each timeframe resamples from the output of the previous one,
+             forming a forward-only DAG of incremental transformations.
+             
+             Note: Monthly candles are resampled from daily data rather than
+             weekly data to ensure proper alignment, since weeks often
+             span two calendar months.
+
+     The result is a high-performance, low-IO, idempotent resampling system
+     designed for large datasets and continuous ingestion.
 
  Usage:
      python3 resample.py
