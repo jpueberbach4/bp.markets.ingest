@@ -212,7 +212,7 @@ def resample_symbol(symbol: str) -> bool:
     Returns
     -------
     bool
-        Always returns False for now, but may be extended for status reporting.
+        Always returns True for now, but may be extended for status reporting.
     """
     for config in CONFIG:
         
