@@ -93,7 +93,7 @@ Add the following line, adjust path accordingly:
 |-------|--------|
 | `download.py` | Downloads missing HST files; **always updates today** |
 | `transform.py` | Converts HST → full CSV; **always processes today** |
-| `aggregate.py` | Merges new rows from `temp` and `data` into `aggregate/` using **pointer files** |
+| `aggregate.py` | Merges new rows from `data/temp` and `data/transform` into `aggregate/` using **pointer files** |
 | `resample.py` | Cascaded resampling: 1m → 5m → 15m → ... → 1M using **resample pointers** |
 | `run.py` | Runs pipeline components **in correct order** |
 
@@ -210,7 +210,7 @@ project_root/
 ### Stale Locks
 If pipeline was interrupted (laptop sleep, SIGKILL), remove stale locks:
 ```bash
-rm -rf locks/*.lck
+rm -rf data/locks/*.lck
 ```
 
 ### Rebuild from scratch?
