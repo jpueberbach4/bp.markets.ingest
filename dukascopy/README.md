@@ -178,21 +178,20 @@ project_root/
 ├── cache/                                     # Cached historical JSON data
 │   └── YYYY/
 │       └── MM/
-│           └── SYMBOL_YYYYMMDD.json
+│           └── SYMBOL_YYYYMMDD.json           # Delta file
 ├── data/
 │   ├── aggregate/1m/                          # Aggregated CSV output
 │   │   ├── index/                             # Pointer/index files for incremental loading
-│   │   │   └── SYMBOL_YYYYMMDD.idx
+│   │   │   └── SYMBOL.idx
 │   │   └── SYMBOL.csv                         # Final aggregated CSV per symbol
-├── ├──locks/                                     # File-based locks for concurrency control
-│   │   ├── run.lock                               # Protection against simultaneous run.py's  
+├── ├──locks/                                  # File-based locks for concurrency control
+│   │   ├── run.lock                           # Protection against simultaneous run.py's  
 │   │   └── SYMBOL_YYYYMMDD.lck
 │   ├── resample/5m/                           # Resampled CSV output (5m, 15m, 30m, 1h, ...)
 │   │   ├── index/                             # Pointer/index files for incremental loading
 │   │   │   └── SYMBOL_1m.idx
 │   │   └── SYMBOL.csv                         # Final resampled CSV per symbol
-├── └──temp/                                      # Live/current day data (JSON, CSV, or index)
-│   │   ├── SYMBOL_YYYYMMDD.idx
+├── └──temp/                                   # Live/current day data (JSON, CSV)
 │   │   ├── SYMBOL_YYYYMMDD.json
 │   │   └── SYMBOL_YYYYMMDD.csv
 │   └── transform/1m/                          # Transformed CSV output
