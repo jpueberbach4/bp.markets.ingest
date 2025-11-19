@@ -216,7 +216,10 @@ def resample_read_index(index_path: str) -> Tuple[int, int]:
     The index file is always written atomically elsewhere in the pipeline to
     ensure it is safe against partial writes or corruption.
     """
-    # Load the saved offsets
+    if not index_path.exists():
+        resample_write_index(index_path, 0, 0)
+        return 0, 0
+    
     with open(index_path, 'r') as f_idx:
         input_position, output_position = [
             int(line.strip()) for line in f_idx.readlines()[:2]
@@ -355,8 +358,6 @@ def resample_symbol(symbol: str) -> bool:
         Always returns True for now, but may be extended for status reporting.
     """
     for config in CONFIG:
-        input_position = 0
-        output_position = 0
 
         timeframe, input_dir, output_dir, index_dir, rule, label, closed = (
             config[k] for k in ("timeframe", "input", "output", "index", "rule","label","closed")
@@ -367,9 +368,8 @@ def resample_symbol(symbol: str) -> bool:
         index_path = Path(f"{index_dir}/{symbol}.idx")
         output_path = Path(f"{output_dir}/{symbol}.csv")
 
-        # Load the saved offsets
-        if index_path.exists():
-            input_position, output_position = resample_read_index(index_path)
+        # Load the saved offsets (or create if not exists)
+        input_position, output_position = resample_read_index(index_path)
 
         # Ensure output file exists
         if not output_path.exists():
