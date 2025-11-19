@@ -234,15 +234,13 @@ def aggregate_symbol(symbol: str, dt: date) -> bool:
 
         except Exception as e:
             tqdm.write(f"Load failed {symbol} {dt}: {e}")
-            return False
 
     except KeyboardInterrupt:
         tqdm.write(f"Interrupted by user")
-        return False
     finally:
         release_lock(symbol, dt)
-    
-    return True
+
+    return False    
 
 
 def fork_aggregate(args):
