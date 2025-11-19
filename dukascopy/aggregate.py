@@ -111,6 +111,7 @@ def aggregate_symbol(symbol: str, dt: date) -> bool:
         index_path.parent.mkdir(parents=True, exist_ok=True)
 
         # this cache/data/temp switching is also a mess. we can go without temp for today. REFACTOR!
+        # do not forget to update transform.py as well (remove temp stuff there as well)
 
         if data_path.is_file():
             # We will use the historic data path
@@ -146,6 +147,8 @@ def aggregate_symbol(symbol: str, dt: date) -> bool:
         try:
             header = None
             # input_position, output_position = aggregate_read_index(dt)
+
+            # we do not need the following block, we can use input_file directly. REFACTOR!
             with open(data_path, "r", encoding="utf-8") as f_in, \
                  open(temp_path, "w", encoding="utf-8") as f_out:
 
