@@ -477,7 +477,7 @@ def resample_symbol(symbol: str) -> bool:
                 f_output.write(resampled.tail(1).to_csv(index=True, header=False))
 
                 # Update the index
-                resample_write_index(index_path, input_position, output_position)
+                resample_write_index(index_path, next_input_position, output_position)
 
                 # Stop if EOF reached
                 if eof_reached:
