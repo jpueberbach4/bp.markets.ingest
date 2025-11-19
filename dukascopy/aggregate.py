@@ -5,8 +5,16 @@
  File:        aggregate.py
  Author:      JP Ueberbach
  Created:     2025-11-09
- Description: Incrementally loads symbol CSV files into a single aggregated file.
-              Supports resumable loading and parallel processing.
+ Description: Incrementally aggregates daily trading symbol CSV files into
+              a single per-symbol CSV file. Supports:
+              
+              - Resumable aggregation via atomic index files
+              - Crash-safe incremental writes
+              - Parallel processing across multiple symbols
+              - Day-level CSV input (small files, fully controlled input)
+              
+              This script is designed for high reliability and reproducibility,
+              with no memory concerns due to small per-day files.
 
  Usage:
      python3 aggregate.py
@@ -16,6 +24,13 @@
      - Pandas
      - filelock
      - tqdm
+
+ Notes:
+     - Input CSVs must follow the pattern: DATA_PATH/YYYY/MM/{symbol}_YYYYMMDD.csv
+     - Aggregated output CSVs are stored in: AGGREGATE_PATH/{symbol}.csv
+     - Incremental progress is tracked in AGGREGATE_PATH/index/{symbol}.idx
+     - Supports safe recovery from crashes or interruptions
+     - Parallelism is controlled by NUM_PROCESSES (default: os.cpu_count())
 
  License:
      MIT License
