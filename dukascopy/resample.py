@@ -67,7 +67,7 @@ from pathlib import Path
 from multiprocessing import get_context
 from tqdm import tqdm
 from io import StringIO
-from typing import Tuple
+from typing import Tuple, IO
 
 VERBOSE = os.getenv('VERBOSE', '0').lower() in ('1', 'true', 'yes', 'on')
 
@@ -190,7 +190,7 @@ def load_symbols() -> pd.Series:
     return df.iloc[:, 0].astype(str).str.replace('/', '-', regex=False)
 
 
-def resample_read_index(index_path: str) -> Tuple[int, int]:
+def resample_read_index(index_path: Path) -> Tuple[int, int]:
     """
     Read the incremental resampling index file and return the stored offsets.
 
@@ -226,7 +226,7 @@ def resample_read_index(index_path: str) -> Tuple[int, int]:
         ]
     return input_position, output_position
 
-def resample_write_index(index_path: str, input_position: int, output_position: int) -> bool:
+def resample_write_index(index_path: Path, input_position: int, output_position: int) -> bool:
     """
     Atomically persist updated read/write offsets for a symbol's resampling state.
 
@@ -264,15 +264,55 @@ def resample_write_index(index_path: str, input_position: int, output_position: 
     bool
         Always returns True for now, indicating that the atomic write completed.
     """
-    # Write updated offsets atomically
     index_path.parent.mkdir(parents=True, exist_ok=True)
     index_temp_path = Path(f"{index_path}.tmp")
     with open(index_temp_path, "w") as f_idx:
         f_idx.write(f"{input_position}\n{output_position}")
-        f_idx.flush()
 
     os.replace(index_temp_path, index_path)
     return True
+
+def resample_batch_read(f_input: IO, header: str) -> Tuple[StringIO, bool]:
+    """
+    Read a batch of lines from an input file-like object while recording their byte offsets.
+
+    This function reads up to `BATCH_SIZE` lines from `f_input`, capturing the file offset
+    immediately before each line is read. It writes the resulting rows—along with an added
+    `offset` column—into a `StringIO` buffer that begins with the provided header plus the
+    new column name.
+
+    Parameters
+    ----------
+    f_input : IO
+        A file-like object opened for reading. Must support `tell()` and `readline()`.
+    header : str
+        The CSV header line to be written first in the output, without the `offset` column.
+
+    Returns
+    -------
+    Tuple[StringIO, bool]
+        A tuple containing:
+        - A `StringIO` object positioned at the beginning, containing the header and batch data.
+        - A boolean indicating whether end-of-file was reached during this read.
+    """
+    sio = StringIO()
+    sio.write(f"{header.strip()},offset\n")
+
+    eof_reached = False
+
+    # Read a chunk of lines along with their raw input offsets
+    for _ in range(BATCH_SIZE):
+        offset_before = f_input.tell()
+        line = f_input.readline()
+        if not line:
+            eof_reached = True
+            break
+        sio.write(f"{line.strip()},{offset_before}\n")
+    
+    sio.seek(0)
+
+    return sio, eof_reached
+
 
 def resample_symbol_batch(sio: StringIO, rule: str, label: str, closed: str) -> pd.DataFrame:
     """
@@ -368,6 +408,12 @@ def resample_symbol(symbol: str) -> bool:
         index_path = Path(f"{index_dir}/{symbol}.idx")
         output_path = Path(f"{output_dir}/{symbol}.csv")
 
+        # Ensure input path exists
+        if not input_path.exists():
+            if VERBOSE:
+                tqdm.write(f"  No base {timeframe} data for {symbol} → skipping cascading timeframes")
+            return True
+
         # Load the saved offsets (or create if not exists)
         input_position, output_position = resample_read_index(index_path)
 
@@ -395,19 +441,8 @@ def resample_symbol(symbol: str) -> bool:
 
             while True:
 
-                # Create batch including header + offset column name (StringIO is cleaner)
-                sio = StringIO()
-                sio.write(f"{header.strip()},offset\n")
-                # Read a chunk of lines along with their raw input offsets
-                for _ in range(BATCH_SIZE):
-                    offset_before = f_input.tell()
-                    line = f_input.readline()
-                    if not line:
-                        eof_reached = True
-                        break
-                    sio.write(f"{line.strip()},{offset_before}\n")
-                
-                sio.seek(0)
+                # Read a StringIO batch from f_input
+                sio, eof_reached = resample_batch_read(f_input, header)
 
                 # Resample the sio batch
                 resampled = resample_symbol_batch(sio, rule, label, closed) 
