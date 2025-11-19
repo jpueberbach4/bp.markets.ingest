@@ -114,7 +114,7 @@ Run all via:
 > **Hardware:** AMD Ryzen 7 (8C/16T) · 1 TB NVMe SSD · WSL2 (Ubuntu)  
 > **Workload:** 20 years of 1-minute OHLC data · **26 symbols** (~520 years total)
 
-| Script        | Time     | Unit/s (unit) | Candles/s     | Data Written | Write Speed |
+| Script        | Time     | Unit/s (unit) | Candles/s (read)    | Data Written | Write Speed |
 |---------------|----------|---------|---------------|--------------|-------------|
 | `transform.py`| **89 s** | > 2,000 (files) | **1.35 M**   | 7.3 GB       | **82 MB/s** |
 | `aggregate.py`| **82 s** | > 2,000 (files) | **1.46 M**   | 6.7 GB       | **81 MB/s** |
