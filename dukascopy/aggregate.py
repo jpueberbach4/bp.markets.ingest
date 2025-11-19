@@ -29,38 +29,14 @@ from tqdm import tqdm
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from multiprocessing import get_context
+from typing import Tuple
 
 START_DATE = "2025-11-01"               # Start date for historic data loading
 NUM_PROCESSES = os.cpu_count()          # Number of simultaneous loaders
-DELETE_AGGREGATES = False
-DELETE_INDEX = False
 
 INDEX_PATH = "data/aggregate/1m/index"  # Use offset-pointers from this location
 DATA_PATH = "data/transform/1m"         # Data of aggregate.py is stored here
-TEMP_PATH = "data/temp"                      # Today's live data is stored here
 AGGREGATE_PATH = "data/aggregate/1m"    # Output path for the aggregated files
-
-def init_process(symbols):
-    """
-    Initialize environment before loading symbols.
-
-    Deletes existing aggregated CSV files or index files
-    if the corresponding flags (DELETE_AGGREGATES, DELETE_INDEX) are set.
-
-    Parameters
-    ----------
-    symbols : list[str]
-        List of trading symbols to initialize.
-    """
-    if DELETE_AGGREGATES:
-        for symbol in symbols:
-            Path(f"{AGGREGATE_PATH}/{symbol}.csv").unlink(missing_ok=True)
-
-    if DELETE_INDEX:
-        for path in ["index", "temp"]:
-            for file in Path(path).rglob("*.idx"):
-                file.unlink(missing_ok=True)
-
 
 def load_symbols() -> pd.Series:
     """
@@ -78,120 +54,171 @@ def load_symbols() -> pd.Series:
     return df.iloc[:, 0].astype(str).str.replace('/', '-', regex=False)
 
 
-def aggregate_symbol(symbol: str, dt: date) -> bool:
+def aggregate_read_index(index_path: Path) -> Tuple[date, int, int]:
     """
-    Load incremental data for a single symbol and date.
-
-    Checks both 'data' and 'temp' directories for CSV and index files,
-    resumes from the last processed position (tracked in the index file),
-    and appends new data to the aggregated CSV in 'load/'.
+    Read the incremental resampling index file and return the stored offsets.
 
     Parameters
     ----------
-    symbol : str
-        Trading symbol to load.
+    index_path : Path
+        Path to the `.idx` file storing the aggregator's progress for a single
+        symbol. The file contains exactly three lines:
+            1) date – a string in format YYYY-MM-DD
+            1) input_position  – byte offset in the upstream CSV already processed
+            2) output_position – byte offset in the output CSV already written
+
+    Returns
+    -------
+    Tuple[date,int, int]
+        (date, input_position, output_position), positions both guaranteed to be integers.
+
+    Notes
+    -----
+    These offsets allow the resampling engine to:
+        - Resume exactly where it left off after a crash or restart.
+        - Avoid re-reading previously processed input data.
+        - Avoid rewriting historical output candles.
+    The index file is always written atomically elsewhere in the pipeline to
+    ensure it is safe against partial writes or corruption.
+    """
+    if not index_path.exists():
+        aggregate_write_index(index_path, datetime.utcfromtimestamp(0).date(), 0, 0)
+        return datetime.utcfromtimestamp(0).date(),0, 0
+    
+    with open(index_path, 'r') as f_idx:
+        date_str, input_position, output_position = [
+            line.strip() for line in f_idx.readlines()[:3]
+        ]
+    return datetime.strptime(date_str, "%Y-%m-%d").date(),int(input_position), int(output_position)
+
+def aggregate_write_index(index_path: Path, dt: date, input_position: int, output_position: int) -> bool:
+    """
+    Write an atomic aggregate index file for crash-safe ETL processing.
+
+    This function writes the index file containing the input date, the last
+    read position in the input (transformed) file, and the last written 
+    position in the aggregate output file. It uses a temporary file and
+    atomic replace to ensure the index file is never partially written.
+
+    Parameters
+    ----------
+    index_path : Path
+        Full path to the target index file.
     dt : date
-        Specific date of the data to load.
+        The date corresponding to the input CSV file being aggregated.
+    input_position : int
+        Byte offset or line number indicating how far the input file has
+        been processed.
+    output_position : int
+        Byte offset indicating how far the aggregate file has been written.
 
     Returns
     -------
     bool
-        True if new data was successfully loaded; False if files are missing
-        or no new data is available.
+        True if the index file was successfully written and replaced.
+
+    Notes
+    -----
+    - The index file format is three lines:
+        1. date in YYYY-MM-DD format
+        2. input position
+        3. output position
+    - This function ensures atomic writes by writing to a temporary file first
+      and then replacing the original file using os.replace().
+    - Parent directories will be created if they do not exist.
+    """
+    index_path.parent.mkdir(parents=True, exist_ok=True)
+    index_temp_path = Path(f"{index_path}.tmp")
+    with open(index_temp_path, "w") as f_idx:
+        date_str = dt.strftime("%Y-%m-%d")
+        f_idx.write(f"{date_str}\n{input_position}\n{output_position}")
+
+    os.replace(index_temp_path, index_path)
+    return True
+
+def aggregate_symbol(symbol: str, dt: date) -> bool:
+    """
+    Incrementally load and aggregate CSV data for a single trading symbol and date.
+
+    This function appends new rows from a per-day transformed CSV into the
+    aggregated CSV for the symbol, using an index file to track progress.
+    It ensures crash-safe incremental updates by:
+
+    - Acquiring a per-symbol lock to prevent concurrent writes.
+    - Resuming from the last processed position stored in the index file.
+    - Truncating the aggregate CSV if it was partially written.
+    - Updating the index file atomically after successful writes.
+
+    Parameters
+    ----------
+    symbol : str
+        Trading symbol to process (e.g., "EURUSD").
+    dt : date
+        The specific date of the source CSV to aggregate.
+
+    Returns
+    -------
+    bool
+        True if new data was successfully appended to the aggregate CSV.
+        False if:
+        - No new data is available,
+        - The input CSV or index files are missing,
+        - An error occurs during read/write,
+        - Or the current date is earlier than the last processed date.
+
+    Notes
+    -----
+    - The input CSV is expected to be located in `DATA_PATH/YYYY/MM/{symbol}_YYYYMMDD.csv`.
+    - The aggregated CSV is stored in `AGGREGATE_PATH/{symbol}.csv`.
+    - The index file format is three lines: 
+        1. date (YYYY-MM-DD)
+        2. input_position (byte offset in input CSV)
+        3. output_position (byte offset in aggregate CSV)
+    - The function uses `aggregate_write_index` for atomic index updates.
+    - Any partial writes or crashes can be safely recovered by rerunning this function.
+    - Per-symbol locks prevent race conditions during concurrent execution.
     """
     try:
         acquire_lock(symbol, dt)
 
-        # refactor this completely! New design decision: aggregate index file having date, input_position, output_position.
-
-        # --- Source paths ---
-        data_path = Path(DATA_PATH) / dt.strftime(f"%Y/%m/{symbol}_%Y%m%d.csv")
-        index_path = Path(INDEX_PATH) / dt.strftime(f"%Y/%m/{symbol}_%Y%m%d.idx")
-
-        index_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # this cache/data/temp switching is also a mess. we can go without temp for today. REFACTOR!
-        # do not forget to update transform.py as well (remove temp stuff there as well)
-
-        if data_path.is_file():
-            # We will use the historic data path
-            index_temp_path = Path(TEMP_PATH) / dt.strftime(f"{symbol}_%Y%m%d.idx")
-
-            if index_temp_path.is_file():
-                os.replace(index_temp_path, index_path)
-        else:
-            # We will use the temp path as source
-            data_path = Path(TEMP_PATH) / f"{symbol}_{dt:%Y%m%d}.csv"
-            index_path = Path(TEMP_PATH) / f"{symbol}_{dt:%Y%m%d}.idx"
-
-        if not data_path.is_file():
-            return False
-
-        # --- Resume processing from last position ---
+        # Construct paths
+        index_path = Path(AGGREGATE_PATH) / f"index/{symbol}.idx"
+        output_path = Path(AGGREGATE_PATH) / f"{symbol}.csv"
         
-        # dt, input_position, output_position = aggregate_read_index(symbol)
-        position = 0
+        date_from, input_position, output_position = aggregate_read_index(index_path)
 
-        if index_path.exists():
-            with open(index_path, "r", encoding="utf-8") as f:
-                position = int(f.read().strip())
-
-        if position >= data_path.stat().st_size:
+        # skip if current dt < resume date
+        if dt < date_from:
             return False
 
-        # --- Destination paths ---
-        aggregate_path = Path(f"{AGGREGATE_PATH}/{symbol}.csv")
-        aggregate_path.parent.mkdir(parents=True, exist_ok=True)
-        temp_path = aggregate_path.with_suffix(".tmp")
+        input_path = Path(DATA_PATH) / f"{dt.year}/{dt.month:02}/{symbol}_{dt:%Y%m%d}.csv"
 
         try:
-            header = None
-            # input_position, output_position = aggregate_read_index(dt)
+                
+            with open(output_path, "a", encoding="utf-8") as f_output, \
+                    open(input_path, "r", encoding="utf-8") as f_input:
 
-            # we do not need the following block, we can use input_file directly. REFACTOR!
-            with open(data_path, "r", encoding="utf-8") as f_in, \
-                 open(temp_path, "w", encoding="utf-8") as f_out:
+                    f_output.seek(output_position)
+                    f_output.truncate()
 
-                if position == 0:
-                    header = f_in.readline()  # skip header
-                else:
-                    f_in.seek(position)
+                    if output_position == 0:
+                        f_output.write(f_input.readline())
+                    
+                    if input_position > 0:
+                        f_input.seek(input_position)
+                    
+                    # chunking not needed, input files are small
+                    f_output.write(f_input.read())
+                    
+                    input_position = f_input.tell()
+                    output_position = f_output.tell()
 
-                while line := f_in.readline():
-                    line = line.strip()
-                    if line:
-                        f_out.write(f"{line}\n")
+                    aggregate_write_index(index_path, dt, input_position, output_position)
 
-                    # Update resume index
-                    position = f_in.tell()
-            
-            # if aggregate_path exists, do not write header
-            if aggregate_path.exists():
-                header = None
-
-            # Atomic append to aggregate CSV
-            with open(aggregate_path, "a", encoding="utf-8") as f_out, \
-                    open(temp_path, "r", encoding="utf-8") as f_in, \
-                        open(index_path, "w+", encoding="utf-8") as f_idx:
-
-                    if header:
-                        f_out.write(header)
-
-                    f_out.write(f_in.read())
-                    # BUG-002 was here, solving
-                    # output_position = f_out.tell()
-                    # aggregate_write_index(symbol, dt, input_position, output_position)
-                    f_idx.seek(0)
-                    f_idx.write(str(position))
-                    f_idx.truncate()
-                    f_idx.flush()
-
-            temp_path.unlink(missing_ok=True)
             return True
 
         except Exception as e:
             tqdm.write(f"Load failed {symbol} {dt}: {e}")
-            temp_path.unlink(missing_ok=True)
             return False
 
     except KeyboardInterrupt:
@@ -223,7 +250,6 @@ def fork_aggregate(args):
 if __name__ == "__main__":
     print(f"Aggregate - Aggregates symbols to 1-minute CSV ({NUM_PROCESSES} parallelism)")
     symbols = load_symbols()
-    init_process(symbols)
 
     start_dt = datetime.strptime(START_DATE, "%Y-%m-%d").date()
     today_dt = datetime.now(timezone.utc).date()
