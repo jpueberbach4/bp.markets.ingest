@@ -410,11 +410,14 @@ def resample_symbol(symbol: str) -> bool:
     bool
         Always returns True for now, but may be extended for status reporting.
     """
-    for config in CONFIG:
+    for i, config in enumerate(CONFIG):
 
         timeframe, input_dir, output_dir, index_dir, rule, label, closed = (
             config[k] for k in ("timeframe", "input", "output", "index", "rule","label","closed")
         )
+
+        if VERBOSE:
+            tqdm.write(f"  → {symbol}: {config['timeframe']} ({i+1}/{len(CONFIG)})")
 
         # Construct file paths
         input_path = Path(f"{input_dir}/{symbol}.csv")
@@ -511,13 +514,13 @@ def fork_resample(args):
         resample_symbol(symbol)
 
     except (IOError, OSError, pd.errors.ParserError) as e:
-        tqdm.write(f"Resample for symbol **{symbol}** failed: {type(e).__name__}: {e}")
+        tqdm.write(f"  Resample for symbol **{symbol}** failed: {type(e).__name__}: {e}")
         return False
     except Exception as e:
-        tqdm.write(f"Unexpected error for symbol **{symbol}**: {type(e).__name__}: {e}")
+        tqdm.write(f"  Unexpected error for symbol **{symbol}**: {type(e).__name__}: {e}")
         raise  # Re-raise for debugging
     except KeyboardInterrupt:
-        tqdm.write(f"Interrupted by user")
+        tqdm.write(f"  Interrupted by user")
         return False
     finally:
         release_lock(symbol, today)
