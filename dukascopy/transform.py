@@ -85,7 +85,7 @@ def transform_symbol(symbol: str, dt: date) -> bool:
 
         cache_path = Path(CACHE_PATH) / dt.strftime(f"%Y/%m/{symbol}_%Y%m%d.json")
         data_path = Path(DATA_PATH) / dt.strftime(f"%Y/%m/{symbol}_%Y%m%d.csv")
-        temp_cache_path = Path(TEMP_PATH) / dt.strftime(f"{symbol}_%Y%m%d.csv")
+        temp_cache_path = Path(TEMP_PATH) / dt.strftime(f"{symbol}_%Y%m%d.json")
         temp_data_path = Path(TEMP_PATH) / dt.strftime(f"{symbol}_%Y%m%d.csv")
 
         # Prefer cached JSON files
