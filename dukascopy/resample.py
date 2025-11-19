@@ -342,7 +342,7 @@ def resample_batch(sio: StringIO, rule: str, label: str, closed: str) -> Tuple[p
             - offset: first byte offset of contributing raw rows
         All numeric fields are rounded to `ROUND_DECIMALS`.
     int
-        Offset of last raw contributing candle
+        Offset of last raw contributing candle (next input offset)
 
     Notes
     -----
@@ -370,7 +370,7 @@ def resample_batch(sio: StringIO, rule: str, label: str, closed: str) -> Tuple[p
     })
 
     # Offset points to the position of the first raw input record that forms this row 
-    input_position = int(resampled.iloc[-1]['offset'])
+    next_input_position = int(resampled.iloc[-1]['offset'])
 
     # Remove offset column immediately
     resampled.drop(columns=["offset"], inplace=True)
@@ -385,7 +385,7 @@ def resample_batch(sio: StringIO, rule: str, label: str, closed: str) -> Tuple[p
     resampled.index = resampled.index.strftime("%Y-%m-%d %H:%M:%S")
 
     # Return the resampled dataframe
-    return resampled, input_position
+    return resampled, next_input_position
 
 
 def resample_symbol(symbol: str) -> bool:
@@ -461,7 +461,7 @@ def resample_symbol(symbol: str) -> bool:
                 sio, eof_reached = resample_batch_read(f_input, header)
 
                 # Resample the sio batch
-                resampled, input_position = resample_batch(sio, rule, label, closed) 
+                resampled, next_input_position = resample_batch(sio, rule, label, closed) 
 
                 # Rewrite the output file from its last known position
                 f_output.seek(output_position)
@@ -486,7 +486,7 @@ def resample_symbol(symbol: str) -> bool:
                     break
 
                 # Seek to updated offsets for next loop
-                f_input.seek(input_position)
+                f_input.seek(next_input_position)
                 f_output.seek(output_position)
 
 
