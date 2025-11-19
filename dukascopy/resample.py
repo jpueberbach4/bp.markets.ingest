@@ -71,7 +71,7 @@ from typing import Tuple, IO
 
 VERBOSE = os.getenv('VERBOSE', '0').lower() in ('1', 'true', 'yes', 'on')
 
-BATCH_SIZE = 500_000    # Number of raw candles to read per incremental batch.
+BATCH_SIZE = 250_000    # Number of raw candles to read per incremental batch.
 ROUND_DECIMALS = 8      # Round prices to this number of decimals
 
 # Configuration for each cascading timeframe
@@ -314,7 +314,7 @@ def resample_batch_read(f_input: IO, header: str) -> Tuple[StringIO, bool]:
     return sio, eof_reached
 
 
-def resample_symbol_batch(sio: StringIO, rule: str, label: str, closed: str) -> pd.DataFrame:
+def resample_batch(sio: StringIO, rule: str, label: str, closed: str) -> Tuple[pd.DataFrame, int]:
     """
     Resample a batch of OHLCV rows (with byte-offset tracking) into a higher timeframe.
 
@@ -341,6 +341,8 @@ def resample_symbol_batch(sio: StringIO, rule: str, label: str, closed: str) -> 
             - volume: sum of volumes in window
             - offset: first byte offset of contributing raw rows
         All numeric fields are rounded to `ROUND_DECIMALS`.
+    int
+        Offset of last raw contributing candle
 
     Notes
     -----
@@ -352,7 +354,6 @@ def resample_symbol_batch(sio: StringIO, rule: str, label: str, closed: str) -> 
     # Load into DataFrame
     df = pd.read_csv(
         sio,
-        names=["time", "open", "high", "low", "close", "volume", "offset"],
         header=0,
         parse_dates=["time"],
         index_col="time"
@@ -368,11 +369,23 @@ def resample_symbol_batch(sio: StringIO, rule: str, label: str, closed: str) -> 
         'offset': 'first'  # identifies source raw candle for the window
     })
 
+    # Offset points to the position of the first raw input record that forms this row 
+    input_position = int(resampled.iloc[-1]['offset'])
+
+    # Remove offset column immediately
+    resampled.drop(columns=["offset"], inplace=True)
+
     # Round numerical values to avoid floating drift
     resampled = resampled.round(ROUND_DECIMALS)
 
+    # Filter zero volume
+    resampled = resampled[resampled['volume'].notna() & (resampled['volume'] != 0)]
+
+    # Force date-format YYYY-MM-DD HH:MM:SS (might drop time on 1D)
+    resampled.index = resampled.index.strftime("%Y-%m-%d %H:%M:%S")
+
     # Return the resampled dataframe
-    return resampled
+    return resampled, input_position
 
 
 def resample_symbol(symbol: str) -> bool:
@@ -445,23 +458,11 @@ def resample_symbol(symbol: str) -> bool:
                 sio, eof_reached = resample_batch_read(f_input, header)
 
                 # Resample the sio batch
-                resampled = resample_symbol_batch(sio, rule, label, closed) 
-
-                # Offset points to the position of the first raw input record that forms this row 
-                input_position = int(resampled.iloc[-1]['offset'])
-
-                # Filter zero volume
-                resampled = resampled[resampled['volume'].notna() & (resampled['volume'] != 0)]
+                resampled, input_position = resample_batch(sio, rule, label, closed) 
 
                 # Rewrite the output file from its last known position
                 f_output.seek(output_position)
                 f_output.truncate(output_position)
-
-                # Remove offset column before writing out
-                resampled.drop(columns=["offset"], inplace=True)
-
-                # Force date-format YYYY-MM-DD HH:MM:SS (might drop time on 1D)
-                resampled.index = resampled.index.strftime("%Y-%m-%d %H:%M:%S")
 
                 # Write all but last candle (fully complete)
                 f_output.write(resampled.iloc[:-1].to_csv(index=True, header=False))
