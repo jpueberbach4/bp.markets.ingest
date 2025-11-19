@@ -6,7 +6,7 @@ Python toolkit to download, transform, load, and resample 1-minute OHLC data fro
 
 High-performance Python pipeline for Dukascopy OHLC data with:
 
-- ⚡ **1.83-second incremental updates** (26 symbols × 10 timeframes)
+- ⚡ **1.6-second incremental updates** (26 symbols × 10 timeframes)
 - 🔄 **Crash-resistant** offset-based checkpoints
 - 📊 **Cascading resampling** (1m → 5m → ... → 1Y)
 - 🚀 **1M+ candles/second** throughput
