@@ -117,12 +117,12 @@ Run all via:
 | Script        | Time     | Unit/s (unit) | Candles/s (read)    | Data Written | Write Speed |
 |---------------|----------|---------|---------------|--------------|-------------|
 | `transform.py`| **89 s** | > 2,000 (files) | **1.35 M**   | 7.3 GB       | **82 MB/s** |
-| `aggregate.py`| **82 s** | > 2,000 (files) | **1.46 M**   | 6.7 GB       | **81 MB/s** |
+| `aggregate.py`| **37 s** | > 2,000 (files) | **3.26 M**   | 6.7 GB       | **170 MB/s** |
 | `resample.py`| **122 s** | 0.21 (symbols) | **1 M**   | 2.3 GB       | **19 MB/s** |
 
 
-**Total pipeline time:** **~5.0 minutes**  
-**Throughput:** **> 1.3 million candles processed per second (78 million per minute)**
+**Total pipeline time:** **~4.2 minutes**  
+**Throughput:** **> 1 million candles processed per second (78 million per minute)**
 
 ### Incremental Run (Daily Update)
 > **Workload:** 26 symbols × 1 day of new data
@@ -131,9 +131,9 @@ Run all via:
 |-------|------|------------|-------|
 | Download | 1.33s | 19.6 downloads/s | Network limited |
 | Transform | 0.01s | **2,439 files/s** | Pure I/O speed |
-| Aggregate | 0.02s | **1,422 symbols/s** | Pointer-based append |
-| Resample | 0.29s | 90 symbols/s | 10 timeframes cascaded |
-| **Total** | **1.83s** | - | **Sub-2-second updates** ⚡ |
+| Aggregate | 0.01s | **2,122 symbols/s** | Pointer-based append |
+| Resample | 0.22s | 118 symbols/s | 10 timeframes cascaded |
+| **Total** | **1.57s** | - | **Sub-2-second updates** ⚡ |
 
 This enables:
 - ⚡ Real-time trading workflows (run every minute)
