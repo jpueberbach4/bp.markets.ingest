@@ -210,11 +210,11 @@ def aggregate_symbol(symbol: str, dt: date) -> bool:
         
         date_from, input_position, output_position = aggregate_read_index(index_path)
 
-        # Skip if current dt < resume date (already done)
+        # Skip if this date is already fully processed
         if dt < date_from:
             return False
-        
-        # We assume new input-file to append, restart offset
+
+        # Reset input offset if processing a new date
         if dt > date_from:
             input_position = 0
 
