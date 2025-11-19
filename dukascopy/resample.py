@@ -485,9 +485,8 @@ def resample_symbol(symbol: str) -> bool:
                         tqdm.write(f"  ✓ {symbol} {timeframe}")
                     break
 
-                # Seek to updated offsets for next loop
+                # Seek to updated offset for next loop
                 f_input.seek(next_input_position)
-                f_output.seek(output_position)
 
 
     return True
