@@ -102,11 +102,15 @@ def aggregate_symbol(symbol: str, dt: date) -> bool:
     try:
         acquire_lock(symbol, dt)
 
+        # refactor this completely! New design decision: aggregate index file having date, input_position, output_position.
+
         # --- Source paths ---
         data_path = Path(DATA_PATH) / dt.strftime(f"%Y/%m/{symbol}_%Y%m%d.csv")
         index_path = Path(INDEX_PATH) / dt.strftime(f"%Y/%m/{symbol}_%Y%m%d.idx")
 
         index_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # this cache/data/temp switching is also a mess. we can go without temp for today. REFACTOR!
 
         if data_path.is_file():
             # We will use the historic data path
@@ -123,6 +127,8 @@ def aggregate_symbol(symbol: str, dt: date) -> bool:
             return False
 
         # --- Resume processing from last position ---
+        
+        # dt, input_position, output_position = aggregate_read_index(symbol)
         position = 0
 
         if index_path.exists():
@@ -139,6 +145,7 @@ def aggregate_symbol(symbol: str, dt: date) -> bool:
 
         try:
             header = None
+            # input_position, output_position = aggregate_read_index(dt)
             with open(data_path, "r", encoding="utf-8") as f_in, \
                  open(temp_path, "w", encoding="utf-8") as f_out:
 
@@ -163,17 +170,14 @@ def aggregate_symbol(symbol: str, dt: date) -> bool:
             with open(aggregate_path, "a", encoding="utf-8") as f_out, \
                     open(temp_path, "r", encoding="utf-8") as f_in, \
                         open(index_path, "w+", encoding="utf-8") as f_idx:
-                    """
-                    BUG-002: When f_out write is interrupted (SIGTERM, OOM, ...), the idx file may not get written and/or aggregate file 
-                    may get partially updated, leading to invalid data in aggregate file. Solution is to have and idx file acting as 
-                    a "single source of truth" containing both the input pointer as well as the aggregate pointer. Store aggregate pointer 
-                    before write to the idx file. Always truncate to this pointer before writing. Keep track of new pointers in tmp idx 
-                    file and os replace tmp to idx file at the end (atomic operation).
-                    """
+
                     if header:
                         f_out.write(header)
 
                     f_out.write(f_in.read())
+                    # BUG-002 was here, solving
+                    # output_position = f_out.tell()
+                    # aggregate_write_index(symbol, dt, input_position, output_position)
                     f_idx.seek(0)
                     f_idx.write(str(position))
                     f_idx.truncate()
