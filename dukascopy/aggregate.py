@@ -51,6 +51,7 @@ NUM_PROCESSES = os.cpu_count()          # Number of simultaneous loaders
 
 INDEX_PATH = "data/aggregate/1m/index"  # Use offset-pointers from this location
 DATA_PATH = "data/transform/1m"         # Data of aggregate.py is stored here
+TEMP_PATH = "data/temp"                 # Data of today
 AGGREGATE_PATH = "data/aggregate/1m"    # Output path for the aggregated files
 
 def load_symbols() -> pd.Series:
@@ -199,25 +200,42 @@ def aggregate_symbol(symbol: str, dt: date) -> bool:
         # Construct paths
         index_path = Path(AGGREGATE_PATH) / f"index/{symbol}.idx"
         output_path = Path(AGGREGATE_PATH) / f"{symbol}.csv"
+        input_path = Path(DATA_PATH) / f"{dt.year}/{dt.month:02}/{symbol}_{dt:%Y%m%d}.csv"
+
+        if not input_path.exists():
+            # Assume we should look in data/temp
+            input_path =  Path(TEMP_PATH) / f"{symbol}_{dt:%Y%m%d}.csv"
+            if not input_path.exists():
+                return False
         
         date_from, input_position, output_position = aggregate_read_index(index_path)
 
-        # skip if current dt < resume date
+        # Skip if current dt < resume date (already done)
         if dt < date_from:
             return False
-
-        input_path = Path(DATA_PATH) / f"{dt.year}/{dt.month:02}/{symbol}_{dt:%Y%m%d}.csv"
+        
+        # We assume new input-file to append, restart offset
+        if dt > date_from:
+            input_position = 0
 
         try:
-                
-            with open(output_path, "a", encoding="utf-8") as f_output, \
+            # Ensure output file exists
+            if not output_path.exists():
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(output_path, "w"):
+                    pass
+
+            with open(output_path, "r+", encoding="utf-8") as f_output, \
                     open(input_path, "r", encoding="utf-8") as f_input:
+
+                    # always read header of f_input
+                    header = f_input.readline()
 
                     f_output.seek(output_position)
                     f_output.truncate()
 
                     if output_position == 0:
-                        f_output.write(f_input.readline())
+                        f_output.write(header)
                     
                     if input_position > 0:
                         f_input.seek(input_position)

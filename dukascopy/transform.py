@@ -84,18 +84,12 @@ def transform_symbol(symbol: str, dt: date) -> bool:
         acquire_lock(symbol, dt)
 
         cache_path = Path(CACHE_PATH) / dt.strftime(f"%Y/%m/{symbol}_%Y%m%d.json")
-        data_path = Path(TEMP_PATH) / dt.strftime(f"{symbol}_%Y%m%d.csv")
+        data_path = Path(DATA_PATH) / dt.strftime(f"%Y/%m/{symbol}_%Y%m%d.csv")
 
         # Prefer cached JSON files
-        if cache_path.is_file():
-            # Remove incomplete temp CSV, we need to regenerate historic instead
-            if data_path.is_file():
-                data_path.unlink(missing_ok=True)
-
-            # Set final CSV destination
-            data_path = Path(DATA_PATH) / dt.strftime(f"%Y/%m/{symbol}_%Y%m%d.csv")
-        else:
+        if not cache_path.is_file():
             cache_path = Path(TEMP_PATH) / dt.strftime(f"{symbol}_%Y%m%d.json")
+            data_path = Path(TEMP_PATH) / dt.strftime(f"{symbol}_%Y%m%d.csv")
             if not cache_path.is_file():
                 return False
 
@@ -114,14 +108,6 @@ def transform_symbol(symbol: str, dt: date) -> bool:
         lows    = data['low']   + np.cumsum(np.array(data['lows'],   dtype=np.float64) * data['multiplier'])
         closes  = data['close'] + np.cumsum(np.array(data['closes'], dtype=np.float64) * data['multiplier'])
         volumes = np.array(data['volumes'], dtype=np.float64)
-
-        """ 
-        BUG-001: Dukascopy filters out rows with zero volume in its historical data and charting tools to focus on periods with actual 
-        trading activity, as zero volume indicates a lack of transactions at that price level or time period. This is a standard practice 
-        to clean up data for analysis and trading, as a zero-volume row would not provide meaningful insights into market behavior. 
-        Today's data contains 0 volume candles, historic data does not. Leading to pointer file imbalance during rollover. Solution is to 
-        filter out 0 volume candles in today's CSV.
-        """
 
         mask = volumes != 0.0
 
