@@ -85,13 +85,19 @@ def transform_symbol(symbol: str, dt: date) -> bool:
 
         cache_path = Path(CACHE_PATH) / dt.strftime(f"%Y/%m/{symbol}_%Y%m%d.json")
         data_path = Path(DATA_PATH) / dt.strftime(f"%Y/%m/{symbol}_%Y%m%d.csv")
+        temp_cache_path = Path(TEMP_PATH) / dt.strftime(f"{symbol}_%Y%m%d.csv")
+        temp_data_path = Path(TEMP_PATH) / dt.strftime(f"{symbol}_%Y%m%d.csv")
 
         # Prefer cached JSON files
         if not cache_path.is_file():
-            cache_path = Path(TEMP_PATH) / dt.strftime(f"{symbol}_%Y%m%d.json")
-            data_path = Path(TEMP_PATH) / dt.strftime(f"{symbol}_%Y%m%d.csv")
-            if not cache_path.is_file():
+            if not temp_cache_path.is_file():
                 return False
+            
+            cache_path = temp_cache_path
+            data_path = temp_data_path
+        else:
+            temp_cache_path.unlink(missing_ok=True)
+            temp_data_path.unlink(missing_ok=True)
 
         try:
             # Load JSON market data
