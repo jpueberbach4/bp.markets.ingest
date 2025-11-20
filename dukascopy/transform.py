@@ -131,7 +131,7 @@ def transform_symbol(symbol: str, dt: date) -> bool:
             np.savetxt(
                 temp_path,
                 np.column_stack((
-                    pd.to_datetime(times, unit='ms').astype(str),
+                    pd.to_datetime(times, unit='ms').strftime("%Y-%m-%d %H:%M:%S"),
                     ohlc,
                     volumes
                 )),
