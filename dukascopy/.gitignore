@@ -1,0 +1,10 @@
+.old/*
+__pycache__
+utils/__pycache__
+cache/*
+index/*
+temp/*
+data/*
+load/*
+locks/*
+symbols.user.txt

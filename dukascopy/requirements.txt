@@ -1,0 +1,15 @@
+# Data handling
+pandas >=2.0.3
+numpy >=1.24.4
+
+# Progress bars
+tqdm >=4.67.1
+
+# File-based locking
+filelock >=3.16.1
+
+# HTTP requests
+requests >=2.22.0
+
+# Fast JSON parsing
+orjson >=3.10.15
