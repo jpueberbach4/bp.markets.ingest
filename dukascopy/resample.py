@@ -504,7 +504,7 @@ def resample_symbol(symbol: str) -> bool:
     return True
 
 
-def fork_resample(args):
+def fork_resample(args) -> bool:
     """
     Process all dates for a single symbol sequentially.
 
@@ -517,9 +517,7 @@ def fork_resample(args):
         Tuple containing (symbol, list of dates).
     """
     symbol, = args
-    try:
-        resample_symbol(symbol)
-    except Exception as e:
-        raise
-    finally:
-        pass
+    
+    resample_symbol(symbol)
+
+    return True

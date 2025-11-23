@@ -141,7 +141,7 @@ def download_symbol(symbol: str, dt: date) -> bool:
     return True
 
 
-def fork_download(args: tuple) -> None:
+def fork_download(args: tuple) -> bool:
     """
     Multiprocessing wrapper to download a single symbol/date.
 
@@ -151,9 +151,8 @@ def fork_download(args: tuple) -> None:
         Tuple containing (symbol, dt) to pass to download_symbol.
     """
     symbol, dt = args
-    try:
-        download_symbol(symbol, dt)
-    except Exception as e:
-        raise
-    finally:
-        pass
+    
+    download_symbol(symbol, dt)
+
+    return True
+

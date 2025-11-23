@@ -291,12 +291,8 @@ def fork_aggregate(args) -> bool:
         False if interrupted by the user.
     """
     symbol, dates = args
-    try:
-        for dt in dates:
-            aggregate_symbol(symbol, dt)
-    except Exception as e:
-        raise
-    finally:
-        pass
+
+    for dt in dates:
+        aggregate_symbol(symbol, dt)
     
     return True

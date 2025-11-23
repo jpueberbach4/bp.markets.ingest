@@ -83,16 +83,19 @@ def transform_symbol(symbol: str, dt: date) -> bool:
     temp_cache_path = Path(TEMP_PATH) / dt.strftime(f"{symbol}_%Y%m%d.json")
     temp_data_path = Path(TEMP_PATH) / dt.strftime(f"{symbol}_%Y%m%d.csv")
 
-    # Prefer cached JSON files
-    if not cache_path.is_file():
-        if not temp_cache_path.is_file():
-            # We dont have any data, concerning,...
+    is_historical = cache_path.is_file()
+
+    if not is_historical:
+        if temp_cache_path.is_file(): # Handles the case where no data exists
+            # Live data
+            cache_path = temp_cache_path
+            data_path = temp_data_path
+        else:
+            # Should not happen
             raise FileNotFoundError
-        
-        cache_path = temp_cache_path
-        data_path = temp_data_path
-    else:
-        # If historic cache_path is present, remove (old) live data
+
+    if is_historical:
+        # Remove (old) live data
         temp_cache_path.unlink(missing_ok=True)
         temp_data_path.unlink(missing_ok=True)
 
@@ -155,8 +158,7 @@ def fork_transform(args) -> bool:
         Tuple containing (symbol, dt) to pass to transform_symbol.
     """
     symbol, dt = args
-    try:
-        transform_symbol(symbol, dt)
-        return True
-    except Exception as e:
-        raise
+
+    transform_symbol(symbol, dt)
+    
+    return True
