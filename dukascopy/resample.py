@@ -227,7 +227,7 @@ def resample_read_index(index_path: Path) -> Tuple[int, int]:
     with open(index_path, 'r') as f_idx:
         lines = f_idx.readlines()[:2]
         if len(lines) != 2:
-            raise
+            raise IOError(f"Index file {index_path} corrupted or incomplete.")
         input_position, output_position = [
             int(line.strip()) for line in lines
         ]
