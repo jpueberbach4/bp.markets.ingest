@@ -482,11 +482,11 @@ def resample_symbol(symbol: str) -> bool:
                 # Flush
                 f_output.flush()
 
-                # Update the index (lock completed data in-place immediately)
-                resample_write_index(index_path, next_input_position, output_position)
-
                 # Update output position
                 output_position = f_output.tell()
+
+                # Update the index (lock completed data in-place immediately)
+                resample_write_index(index_path, next_input_position, output_position)
 
                 # Write the last candle (will be overwritten on next run)
                 f_output.write(resampled.tail(1).to_csv(index=True, header=False))
