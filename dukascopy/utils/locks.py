@@ -7,7 +7,7 @@ locks = {}
 
 LOCK_PATH = "data/locks" # Locks path
 
-def acquire_lock(symbol: str, dt: date) -> bool:
+def acquire_lock(symbol: str) -> bool:
     """
     Acquire a file-based lock for a specific symbol and date.
 
@@ -19,8 +19,6 @@ def acquire_lock(symbol: str, dt: date) -> bool:
     ----------
     symbol : str
         Trading symbol (e.g., "EURUSD", "BTCUSD").
-    dt : date
-        Date for which the lock should be created.
 
     Returns
     -------
@@ -28,18 +26,16 @@ def acquire_lock(symbol: str, dt: date) -> bool:
         True if the lock was successfully acquired.
     """
     global locks
-    key = dt.strftime(f"{symbol}_%Y%m%d")
-    lock_path = Path(f"{LOCK_PATH}/{key}.lck")
+    lock_path = Path(f"{LOCK_PATH}/{symbol}.lck")
     lock_path.parent.mkdir(parents=True, exist_ok=True)
-
     lock = filelock.FileLock(lock_path)
     lock.acquire()
 
-    locks[key] = {"path": lock_path, "lock": lock}
+    locks[symbol] = {"path": lock_path, "lock": lock}
     return True
 
 
-def release_lock(symbol: str, dt: date) -> bool:
+def release_lock(symbol: str) -> bool:
     """
     Release a previously acquired lock for a symbol and date.
 
@@ -58,10 +54,8 @@ def release_lock(symbol: str, dt: date) -> bool:
         True if the lock was successfully released, False otherwise.
     """
     global locks
-    key = dt.strftime(f"{symbol}_%Y%m%d")
-    if key in locks:
-        locks[key]["lock"].release()
-        locks[key]["path"].unlink(missing_ok=True)
-        locks.pop(key, None)
+    if symbol in locks:
+        locks[symbol]["lock"].release()
+        locks.pop(symbol, None)
         return True
     return False

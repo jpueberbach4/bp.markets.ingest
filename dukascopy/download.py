@@ -15,9 +15,7 @@
  Requirements:
      - Python 3.8+
      - pandas
-     - filelock
      - requests
-     - tqdm
 
  License:
      MIT License
@@ -27,18 +25,15 @@
 import pandas as pd
 import requests
 import os
-import math
-from utils.locks import acquire_lock, release_lock
-from datetime import date, datetime, timedelta, timezone
+import time
+from datetime import date, datetime, timezone
 from pathlib import Path
-from multiprocessing import get_context
-from tqdm import tqdm
 
-START_DATE = "2025-11-01"      # Historic download start date
-NUM_PROCESSES = os.cpu_count() # Number of simultaneous downloads (parallelism)
+CACHE_PATH = "cache"           # Directory where historical data files are stored
+TEMP_PATH = "data/temp"        # Directory for storing today's live data
 
-CACHE_PATH = "cache"         # Cached data of download.py is stored here
-TEMP_PATH = "data/temp"           # Today's live data is stored here
+MAX_RETRIES = 3                # Number of retry attempts for failed downloads
+BACKOFF_FACTOR = 2             # Exponential backoff multiplier for retry delays
 
 def load_symbols() -> pd.Series:
     """
@@ -61,14 +56,13 @@ def load_symbols() -> pd.Series:
 
 
 
-def download_symbol(symbol: str, dt: date) -> None:
+def download_symbol(symbol: str, dt: date) -> bool:
     """
     Download Dukascopy minute-level delta JSON data for a given symbol and date.
 
     Handles both historical and current-day downloads:
         - Historical data is saved in '{CACHE_PATH}/YYYY/MM/'.
         - Current-day data is saved in '{TEMP_PATH}/'.
-    Uses a file lock to prevent race conditions and partial files.
 
     Parameters
     ----------
@@ -77,36 +71,74 @@ def download_symbol(symbol: str, dt: date) -> None:
     dt : date
         Date of the data to download.
 
+    Returns
+    -------
+    bool
+        True if new data was successfully downloaded.
+
     Notes
     -----
-    - Currently, retries are not implemented.
+    - Retries are implemented.
     - Creates folders automatically if missing.
     """
-
-
     today_dt = datetime.now(timezone.utc).date()
-    cache_path = Path(TEMP_PATH) / dt.strftime(f"{symbol}_%Y%m%d.json")
+
+    # Build output file paths for historical vs. live data
+    cache_path = Path(CACHE_PATH) / dt.strftime(f"%Y/%m/{symbol}_%Y%m%d.json")
+    cache_temp_path = Path(TEMP_PATH) / dt.strftime(f"{symbol}_%Y%m%d.json")
 
     if dt == today_dt:
         url = f"https://jetta.dukascopy.com/v1/candles/minute/{symbol}/BID"
+        # Save live (current-day) data to the temporary directory
+        cache_path = cache_temp_path
     else:
         url = f"https://jetta.dukascopy.com/v1/candles/minute/{symbol}/BID/{dt.year}/{dt.month}/{dt.day}"
-        if cache_path.is_file():
-            cache_path.unlink(missing_ok=True)
+        # If a temp file exists for this date, remove it since it's now historical
+        if cache_temp_path.is_file():
+            cache_temp_path.unlink(missing_ok=True)
         cache_path = Path(CACHE_PATH) / dt.strftime(f"%Y/%m/{symbol}_%Y%m%d.json")
 
+    # Attempt the download with retry logic
+    for attempt in range(MAX_RETRIES):
+        try:
+            # Perform HTTP GET request
+            response = requests.get(url, 
+                headers={
+                    "Accept-Encoding": "gzip, deflate",
+                    "User-Agent": "dukascopy-downloader/1.0 (+https://github.com/jpueberbach4/bp.markets.ingest/blob/main/dukascopy/download.py)"
+                },
+                timeout=10
+            )
+            response.raise_for_status()
+            break
+        except requests.exceptions.RequestException as e:
+            if attempt < MAX_RETRIES - 1:
+                # Check whether the error is temporary (rate limit or server error)
+                status_code = getattr(e.response, 'status_code', 0)
+                if status_code >= 500 or status_code == 429: # 429: Too Many Requests
+                    wait_time = BACKOFF_FACTOR ** attempt
+                    print(f"Transient error {status_code}. Retrying in {wait_time}s...")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    # Non-retriable error (e.g., 404); propagate failure
+                    raise e
+            else:
+                # Final retry failed; propagate exception
+                raise e
+
+    # Ensure destination directory exists
     cache_path.parent.mkdir(parents=True, exist_ok=True)
 
-    try:
-        response = requests.get(url, headers={"Accept-Encoding": "gzip, deflate"})
-        response.raise_for_status()
-    except Exception:
-        raise # raise for pool to capture
-    else:
-        temp_path = cache_path.with_suffix('.tmp')
-        with open(temp_path, "w", encoding="utf-8") as f:
-            f.write(response.text)
-        os.replace(temp_path, cache_path)
+    # Write output
+    temp_path = cache_path.with_suffix('.tmp')
+    with open(temp_path, "w", encoding="utf-8") as f:
+        f.write(response.text)
+    
+    # Atomic
+    os.replace(temp_path, cache_path)
+
+    return True
 
 
 def fork_download(args: tuple) -> None:
@@ -120,38 +152,8 @@ def fork_download(args: tuple) -> None:
     """
     symbol, dt = args
     try:
-        acquire_lock(symbol, dt)
-
         download_symbol(symbol, dt)
     except Exception as e:
-        # Download error is critical and we want to stop the pool, so we raise
         raise
     finally:
-        release_lock(symbol, dt)
-
-
-if __name__ == "__main__":
-    print(f"Download - Dukascopy delta-json HTTP ({NUM_PROCESSES} parallelism)")
-
-    symbols = load_symbols()
-
-    start_dt = datetime.strptime(START_DATE, "%Y-%m-%d").date()
-    today_dt = datetime.now(timezone.utc).date()
-
-    dates = [start_dt + timedelta(days=i) for i in range((today_dt - start_dt).days + 1)]
-
-    tasks = [
-        (sym, dt)
-        for dt in dates
-        for sym in symbols
-        if not Path(f"{CACHE_PATH}/{dt:%Y}/{dt:%m}/{sym}_{dt:%Y%m%d}.json").is_file()
-    ]
-
-    ctx = get_context("fork")
-    with ctx.Pool(processes=NUM_PROCESSES) as pool:
-        chunksize = max(1, min(32, math.floor(math.sqrt(len(tasks)) / NUM_PROCESSES)))
-        for _ in tqdm(pool.imap_unordered(fork_download, tasks, chunksize=chunksize),
-                      total=len(tasks), unit='downloads', colour='white'):
-            pass
-
-    print(f"Done. Downloaded {len(tasks)} files.")
+        pass

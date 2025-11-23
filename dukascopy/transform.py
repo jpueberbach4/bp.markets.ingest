@@ -15,9 +15,7 @@
      - Python 3.8+
      - pandas
      - numpy
-     - filelock
      - orjson
-     - tqdm
 
  License:
      MIT License
@@ -29,21 +27,14 @@ import numpy as np
 import orjson
 import os
 import math
-from utils.locks import acquire_lock, release_lock
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from multiprocessing import get_context
-from tqdm import tqdm
-
-START_DATE = "2025-11-01"         # Historic data start
-NUM_PROCESSES = os.cpu_count()    # Use all CPU cores for parallel processing
 
 CACHE_PATH = "cache"              # Dukascopy cached Delta downloads are here
 DATA_PATH = "data/transform/1m"   # Output path for the transformed files
 TEMP_PATH = "data/temp"           # Today's live data is stored here
 ROUND_DECIMALS = 8                # Round prices to this number of decimals
-
-LINE_SIZE = 120                   # Safe padding length (for Crypto)
 
 def load_symbols() -> pd.Series:
     """
@@ -95,11 +86,13 @@ def transform_symbol(symbol: str, dt: date) -> bool:
     # Prefer cached JSON files
     if not cache_path.is_file():
         if not temp_cache_path.is_file():
-            return False
+            # We dont have any data, concerning,...
+            raise FileNotFoundError
         
         cache_path = temp_cache_path
         data_path = temp_data_path
     else:
+        # If historic cache_path is present, remove (old) live data
         temp_cache_path.unlink(missing_ok=True)
         temp_data_path.unlink(missing_ok=True)
 
@@ -126,22 +119,28 @@ def transform_symbol(symbol: str, dt: date) -> bool:
     # Create directory
     data_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Round OHLC prices
-    ohlc = np.round(np.column_stack((opens, highs, lows, closes)), ROUND_DECIMALS)
+    # Create dataframe and round OHLC prices
+    df = pd.DataFrame({
+        'time': pd.to_datetime(times, unit='ms', utc=True).strftime("%Y-%m-%d %H:%M:%S"),
+        'open': np.round(opens, ROUND_DECIMALS),
+        'high': np.round(highs, ROUND_DECIMALS),
+        'low': np.round(lows, ROUND_DECIMALS),
+        'close': np.round(closes, ROUND_DECIMALS),
+        'volume': volumes
+    })
 
     # Temporary location for output data
     temp_path = data_path.with_suffix('.tmp')
 
-    # Padding fix (USDCAD issue)
-    times_str = pd.to_datetime(times, unit='ms').strftime("%Y-%m-%d %H:%M:%S")
-    with open(temp_path, "w") as f:
-        f.write("time,open,high,low,close,volume\n")
-        for t, (o,h,l,c), v in zip(times_str, ohlc, volumes):
-            line = f"{t},{o},{h},{l},{c},{v}"
-            f.write(line.ljust(LINE_SIZE) + "\n")
+    # Write output
+    df.to_csv(
+        temp_path,
+        index=False,
+        header=True
+    )
 
     # Atomic
-    os.replace(temp_path, data_path)  # Atomic overwrite
+    os.replace(temp_path, data_path)
 
     return True
 
@@ -157,41 +156,7 @@ def fork_transform(args) -> bool:
     """
     symbol, dt = args
     try:
-        acquire_lock(symbol, dt)
-        
         transform_symbol(symbol, dt)
-
         return True
     except Exception as e:
         raise
-    finally:
-        release_lock(symbol, dt)    
-
-
-if __name__ == "__main__":
-    print(f"Transform - Dukascopy delta-json to OHLC CSV ({NUM_PROCESSES} parallelism)")
-    symbols = load_symbols()
-
-    start_dt = datetime.strptime(START_DATE, "%Y-%m-%d").date()
-    today_dt = datetime.now(timezone.utc).date()
-
-    # Generate all dates to process
-    dates = [start_dt + timedelta(days=i) for i in range((today_dt - start_dt).days + 1)]
-
-    # Create task list (symbol, date) for all missing CSV files
-    tasks = [
-        (sym, dt)
-        for dt in dates
-        for sym in symbols
-        if not Path(f"{DATA_PATH}/{dt:%Y}/{dt:%m}/{sym}_{dt:%Y%m%d}.csv").is_file()
-    ]
-
-    # Multiprocessing pool with progress bar
-    ctx = get_context("spawn")
-    with ctx.Pool(processes=NUM_PROCESSES) as pool:
-        chunksize = max(1, min(128, int(math.sqrt(len(tasks)) / NUM_PROCESSES) or 1))
-        for _ in tqdm(pool.imap_unordered(fork_transform, tasks, chunksize=chunksize),
-                      total=len(tasks), unit='file', colour='white'):
-            pass
-
-    print(f"Done. Transformed {len(tasks)} files.")

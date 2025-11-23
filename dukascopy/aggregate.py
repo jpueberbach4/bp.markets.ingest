@@ -22,7 +22,6 @@
  Requirements:
      - Python 3.8+
      - Pandas
-     - filelock
      - tqdm
 
  Notes:
@@ -39,13 +38,9 @@
 
 import pandas as pd
 import os
-from utils.locks import acquire_lock, release_lock
-from tqdm import tqdm
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime
 from pathlib import Path
-from multiprocessing import get_context
 from typing import Tuple
-from io import StringIO
 
 START_DATE = "2025-11-01"               # Start date for historic data loading
 NUM_PROCESSES = os.cpu_count()          # Number of simultaneous loaders
@@ -107,8 +102,11 @@ def aggregate_read_index(index_path: Path) -> Tuple[date, int, int]:
         return datetime.utcfromtimestamp(0).date(),0, 0
     
     with open(index_path, 'r') as f_idx:
+        lines = f_idx.readlines()[:3]
+        if len(lines) != 3:
+            raise
         date_str, input_position, output_position = [
-            line.strip() for line in f_idx.readlines()[:3]
+            line.strip() for line in lines
         ]
     return datetime.strptime(date_str, "%Y-%m-%d").date(),int(input_position), int(output_position)
 
@@ -166,7 +164,6 @@ def aggregate_symbol(symbol: str, dt: date) -> bool:
     aggregated CSV for the symbol, using an index file to track progress.
     It ensures crash-safe incremental updates by:
 
-    - Acquiring a per-symbol lock to prevent concurrent writes.
     - Resuming from the last processed position stored in the index file.
     - Truncating the aggregate CSV if it was partially written.
     - Updating the index file atomically after successful writes.
@@ -197,7 +194,6 @@ def aggregate_symbol(symbol: str, dt: date) -> bool:
         3. output_position (byte offset in aggregate CSV)
     - The function uses `aggregate_write_index` for atomic index updates.
     - Any partial writes or crashes can be safely recovered by rerunning this function.
-    - Per-symbol locks prevent race conditions during concurrent execution.
     """
     # Construct paths
     index_path = Path(AGGREGATE_PATH) / f"index/{symbol}.idx"
@@ -248,19 +244,15 @@ def aggregate_symbol(symbol: str, dt: date) -> bool:
             if output_position == 0:
                 f_output.write(header)
             
-            # Fix for USDCAD (intermediate fix)
-            did_write = False
-            while True:
-                line = f_input.readline()
-                if not line:
-                    break
-                did_write = True
-                
-                f_output.write(f"{line.rstrip()}\n")
+            # Read data until we hit EOF
+            data = f_input.read()
 
-            if not did_write:
-                # If didnt write anything (EOF without data), skip
+            if not data:
+                # EOF without data
                 return False
+
+            # Append to output
+            f_output.write(data)
 
             # Flush
             f_output.flush()
@@ -299,33 +291,12 @@ def fork_aggregate(args) -> bool:
         False if interrupted by the user.
     """
     symbol, dates = args
-    for dt in dates:
-        try:
-            acquire_lock(symbol, dt)
-
+    try:
+        for dt in dates:
             aggregate_symbol(symbol, dt)
-        except Exception as e:
-            raise
-        finally:
-            release_lock(symbol, dt)
+    except Exception as e:
+        raise
+    finally:
+        pass
     
     return True
-
-
-if __name__ == "__main__":
-    print(f"Aggregate - Aggregates symbols to 1-minute CSV ({NUM_PROCESSES} parallelism)")
-    symbols = load_symbols()
-
-    start_dt = datetime.strptime(START_DATE, "%Y-%m-%d").date()
-    today_dt = datetime.now(timezone.utc).date()
-    dates = [start_dt + timedelta(days=i) for i in range((today_dt - start_dt).days + 1)]
-
-    tasks = [(symbol, dates) for symbol in symbols]
-
-    ctx = get_context("spawn")
-    with ctx.Pool(processes=NUM_PROCESSES) as pool:
-        for _ in tqdm(pool.imap_unordered(fork_aggregate, tasks, chunksize=1),
-                      total=len(tasks), unit='symbols', colour='white'):
-            pass
-
-    print(f"Done. Loaded {len(tasks)} symbols.")

@@ -62,7 +62,6 @@
 import os
 import pandas as pd
 from datetime import datetime, timezone
-from utils.locks import acquire_lock, release_lock
 from pathlib import Path
 from multiprocessing import get_context
 from tqdm import tqdm
@@ -201,7 +200,7 @@ def resample_read_index(index_path: Path) -> Tuple[int, int]:
 
     Parameters
     ----------
-    index_path : str
+    index_path : Path
         Path to the `.idx` file storing the resampler's progress for a single
         symbol and timeframe. The file contains exactly two lines:
             1) input_position  – byte offset in the upstream CSV already processed
@@ -226,8 +225,11 @@ def resample_read_index(index_path: Path) -> Tuple[int, int]:
         return 0, 0
     
     with open(index_path, 'r') as f_idx:
+        lines = f_idx.readlines()[:2]
+        if len(lines) != 2:
+            raise
         input_position, output_position = [
-            int(line.strip()) for line in f_idx.readlines()[:2]
+            int(line.strip()) for line in lines
         ]
     return input_position, output_position
 
@@ -254,7 +256,7 @@ def resample_write_index(index_path: Path, input_position: int, output_position:
 
     Parameters
     ----------
-    index_path : str
+    index_path : Path
         Path to the index file storing incremental resampling offsets
         (input_position on line 1, output_position on line 2).
 
@@ -273,6 +275,7 @@ def resample_write_index(index_path: Path, input_position: int, output_position:
     index_temp_path = Path(f"{index_path}.tmp")
     with open(index_temp_path, "w") as f_idx:
         f_idx.write(f"{input_position}\n{output_position}")
+        f_idx.flush()
 
     os.replace(index_temp_path, index_path)
     return True
@@ -317,7 +320,6 @@ def resample_batch_read(f_input: IO, header: str) -> Tuple[StringIO, bool]:
     sio.seek(0)
 
     return sio, eof_reached
-
 
 def resample_batch(sio: StringIO, rule: str, label: str, closed: str) -> Tuple[pd.DataFrame, int]:
     """
@@ -477,14 +479,17 @@ def resample_symbol(symbol: str) -> bool:
                 # Write all but last candle (fully complete)
                 f_output.write(resampled.iloc[:-1].to_csv(index=True, header=False))
 
+                # Flush
+                f_output.flush()
+
+                # Update the index (lock completed data in-place immediately)
+                resample_write_index(index_path, next_input_position, output_position)
+
                 # Update output position
                 output_position = f_output.tell()
 
-                # Write the last candle (may still be incomplete)
+                # Write the last candle (will be overwritten on next run)
                 f_output.write(resampled.tail(1).to_csv(index=True, header=False))
-
-                # Update the index
-                resample_write_index(index_path, next_input_position, output_position)
 
                 # Stop if EOF reached
                 if eof_reached:
@@ -512,29 +517,9 @@ def fork_resample(args):
         Tuple containing (symbol, list of dates).
     """
     symbol, = args
-    today = datetime.now(timezone.utc).date()
-
     try:
-        acquire_lock(symbol, today)
-
         resample_symbol(symbol)
-
     except Exception as e:
-        raise  # Re-raise for debugging
-        
+        raise
     finally:
-        release_lock(symbol, today)
-
-if __name__ == "__main__":
-    print(f"Resample - Cascaded resampling from 1m CSV -> 5m -> 15m -> 30m -> ... ({NUM_PROCESSES} parallelism)")
-    symbols = load_symbols()
-
-    tasks = [(symbol,) for symbol in symbols]
-
-    ctx = get_context("spawn")
-    with ctx.Pool(processes=NUM_PROCESSES) as pool:
-        for _ in tqdm(pool.imap_unordered(fork_resample, tasks, chunksize=1),
-                      total=len(tasks), unit='symbols', colour='white'):
-            pass
-
-    print(f"Done. Resampled {len(tasks)} symbols.")
+        pass

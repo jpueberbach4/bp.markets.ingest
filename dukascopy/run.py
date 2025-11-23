@@ -11,12 +11,14 @@
               1. Download HST JSON data from Dukascopy (`download.py`)
               2. Transform JSON -> OHLC CSV (`transform.py`)
               3. Aggregate daily CSVs into symbol-level CSVs (`aggregate.py`)
+              4. Resample symbol-level data to higher timeframes (`resample.py`)
 
  Usage:
      python3 run.py
 
  Requirements:
      - Python 3.8+
+     - filelock
      - tqdm
 
  License:
