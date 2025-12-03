@@ -30,6 +30,18 @@
 - [License](#license)
 
 
+## ⚠️ Important Update
+
+This project started as a personal hobby but has now reached a stable, usable state.  
+We recently cleaned up the repository history to improve clarity.
+
+If you have an existing clone of this repository, please update carefully:
+
+```bash
+git fetch origin
+git reset --hard origin/main
+```
+
 Note: if you cloned this repo before 2025-12-03, you still need to rebuild because of a weekly calendar alignment change. The alignment change causes the data to be exactly aligned to the charts and standards of Dukascopy. See here: https://www.dukascopy.com/swiss/english/marketwatch/charts/
 
 ## Notice
