@@ -1,0 +1,4 @@
+symbol
+EUR/USD
+USD/JPY
+
