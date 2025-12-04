@@ -3,12 +3,19 @@ aggregate:
   paths:
     data: data/aggregate/1m           # Output path for aggregate
     source: data/transform/1m         # Input path for aggregate
-## Below you will find the configuration for the aggregate.py script. 
+## Below you will find the configuration for the download.py script. 
 download:
   max_retries: 3                      # Number of retries before downloader raises
   backoff_factor: 2                   # Exponential backoff factor (wait time)
   timeout: 10                         # Request timeout
   paths:
+    historic: cache                   # Historical downloads
+    live: data/temp                   # Live downloads
+## Below you will find the configuration for the transform.py script. 
+transform:
+  round_decimals: 8                   # Number of decimals to round OHLCV to
+  paths:
+    data: data/transform/1m           # Output directory for transform
     historic: cache                   # Historical downloads
     live: data/temp                   # Live downloads
 ## Below you will find the configuration for the resample.py script. 
