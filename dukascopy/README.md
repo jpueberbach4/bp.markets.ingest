@@ -11,7 +11,7 @@
   - Directory Permissions
   - First Run & Incremental Mode
   - Automatic Updates (cron)
-- [Resample Configuration](#resample-configuration-v03-and-above)
+- [Pipeline Configuration](#pipeline-configuration-v03-and-above)
 - [Symbols Configuration](#symbols-configuration)
   - Adding New Symbols
 - [Quick Check](#quick-check)
@@ -232,9 +232,9 @@ The new symbol is now added and will be updated automatically during each increm
 
 ---
 
-## Resample Configuration (v0.3 and above)
+## Pipeline Configuration (v0.3 and above)
 
-A default ```config.yaml``` is included with the project. This file controls the behavior of the resample engine. You can now define custom timeframes and apply per-symbol overrides as needed.
+A default ```config.yaml``` is included with the project. This file controls the behavior of the aggregate, download, transform and resample engine. You can now define custom timeframes and apply per-symbol overrides as needed.
 
 To override the default configuration, create a user-specific copy:
 
@@ -245,6 +245,20 @@ cp config.yaml config.user.yaml
 The configuration file is straightforward and mostly self-explanatory. Adjust values as needed to suit your data and workflow.
 
 ```yaml
+## Below you will find the configuration for the aggregate.py script. 
+aggregate:
+  paths:
+    data: data/aggregate/1m           # Output path for aggregate
+    source: data/transform/1m         # Input path for aggregate
+## Below you will find the configuration for the aggregate.py script. 
+download:
+  max_retries: 3                      # Number of retries before downloader raises
+  backoff_factor: 2                   # Exponential backoff factor (wait time)
+  timeout: 10                         # Request timeout
+  paths:
+    historic: cache                   # Historical downloads
+    live: data/temp                   # Live downloads
+## Below you will find the configuration for the resample.py script. 
 resample:
   round_decimals: 8                    # Number of decimals to round OHLCV to
   batch_size: 250000                   # Maximum number of lines to read per batch

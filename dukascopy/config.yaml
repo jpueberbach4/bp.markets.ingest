@@ -11,7 +11,6 @@ download:
   paths:
     historic: cache                   # Historical downloads
     live: data/temp                   # Live downloads
-
 ## Below you will find the configuration for the resample.py script. 
 resample:
   round_decimals: 8                   # Number of decimals to round OHLCV to
