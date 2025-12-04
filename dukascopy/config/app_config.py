@@ -37,3 +37,12 @@ class ResampleConfig:
     paths: ResamplePaths = field(default_factory=ResamplePaths)             # Paths
     timeframes: Dict[str, TimeframeConfig] = field(default_factory=dict)    # List of timeframes
     symbols: Dict[str, SymbolOverride] = field(default_factory=dict)        # List of symbols
+
+#---
+
+## Root Configuration Dataclass
+
+@dataclass
+class AppConfig:
+    """The root configuration for the entire application, holding all module configs."""
+    resample: ResampleConfig = field(default_factory=ResampleConfig)
