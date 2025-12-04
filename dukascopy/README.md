@@ -231,6 +231,20 @@ The new symbol is now added and will be updated automatically during each increm
 
 ---
 
+## Resample Configuration (v0.3 and above)
+
+A default ```config.yaml``` is included with the project. This file controls the behavior of the resample engine. You can now define custom timeframes and apply per-symbol overrides as needed.
+
+To override the default configuration, create a user-specific copy:
+
+```sh
+cp config.yaml config.user.yaml
+```
+
+The configuration file is straightforward and mostly self-explanatory. Adjust values as needed to suit your data and workflow.
+
+---
+
 ## Quick check
 
 For users who are just getting started, or for those who want a quick way to validate their generated data:
