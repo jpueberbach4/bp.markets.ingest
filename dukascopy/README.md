@@ -11,6 +11,7 @@
   - Directory Permissions
   - First Run & Incremental Mode
   - Automatic Updates (cron)
+- [Resample Configuration](#resample-configuration-v03-and-above)
 - [Symbols Configuration](#symbols-configuration)
   - Adding New Symbols
 - [Quick Check](#quick-check)
@@ -242,6 +243,89 @@ cp config.yaml config.user.yaml
 ```
 
 The configuration file is straightforward and mostly self-explanatory. Adjust values as needed to suit your data and workflow.
+
+```yaml
+resample:
+  round_decimals: 8                    # Number of decimals to round OHLCV to
+  batch_size: 250000                   # Maximum number of lines to read per batch
+  paths:
+    data: data/resample                # Output directory for resampled timeframes
+  timeframes:
+    1m:
+      source: "data/aggregate/1m"      # No rule, no resample, source defines output path for this timeframe
+    5m:
+      rule: "5T"                       # 5-minute timeframe (Pandas Resampling Rule)
+      label: "left"                    # Label (timestamp) assigned to each resampled interval comes from the left (start) edge of the window
+      closed: "left"                   # Window is left-inclusive, right-exclusive
+      source: "1m"                     # Uses 1m timeframe as input (defines the cascading order)
+    15m:
+      rule: "15T"                      # 15-minute timeframe
+      label: "left"
+      closed: "left"
+      source: "5m"                     # Uses 5m timeframe as input
+    30m:
+      rule: "30T"                      # And so on....
+      label: "left"
+      closed: "left"
+      source: "15m"
+    1h:
+      rule: "1H"
+      label: "left"
+      closed: "left"
+      source: "30m"
+    4h:
+      rule: "4H"
+      label: "left"
+      closed: "left"
+      source: "1h"
+    8h:
+      rule: "8H"
+      label: "left"
+      closed: "left"
+      source: "4h"
+    1d:
+      rule: "1D"
+      label: "left"
+      closed: "left"
+      source: "8h"
+    1W:
+      rule: "W-MON"                    # Weekly, aligning candle close to Monday
+      label: "left"
+      closed: "left"
+      source: "1d"
+    1M:
+      rule: "MS"                       # Monthly, beginning of the month
+      label: "left"
+      closed: "left"
+      source: "1d"
+    1Y:
+      rule: "AS"                       # Annual, beginning of the year
+      label: "left"
+      closed: "left"
+      source: "1M"
+
+  # Support per symbol overrides
+  symbols:
+    BTC-USDXX:
+      # Override number of decimal places to round to
+      round_decimals: 12
+      # Override batch size
+      batch_size: 500000
+      # Skip timeframes entirely for this symbol
+      skip_timeframes: ["1W", "1M", "1Y"]
+      # Support for custom timeframes or overrides
+      timeframes:
+        5h:
+          rule: "5H"             # 5-hourly timeframe
+          label: "left"
+          closed: "left"
+          source: "1h"
+        1d:
+          rule: "1D"
+          label: "right"         # Different labeling for this specific symbol/timeframe
+          closed: "left"
+          source: "8h"
+```
 
 ---
 
