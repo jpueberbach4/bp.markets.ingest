@@ -34,31 +34,6 @@ DATA_PATH = "data/transform/1m"   # Output path for the transformed files
 TEMP_PATH = "data/temp"           # Today's live data is stored here
 ROUND_DECIMALS = 8                # Round prices to this number of decimals
 
-def load_symbols() -> pd.Series:
-    """
-    Load and normalize the list of trading symbols.
-
-    Reads symbols from 'symbols.txt', converts them to strings,
-    and replaces '/' with '-' for uniformity.
-
-    Returns
-    -------
-    pd.Series
-        Series of normalized trading symbols.
-    """
-    df = None
-    if Path("symbols.user.txt").exists():
-        df = pd.read_csv('symbols.user.txt')
-    else:
-        df = pd.read_csv('symbols.txt')
-    
-    # Deduplicate symbols to prevent race conditions during parallel processing, 
-    # where multiple workers try to write/replace the same output file.
-    series = df.iloc[:, 0].astype(str).str.replace('/', '-', regex=False)
-    return series.unique()
-
-
-
 def transform_symbol(symbol: str, dt: date) -> bool:
     """
     Transform a single symbol's JSON market data into a normalized OHLC CSV.

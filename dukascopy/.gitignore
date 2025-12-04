@@ -7,7 +7,7 @@ temp/*
 data/*
 load/*
 locks/*
-config.yaml
+config.user.yaml
 symbols.user.txt
 crypto.user.txt
 dukascopy.db
