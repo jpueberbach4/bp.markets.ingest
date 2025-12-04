@@ -475,20 +475,3 @@ def fork_resample(args) -> bool:
     resample_symbol(symbol, config)
 
     return True
-
-
-
-if __name__ == "__main__":
-    config = load_app_config()
-
-
-    merged_config = resample_get_symbol_config("BTC-USD", config)
-
-    config_dict = asdict(merged_config)
-    
-    # 2. Dump the dictionary to a YAML formatted string
-    yaml_output = yaml.dump(config_dict, indent=2, sort_keys=False)
-
-    print(yaml_output)
-
-    resample_symbol("BTC-USD", config)
