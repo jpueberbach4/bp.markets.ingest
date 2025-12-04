@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Type, TypeVar, Any
 
 
 @dataclass
-class TimeframeConfig:
+class ResampleTimeframeConfig:
     """Configuration for a single resampled timeframe."""
     # Resampling rule (e.g., '5T', '1H'). None for the base timeframe.
     rule: Optional[str] = None
@@ -24,14 +24,14 @@ class ResamplePaths:
 
 
 @dataclass
-class SymbolOverride:
+class ResampleSymbolOverride:
     """Per-symbol configuration overrides."""
     # Number of decimals to round to.
     round_decimals: Optional[int] = None
     # Number of lines to read per batch for this symbol.
     batch_size: Optional[int] = None
     # Mapping: timeframe name -> timeframe config.
-    timeframes: Dict[str, TimeframeConfig] = field(default_factory=dict)
+    timeframes: Dict[str, ResampleTimeframeConfig] = field(default_factory=dict)
 
 
 @dataclass
@@ -41,9 +41,9 @@ class ResampleConfig:
     batch_size: int = 250_000
     paths: ResamplePaths = field(default_factory=ResamplePaths)
     # Mapping: timeframe name -> timeframe config.
-    timeframes: Dict[str, TimeframeConfig] = field(default_factory=dict)
+    timeframes: Dict[str, ResampleTimeframeConfig] = field(default_factory=dict)
     # Mapping: symbol name -> symbol-specific overrides.
-    symbols: Dict[str, SymbolOverride] = field(default_factory=dict)
+    symbols: Dict[str, ResampleSymbolOverride] = field(default_factory=dict)
 
 
 @dataclass
