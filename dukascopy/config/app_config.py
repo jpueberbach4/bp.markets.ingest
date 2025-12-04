@@ -1,5 +1,5 @@
 import yaml
-from dataclasses import dataclass, field
+from dataclasses import dataclass, fields, field
 from typing import Dict, List, Optional, Type, TypeVar, Any
 
 
@@ -59,7 +59,7 @@ def load_config_data(config_class: Type[T], data: Dict[str, Any]) -> T:
     Recursively maps a dictionary (from YAML) to a nested dataclass structure.
     """
     # Get the expected fields and their types from the dataclass
-    field_definitions = {f.name: f.type for f in field(config_class)}
+    field_definitions = {f.name: f.type for f in fields(config_class)}
     
     # Final dictionary to hold arguments for the dataclass constructor
     final_args: Dict[str, Any] = {}
