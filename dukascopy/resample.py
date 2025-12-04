@@ -423,47 +423,68 @@ def resample_batch(sio: StringIO, rule: str, label: str, closed: str) -> Tuple[p
     # Return the resampled dataframe
     return resampled, next_input_position
 
-
-def resample_symbol(symbol: str) -> bool:
+def resample_symbol(symbol: str, config: ResampleConfig) -> bool:
     """
-    Incrementally resample a single symbol through each configured timeframe.
+    Incrementally resample OHLCV data for a single trading symbol across all configured timeframes.
 
-    The function:
+    The function performs a forward-only, crash-resilient resampling pipeline:
+        - Loads and merges global and symbol-specific configuration.
+        - Reads the input CSV in batches, tracking byte offsets.
+        - Resamples each batch into the target timeframe (cascading from lower to higher).
+        - Always rewrites the last candle because it may be incomplete.
+        - Persists read/write offsets atomically to ensure crash safety.
+        - Skips timeframes if input data is missing or skipped in the configuration.
 
-    - Loads and updates read/write offsets from an index file.
-    - Reads the input CSV in batches.
-    - Resamples into a higher timeframe.
-    - Always rewrites the last candle because it may be incomplete.
-    - Writes updated offsets atomically to avoid partial writes.
+    Notes
+    -----
+    - Supports append-only incremental input: historical rows are never reprocessed.
+    - The last candle of each batch may be overwritten on the next run.
+    - Timeframes without a resampling rule are treated as direct input paths.
+    - Output files and index files are created automatically if they do not exist.
 
     Parameters
     ----------
     symbol : str
-        The trading symbol (normalized, e.g., "BTC-USDT").
+        The normalized trading symbol to process (e.g., "BTC-USDT").
+    config : ResampleConfig
+        The resampling configuration object, including global defaults, symbol overrides,
+        paths, timeframes, and other options.
 
     Returns
     -------
     bool
-        Always returns True for now, but may be extended for status reporting.
+        Always returns True for now. This may be extended in the future for status reporting.
     """
-    for i, config in enumerate(CONFIG):
+    config = resample_get_symbol_config(symbol, config)
 
-        timeframe, input_dir, output_dir, index_dir, rule, label, closed = (
-            config[k] for k in ("timeframe", "input", "output", "index", "rule","label","closed")
-        )
+    # Main output path
+    data_path = config.paths.data
 
-        if VERBOSE:
-            tqdm.write(f"  → {symbol}: {config['timeframe']} ({i+1}/{len(CONFIG)})")
+    for _, ident in enumerate(config.timeframes):
+        # Get ResampleTimeFrame
+        timeframe = config.timeframes.get(ident)
 
+        # Handle case of no rule = direct input path
+        if not timeframe.rule:
+            if not Path(f"{timeframe.source}/{symbol}.csv").exists():
+                raise IOError(f"Invalid configuration for timeframe {ident}")
+            continue
+        
         # Construct file paths
-        input_path = Path(f"{input_dir}/{symbol}.csv")
-        index_path = Path(f"{index_dir}/{symbol}.idx")
-        output_path = Path(f"{output_dir}/{symbol}.csv")
+        if config.timeframes.get(timeframe.source).rule is not None:
+            input_path = Path(f"{data_path}/{timeframe.source}/{symbol}.csv")
+        else:
+            input_path = Path(f"{config.timeframes.get(timeframe.source).source}/{symbol}.csv")
+
+        output_path = Path(f"{data_path}/{ident}/{symbol}.csv")
+        index_path = Path(f"{data_path}/{ident}/index/{symbol}.csv")
+
+        rule, label, closed = [timeframe.rule, timeframe.label, timeframe.closed]
 
         # Ensure input path exists
         if not input_path.exists():
             if VERBOSE:
-                tqdm.write(f"  No base {timeframe} data for {symbol} → skipping cascading timeframes")
+                tqdm.write(f"  No base {ident} data for {symbol} → skipping cascading timeframes")
             return True
 
         # Load the saved offsets (or create if not exists)
@@ -523,7 +544,7 @@ def resample_symbol(symbol: str) -> bool:
                 # Stop if EOF reached
                 if eof_reached:
                     if VERBOSE:
-                        tqdm.write(f"  ✓ {symbol} {timeframe}")
+                        tqdm.write(f"  ✓ {symbol} {ident}")
                     break
 
                 # Seek to updated offset for next loop
@@ -556,11 +577,14 @@ def fork_resample(args) -> bool:
 if __name__ == "__main__":
     config = load_app_config()
 
-    config = resample_get_symbol_config("BTC-USD", config)
 
-    config_dict = asdict(config)
+    merged_config = resample_get_symbol_config("BTC-USD", config)
+
+    config_dict = asdict(merged_config)
     
     # 2. Dump the dictionary to a YAML formatted string
     yaml_output = yaml.dump(config_dict, indent=2, sort_keys=False)
 
     print(yaml_output)
+
+    resample_symbol("BTC-USD", config)
