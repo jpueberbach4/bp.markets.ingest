@@ -58,9 +58,12 @@
      MIT License
 ===============================================================================
 """
-
+import copy 
 import os
 import pandas as pd
+import yaml
+from dataclasses import asdict
+from config.app_config import AppConfig, ResampleConfig, load_app_config
 from pathlib import Path
 from tqdm import tqdm
 from io import StringIO
@@ -168,33 +171,58 @@ CONFIG = [
     }
 ]
 
-NUM_PROCESSES = os.cpu_count()      
-
-
-def load_symbols() -> pd.Series:
+def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleConfig:
     """
-    Load and normalize the list of trading symbols.
+    Generate a merged resample configuration for a specific symbol.
 
-    Reads symbols from 'symbols.txt', converts them to strings,
-    and replaces '/' with '-' for uniformity.
+    This function starts from the global resample configuration and applies
+    any symbol-specific overrides defined in `app_config.symbols`. Overrides
+    may include:
+        - round_decimals
+        - batch_size
+        - custom timeframes
+        - skipped timeframes (absolute priority)
+
+    Parameters
+    ----------
+    symbol : str
+        The trading symbol for which to generate the configuration (e.g., "BTC-USDT").
+    app_config : AppConfig
+        The root application configuration containing the global resample
+        settings and any symbol-specific overrides.
 
     Returns
     -------
-    pd.Series
-        Series of normalized trading symbols.
+    ResampleConfig
+        A new ResampleConfig instance with global settings merged with
+        symbol-specific overrides.
     """
-    df = None
-    if Path("symbols.user.txt").exists():
-        df = pd.read_csv('symbols.user.txt')
-    else:
-        df = pd.read_csv('symbols.txt')
-    
-    # Deduplicate symbols to prevent race conditions during parallel processing, 
-    # where multiple workers try to write/replace the same output file.
-    series = df.iloc[:, 0].astype(str).str.replace('/', '-', regex=False)
-    return series.unique()
+    # Start with global resample configuration
+    global_config: ResampleConfig = app_config.resample
+    merged_config: ResampleConfig = copy.deepcopy(global_config)
 
+    # Check for symbol-specific overrides
+    symbol_override: SymbolOverride = global_config.symbols.get(symbol)
 
+    if symbol_override:
+        # Override global round_decimals if specified
+        if symbol_override.round_decimals is not None:
+            merged_config.round_decimals = symbol_override.round_decimals
+
+        # Override global batch_size if specified
+        if symbol_override.batch_size is not None:
+            merged_config.batch_size = symbol_override.batch_size
+
+        # Merge custom timeframes, overriding global ones if needed
+        if symbol_override.timeframes:
+            merged_config.timeframes.update(symbol_override.timeframes)
+
+        # Remove any skipped timeframes (absolute priority)
+        if symbol_override.skip_timeframes:
+            for timeframe_key in symbol_override.skip_timeframes:
+                merged_config.timeframes.pop(timeframe_key, None)
+
+    return merged_config
 
 def resample_read_index(index_path: Path) -> Tuple[int, int]:
     """
@@ -522,3 +550,17 @@ def fork_resample(args) -> bool:
     resample_symbol(symbol)
 
     return True
+
+
+
+if __name__ == "__main__":
+    config = load_app_config()
+
+    config = resample_get_symbol_config("BTC-USD", config)
+
+    config_dict = asdict(config)
+    
+    # 2. Dump the dictionary to a YAML formatted string
+    yaml_output = yaml.dump(config_dict, indent=2, sort_keys=False)
+
+    print(yaml_output)

@@ -30,6 +30,8 @@ class ResampleSymbolOverride:
     round_decimals: Optional[int] = None
     # Number of lines to read per batch for this symbol.
     batch_size: Optional[int] = None
+    # List of timeframes to skip for this symbol.
+    skip_timeframes: List[str] = field(default_factory=list)
     # Mapping: timeframe name -> timeframe config.
     timeframes: Dict[str, ResampleTimeframeConfig] = field(default_factory=dict)
 
