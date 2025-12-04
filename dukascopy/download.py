@@ -41,29 +41,6 @@ BACKOFF_FACTOR = 2             # Exponential backoff multiplier for retry delays
 
 session = None                 # Session per worker
 
-def load_symbols() -> pd.Series:
-    """
-    Load and normalize the list of trading symbols.
-
-    Reads symbols from 'symbols.txt', converts them to strings,
-    and replaces '/' with '-' for uniformity.
-
-    Returns
-    -------
-    pd.Series
-        Series of normalized trading symbols.
-    """
-    df = None
-    if Path("symbols.user.txt").exists():
-        df = pd.read_csv('symbols.user.txt')
-    else:
-        df = pd.read_csv('symbols.txt')
-    
-    # Deduplicate symbols to prevent race conditions during parallel processing, 
-    # where multiple workers try to write/replace the same output file.
-    series = df.iloc[:, 0].astype(str).str.replace('/', '-', regex=False)
-    return series.unique()
-
 def download_filter_backfilled_items(temp_path: Path, cache_path: Path) -> bool:
     """
     Merges new data from a temporary file into a cached dataset while skipping backfilled items.

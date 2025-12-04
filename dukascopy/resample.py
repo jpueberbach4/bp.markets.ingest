@@ -71,106 +71,6 @@ from typing import Tuple, IO
 
 VERBOSE = os.getenv('VERBOSE', '0').lower() in ('1', 'true', 'yes', 'on')
 
-BATCH_SIZE = 250_000    # Number of raw candles to read per incremental batch.
-ROUND_DECIMALS = 8      # Round prices to this number of decimals
-
-# Configuration for each cascading timeframe
-CONFIG = [
-    {
-        "timeframe": "5m",
-        "input": "data/aggregate/1m",
-        "output": "data/resample/5m",
-        "index": "data/resample/5m/index",
-        "rule": "5T",
-        "label": "left",
-        "closed": "left"
-    },
-    {
-        "timeframe": "15m",
-        "input": "data/resample/5m",
-        "output": "data/resample/15m",
-        "index": "data/resample/15m/index",
-        "rule": "15T",
-        "label": "left",
-        "closed": "left"
-    },
-    {
-        "timeframe": "30m",
-        "input": "data/resample/15m",
-        "output": "data/resample/30m",
-        "index": "data/resample/30m/index",
-        "rule": "30T",
-        "label": "left",
-        "closed": "left"
-    },
-    {
-        "timeframe": "1h",
-        "input": "data/resample/30m",
-        "output": "data/resample/1h",
-        "index": "data/resample/1h/index",
-        "rule": "1H",
-        "label": "left",
-        "closed": "left"
-    },
-    {
-        "timeframe": "4h",
-        "input": "data/resample/1h",
-        "output": "data/resample/4h",
-        "index": "data/resample/4h/index",
-        "rule": "4H",
-        "label": "left",
-        "closed": "left"
-    },
-    {
-        "timeframe": "8h",
-        "input": "data/resample/4h",
-        "output": "data/resample/8h",
-        "index": "data/resample/8h/index",
-        "rule": "8H",
-        "label": "left",
-        "closed": "left"
-    },
-    {
-        "timeframe": "1d",
-        "input": "data/resample/8h",
-        "output": "data/resample/1d",
-        "index": "data/resample/1d/index",
-        "rule": "1D",
-        "label": "left",
-        "closed": "left"
-    },
-    # Weekly: use W-SAT in UTC to include full Friday trading
-    {
-        "timeframe": "1W",
-        "input": "data/resample/1d",
-        "output": "data/resample/1W",
-        "index": "data/resample/1W/index",
-        "rule": "W-MON",
-        "label": "left",
-        "closed": "left"
-    },
-    # Monthly: can use start-of-month (MS) or last business day approach
-    {
-        "timeframe": "1M",
-        "input": "data/resample/1d",
-        "output": "data/resample/1M",
-        "index": "data/resample/1M/index",
-        "rule": "MS",
-        "label": "left",
-        "closed": "left"
-    },
-    # Yearly: start-of-year (AS)
-    {
-        "timeframe": "1Y",
-        "input": "data/resample/1M",
-        "output": "data/resample/1Y",
-        "index": "data/resample/1Y/index",
-        "rule": "AS",
-        "label": "left",
-        "closed": "left"
-    }
-]
-
 def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleConfig:
     """
     Generate a merged resample configuration for a specific symbol.
@@ -310,7 +210,7 @@ def resample_write_index(index_path: Path, input_position: int, output_position:
     os.replace(index_temp_path, index_path)
     return True
 
-def resample_batch_read(f_input: IO, header: str) -> Tuple[StringIO, bool]:
+def resample_batch_read(f_input: IO, header: str, config: ResampleConfig) -> Tuple[StringIO, bool]:
     """
     Read a batch of lines from an input file-like object while recording their byte offsets.
 
@@ -325,6 +225,8 @@ def resample_batch_read(f_input: IO, header: str) -> Tuple[StringIO, bool]:
         A file-like object opened for reading. Must support `tell()` and `readline()`.
     header : str
         The CSV header line to be written first in the output, without the `offset` column.
+    config: ResampleConfig
+        Config object for reading round_decimals
 
     Returns
     -------
@@ -339,19 +241,19 @@ def resample_batch_read(f_input: IO, header: str) -> Tuple[StringIO, bool]:
     eof_reached = False
 
     # Read a chunk of lines along with their raw input offsets
-    for _ in range(BATCH_SIZE):
+    for _ in range(config.batch_size):
         offset_before = f_input.tell()
         line = f_input.readline()
         if not line:
             eof_reached = True
             break
-        sio.write(f"{line.strip()},{offset_before}\n")
+        sio.write(f"{line.strip()},{offset_before}\n")  # offset column injection for traceability
     
     sio.seek(0)
 
     return sio, eof_reached
 
-def resample_batch(sio: StringIO, rule: str, label: str, closed: str) -> Tuple[pd.DataFrame, int]:
+def resample_batch(sio: StringIO, rule: str, label: str, closed: str, config: ResampleConfig) -> Tuple[pd.DataFrame, int]:
     """
     Resample a batch of OHLCV rows (with byte-offset tracking) into a higher timeframe.
 
@@ -366,6 +268,8 @@ def resample_batch(sio: StringIO, rule: str, label: str, closed: str) -> Tuple[p
         Whether the resampled window label is placed on the 'left' or 'right' edge.
     closed : str
         Which side of the resample window is closed ('left' or 'right').
+    config: ResampleConfig
+        Config object for reading round_decimals
 
     Returns
     -------
@@ -376,7 +280,7 @@ def resample_batch(sio: StringIO, rule: str, label: str, closed: str) -> Tuple[p
             - low:    minimum value in window
             - close:  last value in window
             - volume: sum of volumes in window
-        All numeric fields are rounded to `ROUND_DECIMALS`.
+        All numeric fields are rounded to `config.round_decimals`.
     int
         Offset of last raw contributing candle (next input offset)
 
@@ -412,7 +316,7 @@ def resample_batch(sio: StringIO, rule: str, label: str, closed: str) -> Tuple[p
     resampled.drop(columns=["offset"], inplace=True)
 
     # Round numerical values to avoid floating drift
-    resampled = resampled.round(ROUND_DECIMALS)
+    resampled = resampled.round(config.round_decimals)
 
     # Filter zero volume
     resampled = resampled[resampled['volume'].notna() & (resampled['volume'] != 0)]
@@ -477,7 +381,7 @@ def resample_symbol(symbol: str, config: ResampleConfig) -> bool:
             input_path = Path(f"{config.timeframes.get(timeframe.source).source}/{symbol}.csv")
 
         output_path = Path(f"{data_path}/{ident}/{symbol}.csv")
-        index_path = Path(f"{data_path}/{ident}/index/{symbol}.csv")
+        index_path = Path(f"{data_path}/{ident}/index/{symbol}.idx")
 
         rule, label, closed = [timeframe.rule, timeframe.label, timeframe.closed]
 
@@ -515,10 +419,10 @@ def resample_symbol(symbol: str, config: ResampleConfig) -> bool:
             while True:
 
                 # Read a StringIO batch from f_input
-                sio, eof_reached = resample_batch_read(f_input, header)
+                sio, eof_reached = resample_batch_read(f_input, header, config)
 
                 # Resample the sio batch
-                resampled, next_input_position = resample_batch(sio, rule, label, closed) 
+                resampled, next_input_position = resample_batch(sio, rule, label, closed, config) 
 
                 # Rewrite the output file from its last known position
                 f_output.seek(output_position)
@@ -566,9 +470,9 @@ def fork_resample(args) -> bool:
     args : tuple
         Tuple containing (symbol, list of dates).
     """
-    symbol, = args
+    symbol, config = args
     
-    resample_symbol(symbol)
+    resample_symbol(symbol, config)
 
     return True
 

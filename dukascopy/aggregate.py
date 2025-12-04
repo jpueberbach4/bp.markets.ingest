@@ -50,30 +50,6 @@ DATA_PATH = "data/transform/1m"         # Data of aggregate.py is stored here
 TEMP_PATH = "data/temp"                 # Data of today
 AGGREGATE_PATH = "data/aggregate/1m"    # Output path for the aggregated files
 
-def load_symbols() -> pd.Series:
-    """
-    Load and normalize the list of trading symbols.
-
-    Reads symbols from 'symbols.txt', converts them to strings,
-    and replaces '/' with '-' for uniformity.
-
-    Returns
-    -------
-    pd.Series
-        Series of normalized trading symbols.
-    """
-    df = None
-    if Path("symbols.user.txt").exists():
-        df = pd.read_csv('symbols.user.txt')
-    else:
-        df = pd.read_csv('symbols.txt')
-    
-    # Deduplicate symbols to prevent race conditions during parallel processing, 
-    # where multiple workers try to write/replace the same output file.
-    series = df.iloc[:, 0].astype(str).str.replace('/', '-', regex=False)
-    return series.unique()
-
-
 def aggregate_read_index(index_path: Path) -> Tuple[date, int, int]:
     """
     Read the incremental resampling index file and return the stored offsets.
