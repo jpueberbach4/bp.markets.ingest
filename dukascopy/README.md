@@ -373,6 +373,13 @@ time, open, high, low, close, volume
 2025-12-05 00:00:00,1.16433,1.16717,1.16415,1.16467,37127.59
 ```
 
+| Column | Type (Implied) | Type (Explicit) |
+| :--- | :--- | :--- |
+| time | Timestamp (String) | TIMESTAMP or DATETIME |
+| open, high, low, close | Double/Float | DOUBLE |
+| volume | Double/Float | DOUBLE |
+
+
 ---
 
 ## Quick check
