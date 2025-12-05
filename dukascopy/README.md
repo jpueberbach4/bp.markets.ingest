@@ -581,7 +581,7 @@ This is me thinking out loud: imagine a command-line tool that lets you choose s
 ```sh
 ./build-parquet.sh --select EUR-USD/1m --select EUR-NZD/4h,8h --select BRENT.CMD-USD/15m,30m \
 --select BTC-*/15m --select DOLLAR.IDX-USD/1h,4h --after "2025-01-01 00:00:00" \
---until "2025-12-01 12:00:00"  --output my_cool_parquet_file.parquet --compression zstd
+--until "2025-12-01 12:00:00" --omit-open-candles --output my_cool_parquet_file.parquet --compression zstd
 ```
 
 Schema in parquet:
