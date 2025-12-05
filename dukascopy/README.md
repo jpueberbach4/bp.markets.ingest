@@ -26,7 +26,7 @@
   - Stale Locks
   - Full Rebuild
 - [Future Work](#notes-and-future-work)
-- [DuckDB Analytical Layer (Experimental)](#duckdb-experimentaladvanced-users)
+- [DuckDB Analytical Layer (Advanced)](#duckdb-advanced-users)
 - [Bug Tracking](#bug-tracking)
 - [Final Word](#final-word)
 - [License](#license)
