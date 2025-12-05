@@ -276,9 +276,3 @@ def fork_aggregate(args) -> bool:
         aggregate_symbol(symbol, dt, config)
     
     return True
-
-
-if __name__ == "__main__":
-    config = load_app_config()
-
-    print(config.aggregate)
