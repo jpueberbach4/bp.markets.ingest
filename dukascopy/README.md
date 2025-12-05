@@ -32,19 +32,16 @@
 - [License](#license)
 
 
-## ⚠️ Important Update
+## Notice
 
-This project started as a personal hobby but has now reached a stable, usable state.  
-We recently cleaned up the repository history to improve clarity.
-
-If you have an existing clone of this repository, please update carefully:
+if you cloned this repo before 2025-12-04 and are having trouble to sync, please update carefully:
 
 ```bash
 git fetch origin
 git reset --hard origin/main
 ```
 
-Note: if you cloned this repo before 2025-12-03, you still need to rebuild because of a weekly calendar alignment change. The alignment change causes the data to be exactly aligned to the charts and standards of Dukascopy. See here: https://www.dukascopy.com/swiss/english/marketwatch/charts/
+>Note: when you use the default configuration, data-points are now exactly aligned to https://www.dukascopy.com/swiss/english/marketwatch/charts/
 
 ## Notice
 
@@ -103,6 +100,10 @@ Historical market data can be leveraged in multiple ways to enhance analysis, de
 ## Target audience
 
 This tool was built for independent traders and quants—like myself—who need to analyze market data daily and absolutely hate manually downloading files. It's ideal for laptop users running Windows (and WSL2) with around 32GB of RAM and a Ryzen 7/9 or Intel equivalent, having NVMe storage. Designed for simplicity, it automatically updates your data, so you can open your laptop, grab your coffee, and know you're ready for the day's market without any extra steps.
+
+>Storage requirements are about 1 GB per configured symbol.
+
+The code-base is small and heavily documented.
 
 ---
 
@@ -173,7 +174,7 @@ chmod u+rwx ./data ./cache
 
 Configure your symbols as shown in the next section of this readme.
 
-[Symbols Configuration](#symbols-configuration)
+>[Symbols Configuration](#symbols-configuration)
 
 Next, run the pipeline with:
 
@@ -348,6 +349,8 @@ resample:
           closed: "left"
           source: "8h"
 ```
+
+**Note**: if you change resample, make sure you put the timeframes in the right order, because the stages depend on each other. On each resample configuration change, perform a ```./rebuild-weekly.sh```.
 
 ---
 
