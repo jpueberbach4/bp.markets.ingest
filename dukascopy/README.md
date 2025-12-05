@@ -528,6 +528,8 @@ START_DATE=2005-01-01 ./run.sh
 
 ## Notes and Future Work
 
+>Parquet converter (helper tool to (significantly) increase analytics performance (up to 25x) in DuckDB, soon)
+
 >HTTP API for OHLC retrieval
 
 >Cascaded indicator engine
