@@ -52,6 +52,8 @@ DUKASCOPY_CSV_SCHEMA = {
     'Volume': 'DOUBLE',
 }
 
+CSV_TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
+
 def extract_symbol(task: Tuple[str, str, str, str, str, Dict[str, Any]]) -> bool:
     """
     Extracts, filters, transforms, and exports a single CSV file to a 
@@ -75,7 +77,7 @@ def extract_symbol(task: Tuple[str, str, str, str, str, Dict[str, Any]]) -> bool
         '{symbol}'::VARCHAR AS symbol,
         '{timeframe}'::VARCHAR AS timeframe,
         CAST(strftime(Time, '%Y') AS VARCHAR) AS year,
-        Time,
+        strptime(CAST(Time AS VARCHAR), '{CSV_TIMESTAMP_FORMAT}') AS Time,
         Open,
         High,
         Low,
