@@ -181,7 +181,7 @@ def parse_args():
 
     parser.add_argument('--after', type=str, default=DEFAULT_AFTER,
                     help=f"Start date/time (inclusive). Format: YYYY-MM-DD HH:MM:SS (Default: {DEFAULT_AFTER})")
-    parser.add_argument('--until', type=str, default=DEFAULT_AFTER,
+    parser.add_argument('--until', type=str, default=DEFAULT_UNTIL,
                     help=f"End date/time (exclusive). Format: YYYY-MM-DD HH:MM:SS (Default: {DEFAULT_UNTIL})")
 
     # Exactly one output mode must be chosen
