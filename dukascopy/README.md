@@ -462,6 +462,8 @@ optional arguments:
   --partition           Enable Hive-style partitioned output (requires --output_dir).
   --keep-temp           Retain intermediate files.
 
+```
+
 **Schema:**
 
 | Column | Type (Implied) | Type (Explicit) |
