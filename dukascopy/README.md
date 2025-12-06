@@ -432,23 +432,24 @@ pip install -r requirements.txt
 Example usage
 
 ```sh
-./build-parquet.sh --select EUR-USD/1m --select EUR-NZD/4h,8h --select BRENT.CMD-USD/15m,30m \
+./build-parquet.sh --select EUR-USD/1m --select EUR-NZD/4h:skiplast,8h:skiplast --select BRENT.CMD-USD/15m,30m \
 --select BTC-*/15m --select DOLLAR.IDX-USD/1h,4h --after "2025-01-01 00:00:00" \
---until "2025-12-01 12:00:00" --omit-open-candles --output my_cool_parquet_file.parquet --compression zstd
+--until "2025-12-01 12:00:00" --output my_cool_parquet_file.parquet --compression zstd
 ```
 
 ```sh
-usage: build-parquet.sh [-h] --select SYMBOL/TF1,TF2,... [--after AFTER] 
-                        [--until UNTIL] (--output FILE_PATH | --output_dir DIR_PATH) 
-                        [--compression {snappy,gzip,brotli,zstd,lz4,none}] [--omit-open-candles]
-                        [--force] [--dry-run] [--partition] [--keep-temp]
+usage: build-parquet.sh [-h] --select SYMBOL/TF1,TF2:modifier,... [--after AFTER]
+              [--until UNTIL] (--output FILE_PATH | --output_dir DIR_PATH)
+              [--compression {snappy,gzip,brotli,zstd,lz4,none}] [--force] 
+              [--dry-run] [--partition] [--keep-temp]
 
 Batch extraction utility for symbol/timeframe datasets.
 
 optional arguments:
   -h, --help            show this help message and exit
-  --select SYMBOL/TF1,TF2,...
-                        Symbol/timeframe selection pattern. Supports '*' wildcards.
+  --select SYMBOL/TF1,TF2:modifier,...
+                        Defines how symbols and timeframes are selected. Wildcards (*) are supported.
+                        The skiplast modifier can be applied to exclude the last row of a timeframe.
   --after AFTER         Start date/time (inclusive). Format: YYYY-MM-DD HH:MM:SS (Default: 1970-01-01 00:00:00)
   --until UNTIL         End date/time (exclusive). Format: YYYY-MM-DD HH:MM:SS (Default: 3000-01-01 00:00:00)
   --output FILE_PATH    Write a single merged Parquet file.
@@ -456,12 +457,10 @@ optional arguments:
                         Write a partitioned Parquet dataset.
   --compression {snappy,gzip,brotli,zstd,lz4,none}
                         Compression codec for Parquet output.
-  --omit-open-candles   Drop the newest candle if incomplete. (Works, with a caveat, see below)
-  --force               Allow patterns that match no files
+  --force               Allow patterns that match no files.
   --dry-run             Parse/resolve arguments only; do not run extraction.
   --partition           Enable Hive-style partitioned output (requires --output_dir).
   --keep-temp           Retain intermediate files.
-```
 
 **Schema:**
 
@@ -493,7 +492,7 @@ print(df)
 
 **Advice:** For large selects, eg. a select ```"*/*"``` from 2005 until now: use output_dir (a hive). It will o/w likely choke on the merge. This is an edge case (select everything to a single parquet file) which we will not support atm. If it's really needed. For (very!) good reasons, drop me a line and i will see what i can do. A hive is the current solution for huge exports.
 
->```--omit-open-candles``` **Inaccurate on Market Close:** The logic for omitting the final (open/incomplete) candle is currently based on simply stripping the last row. This is problematic when markets are closed (like FX over a weekend) because the last row might actually be a fully completed candle from the prior Friday. **For now, if you are beta testing, use this flag with caution (when markets are closed).**
+>**Use the modifier ```skiplast``` to control whether the last (potentially open) candle should be dropped from a timeframe.**
 
 ---
 

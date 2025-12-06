@@ -49,12 +49,11 @@ High-Level Workflow
 Example:
     python3 run.py \
         --select EUR-USD/1m \
-        --select BTC-*/15m \
+        --select BTC-*/15m:skiplast \
         --after "2025-01-01 00:00:00" \
         --until "2025-12-01 12:00:00" \
         --output merged.parquet \
         --compression zstd \
-        --omit-open-candles \
         --dry-run
 
 Note:
@@ -233,8 +232,8 @@ def parse_args():
         '--select',
         action='append',
         required=True,
-        metavar='SYMBOL/TF1,TF2,...',
-        help="Symbol/timeframe selection pattern. Supports '*' wildcards."
+        metavar='SYMBOL/TF1,TF2:modifier,...',
+        help="Defines how symbols and timeframes are selected. Wildcards (*) are supported.\nThe skiplast modifier can be applied to exclude the last row of a timeframe."
     )
 
     # Makes the conditionals easier in fork_extract
@@ -259,8 +258,6 @@ def parse_args():
         help="Compression codec for Parquet output."
     )
 
-    parser.add_argument('--omit-open-candles', action='store_true',
-                        help="Drop the newest candle if incomplete.")
     parser.add_argument('--force', action='store_true',
                         help="Allow patterns that match no files.")
     parser.add_argument('--dry-run', action='store_true',
@@ -292,13 +289,15 @@ def parse_args():
     all_available_data = get_available_data_from_fs()
     available_symbols = sorted({d[0] for d in all_available_data})
     available_timeframes = sorted({d[1] for d in all_available_data})
+    # NOTE: available_pairs is now resolved using the BASE timeframe (no modifier)
     available_pairs = {(d[0], d[1]) for d in all_available_data}
 
     if not available_symbols:
         parser.error("No datasets found in data/. Run the main pipeline first.")
 
-    final_selections: List[Tuple[str, str, str]] = []
-    all_requested_pairs = set()
+    # Modified structure: (Symbol, Timeframe_Spec, Path, Modifier)
+    final_selections: List[Tuple[str, str, str, str | None]] = []
+    all_requested_pairs_base = set() # Stores (Symbol, BASE_Timeframe) for resolution/validation
 
     # ---- Resolve each --select expression -------------------------------
     for selection_str in args.select:
@@ -306,11 +305,20 @@ def parse_args():
             parser.error(f"Invalid format: {selection_str} (expected SYMBOL/TF)")
             
         symbol_pattern, timeframes_str = selection_str.split('/', 1)
-        timeframes = [tf.strip() for tf in timeframes_str.split(',')]
+        # Timeframes is now a list of strings like ['1h', '4h', '1W:skiplast']
+        timeframes_specs = [tf.strip() for tf in timeframes_str.split(',')]
+        
+        # Extract BASE timeframes for resolution
+        base_timeframes = []
+        for tf_spec in timeframes_specs:
+            base_tf = tf_spec.split(':')[0]
+            base_timeframes.append(base_tf)
 
-        # '*' timeframe expands to all available resolutions
-        if '*' in timeframes:
-            timeframes = available_timeframes
+        # '*' timeframe expands to all available base resolutions
+        if '*' in base_timeframes:
+            # Recreate the specs based on available timeframes, assuming no modifier
+            timeframes_specs = available_timeframes
+            base_timeframes = available_timeframes
 
         # Convert "ABC-*/1m" → regex: r"ABC-.*"
         regex_pattern = symbol_pattern.replace('.', r'\.').replace('*', r'.*')
@@ -318,30 +326,49 @@ def parse_args():
         # Match selected symbols
         matches = [s for s in available_symbols if re.fullmatch(regex_pattern, s)]
         if not matches:
-            # Maintain record of orphan selections (useful for --force support)
-            all_requested_pairs.add((symbol_pattern, timeframes_str))
+            # Maintain record of orphan selections (base timeframe)
+            all_requested_pairs_base.add((symbol_pattern, timeframes_str))
 
         # Resolve (symbol, timeframe) → actual file path
         for symbol in matches:
-            for tf in timeframes:
-                requested = (symbol, tf)
-                all_requested_pairs.add(requested)
-                if requested in available_pairs:
+            for tf_spec in timeframes_specs:
+                # Extract BASE timeframe and modifier for matching
+                base_tf = tf_spec.split(':')[0]
+                modifier = tf_spec.split(':')[1] if ':' in tf_spec else None
+                
+                requested_base = (symbol, base_tf)
+                all_requested_pairs_base.add(requested_base)
+                
+                # Check if the BASE timeframe actually exists on disk
+                if requested_base in available_pairs:
                     for tup in all_available_data:
-                        if tup[0] == symbol and tup[1] == tf:
-                            final_selections.append(tup)
+                        # tup is (symbol, base_tf, path)
+                        if tup[0] == symbol and tup[1] == base_tf:
+                            # Append the resolved data, using the full spec and the modifier
+                            # final_selections is now (Symbol, Timeframe_Spec, Path, Modifier)
+                            final_selections.append((symbol, tf_spec, tup[2], modifier))
                             break
 
     # ---- Validate unresolved selections ----------------------------------
-    resolved_pairs = {(d[0], d[1]) for d in final_selections}
-    unresolved_pairs = sorted(all_requested_pairs - resolved_pairs)
+    # NOTE: Validation must now check against all_requested_pairs_base
+    resolved_pairs = {(d[0], d[1].split(':')[0]) for d in final_selections} # Use BASE TF
+    unresolved_pairs = sorted(all_requested_pairs_base - resolved_pairs)
 
     if unresolved_pairs and not args.force:
+        # Reconstruct the original request for the error message
+        error_msg_pairs = []
+        for sym, tf_spec in unresolved_pairs:
+             # Try to find the original spec or just use the base if not found
+             original_spec = next((s for s in timeframes_specs if s.startswith(tf_spec)), tf_spec)
+             error_msg_pairs.append(f"- {sym}/{original_spec}\n")
+        
         msg = (
             "\nCritical Error: The following selections match no existing files:\n"
-            + "".join(f"- {sym}/{tf}\n" for sym, tf in unresolved_pairs)
+            + "".join(error_msg_pairs)
         )
         parser.error(msg)
+    
+    # Sort and return the final selections
 
     return {
         'select_data': sorted(set(final_selections)),
@@ -353,8 +380,7 @@ def parse_args():
         'after': args.after,
         'until': args.until,
         'output': args.output,
-        'compression': args.compression,
-        'omit_open_candles': args.omit_open_candles,
+        'compression': args.compression
     }
 
 
@@ -380,8 +406,8 @@ def main():
 
         # Build list of extraction tasks for workers
         extract_tasks = [
-            (sym, tf, filename, options['after'], options['until'], options)
-            for sym, tf, filename in options['select_data']
+            (sym, tf, filename, options['after'], options['until'], modifier, options)
+            for sym, tf, filename, modifier in options['select_data']
         ]
 
         # Use a single shared multiprocessing context for all stages
