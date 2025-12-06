@@ -497,6 +497,8 @@ print(df)
 >**❗Use the modifier ```skiplast``` to control whether the last (potentially open) candle should be dropped from a timeframe. \
 ❗Skiplast only has effect when --until is not set or set to a future datetime**
 
+You now have your own local forex high-performance analytics and data stack :)
+
 ---
 
 ## Performance Benchmarks
