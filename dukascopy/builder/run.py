@@ -148,10 +148,6 @@ def get_available_data_from_fs() -> List[Tuple[str, str, str]]:
     return sorted(set(available_data))
 
 
-# Assuming temporary files are stored in a consistent location, 
-# for example, a temporary directory defined early in the script.
-TEMP_DIR = Path("./temp_parquet_exports") # Define this globally or in main
-
 def merge_parquet_files(input_dir: Path, output_file: str, compression: str, cleanup: bool) -> int:
     """
     Reads all temporary Parquet files from input_dir and merges them 
