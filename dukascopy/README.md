@@ -841,7 +841,7 @@ A more advanced, tick-ready successor—planned as a C++ DuckDB extension—is u
 
 ## Legal Disclaimer
 
-This software is provided for **educational and research purposes only**. 
+This software is provided for **educational and research purposes only**. It does not provide trading advice or execution functionality.
 
 **Important Notice:**
 - This tool accesses data provided freely by Dukascopy Bank SA
