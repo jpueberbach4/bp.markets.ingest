@@ -97,7 +97,7 @@ def extract_symbol(task: Tuple[str, str, str, str, str, Dict[str, Any]]) -> bool
           AND {time_column_name} < TIMESTAMP '{until_str}'
     """
     
-    if options.get('omit_open_candles'):
+    if options.get('omit_open_candles') and not timeframe == "1m" :
         # BUG: also omits last 1m candle but that one is (always) completed
         where_clause += f" AND {time_column_name} < (SELECT MAX({time_column_name}) FROM read_csv_auto('{input_filepath}'))"
     
