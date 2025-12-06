@@ -329,7 +329,7 @@ def parse_args():
                     for tup in all_available_data:
                         if tup[0] == symbol and tup[1] == base_tf:
                             # Append (symbol, full tf_spec, file path, modifier)
-                            final_selections.append((symbol, tf_spec, tup[2], modifier))
+                            final_selections.append((symbol, base_tf, tup[2], modifier))
                             break
 
     # Extract only base timeframe (strip modifiers) for resolution checking
@@ -351,6 +351,7 @@ def parse_args():
         )
         parser.error(msg)
     
+
     return {
         'select_data': sorted(set(final_selections)),   # sorted unique selections
         'partition': args.partition,
