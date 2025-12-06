@@ -325,6 +325,11 @@ def parse_args():
         # Find all symbols matching wildcard pattern
         matches = [s for s in available_symbols if re.fullmatch(regex_pattern, s)]
         
+        # If no match on symbol name, add to requested pairs (literal)
+        if not matches:
+            requested_pair = (regex_pattern, timeframes_str)
+            all_requested_pairs.add(requested_pair)
+
         # Build requested pairs and resolve them to actual files
         for symbol in matches:
             for tf in timeframes:
@@ -354,7 +359,11 @@ def parse_args():
     final_selections = sorted(list(set(final_selections)))
         
     return {
-        'select_data': final_selections, 
+        'select_data': final_selections,
+        'partition': args.partition,
+        'output_dir': args.output_dir,
+        'force': args.force,
+        'keep_temp': args.keep_temp, 
         'after': args.after,
         'until': args.until,
         'output': args.output,
