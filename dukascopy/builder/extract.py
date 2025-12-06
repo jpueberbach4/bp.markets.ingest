@@ -91,6 +91,7 @@ def extract_symbol(task: Tuple[str, str, str, str, str, Dict[str, Any]]) -> bool
     """
     
     if options.get('omit_open_candles'):
+        # BUG: also omits last 1m candle but that one is (always) completed
         where_clause += f" AND {time_column_name} < (SELECT MAX({time_column_name}) FROM read_csv_auto('{input_filepath}'))"
     
     read_csv_sql = f"""
