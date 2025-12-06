@@ -18,7 +18,7 @@ High-level workflow:
    - symbol/timeframe select expressions
    - compression options
    - safety flags (e.g. --force, --dry-run)
-   - other flags (e.g. --omit-open-candles)
+   - other flags (e.g. --omit-open-candles, --partition)
 
 2. Discover all symbol/timeframe combinations that exist on disk and match
    the provided selection expressions. Selections that match no files will
@@ -40,7 +40,7 @@ High-level workflow:
    (TODO: see on what gives best performance).
 
 6. Merge all intermediate Parquet files produced by workers into final
-   aggregated Parquet output.
+   aggregated Parquet output OR if --partition is set, partition by symbol and TF.
 
 7. Clean up temporary or intermediate files unless explicitly requested to
    keep them.
@@ -57,7 +57,8 @@ Example usage:
         --select DOLLAR.IDX-USD/1h,4h \
         --after "2025-01-01 00:00:00" \
         --until "2025-12-01 12:00:00" \
-        --output my_cool_parquet_file.parquet \
+        --output my_cool_parquet_file.parquet \    # single file, --partition not set
+        --output_dir parquet/id                    # output_dir, --partition set, eg symbol=EUR-USD/timeframe=4h (todo: validate strategy (perftests))
         --omit-open-candles \
         --dry-run \
         --compression zstd
@@ -77,7 +78,7 @@ def main():
     # execute tasks in pool with tqdm (progress tracking)
     # wait for pool to complete, raised errors by workers are critical and cause abort
     # todo: see on partition strategy
-    # merge all pool output files to single parquet
+    # merge all pool output files to single parquet (skip if --partition set)
     # cleanup intermediate files
     # present user with status report
     pass
