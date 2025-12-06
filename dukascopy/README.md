@@ -594,6 +594,18 @@ I need a bit of extra performance for intra-symbol and intra-timeframe querying 
 
 I'm not sure exactly how fast I can make it, but trust me—it will be as fast as humanly possible.
 
+```sh
+./build-parquet.sh --select EUR-USD/*  --output my_cool_file.parquet --after "2025-01-01 00:00:00" --omit-open-candles --compression zstd --select GBP-*/* --select BRENT*/1m,15m,1h,* --select DOLLAR*/1h,4h,8h,1m,* --select *LIGHT*/*
+Running Dukascopy PARQUET exporter (16 processes)
+Step: Extract...
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 55/55 [00:03<00:00, 16.43files/s]
+
+Export complete!
+Total runtime: 3.41 seconds (0.06 minutes)
+```
+
+OMG. Lol. Thats fast :D - without merge though. It's way faster than i expected it to be.
+
 ---
 
 ## DuckDB (Advanced users)
