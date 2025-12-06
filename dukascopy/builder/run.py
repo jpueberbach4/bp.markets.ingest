@@ -75,11 +75,19 @@ Store timeframe as a regular column inside the Parquet files. Let's see what wor
 """
 
 import argparse
-import sys
-from datetime import datetime
-from pathlib import Path
+import extract
+import os
 import re
+import sys
+import time
+from datetime import datetime
+from multiprocessing import get_context
+from pathlib import Path
+from tqdm import tqdm
 from typing import List, Tuple, Dict, Any
+
+# Number of worker processes for parallel stages
+NUM_PROCESSES = os.cpu_count()
 
 class CustomArgumentParser(argparse.ArgumentParser):
     """
@@ -373,17 +381,56 @@ def parse_args():
 
 def main():
     try:
+        start_time = time.time()  # Record wall-clock start time
         # Read and validate arguments, discover all file (symbol,tf) matches based on --select (TODO: --force)
-        result = parse_args()
-        # construct task list for workers, fork_extract(symbol, tf, after, until, to_filename, options )
-        # initialize multiprocessing pool
-        # execute tasks in pool with tqdm (progress tracking)
-        # wait for pool to complete, raised errors by workers are critical and cause abort
-        # todo: see on partition strategy
-        # merge all pool output files to single parquet (skip if --partition set)
-        # cleanup intermediate files
-        # present user with status report
-        print(result)
+        options = parse_args()
+        # Message
+        print(f"Running Dukascopy PARQUET exporter ({NUM_PROCESSES} processes)")
+        
+        # Construct task list for workers
+        extract_tasks = [
+            (sym, tf, filename, options['after'], options['until'])
+            for sym, tf, filename in options['select_data']
+        ]        
+
+        # Create a single multiprocessing context to minimize process spawn overhead
+        ctx = get_context("fork")
+        pool = ctx.Pool(processes=NUM_PROCESSES)
+
+        # Define pipeline stages with associated task lists and chunk sizes
+        stages = [
+            (
+                "Extract",
+                extract.fork_extract,
+                extract_tasks,
+                1,
+                "files"
+            )
+        ]
+
+        # Run each stage in the same pool, with progress bars
+        with pool:
+            for name, func, tasks, chunksize, unit in stages:
+                if not tasks:
+                    print(f"Skipping {name} (no tasks)")
+                    continue
+                try:
+                    print(f"Step: {name}...")
+                    for _ in tqdm(pool.imap_unordered(func, tasks, chunksize=chunksize),
+                            total=len(tasks), unit=unit, colour='white'):
+                        pass
+                except Exception as e:
+                    print(f"\nABORT! Critical error in {name}.\n{type(e).__name__}: {e}")
+                    break
+        
+        if not options['partition']:
+            # Merge hive to single parquet
+            pass
+
+        # Report total wall-clock runtime
+        elapsed = time.time() - start_time
+        print("\nExport complete!")
+        print(f"Total runtime: {elapsed:.2f} seconds ({elapsed/60:.2f} minutes)")
 
         
     except SystemExit as e:
