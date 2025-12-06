@@ -58,13 +58,16 @@ Example usage:
         --after "2025-01-01 00:00:00" \
         --until "2025-12-01 12:00:00" \
         --output my_cool_parquet_file.parquet \    # single file, --partition not set
-        --output_dir parquet/id                    # output_dir, --partition set, eg symbol=EUR-USD/timeframe=4h (todo: validate strategy (perftests))
+        --output_dir parquet/id                    # output_dir, --partition set
         --omit-open-candles \
         --dry-run \
         --compression zstd
 
 This module's main() function implements the full workflow and is invoked when
 run as a standalone script.
+
+**Note**: AI Recommendation: Stick to symbol and a time-based key (like year/month) as the primary partition keys. 
+Store timeframe as a regular column inside the Parquet files. Let's see what works best.
 """
 
 def main():
