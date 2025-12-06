@@ -300,11 +300,24 @@ def parse_args():
             base_tf = tf_spec.split(':')[0]
             base_timeframes.append(base_tf)
 
-        # Wildcard timeframe means: select all timeframes that actually exist
-        if '*' in base_timeframes:
-            timeframes_specs = available_timeframes[:]  
-            base_timeframes = available_timeframes[:]   
+        # Wildcard timeframes, select all timeframes that actually exist
+        is_wildcard_select = any('*' in tf_spec.split(':')[0] for tf_spec in timeframes_specs)
+        if is_wildcard_select:
+            # We have a wildcard
+            wildcard_modifier = ''
+            # Loop through specs to get *:modifier
+            for tf_spec in timeframes_specs:
+                if '*' in tf_spec:
+                    modifier_part = tf_spec.split(':')
+                    if len(modifier_part) > 1:
+                        # we have a modifier
+                        wildcard_modifier = f":{modifier_part[1]}"
+                    break # we do not support multiple wildcards in tf per select eg EUR-USD/*,*:skiplast.
 
+            # Append the modifier to each timeframe 
+            timeframes_specs = [f"{tf}{wildcard_modifier}" for tf in available_timeframes]
+            base_timeframes = available_timeframes[:] # This line is now correct
+        
         # Convert wildcard symbol pattern to a regex (e.g. "BTC*" → "^BTC.*$")
         regex_pattern = symbol_pattern.replace('.', r'\.').replace('*', r'.*')
 
@@ -320,6 +333,7 @@ def parse_args():
                 base_tf = tf_spec.split(':')[0]       # Bare timeframe
                 modifier = tf_spec.split(':')[1] if ':' in tf_spec else None  # Optional modifier
 
+                
                 requested_base = (symbol, base_tf)
                 all_requested_pairs_base.add(requested_base)
 
