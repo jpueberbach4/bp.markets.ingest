@@ -456,7 +456,7 @@ optional arguments:
                         Write a partitioned Parquet dataset.
   --compression {snappy,gzip,brotli,zstd,lz4,none}
                         Compression codec for Parquet output.
-  --omit-open-candles   Drop the newest candle if incomplete. (Needs fixing)
+  --omit-open-candles   Drop the newest candle if incomplete. (Works, with a caveat, see below)
   --force               Allow patterns that match no files
   --dry-run             Parse/resolve arguments only; do not run extraction.
   --partition           Enable Hive-style partitioned output (requires --output_dir).
@@ -492,6 +492,8 @@ print(df)
 ```
 
 **Advice:** For large selects, eg. a select ```"*/*"``` from 2005 until now: use output_dir (a hive). It will o/w likely choke on the merge. This is an edge case (select everything to a single parquet file) which we will not support atm. If it's really needed. For (very!) good reasons, drop me a line and i will see what i can do. A hive is the current solution for huge exports.
+
+>```--omit-open-candles``` works fine on active trading days (when there is trading activity), but I still need to find an elegant solution for when markets are closed (e.g., during the weekend). For FX and indices, the last candles in the CSV on a Saturday are still Friday's candles, and these should be treated as closed. However, the current logic strips off the final candle by default, so running this on a Saturday incorrectly removes Friday's last candle across all lower timeframes. There's more to consider as well—such as the monthly timeframe when a month ends on a Friday. Another case is when considering the 1m (minute) timeframe. The 1m timeframe only has completed candles. And so on.... I'm currently compiling all edge cases and working on a proper solution. **For now, if you are beta testing, use this flag with caution.**
 
 ---
 
