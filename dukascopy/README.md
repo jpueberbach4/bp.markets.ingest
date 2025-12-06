@@ -457,7 +457,7 @@ optional arguments:
   --compression {snappy,gzip,brotli,zstd,lz4,none}
                         Compression codec for Parquet output.
   --omit-open-candles   Drop the newest candle if incomplete. (Needs fixing)
-  --force               Allow patterns that match no files (Testing)
+  --force               Allow patterns that match no files
   --dry-run             Parse/resolve arguments only; do not run extraction.
   --partition           Enable Hive-style partitioned output (requires --output_dir).
   --keep-temp           Retain intermediate files.
