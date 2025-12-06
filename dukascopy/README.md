@@ -18,6 +18,8 @@
 - [Output schema](#output-schema)
   - Details on generated files
 - [Quick Check](#quick-check)
+- [Parquet converter](#parquet-converter-v04-and-above)
+  - Details on CSV->Parquet conversion
 - [Performance Benchmarks](#performance-benchmarks)
   - Cold Run (Full History)
   - Incremental Daily Update
@@ -147,6 +149,7 @@ For this Dukascopy Data Pipeline project, the Python dependencies that need to b
 
 | Package    | Version    | Purpose                                                                      |
 |----------- |----------- |---------------------------------------------------------------------------- |
+| `duckdb`   | >=1.3.2    | Analytical database layer on top of CSV + parquet building helper           |
 | `pandas`   | >=2.0.3    | CSV I/O, data manipulation, aggregation, and incremental loading           |
 | `numpy`    | >=1.24.4   | Vectorized numeric computations, cumulative OHLC calculations              |
 | `orjson`   | >=3.10.15  | Fast JSON parsing for delta-encoded files                                   |
@@ -416,6 +419,50 @@ The open candle will always be the last row in the CSV. If you prefer not to inc
 
 ---
 
+## Parquet converter (v0.4 and above)
+
+A powerful new utility, build-parquet.sh, allows you to generate high-performance .parquet files or partitioned Hive-style Parquet datasets based on your selection criteria.
+
+**Note:** for this utility to work you need to install DuckDB
+
+```sh
+pip install -r requirements.txt
+```
+
+Example usage
+
+```sh
+./build-parquet.sh --select EUR-USD/1m --select EUR-NZD/4h,8h --select BRENT.CMD-USD/15m,30m \
+--select BTC-*/15m --select DOLLAR.IDX-USD/1h,4h --after "2025-01-01 00:00:00" \
+--until "2025-12-01 12:00:00" --omit-open-candles --output my_cool_parquet_file.parquet --compression zstd
+```
+
+- --select specifies symbols and timeframes (multiple selections allowed).
+- --after and --until filter data by timestamp.
+- --omit-open-candles excludes the most recent open candle.
+- --output defines the Parquet file or directory name.
+- --compression sets the Parquet compression format (default zstd).
+
+**Schema:**
+
+| Column | Type (Implied) | Type (Explicit) |
+| :--- | :--- | :--- |
+| symbol | Varchar (String) | VARCHAR (or STRING) |
+| timeframe | Varchar (String) | VARCHAR (or STRING) |
+| time | Timestamp (Timestamp) | TIMESTAMP |
+| open, high, low, close | Double | DOUBLE |
+| volume | Double | DOUBLE |
+
+**Benefits:**
+
+- Queries on Parquet are 25-50× faster than on CSV files.
+- Ideal for complex analyses and large datasets.
+- Supports partitioning by symbol and year for optimized querying.
+
+>Use build-parquet.sh to convert raw CSV data into a format that’s ready for high-performance analysis.
+
+---
+
 ## Performance Benchmarks
 
 ### Cold Run (Full Update)
@@ -562,8 +609,6 @@ START_DATE=2005-01-01 ./run.sh
 
 ## Notes and Future Work
 
->Parquet converter (helper tool to (significantly) increase analytics performance (up to 25x) in DuckDB, soon)
-
 >HTTP API for OHLC retrieval
 
 >Cascaded indicator engine
@@ -572,39 +617,6 @@ START_DATE=2005-01-01 ./run.sh
 
 >MSSIB Extension for DuckDB
 
----
-
-## Teaser on Parquet converter
-
-This is me thinking out loud: imagine a command-line tool that lets you choose symbols and timeframes, then compiles everything into a single Parquet file. The idea is that this would enable inter-symbol and inter-timeframe queries at roughly 25-50× the speed of the current setup.
-
-```sh
-./build-parquet.sh --select EUR-USD/1m --select EUR-NZD/4h,8h --select BRENT.CMD-USD/15m,30m \
---select BTC-*/15m --select DOLLAR.IDX-USD/1h,4h --after "2025-01-01 00:00:00" \
---until "2025-12-01 12:00:00" --omit-open-candles --output my_cool_parquet_file.parquet --compression zstd
-```
-
-Schema in parquet:
-
-```sh
-symbol,timeframe,timestamp,open,high,low,close,volume
-```
-
-I need a bit of extra performance for intra-symbol and intra-timeframe querying in my analysis. I'm going to build this—just not sure exactly when yet. Soon.
-
-I'm not sure exactly how fast I can make it, but trust me—it will be as fast as humanly possible.
-
-```sh
-./build-parquet.sh --select EUR-USD/*  --output my_cool_file.parquet --after "2025-01-01 00:00:00" --omit-open-candles --compression zstd --select GBP-*/* --select BRENT*/1m,15m,1h,* --select DOLLAR*/1h,4h,8h,1m,* --select *LIGHT*/*
-Running Dukascopy PARQUET exporter (16 processes)
-Step: Extract...
-100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 55/55 [00:03<00:00, 16.43files/s]
-
-Export complete!
-Total runtime: 3.41 seconds (0.06 minutes)
-```
-
-OMG. Lol. Thats fast :D - without merge though. It's way faster than i expected it to be.
 
 ---
 

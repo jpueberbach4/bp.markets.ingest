@@ -13,3 +13,6 @@ requests >=2.22.0
 
 # Fast JSON parsing
 orjson >=3.10.15
+
+# Database
+duckdb >= 1.3.2
