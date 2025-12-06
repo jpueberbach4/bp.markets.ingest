@@ -391,7 +391,7 @@ def main():
 
         # Not partition handling? we need to set a temp output directory
         if not options['partition']:
-            options['output_dir'] = f"temp/parquet/{uuid.uuid4()}"
+            options['output_dir'] = f"data/temp/parquet/{uuid.uuid4()}"
 
         # Build list of extraction tasks for workers
         extract_tasks = [
