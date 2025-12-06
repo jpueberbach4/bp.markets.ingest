@@ -182,11 +182,13 @@ def merge_parquet_files(input_dir: Path, output_file: str, compression: str, cle
         merge_query = f"""
             COPY (
                 SELECT * FROM read_parquet('{input_pattern}', union_by_name=true)
+                ORDER BY time ASC
             )
             TO '{output_file}' 
             (
                 FORMAT PARQUET,
-                COMPRESSION '{compression.upper()}'
+                COMPRESSION '{compression.upper()}',
+                ROW_GROUP_SIZE 1000000
             );
         """
         con.execute(merge_query)
