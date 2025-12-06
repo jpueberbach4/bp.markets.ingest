@@ -98,7 +98,19 @@ def extract_symbol(task: Tuple[str, str, str, str, str, Dict[str, Any]]) -> bool
     """
     
     if options.get('omit_open_candles') and not timeframe == "1m" :
-        # BUG: also omits last 1m candle but that one is (always) completed
+        """
+            Various edge cases exist here when there is no trading activity and this utility
+            is executed during these periods of inactivity (eg markets closed).
+
+            Edge cases, possibly not limited to:
+
+            - End of month happens during closed markets: strips off last monthly candle
+            - last 1m, 5m, 15m, 30m, 1h, 4h, 8h, 1d are all closed but are stripped off
+            - 1m timeframe always contains closed candles (handled in hacky way)
+            - For crypto markets, the issue does not exist (since they trade 24/7)
+
+            For now: use with caution
+        """
         where_clause += f" AND {time_column_name} < (SELECT MAX({time_column_name}) FROM read_csv_auto('{input_filepath}'))"
     
     read_csv_sql = f"""
