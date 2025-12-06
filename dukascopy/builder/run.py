@@ -160,11 +160,13 @@ def parse_args():
     - Returns a fully validated argparse.Namespace object
     """
 
+    # Custom parser ensures full help text is printed on errors
     parser = CustomArgumentParser(
         description="Batch extraction utility for symbol/timeframe datasets.",
         formatter_class=argparse.RawTextHelpFormatter
     )
 
+    # Multiple selection rules allowed: --select A/B,C --select X/D
     parser.add_argument(
         '--select',
         action='append',
@@ -176,6 +178,7 @@ def parse_args():
         )
     )
 
+    # Optional time range filters
     parser.add_argument(
         '--after',
         type=str,
@@ -187,6 +190,7 @@ def parse_args():
         help="End date/time (exclusive). Format: 'YYYY-MM-DD HH:MM:SS'."
     )
 
+    # User must choose exactly one output target
     output_group = parser.add_mutually_exclusive_group(required=True)
     
     output_group.add_argument(
@@ -203,6 +207,7 @@ def parse_args():
         help="Write a partitioned Parquet dataset (requires --partition)."
     )
     
+    # Compression codec for parquet output
     parser.add_argument(
         '--compression',
         type=str,
@@ -211,24 +216,28 @@ def parse_args():
         help="Compression codec for output Parquet files."
     )
     
+    # Optionally drop the last candle if incomplete
     parser.add_argument(
         '--omit-open-candles',
         action='store_true',
         help="Exclude the latest (possibly incomplete) candle from each timeframe."
     )
     
+    # Allows continuing when selection patterns match nothing
     parser.add_argument(
         '--force',
         action='store_true',
         help="Do not abort if a selection pattern matches no input files."
     )
     
+    # Discovery-only mode
     parser.add_argument(
         '--dry-run',
         action='store_true',
         help="Perform argument parsing and task discovery only; do not execute work."
     )
 
+    # Enables Hive-style partitioning
     parser.add_argument(
         '--partition',
         action='store_true',
@@ -248,6 +257,7 @@ def parse_args():
     dt_after = None
     dt_until = None
     
+    # Validate date strings and convert to datetime objects
     for arg_name in ['after', 'until']:
         date_str = getattr(args, arg_name)
         if date_str:
@@ -260,6 +270,7 @@ def parse_args():
             except ValueError:
                 parser.error(f"Argument --{arg_name}: Invalid date format. Must be '{date_format}'")
 
+    # Ensure --after < --until
     if dt_after and dt_until:
         if dt_after >= dt_until:
             parser.error(
@@ -267,63 +278,79 @@ def parse_args():
                 f"before --until ({args.until})."
             )
             
+    # Partition mode requires --output_dir exclusively
     if args.partition and not args.output_dir:
         parser.error("--partition requires the --output_dir argument.")
     
+    # Without partitioning, user must output a single file
     if not args.partition and not args.output:
         parser.error("Without --partition, the --output argument is required.")
 
+    # Load every (symbol, timeframe, path) from filesystem
     all_available_data = get_available_data_from_fs()
 
+    # Extract all unique timeframes
     all_available_timeframes = sorted(list(set([d[1] for d in all_available_data])))
     if not all_available_timeframes:
         parser.error("No timeframes found in data directories. Pipeline hasn't created any data yet.")
     
+    # Precompute existence map for fast membership checks
     available_pairs = set([(d[0], d[1]) for d in all_available_data])
     
+    # Unique available symbols for wildcard matching
     available_symbols = sorted(list(set([d[0] for d in all_available_data])))
     if not available_symbols:
         parser.error("No data found in 'data/' directories. Please run the main pipeline first.")
     
     final_selections: List[Tuple[str, str, str]] = []
     
+    # Collect all requested {symbol,timeframe} pairs for validation
     all_requested_pairs = set()
 
     for selection_str in args.select:
+        # Enforce pattern "SYMBOL/TF1,TF2,..."
         if '/' not in selection_str:
             parser.error(f"Invalid --select format: '{selection_str}'. Must be SYMBOL/TF1,TF2,...")
             
         symbol_pattern, timeframes_str = selection_str.split('/', 1)
         timeframes = [tf.strip() for tf in timeframes_str.split(',')]
 
+        # '*' timeframe means all available timeframes
         if '*' in timeframes:
             timeframes = all_available_timeframes
 
+        # Convert wildcard pattern to regex
         regex_pattern = symbol_pattern.replace('.', r'\.').replace('*', r'.*')
         
+        # Find all symbols matching wildcard pattern
         matches = [s for s in available_symbols if re.fullmatch(regex_pattern, s)]
         
+        # Build requested pairs and resolve them to actual files
         for symbol in matches:
             for tf in timeframes:
                 requested_pair = (symbol, tf)
                 all_requested_pairs.add(requested_pair)
                 
+                # Only append if data exists on disk
                 if requested_pair in available_pairs:
+                    # Fetch actual path record
                     for data_tuple in all_available_data:
                         if data_tuple[0] == symbol and data_tuple[1] == tf:
                             final_selections.append(data_tuple)
                             break
 
+    # Determine which requested pairs did not resolve to actual data
     resolved_pairs = set([(d[0], d[1]) for d in final_selections])
     unresolved_pairs = sorted(list(all_requested_pairs - resolved_pairs))
 
     if unresolved_pairs:
-        # TODO: --force
+        # TODO: implement behavior when --force is provided
         error_msg = "\nCritical Error: The following requested Symbol/Timeframe pairs could not be resolved to existing data files:\n"
         for symbol, tf in unresolved_pairs:
             error_msg += f"- {symbol}/{tf} (File not found on disk)\n"
         parser.error(error_msg)
 
+    # Deduplicate and sort for stable output
     final_selections = sorted(list(set(final_selections)))
         
     return {
@@ -334,8 +361,6 @@ def parse_args():
         'compression': args.compression,
         'omit_open_candles': args.omit_open_candles,
     }
-
-
 
 def main():
     try:
