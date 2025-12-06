@@ -647,8 +647,6 @@ START_DATE=2005-01-01 ./run.sh
 
 >Cascaded indicator engine
 
->Central backfill detection and redistribution service? Using Github? 
-
 >MSSIB Extension for DuckDB
 
 
