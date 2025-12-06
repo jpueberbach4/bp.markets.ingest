@@ -162,7 +162,7 @@ def download_symbol(symbol: str, dt: date, app_config: AppConfig) -> bool:
             response = session.get(url, 
                 headers={
                     "Accept-Encoding": "gzip, deflate",
-                    "User-Agent": "dukascopy-downloader/1.0 (+https://github.com/jpueberbach4/bp.markets.ingest/blob/main/dukascopy/download.py)"
+                    "User-Agent": "dukascopy-downloader/1.0 (+https://github.com/jpueberbach4/bp.markets.ingest/blob/main/dukascopy/etl/download.py)"
                 },
                 timeout=config.timeout
             )
