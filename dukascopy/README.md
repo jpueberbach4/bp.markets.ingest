@@ -483,9 +483,9 @@ optional arguments:
 
 ```sh
 python3 -c "
-  import duckdb
-  df = duckdb.sql(\"\"\"
-    SELECT * FROM 'my_cool_parquet_file.parquet' WHERE timeframe='1m' and symbol='EUR-USD' order by time  asc LIMIT 40;
+import duckdb
+df = duckdb.sql(\"\"\"
+    SELECT * FROM 'my_cool_parquet_file.parquet' WHERE timeframe='1m' AND symbol='EUR-USD' ORDER BY time DESC LIMIT 40;
   \"\"\").df()
 print(df)
 "
