@@ -494,7 +494,8 @@ print(df)
 
 **Advice:** For large selects, eg. a select ```"*/*"``` from 2005 until now: use output_dir (a hive). It will o/w likely choke on the merge. This is an edge case (select everything to a single parquet file) which we will not support atm. If it's really needed. For (very!) good reasons, drop me a line and i will see what i can do. A hive is the current solution for huge exports.
 
->**Use the modifier ```skiplast``` to control whether the last (potentially open) candle should be dropped from a timeframe.**
+>**❗Use the modifier ```skiplast``` to control whether the last (potentially open) candle should be dropped from a timeframe. \
+❗Skiplast only has effect when --until is not set or set to a future datetime**
 
 ---
 
