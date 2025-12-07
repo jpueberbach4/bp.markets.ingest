@@ -441,7 +441,7 @@ def require_tos_acceptance():
     print("immediately delist the repository and all releases without prior notice.")
     
     print("\n" + "=" * 70)
-    print("By using the Parquet Exporter, you agree to these Terms of Service.")
+    print("By using the Parquet Exporter and affiliated tools, you agree to these Terms of Service.")
     print("=" * 70)
     
     # Loop indefinitely until a valid input is provided
