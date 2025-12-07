@@ -24,7 +24,7 @@ git reset --hard origin/main
 - **Configuration**: Everything is now configurable through YAML
 - **Documentation**: Updated README with instructions
 
-## [0.4.0-staging] - 2025-12-07
+## [0.4.0-stable] - 2025-12-07
 
 ### Changed
 - **ETL**: Moved to etl subfolder (non-breaking)
