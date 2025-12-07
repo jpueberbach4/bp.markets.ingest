@@ -372,6 +372,10 @@ def parse_args():
         )
         parser.error(msg)
     
+    # fix compression = none -> uncompressed
+    if args.compression == "none":
+        args.compression = "uncompressed"
+
     return {
         'select_data': sorted(final_selections), 
         'partition': args.partition,
