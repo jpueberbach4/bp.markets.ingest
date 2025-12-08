@@ -8,7 +8,7 @@ download:
   max_retries: 3                      # Number of retries before downloader raises
   backoff_factor: 2                   # Exponential backoff factor (wait time)
   timeout: 10                         # Request timeout
-  rate_limit_rps: 1                   # Protect end-point (number of cores * rps = requests/second)
+  rate_limit_rps: 0.5                 # Protect end-point (number of cores * rps = requests/second)
   paths:
     historic: cache                   # Historical downloads
     live: data/temp                   # Live downloads
