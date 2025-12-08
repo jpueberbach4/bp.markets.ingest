@@ -35,7 +35,7 @@
 - [DuckDB Analytical Layer (Advanced)](#duckdb-advanced-users)
 - [Bug Tracking](#bug-tracking)
 - [Final Word](#final-word)
-- [Legal Disclaimer](#legal-disclaimer)
+- [Terms of use](#terms-of-use)
 - [License](#license)
 
 
@@ -879,9 +879,44 @@ Thank you for using this toolkit. The goal of the project is simple: provide a f
 
 A more advanced, tick-ready successor—planned as a C++ DuckDB extension—is under development and will be announced when ready.
 
-## Legal Disclaimer
+## Terms of Use
 
-This software is provided "as is" for educational and research purposes only. It does not constitute trading advice, investment recommendations, or execution functionality. Do not sell data acquired or generated with this tool.
+**Acceptance Required Before First Use**
+
+### 1. Data Source & Attribution
+- Data originates from Dukascopy Bank SA (www.dukascopy.com)
+- You must respect [Dukascopy's Terms of Service](https://www.dukascopy.com/swiss/english/legal-pages/terms-of-use/)
+
+### 2. Strict Usage Restrictions
+
+- **PERSONAL, NON-COMMERCIAL USE ONLY**
+- **NO REDISTRIBUTION** in any form (raw, processed, aggregated, derived, Parquet, CSV, etc.)
+- **NO INCORPORATION** into commercial products, services, or platforms
+- **NO PUBLIC HOSTING** (GitHub, Hugging Face, Kaggle, cloud storage, torrents, datasets)
+- **NO AUTOMATED BULK EXTRACTION** (wildcards intentionally disabled)
+
+### 3. Your Responsibilities
+
+- You accept ALL liability for your usage
+- You indemnify the developer against any claims
+- You use at your own risk
+- You respect server resources (rate limits enforced)
+
+### 4. Developer Disclaimer
+
+- Not affiliated with Dukascopy Bank SA
+- Software provided "as is" - no warranty
+- For educational/research purposes only
+- Not trading/investment advice
+
+### 5. Consequences of Violation
+
+- Tool access termination
+- Legal action by Dukascopy
+- Repository takedown
+- Loss of free data access for everyone
+
+---
 
 ## License
 
