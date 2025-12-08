@@ -110,6 +110,48 @@ def load_config() -> AppConfig:
     return config
 
 
+def require_tos_acceptance():
+    """
+    Prompts the user to accept the Terms of Service and loops until a 
+    valid affirmative response ('yes' or 'y') is received, or exits on denial.
+    """
+
+    if Path("cache/HAS_ACCEPTED_TERMS_OF_SERVICE").exists():
+        return True
+
+    print("\n" + "="*70)
+    print("🚀 TERMS OF SERVICE")
+    print("="*70)
+    print("""
+1. This tool provides access to Dukascopy Bank SA's historical data.
+2. Data is for PERSONAL, NON-COMMERCIAL research/analysis ONLY.
+3. REDISTRIBUTION IN ANY FORM IS STRICTLY PROHIBITED.
+4. You accept full liability for your usage.
+5. Dukascopy's own Terms of Service apply.
+    
+By using this tool, you accept these terms.
+    """)
+    # Loop indefinitely until a valid input is provided
+    while True:
+        # Prompt the user for input and convert to lowercase for easy checking
+        response = input("\nDo you accept the Terms of Service? (yes/no): ").strip().lower()
+
+        if response in ['yes', 'y']:
+            print("\n✓ Terms accepted. Continuing with data extraction...")
+            # Ensure cache directory exists
+            Path("cache").mkdir(parents=True, exist_ok=True)
+            with open("cache/HAS_ACCEPTED_TERMS_OF_SERVICE", "w"):
+                pass
+            return True  # Return success
+            
+        elif response in ['no', 'n']:
+            print("\n✗ Terms were not accepted. Aborting.")
+            sys.exit(1) # Exit the script with a non-zero status code (error)
+            
+        else:
+            print("Invalid input. Please respond with 'yes' or 'no'.")
+
+
 def main():
     """
     Main entry point for running the Dukascopy ETL pipeline.
@@ -119,6 +161,7 @@ def main():
     2. Execute download, transform, and aggregate stages in parallel using a single pool
     3. Measure and report total runtime
     """
+    require_tos_acceptance()
     start_time = time.time()  # Record wall-clock start time
     print(f"Running Dukascopy ETL pipeline ({NUM_PROCESSES} processes)")
 
