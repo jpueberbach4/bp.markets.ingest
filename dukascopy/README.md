@@ -41,6 +41,8 @@
 
 ## Notice
 
+**Project paused pending data provider guidance**
+
 if you cloned this repo before 2025-12-04 and are having trouble to sync, please update carefully:
 
 ```bash
