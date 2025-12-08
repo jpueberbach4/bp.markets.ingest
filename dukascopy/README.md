@@ -698,6 +698,8 @@ After initial sync, you can up the value to 1. Rate limits were introduced due t
 
 ## DuckDB (Advanced users)
 
+**Following the introduction of Parquet support, this section will be revised. CSV files now function only as a lightweight storage format.**
+
 ```sh
 pip install duckdb
 ```
