@@ -161,7 +161,10 @@ def main():
     2. Execute download, transform, and aggregate stages in parallel using a single pool
     3. Measure and report total runtime
     """
-    require_tos_acceptance()
+    try:
+        require_tos_acceptance()
+    except KeyboardInterrupt:
+        sys.exit(1)
     start_time = time.time()  # Record wall-clock start time
     print(f"Running Dukascopy ETL pipeline ({NUM_PROCESSES} processes)")
 
