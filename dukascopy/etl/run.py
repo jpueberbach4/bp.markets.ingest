@@ -128,6 +128,9 @@ def require_tos_acceptance():
 3. REDISTRIBUTION IN ANY FORM IS STRICTLY PROHIBITED.
 4. You accept full liability for your usage.
 5. Dukascopy's own Terms of Service apply.
+6. THE TOOL AND DATA ARE PROVIDED 'AS IS' WITHOUT ANY WARRANTIES, 
+   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF 
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR ACCURACY.
     
 By using this tool, you accept these terms.
     """)
