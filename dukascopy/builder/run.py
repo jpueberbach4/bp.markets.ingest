@@ -306,20 +306,6 @@ def parse_args():
         if is_wildcard_select:
             print("The * timeframe wildcard is currently unsupported")
             raise
-            # We have a wildcard
-            wildcard_modifier = ''
-            # Loop through specs to get *:modifier
-            for tf_spec in timeframes_specs:
-                if '*' in tf_spec:
-                    modifier_part = tf_spec.split(':')
-                    if len(modifier_part) > 1:
-                        # we have a modifier
-                        wildcard_modifier = f":{modifier_part[1]}"
-                    break # we do not support multiple wildcards in tf per select eg EUR-USD/*,*:skiplast.
-
-            # Append the modifier to each timeframe 
-            timeframes_specs = [f"{tf}{wildcard_modifier}" for tf in available_timeframes]
-            base_timeframes = available_timeframes[:] # This line is now correct
         
         # Temporarily disable wildcard select
         if '*' in symbol_pattern:
