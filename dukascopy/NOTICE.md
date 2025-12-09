@@ -23,7 +23,7 @@ On December 6th, I reviewed the clone statistics and noticed a sharp increase in
 
 After checking their website's Terms of Service, I realized we needed to introduce guardrails to protect Dukascopy's interests and infrastructure. Several issues in the code required immediate attention:
 
-- Excessive power of --select "*/*" \
+- Excessive power of --select "\*/\*" \
 \
 I realized the exporter was far too powerful. With a single command, someone could dump their entire data stack into a Parquet hive. \
 I removed this capability to reduce the potential attack surface.
