@@ -731,6 +731,8 @@ After initial sync, you can up the value to 1. Rate limits were introduced due t
 
 ## Notes and Future Work
 
+>Weekly labeling in MT4: MT4 behaves strangely here. When we resample with Pandas using W-MON, the weekly candles line up perfectly — open, high, low, close all match, which is great. But MT4 assigns each weekly candle a timestamp corresponding to the previous Sunday. Sure, I can correct it in a post-processing step, but I first want to understand why. Probably only a change in the MT4 exporter.
+
 >HTTP API for OHLC retrieval
 
 >Replay functionality?
