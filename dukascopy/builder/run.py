@@ -345,7 +345,8 @@ def export_and_segregate_mt4(merged_file_path: Path):
                     open,                                -- Open price
                     high,                                -- High price
                     low,                                 -- Low price
-                    close                                -- Close price
+                    close,                               -- Close price
+                    volume                               -- Volume
                 FROM read_csv_auto('{merged_file_path}', union_by_name=true)
                 WHERE symbol = '{symbol}' AND timeframe = '{timeframe}'
                 ORDER BY date asc, time ASC            -- Ensure chronological order
