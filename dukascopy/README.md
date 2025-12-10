@@ -717,8 +717,18 @@ After initial sync, you can up the value to 1. Rate limits were introduced due t
 
 ## Notes and Future Work
 
->Higher priority: shift candles in transform step to --nyclose (GMT+2/+3). Soon. Configurable. \
-There is more to it than just a "shift". DST. I am looking into how MT itself handles this and will try to replicate that exact same behavior. Could be a big feature, could be a small one.
+```sh
+MT alignment: There’s more involved than a simple “shift” because of DST. I’m currently 
+investigating how MetaTrader handles these transitions and will aim to replicate that behavior precisely. 
+Depending on what I find, this could turn out to be either a small enhancement or a fairly major feature.
+Practical steps:
+- Export 1-minute data from MT4 covering the DST transition period
+- Compare it against UTC 1-minute data
+- Reverse-engineer MT4’s handling of DST
+- Implement the matching logic
+
+Likely weekend work
+```
 
 >HTTP API for OHLC retrieval
 
