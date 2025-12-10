@@ -14,6 +14,7 @@ download:
     live: data/temp                   # Live downloads
 ## Below you will find the configuration for the transform.py script. 
 transform:
+  time_shift_ms: 0                    # How many milliseconds should we shift (0=UTC, 7200000=GMT+2 (eg MT4 Dukascopy) )
   round_decimals: 8                   # Number of decimals to round OHLCV to
   paths:
     data: data/transform/1m           # Output directory for transform

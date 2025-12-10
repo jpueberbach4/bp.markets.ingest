@@ -296,7 +296,8 @@ def resample_batch(sio: StringIO, rule: str, label: str, closed: str, config: Re
         sio,
         header=0,
         parse_dates=["time"],
-        index_col="time"
+        index_col="time",
+        date_format="%Y-%m-%d %H:%M:%S"
     )
 
     # Resample into target timeframe

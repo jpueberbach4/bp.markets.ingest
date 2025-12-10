@@ -193,6 +193,8 @@ Configure your symbols as shown in the next section of this readme.
 
 >[Symbols Configuration](#symbols-configuration)
 
+❗**IMPORTANT** If you backtest against MT4, or use this for MT4, it makes sense to configure ```time_shift_ms``` in config.user.yaml. See below.
+
 Next, run the pipeline with:
 
 ```sh
@@ -261,6 +263,8 @@ To override the default configuration, create a user-specific copy:
 cp config.yaml config.user.yaml
 ```
 
+❗**IMPORTANT** If you backtest against MT4, or use this for MT4, it makes sense to configure ```time_shift_ms```.
+
 The configuration file is straightforward and mostly self-explanatory. Adjust values as needed to suit your data and workflow.
 
 ```yaml
@@ -280,6 +284,7 @@ download:
     live: data/temp                   # Live downloads
 ## Below you will find the configuration for the transform.py script. 
 transform:
+  time_shift_ms: 0                    # How many milliseconds should we shift (0=UTC, 7200000=GMT+2 (eg MT4 Dukascopy) ) (!IMPORTANT!)
   round_decimals: 8                   # Number of decimals to round OHLCV to
   paths:
     data: data/transform/1m           # Output directory for transform
@@ -368,7 +373,7 @@ resample:
           source: "8h"
 ```
 
-**Note**: if you change resample, make sure you put the timeframes in the right order, because the stages depend on each other. On each resample configuration change, perform a ```./rebuild-weekly.sh```.
+❗**IMPORTANT** If you backtest against MT4, or use this for MT4, it makes sense to configure ```time_shift_ms```. When you already have a dataset and change ```time_shift_ms```, you will need to do a rebuild from scratch. See troubleshooting section for more information on how to do that. When you only change timeframes, a ```./rebuild-weekly.sh``` is sufficient.
 
 ---
 
@@ -398,7 +403,7 @@ time, open, high, low, close, volume
 | volume | Double/Float | DOUBLE |
 
 **Note on Precision:**
-- Timestamps are in UTC and follow YYYY-MM-DD HH:MM:SS format
+- Timestamps are (by default) in UTC and follow YYYY-MM-DD HH:MM:SS (use ```transform.time_shift_ms``` to shift to eg GMT+2)
 - Price values are rounded to configurable decimal places (default: 8)
 - Volume represents the total trading activity for the period
 
@@ -513,9 +518,6 @@ print(df)
 >**❗Use the modifier ```skiplast``` to control whether the last (potentially open) candle should be dropped from a timeframe. \
 ❗Skiplast only has effect when --until is not set or set to a future datetime**
 
-You now have your own local forex high-performance analytics and data stack :)
-Don't forget to thank Dukascopy.
-
 **Note on MT4 support** You can now use the ```--mt4``` flag to split CSV output into MetaTrader-compatible files. This flag works only with ```./build-csv.sh``` and cannot be used with ```--partition```. It has been implemented as an additional step following the merge-csv process.
 
 ```sh
@@ -539,8 +541,9 @@ tail temp/csv/test_EUR-USD_1h.csv -n 5
 
 >Should be directly loadable in MT.
 
-❗ Timestamps are currently in UTC. See your broker for more information. I am looking into this but with little priority.
+❗ It makes sense to configure ```time_shift_ms``` if you use this toolkit for MT4 platforms. Almost ALL MT4 Servers are either in GMT+2 or GMT+3.
 
+>You now have your own local forex high-performance analytics and data stack. Don't forget to thank Dukascopy.
 
 ---
 
@@ -721,20 +724,6 @@ After initial sync, you can up the value to 1. Rate limits were introduced due t
 ---
 
 ## Notes and Future Work
-
-```sh
-MT alignment: There’s more involved than a simple “shift” because of DST. I’m currently 
-investigating how MetaTrader handles these transitions and will aim to replicate that behavior precisely. 
-Depending on what I find, this could turn out to be either a small enhancement or a fairly major feature.
-Practical steps:
-- Export 1-minute data from MT4 covering the DST transition period
-- Compare it against UTC 1-minute data
-- Reverse-engineer MT4’s handling of DST
-- Implement the matching logic
-
-Update: it's easy. i can get right candles. mt4 aligned with a shift of 2 hours. on Dukascopy mt4. 
-        So it seems we only need to support a time_shift config flag in transform YAML (defaulting to 0 (UTC)). no evidence that they switch between GMT+2/+3 (DST changes)
-```
 
 >HTTP API for OHLC retrieval
 
