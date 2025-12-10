@@ -67,6 +67,8 @@ Time shifts cannot be applied incrementally because timestamps affect all aggreg
 
 **MT4** The MT4 export capability is a major improvement. I like it very much myself.
 
+>Lets put it here. I verified the MT4 data (Dukascopy MT4 platform). All is peachy regarding to prices. Open, High,Low,Close,Volume -> all perfect on all timeframes. The W1 candle is resampled using W-MON and is correct  EXCEPT for the label (timestamp). MT4 assigns it the label of previous Sunday. It doesnt matter much for my backtests but i will have a look at this. 
+
 ## Notice
 
 Backfilling is not currently supported, as our pipeline processes data strictly forward. Because of this, historical data—particularly for illiquid pairs and at the highest granularity—may be skewed. Backfilling has been identified as a must-have feature.
@@ -730,8 +732,6 @@ After initial sync, you can up the value to 1. Rate limits were introduced due t
 ---
 
 ## Notes and Future Work
-
->Weekly labeling in MT4: MT4 behaves strangely here. When we resample with Pandas using W-MON, the weekly candles line up perfectly — open, high, low, close all match, which is great. But MT4 assigns each weekly candle a timestamp corresponding to the previous Sunday. Sure, I can correct it in a post-processing step, but I first want to understand why. Probably only a change in the MT4 exporter.
 
 >HTTP API for OHLC retrieval
 
