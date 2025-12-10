@@ -354,6 +354,11 @@ def parse_args():
     # These flags must be paired correctly depending on output mode
     if args.partition and not args.output_dir:
         parser.error("--partition requires --output_dir")
+
+    # Yeah, parameter stuff.... defensive programming.... :S
+    if not args.partition and args.output_dir:
+        parser.error("--output_dir requires --partition")
+
     if not args.partition and not args.output:
         if args.output_type == 'parquet':
             parser.error("Without --partition, --output must be provided")
