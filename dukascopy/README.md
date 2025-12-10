@@ -696,8 +696,6 @@ After initial sync, you can up the value to 1. Rate limits were introduced due t
 
 >Cascaded indicator engine
 
->Extend builder with --csv AND --parquet (small change)
-
 >MSSIB Extension for DuckDB
 
 ---
