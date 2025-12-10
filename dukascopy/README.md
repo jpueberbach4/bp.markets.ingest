@@ -54,6 +54,11 @@ git reset --hard origin/main
 
 >**Also:** rate limits have been added, see [here](#downloads-appear-slower-after-updating-to-the-latest-version)
 
+⚡ Branch guide:
+
+- main and other branches: bleeding-edge, early access
+- releases: stable, less functionality
+
 ## Notice
 
 Backfilling is not currently supported, as our pipeline processes data strictly forward. Because of this, historical data—particularly for illiquid pairs and at the highest granularity—may be skewed. Backfilling has been identified as a must-have feature.
