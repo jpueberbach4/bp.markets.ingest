@@ -917,8 +917,6 @@ A more advanced, tick-ready successor—planned as a C++ DuckDB extension—is u
 
 ### 5. Consequences of Violation
 
-- Tool access termination
-- Legal action by Dukascopy
 - Repository takedown
 - Loss of free data access for everyone
 
