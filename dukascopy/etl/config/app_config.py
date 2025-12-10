@@ -82,6 +82,8 @@ class DownloadConfig:
 @dataclass
 class TransformPaths:
     """Directory paths used by the script."""
+    # How much ms should we shift time by (0=UTC, 7200000=GMT+2)
+    time_shift_ms: int = 0
     # Input directory for historic
     historic: str = "cache"
     # Output directory for transform of historic

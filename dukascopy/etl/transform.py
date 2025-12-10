@@ -80,10 +80,8 @@ def transform_symbol(symbol: str, dt: date, app_config: AppConfig) -> bool:
     with open(cache_path, "rb") as file:
         data = orjson.loads(file.read())
 
-    TIME_SHIFT_MS = 2 * 3600 * 1000
-
     # Vectorized computation of cumulative OHLC and timestamps
-    times   = np.cumsum(np.array(data['times'], dtype=np.int64) * data['shift']) + (data['timestamp'] + TIME_SHIFT_MS)
+    times   = np.cumsum(np.array(data['times'], dtype=np.int64) * data['shift']) + (data['timestamp'] + config.time_shift_ms)
     opens   = data['open']  + np.cumsum(np.array(data['opens'],  dtype=np.float64) * data['multiplier'])
     highs   = data['high']  + np.cumsum(np.array(data['highs'],  dtype=np.float64) * data['multiplier'])
     lows    = data['low']   + np.cumsum(np.array(data['lows'],   dtype=np.float64) * data['multiplier'])
