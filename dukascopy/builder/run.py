@@ -270,6 +270,75 @@ def merge_output_files(input_dir: Path, output_file: str, output_type: str, comp
         con.close()
 
 
+import os
+
+def export_and_segregate_mt4(merged_file_path: Path):
+    """
+    Reads the full merged CSV, determines all contained symbol/timeframe pairs,
+    and exports a separate, MT4-compliant 6-column CSV file for each pair.
+    
+    The final output filenames will be SYMBOL_TIMEFRAME.csv (e.g., EUR-USD_8H.csv).
+    """
+    con = duckdb.connect(database=':memory:')
+    
+    print("\nStarting MT4 segregation process...")
+
+    discover_query = f"""
+        SELECT DISTINCT symbol, timeframe
+        FROM read_csv_auto('{merged_file_path}', union_by_name=true);
+    """
+    try:
+        results = con.execute(discover_query).fetchall()
+    except Exception as e:
+        print(f"Error discovering symbols/timeframes in merged file: {e}")
+        con.close()
+        return 0
+
+    if not results:
+        print("Warning: No data found to segregate for MT4.")
+        con.close()
+        return 0
+        
+    count = 0
+
+    for symbol, timeframe in results:
+
+        stem = Path(merged_file_path).stem
+
+        output_filename = f"{stem}_{symbol}_{timeframe}.csv"
+        
+        output_path = Path(merged_file_path).parent / output_filename
+        
+        mt4_transform_query = f"""
+            COPY (
+                SELECT
+                    strftime(time, '%Y.%m.%d') AS Date,
+                    strftime(time, '%H:%M') AS Time,
+                    open,
+                    high,
+                    low,
+                    close
+                FROM read_csv_auto('{merged_file_path}', union_by_name=true)
+                WHERE symbol = '{symbol}' AND timeframe = '{timeframe}'
+                ORDER BY time ASC
+            )
+            TO '{output_path}'
+            (
+                FORMAT CSV,
+                HEADER false, -- MT4 requires no header row
+                DELIMITER ','
+            );
+        """
+        try:
+            con.execute(mt4_transform_query)
+            print(f"  ✓ Exported: {output_path.name}")
+            count += 1
+        except Exception as e:
+            print(f"  ✗ Failed to export {symbol}/{timeframe}: {e}")
+            
+    con.close()
+    return count
+
 
 def parse_args():
     """
@@ -311,6 +380,9 @@ def parse_args():
         choices=['snappy', 'gzip', 'brotli', 'zstd', 'lz4', 'none'],
         help="Compression codec for Parquet output."
     )
+
+    parser.add_argument('--mt4', action='store_true',
+                        help="Splits merged CSV into files compatible with MT4.")
 
     parser.add_argument('--force', action='store_true',
                         help="Allow patterns that match no files.")
@@ -358,6 +430,12 @@ def parse_args():
     # Yeah, parameter stuff.... defensive programming.... :S
     if not args.partition and args.output_dir:
         parser.error("--output_dir requires --partition")
+
+    if args.partition and args.mt4:
+        parser.error("--mt4 incompatible with --partition")
+
+    if args.output_type == 'parquet' and args.mt4:
+        parser.error("--parquet incompatible with --mt4")
 
     if not args.partition and not args.output:
         if args.output_type == 'parquet':
@@ -479,7 +557,8 @@ def parse_args():
         'after': args.after,
         'until': args.until,
         'output': args.output,
-        'compression': args.compression
+        'compression': args.compression,
+        'mt4': args.mt4
     }
 
 
@@ -584,6 +663,10 @@ def main():
         if not options['partition']:
             print(f"Merging {options['output_dir']} to {options['output']}...")
             merge_output_files(Path(options['output_dir']), options['output'], options['output_type'], options['compression'], not options['keep_temp'])
+            if options['mt4']:
+                export_and_segregate_mt4(options['output'])
+                if not options['keep_temp']:
+                    Path(options['output']).unlink()
 
         elapsed = time.time() - start_time
         print("\nExport complete!")
