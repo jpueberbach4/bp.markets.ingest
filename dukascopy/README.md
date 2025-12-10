@@ -431,7 +431,7 @@ The open candle will always be the last row in the CSV. If you prefer not to inc
 
 A powerful new utility, build-parquet.sh, allows you to generate high-performance .parquet files or partitioned Hive-style Parquet datasets based on your selection criteria.
 
->A new script, ```./build-csv.sh```, is available for generating CSV output. It accepts the same command-line arguments as ```./build-parquet.sh```.
+>A new script, ```./build-csv.sh```, is available for generating CSV output. It accepts the same command-line arguments as ```./build-parquet.sh```. Use ```--compression none```.
 
 **Note:** for this utility to work you need to install DuckDB
 
