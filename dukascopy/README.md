@@ -59,6 +59,12 @@ git reset --hard origin/main
 - main and other branches: bleeding-edge, early access
 - releases: stable, less functionality
 
+❗ WARNING: Are you on MT4? CHANGE ```time_shift_ms```. When changing ```time_shift_ms``` after building a dataset:
+- Delete ALL data: rm -rf ./data/*
+- Rebuild from scratch: START_DATE=2005-01-01 ./run.sh
+
+Time shifts cannot be applied incrementally because timestamps affect all aggregation boundaries.
+
 ## Notice
 
 Backfilling is not currently supported, as our pipeline processes data strictly forward. Because of this, historical data—particularly for illiquid pairs and at the highest granularity—may be skewed. Backfilling has been identified as a must-have feature.
