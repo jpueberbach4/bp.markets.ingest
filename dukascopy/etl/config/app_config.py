@@ -82,8 +82,6 @@ class DownloadConfig:
 @dataclass
 class TransformPaths:
     """Directory paths used by the script."""
-    # How much ms should we shift time by (0=UTC, 7200000=GMT+2)
-    time_shift_ms: int = 0
     # Input directory for historic
     historic: str = "cache"
     # Output directory for transform of historic
@@ -94,6 +92,9 @@ class TransformPaths:
 @dataclass
 class TransformConfig:
     """The root configuration for the download.py script."""
+    # How much ms should we shift time by (0=UTC, 7200000=GMT+2)
+    time_shift_ms: int = 0
+    # How much decimals we need to round to
     round_decimals: int = 10
     paths: TransformPaths = field(default_factory=TransformPaths)
 
