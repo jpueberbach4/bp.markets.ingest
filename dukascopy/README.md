@@ -65,6 +65,8 @@ git reset --hard origin/main
 
 Time shifts cannot be applied incrementally because timestamps affect all aggregation boundaries.
 
+**MT4** The MT4 export capability is a major improvement. I like it very much myself.
+
 ## Notice
 
 Backfilling is not currently supported, as our pipeline processes data strictly forward. Because of this, historical data—particularly for illiquid pairs and at the highest granularity—may be skewed. Backfilling has been identified as a must-have feature.
