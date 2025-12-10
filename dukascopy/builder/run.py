@@ -269,75 +269,109 @@ def merge_output_files(input_dir: Path, output_file: str, output_type: str, comp
         # Ensure DuckDB connection is closed even if an error occurred
         con.close()
 
-
-import os
-
 def export_and_segregate_mt4(merged_file_path: Path):
     """
-    Reads the full merged CSV, determines all contained symbol/timeframe pairs,
-    and exports a separate, MT4-compliant 6-column CSV file for each pair.
-    
-    The final output filenames will be SYMBOL_TIMEFRAME.csv (e.g., EUR-USD_8H.csv).
+    Segregates a merged CSV of trading data into MT4-compliant CSV files by symbol and timeframe.
+
+    This function reads a merged CSV file containing multiple symbols and timeframes,
+    identifies all unique symbol/timeframe pairs, and exports each pair to a separate
+    6-column CSV file formatted for MetaTrader 4 (MT4). The exported files do not include
+    headers and follow the date/time formatting required by MT4.
+
+    Output filenames are constructed as: <MERGED_FILENAME>_<SYMBOL>_<TIMEFRAME>.csv
+    For example, a merged file "all_data.csv" containing EUR-USD with 8H timeframe
+    would result in "all_data_EUR-USD_8H.csv".
+
+    Parameters:
+    -----------
+    merged_file_path : Path
+        Path to the merged CSV file containing all symbols and timeframes.
+
+    Returns:
+    --------
+    int
+        The total number of successfully exported MT4 CSV files.
+
+    Raises:
+    -------
+    None
+        All exceptions are caught and logged; the function will return 0 if an error occurs.
     """
+    # Connect to an in-memory DuckDB database
     con = duckdb.connect(database=':memory:')
     
     print("\nStarting MT4 segregation process...")
 
+    # Query to discover all unique symbol/timeframe combinations in the merged CSV
     discover_query = f"""
         SELECT DISTINCT symbol, timeframe
         FROM read_csv_auto('{merged_file_path}', union_by_name=true);
     """
     try:
+        # Execute the discovery query and fetch all results
         results = con.execute(discover_query).fetchall()
     except Exception as e:
+        # Handle errors if the query fails
         print(f"Error discovering symbols/timeframes in merged file: {e}")
         con.close()
         return 0
 
+    # If no symbols/timeframes found, exit early
     if not results:
         print("Warning: No data found to segregate for MT4.")
         con.close()
         return 0
         
-    count = 0
+    count = 0  # Counter for successful exports
 
+    # Loop through each symbol/timeframe pair
     for symbol, timeframe in results:
 
+        # Extract the base filename (without extension) from the merged file path
         stem = Path(merged_file_path).stem
 
+        # Construct the output filename for MT4 CSV
         output_filename = f"{stem}_{symbol}_{timeframe}.csv"
         
+        # Full output path for the exported file
         output_path = Path(merged_file_path).parent / output_filename
         
+        # Query to transform the merged CSV into MT4 6-column format and export it
         mt4_transform_query = f"""
             COPY (
                 SELECT
-                    strftime(time, '%Y.%m.%d') AS Date,
-                    strftime(time, '%H:%M') AS Time,
-                    open,
-                    high,
-                    low,
-                    close
+                    strftime(time, '%Y.%m.%d') AS Date,  -- Format date as YYYY.MM.DD
+                    strftime(time, '%H:%M') AS Time,     -- Format time as HH:MM
+                    open,                                -- Open price
+                    high,                                -- High price
+                    low,                                 -- Low price
+                    close                                -- Close price
                 FROM read_csv_auto('{merged_file_path}', union_by_name=true)
                 WHERE symbol = '{symbol}' AND timeframe = '{timeframe}'
-                ORDER BY date asc, time ASC
+                ORDER BY date asc, time ASC            -- Ensure chronological order
             )
             TO '{output_path}'
             (
                 FORMAT CSV,
-                HEADER false, -- MT4 requires no header row
-                DELIMITER ','
+                HEADER false,                          -- MT4 requires no header row
+                DELIMITER ','                           -- CSV comma delimiter
             );
         """
         try:
+            # Execute the export query
             con.execute(mt4_transform_query)
             print(f"  ✓ Exported: {output_path}")
             count += 1
         except Exception as e:
+            # Handle any errors during export
             print(f"  ✗ Failed to export {symbol}/{timeframe}: {e}")
             
+    # Close the DuckDB connection
     con.close()
+    
+    # Return the total number of successfully exported files
     return count
+
 
 
 def parse_args():
