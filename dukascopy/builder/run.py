@@ -299,6 +299,12 @@ def export_and_segregate_mt4(merged_file_path: Path):
     """
     # Connect to an in-memory DuckDB database
     con = duckdb.connect(database=':memory:')
+
+    print("\n" + "="*75)
+    print("⚠️ CRITICAL TIME ZONE WARNING FOR METATRADER IMPORT ⚠️")
+    print("ALL EXPORTED CSV DATA IS BASED ON DUKASCOPY'S **UTC TIME**.")
+    print("IF YOU WANT TO USE THESE EXPORTS RELIABLY, FIND MT SERVERS ACTING ON UTC.")
+    print("="*75)
     
     print("\nStarting MT4 segregation process...")
 
