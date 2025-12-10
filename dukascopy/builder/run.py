@@ -331,7 +331,7 @@ def export_and_segregate_mt4(merged_file_path: Path):
         """
         try:
             con.execute(mt4_transform_query)
-            print(f"  ✓ Exported: {output_path.name}")
+            print(f"  ✓ Exported: {output_path}")
             count += 1
         except Exception as e:
             print(f"  ✗ Failed to export {symbol}/{timeframe}: {e}")
