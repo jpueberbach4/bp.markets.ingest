@@ -717,7 +717,8 @@ After initial sync, you can up the value to 1. Rate limits were introduced due t
 
 ## Notes and Future Work
 
->Higher priority: shift candles in transform step to --nyclose (GMT+2/+3). Soon. Configurable.
+>Higher priority: shift candles in transform step to --nyclose (GMT+2/+3). Soon. Configurable. \
+There is more to it than just a "shift". DST. I am looking into how MT itself handles this and will try to replicate that exact same behavior. Could be a big feature, could be a small one.
 
 >HTTP API for OHLC retrieval
 
