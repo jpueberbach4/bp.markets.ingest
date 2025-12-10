@@ -269,7 +269,7 @@ To override the default configuration, create a user-specific copy:
 cp config.yaml config.user.yaml
 ```
 
-❗**IMPORTANT** If you backtest against MT4, or use this for MT4, it makes sense to configure ```time_shift_ms```.
+❗**IMPORTANT** If you backtest against MT4, or use this for MT4, it makes sense to configure ```time_shift_ms```. When you already have a dataset and change ```time_shift_ms```, you will need to do a rebuild from scratch. See troubleshooting section for more information on how to do that. When you only change timeframes, a ```./rebuild-weekly.sh``` is sufficient.
 
 The configuration file is straightforward and mostly self-explanatory. Adjust values as needed to suit your data and workflow.
 
@@ -378,8 +378,6 @@ resample:
           closed: "left"
           source: "8h"
 ```
-
-❗**IMPORTANT** If you backtest against MT4, or use this for MT4, it makes sense to configure ```time_shift_ms```. When you already have a dataset and change ```time_shift_ms```, you will need to do a rebuild from scratch. See troubleshooting section for more information on how to do that. When you only change timeframes, a ```./rebuild-weekly.sh``` is sufficient.
 
 ---
 
