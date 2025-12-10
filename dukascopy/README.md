@@ -732,9 +732,8 @@ Practical steps:
 - Reverse-engineer MT4’s handling of DST
 - Implement the matching logic
 
-Likely weekend work. 
-
-Note: it will be an interesting find. i will verify using crypto.
+Update: it's easy. i can get right candles. mt4 aligned with a shift of 2 hours. on Dukascopy mt4. 
+        So it seems we only need to support a time_shift config flag in transform YAML (defaulting to 0 (UTC)). no evidence that they switch between GMT+2/+3 (DST changes)
 ```
 
 >HTTP API for OHLC retrieval
