@@ -67,8 +67,6 @@ Time shifts cannot be applied incrementally because timestamps affect all aggreg
 
 **MT4** The MT4 export capability is a major improvement. I like it very much myself.
 
->Lets put it here. I verified the MT4 data (Dukascopy MT4 platform). All is peachy regarding to prices. Open, High,Low,Close,Volume -> all perfect on all timeframes. The W1 candle is resampled using W-MON and is correct  EXCEPT for the label (timestamp). MT4 assigns it the label of previous Sunday. It doesnt matter much for my backtests but i will have a look at this. 
-
 ## Notice
 
 Backfilling is not currently supported, as our pipeline processes data strictly forward. Because of this, historical data—particularly for illiquid pairs and at the highest granularity—may be skewed. Backfilling has been identified as a must-have feature.

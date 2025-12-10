@@ -335,13 +335,22 @@ def export_and_segregate_mt4(merged_file_path: Path):
         
         # Full output path for the exported file
         output_path = Path(merged_file_path).parent / output_filename
-        
+
+        # Yuk, bah
+        if timeframe in ('1W'):
+            # Subtract 1 day from the 'time' column for W1 only
+            time_shift_expression = "time - INTERVAL 1 DAY"
+        else:
+            # Use the original 'time' column for all other timeframes
+            time_shift_expression = "time"
+
+
         # Query to transform the merged CSV into MT4 6-column format and export it
         mt4_transform_query = f"""
             COPY (
                 SELECT
-                    strftime(time, '%Y.%m.%d') AS Date,  -- Format date as YYYY.MM.DD
-                    strftime(time, '%H:%M:%S') AS Time,  -- Format time as HH:MM:SS
+                    strftime({time_shift_expression}, '%Y.%m.%d') AS Date,  -- Format date as YYYY.MM.DD
+                    strftime({time_shift_expression}, '%H:%M:%S') AS Time,  -- Format time as HH:MM:SS
                     open,                                -- Open price
                     high,                                -- High price
                     low,                                 -- Low price
@@ -361,7 +370,11 @@ def export_and_segregate_mt4(merged_file_path: Path):
         try:
             # Execute the export query
             con.execute(mt4_transform_query)
-            print(f"  ✓ Exported: {output_path}")
+            # Me no like
+            if timeframe in ('1W'):
+                print(f"  ✓ Exported: {output_path} - Shifted to Sunday to line up")
+            else:
+                print(f"  ✓ Exported: {output_path}")
             count += 1
         except Exception as e:
             # Handle any errors during export
