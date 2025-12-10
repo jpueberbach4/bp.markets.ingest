@@ -534,6 +534,9 @@ tail temp/csv/test_EUR-USD_1h.csv -n 5
 
 >Should be directly loadable in MT.
 
+❗ Timestamps are currently in UTC. See your broker for more information. I am looking into this but with little priority.
+
+
 ---
 
 ## Performance Benchmarks
