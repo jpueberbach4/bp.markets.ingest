@@ -304,6 +304,7 @@ def export_and_segregate_mt4(merged_file_path: Path):
     print("⚠️ CRITICAL TIME ZONE WARNING FOR METATRADER IMPORT ⚠️")
     print("ALL EXPORTED CSV DATA IS BASED ON DUKASCOPY'S **UTC TIME**.")
     print("IF YOU WANT TO USE THESE EXPORTS RELIABLY, FIND MT SERVERS ACTING ON UTC.")
+    print("OR JUST WAIT FOR NEXT VERSION AND CONSIDER THIS A \"PREVIEW FUNCTIONALITY\"")
     print("="*75)
     
     print("\nStarting MT4 segregation process...")
