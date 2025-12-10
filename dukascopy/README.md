@@ -727,7 +727,9 @@ Practical steps:
 - Reverse-engineer MT4’s handling of DST
 - Implement the matching logic
 
-Likely weekend work
+Likely weekend work. 
+
+Note: it will be an interesting find. i will verify using crypto.
 ```
 
 >HTTP API for OHLC retrieval
