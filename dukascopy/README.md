@@ -719,9 +719,19 @@ After initial sync, you can up the value to 1. Rate limits were introduced due t
 
 >Refactor/Cleanup builder code + YAML config + Documentation update (Prep for 0.5 release)
 
->HTTP API for OHLC retrieval
+>HTTP API for OHLC retrieval (0.6)
+```sh
+# Mapping CLI-alike behavior to HTTP. We will only support 127.0.0.1 (legal-boundary). No CORS *. It's for EA purposes.
+http://localhost:port/bp/dukascopy/select/SYMBOL,TF1,TF2:skiplast/select/SYMBOL,TF1/after/2025-01-01+00:00:00/output/CSV/MT4
+# Health endpoint
+http://localhost:port/bp/healtz
+# Metrics endpoint (performance, total bytes, number of requests, response times etc)
+http://localhost:port/bp/metrics
 
->Replay functionality?
+Or something similar. Need to check industry standards (best UX/elegancy).
+```
+
+>Replay functionality (0.7?)
 
 ```sh
 I am currently playing with replayability. I am testing this: 
@@ -739,7 +749,7 @@ replay.sh --input replay.csv | analyse.sh # aligns the candles to right-boundary
 # 0.7 feature?
 ```
                              
->Cascaded indicator engine
+>Cascaded indicator engine (1.0) (if still needed after replay.sh + plugins)
 
 >MSSIB Extension for DuckDB
 
