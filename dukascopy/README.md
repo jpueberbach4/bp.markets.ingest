@@ -733,7 +733,7 @@ http://localhost:port/metrics
 Or something similar. Need to check industry standards (best UX/elegancy).
 ```
 
->Replay functionality (0.7?)
+>Replay functionality (0.7)
 
 ```sh
 I am currently playing with replayability. I am testing this: 
@@ -748,7 +748,6 @@ replay.sh --input replay.csv | analyse.sh # aligns the candles to right-boundary
 
 # ofcourse plugins will be chainable, eg replay.sh | indicator.sh | ... | analyse.sh | ... | imagine.sh
 
-# 0.7 feature?
 ```
                              
 >Cascaded indicator engine (1.0) (if still needed after replay.sh + plugins)
