@@ -715,7 +715,7 @@ After initial sync, you can up the value to 1. Rate limits were introduced due t
 
 ## Notes and Future Work
 
->Refactor/Cleanup builder code + YAML config
+>Refactor/Cleanup builder code + YAML config + Documentation update (Prep for 0.5 release)
 
 >HTTP API for OHLC retrieval
 
