@@ -746,7 +746,10 @@ replay.sh --input replay.csv | analyse.sh # aligns the candles to right-boundary
                                           # process (which does the analysis). candles are flowing in, in the right order.
                                           # its an experiment on what i can do with it this way (in-memory duckdb)
 
-# ofcourse plugins will be chainable, eg replay.sh | indicator.sh | ... | analyse.sh | ... | imagine.sh
+# ofcourse plugins will be chainable, eg replay.sh | tee raw.txt | indicator.sh | tee indicator.txt | \
+# analyse.sh | tee analyse.txt | ... | imagine.sh > output.txt
+
+# gives you time-travel debugging for financial algorithms.
 
 ```
                              
