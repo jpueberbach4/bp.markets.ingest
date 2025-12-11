@@ -43,16 +43,7 @@
 
 **Dukascopy has reviewed this and cleared it. However, we ask you to behave as a good citizin. Thank you**
 
-if you cloned this repo before 2025-12-04 and are having trouble to sync, please update carefully:
-
-```bash
-git fetch origin
-git reset --hard origin/main
-```
-
->**Note:** when you use the default configuration, data-points are now exactly aligned to https://www.dukascopy.com/swiss/english/marketwatch/charts/
-
->**Also:** rate limits have been added, see [here](#downloads-appear-slower-after-updating-to-the-latest-version)
+>Rate limits have been added, see [here](#downloads-appear-slower-after-updating-to-the-latest-version)
 
 ⚡ Branch guide:
 
@@ -64,8 +55,6 @@ git reset --hard origin/main
 - Rebuild from scratch: START_DATE=2005-01-01 ./run.sh
 
 Time shifts cannot be applied incrementally because timestamps affect all aggregation boundaries.
-
-**MT4** The MT4 export capability is a major improvement. I like it very much myself.
 
 ## Notice
 
@@ -188,7 +177,7 @@ pip install -r requirements.txt
 
 **Permissions**
 
-These scripts read from and write to both the data directory and the cache directory. If your system uses strict permission settings, ensure that the ./data directory is created in advance.
+These scripts read from and write to both the data directory and the cache directory. If your system uses strict permission settings, ensure that the ./data and ./cache directory are created in advance.
 
 ```sh
 mkdir -p ./data ./cache
@@ -200,8 +189,6 @@ chmod u+rwx ./data ./cache
 Configure your symbols as shown in the next section of this readme.
 
 >[Symbols Configuration](#symbols-configuration)
-
-❗**IMPORTANT** If you backtest against MT4, or use this for MT4, it makes sense to configure ```time_shift_ms``` in config.user.yaml. See below.
 
 Next, run the pipeline with:
 
@@ -222,6 +209,7 @@ Add the following line, adjust path accordingly:
 ```sh
 * * * * * sleep 5 && cd /home/repos/bp.markets.ingest/dukascopy && ./run.sh
 ```
+
 ---
 
 ## Symbols Configuration
@@ -545,10 +533,6 @@ tail temp/csv/test_EUR-USD_1h.csv -n 5
 2025.12.10,21:00:00,1.16549,1.1681,1.16467,1.16782,24032.88
 ```
 
->Should be directly loadable in MT.
-
-❗ It makes sense to configure ```time_shift_ms``` if you use this toolkit for MT4 platforms. Almost ALL MT4 Servers are either in GMT+2 or GMT+3.
-
 >You now have your own local forex high-performance analytics and data stack. Don't forget to thank Dukascopy.
 
 ---
@@ -703,7 +687,7 @@ If your broker's candles look different, that's because **your broker is not Duk
 
 There is exactly ```one guaranteed way``` to get perfect, bit-for-bit alignment with the dataset:
 
-→ Become a client of Dukascopy.
+→ [Become a client of Dukascopy](https://live-login.dukascopy.com/rto3/).
 
 ### Downloads appear slower after updating to the latest version
 
@@ -745,7 +729,7 @@ After initial sync, you can up the value to 1. Rate limits were introduced due t
 
 ## DuckDB (Advanced users)
 
-**Following the introduction of Parquet support, this section will be revised. CSV files now function only as a lightweight storage format.**
+**Following the introduction of Parquet support, this section will be revised. CSV files now function only as a lightweight storage format.** (planned this weekend)
 
 ```sh
 pip install duckdb
@@ -933,7 +917,7 @@ A more advanced, tick-ready successor—planned as a C++ DuckDB extension—is u
 **Acceptance Required Before First Use**
 
 ### 1. Data Source & Attribution
-- Data originates from Dukascopy Bank SA (www.dukascopy.com)
+- Data originates from Dukascopy Bank SA ([www.dukascopy.com](https://live-login.dukascopy.com/rto3/))
 - You must respect [Dukascopy's Terms of Service](https://www.dukascopy.com/swiss/english/legal-pages/terms-of-use/)
 
 ### 2. Strict Usage Restrictions
