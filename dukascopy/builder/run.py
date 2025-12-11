@@ -336,7 +336,7 @@ def export_and_segregate_mt4(merged_file_path: Path):
         # Full output path for the exported file
         output_path = Path(merged_file_path).parent / output_filename
 
-        # Yuk, bah
+        # Hack - todo: see if better way
         if timeframe in ('1W'):
             # Subtract 1 day from the 'time' column for W1 only
             time_shift_expression = "time - INTERVAL 1 DAY"
@@ -370,7 +370,7 @@ def export_and_segregate_mt4(merged_file_path: Path):
         try:
             # Execute the export query
             con.execute(mt4_transform_query)
-            # Me no like
+            # todo: see if better way
             if timeframe in ('1W'):
                 print(f"  ✓ Exported: {output_path} - Shifted to Sunday to line up")
             else:
@@ -504,16 +504,14 @@ def parse_args():
     all_available_data = get_available_data_from_fs()
 
     if args.list:
+        # Print a neat list of all symbols (saves a lookup on disk)
         data = {}
         for symbol, timeframe, _ in all_available_data:
             data.setdefault(symbol, []).append(timeframe)
         print("\n--- Available Symbols and Timeframes"+"-"*43)
         for symbol in sorted(data.keys()):
-            timeframes_list = sorted(data[symbol])
-            print(f"{symbol:<20} timeframes: [{', '.join(timeframes_list)}]")
-            
+            print(f"{symbol:<20} timeframes: [{', '.join(sorted(data[symbol]))}]")  
         print("-"*80)
-        sys.exit(0)
         sys.exit(0)
 
     # Build sets for fast lookup & matching during pattern expansion
