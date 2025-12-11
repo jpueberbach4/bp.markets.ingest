@@ -722,11 +722,13 @@ After initial sync, you can up the value to 1. Rate limits were introduced due t
 >HTTP API for OHLC retrieval (0.6)
 ```sh
 # Mapping CLI-alike behavior to HTTP. We will only support 127.0.0.1 (legal-boundary). No CORS *. It's for EA purposes.
-http://localhost:port/bp/dukascopy/select/SYMBOL,TF1,TF2:skiplast/select/SYMBOL,TF1/after/2025-01-01+00:00:00/output/CSV/MT4
+http://localhost:port/api/v1/ohlc/select/SYMBOL,TF1,TF2:skiplast/select/SYMBOL,TF1/after/2025-01-01+00:00:00/output/CSV/MT4
+# will be better than this. its a braindump.
+
 # Health endpoint
-http://localhost:port/bp/healtz
+http://localhost:port/healtz
 # Metrics endpoint (performance, total bytes, number of requests, response times etc)
-http://localhost:port/bp/metrics
+http://localhost:port/metrics
 
 Or something similar. Need to check industry standards (best UX/elegancy).
 ```
