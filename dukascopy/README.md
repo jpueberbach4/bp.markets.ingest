@@ -58,7 +58,7 @@ Time shifts cannot be applied incrementally because timestamps affect all aggreg
 
 **Note:** I’ve been comparing the generated data with Dukascopy’s MT4 platform. The volume is consistently higher in our generated dataset, but everything else looks excellent—very close to perfect for forex. Candle alignment is really great, and backtests run safely. If there’s anything I may have overlooked, feel free to point it out (through discussions) and provide examples. So far, I’ve tested USDJPY, EURUSD, and GBPUSD. I’ll run additional accuracy tests over the weekend, including commodities, crypto, and indices. Looks good.
 
-Indices have another shift. On the 4h only.
+>MT4 charts - DAX/4H is located in another timezone? **Unexpected**. Weird. Enough reason to build a compare tool. Planned.
 
 ## Notice
 
