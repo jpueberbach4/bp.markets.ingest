@@ -749,9 +749,11 @@ replay.sh --input replay.csv | analyse.sh # aligns the candles to right-boundary
 # ofcourse plugins will be chainable, eg replay.sh | tee raw.txt | indicator.sh | tee indicator.txt | \
 # analyse.sh | tee analyse.txt | ... | imagine.sh > output.txt
 
-# gives you time-travel debugging for financial algorithms.
+# gives you time-travel debugging for financial algorithms plus 50 years of unix tooling plus all coding languages.
+# essentially: limitless capabilities, power and control.
 
-# ofcourse, next step would be a live.sh, but i need to consult a third party before implementation
+# next step would be a live.sh (emulates replay.sh but live (with a warmup)), but i need to consult 
+# a third party before implementation
 
 ```
                              
