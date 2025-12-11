@@ -733,6 +733,11 @@ replay.sh --input replay.csv | analyse.sh # aligns the candles to right-boundary
                                           # them out in right order via stdout and piping that into a next stage 
                                           # process (which does the analysis). candles are flowing in, in the right order.
                                           # its an experiment on what i can do with it this way (in-memory duckdb)
+
+# logical next step (live.sh replicates behavior of replay.sh):
+live.sh --select EUR-USD/1m,5m,15m --select GBP-USD/1m,5m,15m,1h | analyse.sh
+
+# 0.7 feature?
 ```
                              
 >Cascaded indicator engine
