@@ -726,7 +726,8 @@ After initial sync, you can up the value to 1. Rate limits were introduced due t
 ```sh
 I am currently playing with replayability. I am testing this: 
 
-build-csv.sh --select EUR-USD/1m,5m,15m --output replay.csv # generates a file with mixed 1m,5m,15m candles, time-ordered asc
+# generates a file with mixed 1m,5m,15m candles, mixed assets, time-ordered asc
+build-csv.sh --select EUR-USD/1m,5m,15m --select GBP-USD/1m,5m,15m,1h --select ... --output replay.csv 
 replay.sh --input replay.csv | analyse.sh # aligns the candles to right-boundary eg 15m candle 13:00:00 
                                           # -> 13:14:59, 1m candles from 13:00:00 -> 13:00:59 and then pushing 
                                           # them out in right order via stdout and piping that into a next stage 
