@@ -58,7 +58,7 @@ Time shifts cannot be applied incrementally because timestamps affect all aggreg
 
 **Note:** I’ve been comparing the generated data with Dukascopy’s MT4 platform. The volume is consistently higher in our generated dataset, but everything else looks excellent—very close to perfect for forex. Candle alignment is really great, and backtests run safely. If there’s anything I may have overlooked, feel free to point it out (through discussions) and provide examples. So far, I’ve tested USDJPY, EURUSD, and GBPUSD. I’ll run additional accuracy tests over the weekend, including commodities, crypto, and indices. Looks good.
 
-Indices have another shift. This means i will need to configure per-symbol ```time_shift_ms``` in order to achieve full MT4 compatability.
+Indices have another shift. This means i will need to configure per-symbol ```time_shift_ms``` in order to achieve full MT4 compatability. Not a problem. I will implement it but there goes the clean (symbol-independent) code.
 
 ## Notice
 
