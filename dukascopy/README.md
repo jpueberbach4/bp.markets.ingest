@@ -751,6 +751,8 @@ replay.sh --input replay.csv | analyse.sh # aligns the candles to right-boundary
 
 # gives you time-travel debugging for financial algorithms.
 
+# ofcourse, next step would be a live.sh, but i need to consult a third party before implementation
+
 ```
                              
 >Cascaded indicator engine (1.0) (if still needed after replay.sh + plugins)
