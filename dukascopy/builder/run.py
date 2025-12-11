@@ -397,12 +397,19 @@ def parse_args():
         formatter_class=argparse.RawTextHelpFormatter
     )
 
-    parser.add_argument(
+    command_group = parser.add_mutually_exclusive_group(required=True)
+
+    command_group.add_argument(
         '--select',
         action='append',
-        required=True,
         metavar='SYMBOL/TF1,TF2:modifier,...',
-        help="Defines how symbols and timeframes are selected. Wildcards (*) are NOT supported.\nThe skiplast modifier can be applied to exclude the last row of a timeframe."
+        help="Defines how symbols and timeframes are selected for extraction."
+    )
+
+    command_group.add_argument(
+        '--list', 
+        action='store_true',
+        help="Dump out all available symbol/timeframe pairs and exit."
     )
 
     DEFAULT_AFTER = "1970-01-01 00:00:00"
@@ -413,11 +420,12 @@ def parse_args():
     parser.add_argument('--until', type=str, default=DEFAULT_UNTIL,
                         help=f"End date/time (exclusive). Format: YYYY-MM-DD HH:MM:SS (Default: {DEFAULT_UNTIL})")
 
-    output_group = parser.add_mutually_exclusive_group(required=True)
-    output_group.add_argument('--output', type=str, metavar='FILE_PATH',
-                              help="Write a single merged Parquet file.")
-    output_group.add_argument('--output_dir', type=str, metavar='DIR_PATH',
-                              help="Write a partitioned Parquet dataset.")
+    output_options = parser.add_argument_group('Output Configuration (Required for Extraction Mode)')
+    
+    output_options.add_argument('--output', type=str, metavar='FILE_PATH',
+                              help="Write a single merged output file.")
+    output_options.add_argument('--output_dir', type=str, metavar='DIR_PATH',
+                              help="Write a partitioned dataset.")
 
     type_group = parser.add_mutually_exclusive_group(required=False)
     type_group.add_argument('--csv', action='store_const', const='csv', dest='output_type', help="Write as CSV.")
@@ -471,6 +479,9 @@ def parse_args():
             f"Valid options are: {', '.join(compression_choices.get(args.output_type, ['none']))}"
         )
 
+    if args.select and not args.output_dir and not args.output:
+        parser.error("--select requires --output_dir or --output")        
+
     # These flags must be paired correctly depending on output mode
     if args.partition and not args.output_dir:
         parser.error("--partition requires --output_dir")
@@ -491,6 +502,19 @@ def parse_args():
 
     # Load (symbol, timeframe, file_path) entries from the filesystem
     all_available_data = get_available_data_from_fs()
+
+    if args.list:
+        data = {}
+        for symbol, timeframe, _ in all_available_data:
+            data.setdefault(symbol, []).append(timeframe)
+        print("\n--- Available Symbols and Timeframes"+"-"*43)
+        for symbol in sorted(data.keys()):
+            timeframes_list = sorted(data[symbol])
+            print(f"{symbol:<20} timeframes: [{', '.join(timeframes_list)}]")
+            
+        print("-"*80)
+        sys.exit(0)
+        sys.exit(0)
 
     # Build sets for fast lookup & matching during pattern expansion
     available_symbols = sorted({d[0] for d in all_available_data})
