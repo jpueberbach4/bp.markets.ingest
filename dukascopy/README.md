@@ -721,9 +721,10 @@ After initial sync, you can up the value to 1. Rate limits were introduced due t
 
 >HTTP API for OHLC retrieval (0.6)
 ```sh
+scratchpad:
 # Mapping CLI-alike behavior to HTTP. We will only support 127.0.0.1 (legal-boundary). No CORS *. It's for EA purposes.
 http://localhost:port/api/v1/ohlc/select/SYMBOL,TF1,TF2:skiplast/select/SYMBOL,TF1/after/2025-01-01+00:00:00/output/CSV/MT4
-# will be better than this. its a braindump.
+# will be better than this. 
 
 # Health endpoint
 http://localhost:port/healtz
@@ -736,8 +737,7 @@ Or something similar. Need to check industry standards (best UX/elegancy).
 >Replay functionality (0.7)
 
 ```sh
-I am currently playing with replayability. I am testing this: 
-
+scratchpad:
 # generates a file with mixed 1m,5m,15m candles, mixed assets, time-ordered asc
 build-csv.sh --select EUR-USD/1m,5m,15m --select GBP-USD/1m,5m,15m,1h --select ... --output replay.csv 
 replay.sh --input replay.csv | analyse.sh # aligns the candles to right-boundary eg 15m candle 13:00:00 
@@ -749,11 +749,7 @@ replay.sh --input replay.csv | analyse.sh # aligns the candles to right-boundary
 # ofcourse plugins will be chainable, eg replay.sh | tee raw.txt | indicator.sh | tee indicator.txt | \
 # analyse.sh | tee analyse.txt | ... | imagine.sh > output.txt
 
-# gives you time-travel debugging for financial algorithms plus 50 years of unix tooling plus all coding languages.
-# essentially: limitless capabilities, power and control.
-
-# next step would be a live.sh (emulates replay.sh but live (with a warmup)), but i need to consult 
-# a third party before implementation
+# good results.
 
 ```
                              
