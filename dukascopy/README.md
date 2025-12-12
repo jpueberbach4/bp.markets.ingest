@@ -757,6 +757,10 @@ replay.sh --input replay.csv | analyse.sh
 replay.sh --speed 10 --input replay.csv | tee raw.txt | indicator.sh | tee indicator.txt | \
 analyse.sh | tee analyse.txt | ... | imagine.sh > output.txt
 
+# Live tailing of indicator.txt to confirm that indicator scripts are correctly appending new columns 
+# to the incoming stream with the correct values.
+tail --follow indicator.txt
+
 # Results so far are very promising.
 
 # Why this approach?
