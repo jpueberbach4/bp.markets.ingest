@@ -1,0 +1,11 @@
+## <type>(<scope>): <subject>
+##
+## Body (optional): Explain WHAT and WHY, not HOW
+##
+## Types:
+##   feat:     New feature
+##   fix:      Bug fix
+##   docs:     Documentation
+##   test:     Tests
+##   refactor: Code restructuring
+##   chore:    Maintenance
