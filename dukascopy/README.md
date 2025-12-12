@@ -685,13 +685,13 @@ START_DATE=2005-01-01 ./run.sh
 
 ### Alignment, candles "don't exactly match your broker"
 
-The dataset is built 100% from Dukascopy SA Bank's official feed — the same feed that powers their own charts, Metatrader and JForex platform.
+This pipeline is optimized and pre-configured for Dukascopy Bank's data feed and MT4 platform, offering guaranteed alignment. While the code is open and can be adapted, the smoothest experience and most reliable results are achieved by using the tool with its intended data source. We see this as a complementary service that adds significant value to the high-quality data Dukascopy has generously provided for over 20 years.
 
-If your broker's candles look different, that's because **your broker is not Dukascopy**.
+```sh
+cp config.dukascopy-mt4.yaml config.user.yaml
+```
 
-There is exactly ```one guaranteed way``` to get perfect, bit-for-bit alignment with the dataset:
-
-→ [Become a client of Dukascopy](https://live-login.dukascopy.com/rto3/).
+Consider: → [Become a client of Dukascopy](https://live-login.dukascopy.com/rto3/).
 
 ### Downloads appear slower after updating to the latest version
 
