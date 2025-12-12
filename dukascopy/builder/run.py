@@ -496,10 +496,6 @@ def parse_args():
     if args.output_type == 'parquet' and args.mt4:
         parser.error("--parquet incompatible with --mt4")
 
-    if not args.partition and not args.output:
-        if args.output_type == 'parquet':
-            parser.error("Without --partition, --output must be provided")
-
     # Load (symbol, timeframe, file_path) entries from the filesystem
     all_available_data = get_available_data_from_fs()
 
