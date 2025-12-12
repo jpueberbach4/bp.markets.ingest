@@ -56,9 +56,7 @@
 
 Time shifts cannot be applied incrementally because timestamps affect all aggregation boundaries.
 
-**Note:** I’ve been comparing the generated data with Dukascopy’s MT4 platform. The volume is consistently higher in our generated dataset, but everything else looks excellent—very close to perfect for forex. Candle alignment is really great, and backtests run safely. If there’s anything I may have overlooked, feel free to point it out (through discussions) and provide examples. So far, I’ve tested USDJPY, EURUSD, and GBPUSD. I’ll run additional accuracy tests over the weekend, including commodities, crypto, and indices. Looks good.
-
->MT4 charts - Need to support per symbol overrides for timezones, if i want to make it fully MT4 compatible. Forex is OK.
+**Note:** MT4: Additional "origin"-rules are needed on the 4H timeframe for eg DEU.IDX-EUR. See config.yaml for an example for DEU.IDX-EUR. In the weekend i will build more detailed instructions on how to handle all commodities, indices, crypto and forex (for Dukascopy). Validations are still ongoing.
 
 ## Notice
 

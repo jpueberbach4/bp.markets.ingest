@@ -299,9 +299,9 @@ def resample_batch(sio: StringIO, rule: str, label: str, closed: str, origin: st
         index_col="time",
         date_format="%Y-%m-%d %H:%M:%S"
     )
-
+    
     # Resample into target timeframe
-    resampled = df.resample(rule, label=label, closed=closed).agg({
+    resampled = df.resample(rule, label=label, closed=closed, origin=origin).agg({
         'open': 'first',
         'high': 'max',
         'low': 'min',
