@@ -56,7 +56,7 @@
 
 Time shifts cannot be applied incrementally because timestamps affect all aggregation boundaries.
 
-**Note:** MT4: Additional "origin"-rules are needed on the 4H timeframe for eg DEU.IDX-EUR. See config.yaml for an example for DEU.IDX-EUR. In the weekend i will build more detailed instructions on how to handle all commodities, indices, crypto and forex (for Dukascopy). Validations are still ongoing.
+**Note:** MT4: Additional "origin"-rules are needed on the 4H timeframe for eg DEU.IDX-EUR. See config.yaml for an example for DEU.IDX-EUR. In the weekend i will build more detailed instructions on how to handle all commodities, indices, crypto and forex (for Dukascopy). Validations are still ongoing (also looking into the volume). Step by step we are achieving full MT-4 compatibility.
 
 ## Notice
 
