@@ -449,6 +449,14 @@ pip install -r requirements.txt
 
 Example usage
 
+List the available symbols
+
+```sh
+./build-csv.sh --list
+```
+
+Build a mixed symbol, mixed timeframe parquet file
+
 ```sh
 ./build-parquet.sh --select EUR-USD/1m --select EUR-NZD/4h:skiplast,8h:skiplast --select BRENT.CMD-USD/15m,30m \
 --select BTC-USD/15m --select DOLLAR.IDX-USD/1h,4h --after "2025-01-01 00:00:00" \
