@@ -120,10 +120,33 @@ resample:
           origin: "09:00"   # Starting point of time-bins
     # Crypto: no override needed GMT+2 default binning seems OK.
     # Indices
-    AUS.IDX-AUD:
-        todo:
-          special-case: yes # Likely need to override symbol in transform as well.
-                            # 4H chart starts at 08:10 and minute charts are also ahead 10m  
+    AUS.IDX-AUD:             # verified: OK (5m->1W)
+      # This is an "anomaly" in the pond of fish
+      timeframes:
+        15m:                     
+          rule: "15T"        # 15 minute timeframe
+          label: "left"
+          closed: "left"
+          source: "5m"
+          origin: "08:10"   # Starting point of time-bins
+        30m:                     
+          rule: "30T"        # 30 minute timeframe
+          label: "left"
+          closed: "left"
+          source: "15m"
+          origin: "08:10"   # Starting point of time-bins
+        1h:                     
+          rule: "1H"        # 1 hour timeframe
+          label: "left"
+          closed: "left"
+          source: "30m"
+          origin: "08:10"   # Starting point of time-bins
+        4h:                     
+          rule: "4H"        # 1 hour timeframe
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "08:10"   # Starting point of time-bins   
     DEU.IDX-EUR:            # verified: OK (1h->1W)
       timeframes:
         4h:                     
