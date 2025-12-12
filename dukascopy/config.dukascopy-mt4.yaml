@@ -85,7 +85,7 @@ resample:
   # Support per symbol overrides
   symbols:
     # Bonds
-    BUND.TR-EUR:
+    BUND.TR-EUR:            # verified: OK (1h->1W)
       timeframes:
         4h:                     
           rule: "4H"        # 4-hourly timeframe
@@ -94,7 +94,7 @@ resample:
           source: "1h"
           origin: "09:00"   # Starting point of time-bins    
     # Commodities     
-    BRENT.CMD-USD:
+    BRENT.CMD-USD:          # verified: OK (1h->1W)
        timeframes:
         4h:                     
           rule: "4H"        # 4-hourly timeframe
@@ -102,7 +102,7 @@ resample:
           closed: "left"
           source: "1h"
           origin: "07:00"   # Starting point of time-bins 
-    LIGHT.CMD-USD:
+    LIGHT.CMD-USD:          # verified: OK (1h->1W)
        timeframes:
         4h:                     
           rule: "4H"        # 4-hourly timeframe
@@ -110,7 +110,7 @@ resample:
           closed: "left"
           source: "1h"
           origin: "07:00"   # Starting point of time-bins
-    XAU-USD:
+    XAU-USD:                # verified: OK (1h->1W) 
        timeframes:
         4h:                     
           rule: "4H"        # 4-hourly timeframe
@@ -124,7 +124,7 @@ resample:
         todo:
           special-case: yes # Likely need to override symbol in transform as well.
                             # 4H chart starts at 08:10 and minute charts are also ahead 10m  
-    DEU.IDX-EUR: 
+    DEU.IDX-EUR:            # verified: OK (1h->1W)
       timeframes:
         4h:                     
           rule: "4H"        # 4-hourly timeframe
@@ -132,7 +132,7 @@ resample:
           closed: "left"
           source: "1h"
           origin: "09:00"   # Starting point of time-bins
-    DOLLAR.IDX-USD:
+    DOLLAR.IDX-USD:         # verified: OK (1h->1W)
        timeframes:
         4h:                     
           rule: "4H"        # 4-hourly timeframe
@@ -156,7 +156,7 @@ resample:
           closed: "left"
           source: "1h"
           origin: "09:00"   # Starting point of time-bins      
-    USA30.IDX-USD:
+    USA30.IDX-USD:          # verified: OK (1h->1W)
        timeframes:
         4h:                     
           rule: "4H"        # 4-hourly timeframe
