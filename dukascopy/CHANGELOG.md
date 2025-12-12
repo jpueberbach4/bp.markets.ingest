@@ -38,8 +38,9 @@ Non-breaking. Meet the power of Parquet and DuckDB :)
 
 ### Changed
 - **Feature**: CSV Builder with --mt4 support
+- **Feature**: Builder --list support
 - **Feature**: Added time_shift_ms to support MT4 alignment
-- **Feature**: Building towards full MT4 compatability
+- **Feature**: Building towards full MT4 compatibility
 - **Documentation**: Updated README with instructions
 
 ### For Existing Users
