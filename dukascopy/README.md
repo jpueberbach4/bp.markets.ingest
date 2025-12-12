@@ -56,8 +56,6 @@
 
 Time shifts cannot be applied incrementally because timestamps affect all aggregation boundaries.
 
-**Note:** MT4: Additional "origin"-rules are needed on the 4H timeframe for eg DEU.IDX-EUR. See config.yaml for an example for DEU.IDX-EUR. In the weekend i will build more detailed instructions on how to handle all commodities, indices, crypto and forex (for Dukascopy). Validations are still ongoing (also looking into the volume). Step by step we are achieving full MT-4 compatibility.
-
 >I’m building a **Dukascopy** MT4–tailored configuration file, ```config.dukascopy-mt4.yaml```. You can review it to get a sense of how this configuration file is structured and how it can be extended. The symbol AUS.IDX-AUD is a special case that isn’t currently handled. I need to investigate it further. Its 4H candles start at 08:10, and while the transform-step already supports per-symbol time-shifting, I need to determine whether the issue is simply a "bin" start time, or if we actually need to shift the underlying 1-minute candles. This is still under investigation. If you are using an other broker, you can use the file for reference.
 
 >When you apply ```config.dukascopy-mt4.yaml```. Perform a rebuild from scratch. See troubleshooting section.
