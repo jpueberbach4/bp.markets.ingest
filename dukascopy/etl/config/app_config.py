@@ -12,6 +12,8 @@ class ResampleTimeframeConfig:
     label: Optional[str] = None
     # Whether intervals are closed on the 'left' or 'right'. None for base timeframe.
     closed: Optional[str] = None
+    # Change the origin for the timeframe
+    origin: str = "epoch"
     # Source timeframe key or identifier.
     source: str = ""
 
@@ -80,6 +82,12 @@ class DownloadConfig:
     paths: DownloadPaths = field(default_factory=DownloadPaths)
 
 @dataclass
+class TransformSymbolOverride:
+    """Per-symbol configuration overrides."""
+    # How much ms should we shift time by (0=UTC, 7200000=GMT+2)
+    time_shift_ms: int = 0
+
+@dataclass
 class TransformPaths:
     """Directory paths used by the script."""
     # Input directory for historic
@@ -96,6 +104,7 @@ class TransformConfig:
     time_shift_ms: int = 0
     # How much decimals we need to round to
     round_decimals: int = 10
+    symbols: Dict[str, TransformSymbolOverride] = field(default_factory=dict)
     paths: TransformPaths = field(default_factory=TransformPaths)
 
 @dataclass

@@ -253,7 +253,7 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleConfig) -> Tup
 
     return sio, eof_reached
 
-def resample_batch(sio: StringIO, rule: str, label: str, closed: str, config: ResampleConfig) -> Tuple[pd.DataFrame, int]:
+def resample_batch(sio: StringIO, rule: str, label: str, closed: str, origin: str, config: ResampleConfig) -> Tuple[pd.DataFrame, int]:
     """
     Resample a batch of OHLCV rows (with byte-offset tracking) into a higher timeframe.
 
@@ -384,7 +384,7 @@ def resample_symbol(symbol: str, app_config: AppConfig) -> bool:
         output_path = Path(f"{data_path}/{ident}/{symbol}.csv")
         index_path = Path(f"{data_path}/{ident}/index/{symbol}.idx")
 
-        rule, label, closed = [timeframe.rule, timeframe.label, timeframe.closed]
+        rule, label, closed, origin = [timeframe.rule, timeframe.label, timeframe.closed, timeframe.origin]
 
         # Ensure input path exists
         if not input_path.exists():
@@ -423,7 +423,7 @@ def resample_symbol(symbol: str, app_config: AppConfig) -> bool:
                 sio, eof_reached = resample_batch_read(f_input, header, config)
 
                 # Resample the sio batch
-                resampled, next_input_position = resample_batch(sio, rule, label, closed, config) 
+                resampled, next_input_position = resample_batch(sio, rule, label, closed, origin, config) 
 
                 # Rewrite the output file from its last known position
                 f_output.seek(output_position)
