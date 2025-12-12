@@ -740,18 +740,29 @@ Or something similar. Need to check industry standards (best UX/elegancy).
 
 ```sh
 scratchpad:
-# generates a file with mixed 1m,5m,15m candles, mixed assets, time-ordered asc
+# Generates a time-ordered (ascending) CSV containing mixed 1m/5m/15m candles 
+# across multiple assets.
 build-csv.sh --select EUR-USD/1m,5m,15m --select GBP-USD/1m,5m,15m,1h --select ... --output replay.csv 
-replay.sh --input replay.csv | analyse.sh # aligns the candles to right-boundary eg 15m candle 13:00:00 
-                                          # -> 13:14:59, 1m candles from 13:00:00 -> 13:00:59 and then pushing 
-                                          # them out in right order via stdout and piping that into a next stage 
-                                          # process (which does the analysis). candles are flowing in, in the right order.
-                                          # its an experiment on what i can do with it this way (in-memory duckdb)
 
-# ofcourse plugins will be chainable, eg replay.sh | tee raw.txt | indicator.sh | tee indicator.txt | \
-# analyse.sh | tee analyse.txt | ... | imagine.sh > output.txt
+# Replays the mixed-timeframe candle stream. 
+# replay.sh aligns candles to their right boundary (e.g., 15m candle at 13:00:00 
+# becomes 13:14:59, 1m candle 13:00:00 → 13:00:59) and emits them in correct 
+# chronological order. The output can be piped directly into the next analysis stage.
+replay.sh --input replay.csv | analyse.sh 
 
-# good results.
+# Candles flow in continuously and in correct order.
+# This is an experiment leveraging in-memory DuckDB.
+
+# Plugins will be fully chainable:
+replay.sh --speed 10 --input replay.csv | tee raw.txt | indicator.sh | tee indicator.txt | \
+analyse.sh | tee analyse.txt | ... | imagine.sh > output.txt
+
+# Results so far are very promising.
+
+# Why this approach?
+# It gives complete control over the analysis stack, powered by 50+ years of 
+# UNIX tooling. Use any programming language, chain any number of components, 
+# perform time-travel debugging—limitless flexibility.
 
 ```
                              
