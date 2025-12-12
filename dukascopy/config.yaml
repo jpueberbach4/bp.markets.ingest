@@ -82,6 +82,21 @@ resample:
 
   # Support per symbol overrides
   symbols:
+    DEU.IDX-EUR:
+      # Override number of decimal places to round to
+      round_decimals: 8
+      # Override batch size
+      batch_size: 250000 
+      # Skip timeframes
+      skip_timeframes: []   
+      # Support for custom timeframes or overrides
+      timeframes:
+        4h:                     
+          rule: "4H"        # 4-hourly timeframe
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "09:00"   # Starting point of time-bin
     BTC-USDXX:
       # Override number of decimal places to round to
       round_decimals: 12
