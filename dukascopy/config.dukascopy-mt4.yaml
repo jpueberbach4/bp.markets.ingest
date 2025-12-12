@@ -140,7 +140,7 @@ resample:
           closed: "left"
           source: "1h"
           origin: "07:00"   # Starting point of time-bins
-    GBR.IDX-GBP:
+    GBR.IDX-GBP:            # verified: OK (1h->1W)
       timeframes:
         4h:                     
           rule: "4H"        # 4-hourly timeframe
@@ -148,7 +148,7 @@ resample:
           closed: "left"
           source: "1h"
           origin: "09:00"   # Starting point of time-bins    
-    JPN.IDX-JPY:
+    JPN.IDX-JPY:            # verified: OK (1h->1W)
        timeframes:
         4h:                     
           rule: "4H"        # 4-hourly timeframe
