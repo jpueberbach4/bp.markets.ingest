@@ -1,0 +1,187 @@
+## This file is a configuration file, tailored to Dukascopy MT4
+## Note: under development, incomplete
+## 
+## Below you will find the configuration for the aggregate.py script. 
+aggregate:
+  paths:
+    data: data/aggregate/1m           # Output path for aggregate
+    source: data/transform/1m         # Input path for aggregate
+## Below you will find the configuration for the download.py script. 
+download:
+  max_retries: 3                      # Number of retries before downloader raises
+  backoff_factor: 2                   # Exponential backoff factor (wait time)
+  timeout: 10                         # Request timeout
+  rate_limit_rps: 1                   # Protect end-point (number of cores * rps = requests/second)
+  paths:
+    historic: cache                   # Historical downloads
+    live: data/temp                   # Live downloads
+## Below you will find the configuration for the transform.py script. 
+transform:
+  time_shift_ms: 7200000              # How many milliseconds should we shift (0=UTC, 7200000=GMT+2 (eg MT4 Dukascopy) )
+  round_decimals: 8                   # Number of decimals to round OHLCV to
+  paths:
+    data: data/transform/1m           # Output directory for transform
+    historic: cache                   # Historical downloads
+    live: data/temp                   # Live downloads
+## Below you will find the configuration for the resample.py script. 
+resample:
+  round_decimals: 8                   # Number of decimals to round OHLCV to
+  batch_size: 250000                  # Maximum number of lines to read per batch
+  paths:
+    data: data/resample               # Output directory for resampled timeframes
+  timeframes:
+    1m:
+      source: "data/aggregate/1m"     # No rule, no resample, source defines output path for this timeframe
+    5m:
+      rule: "5T"                      # 5-minute timeframe
+      label: "left"                   # Label (timestamp) assigned to each resampled interval comes from the left (start) edge of the window
+      closed: "left"                  # Window is left-inclusive, right-exclusive
+      source: "1m"                    # Uses 1m timeframe as input (see previous entry)
+    15m:
+      rule: "15T"                     # 15-minute timeframe
+      label: "left"
+      closed: "left"
+      source: "5m"                    # Uses 5m timeframe as input (see previous entry)
+    30m:
+      rule: "30T"                     # And so on....
+      label: "left"
+      closed: "left"
+      source: "15m"
+    1h:
+      rule: "1H"
+      label: "left"
+      closed: "left"
+      source: "30m"
+    4h:
+      rule: "4H"
+      label: "left"
+      closed: "left"
+      source: "1h"
+    8h:
+      rule: "8H"
+      label: "left"
+      closed: "left"
+      source: "4h"
+    1d:
+      rule: "1D"
+      label: "left"
+      closed: "left"
+      source: "8h"
+    1W:
+      rule: "W-MON"
+      label: "left"
+      closed: "left"
+      source: "1d"
+    1M:
+      rule: "MS"
+      label: "left"
+      closed: "left"
+      source: "1d"
+    1Y:
+      rule: "AS"
+      label: "left"
+      closed: "left"
+      source: "1M"
+  # Support per symbol overrides
+  symbols:
+    # Bonds
+    BUND.TR-EUR:
+      timeframes:
+        4h:                     
+          rule: "4H"        # 4-hourly timeframe
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "09:00"   # Starting point of time-bins    
+    # Commodities     
+    BRENT.CMD-USD:
+       timeframes:
+        4h:                     
+          rule: "4H"        # 4-hourly timeframe
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "07:00"   # Starting point of time-bins 
+    LIGHT.CMD-USD:
+       timeframes:
+        4h:                     
+          rule: "4H"        # 4-hourly timeframe
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "07:00"   # Starting point of time-bins
+    XAU-USD:
+       timeframes:
+        4h:                     
+          rule: "4H"        # 4-hourly timeframe
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "09:00"   # Starting point of time-bins
+    # Crypto: no override needed GMT+2 default binning seems OK.
+    # Indices
+    AUS.IDX-AUD:
+        todo:
+          special-case: yes # Likely need to override symbol in transform as well.
+                            # 4H chart starts at 08:10 and minute charts are also ahead 10m  
+    DEU.IDX-EUR: 
+      timeframes:
+        4h:                     
+          rule: "4H"        # 4-hourly timeframe
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "09:00"   # Starting point of time-bins
+    DOLLAR.IDX-USD:
+       timeframes:
+        4h:                     
+          rule: "4H"        # 4-hourly timeframe
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "07:00"   # Starting point of time-bins
+    GBR.IDX-GBP:
+      timeframes:
+        4h:                     
+          rule: "4H"        # 4-hourly timeframe
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "09:00"   # Starting point of time-bins    
+    JPN.IDX-JPY:
+       timeframes:
+        4h:                     
+          rule: "4H"        # 4-hourly timeframe
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "09:00"   # Starting point of time-bins      
+    USA30.IDX-USD:
+       timeframes:
+        4h:                     
+          rule: "4H"        # 4-hourly timeframe
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "09:00"   # Starting point of time-bins
+    USA500.IDX-USD:
+       timeframes:
+        4h:                     
+          rule: "4H"        # 4-hourly timeframe
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "09:00"   # Starting point of time-bins
+    USATECH.IDX-USD:
+       timeframes:
+        4h:                     
+          rule: "4H"        # 4-hourly timeframe
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "09:00"   # Starting point of time-bins  
+
+
+    
+
+
