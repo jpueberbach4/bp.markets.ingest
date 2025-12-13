@@ -122,6 +122,12 @@ resample:
           label: "left"
           closed: "left"
           source: "1h"
+          origin: "09:00"   # Starting point of time-bins
+        8h:                     
+          rule: "8H"        # 4-hourly timeframe
+          label: "left"
+          closed: "left"
+          source: "4h"
           origin: "09:00"   # Starting point of time-bins    
     # Commodities     
     BRENT.CMD-USD:          # verified: OK (1h->1W)
