@@ -58,6 +58,8 @@ Time shifts cannot be applied incrementally because timestamps affect all aggreg
 
 >When you apply ```config.dukascopy-mt4.yaml```. Perform a rebuild from scratch ```./rebuild-full.sh```.
 
+>I detected DST change on commodities (BRENT). Looking for a way how to solve this. 
+
 ## Notice
 
 Backfilling is not currently supported, as our pipeline processes data strictly forward. Because of this, historical data—particularly for illiquid pairs and at the highest granularity—may be skewed. Backfilling has been identified as a must-have feature.

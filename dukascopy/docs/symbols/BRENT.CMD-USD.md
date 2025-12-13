@@ -5,6 +5,7 @@ Investigating the following:
 OKTOBER(4H): 
 
 2025.10.24,19:00:00,66.305,66.325,65.758,65.802,4.675582	<! WEEKEND ENTRY
+NO 2025.10.24,23:00 CANDLE                                  <! MISSING 
 2025.10.26,23:00:00,66.373,66.468,66.203,66.203,4.670148	<! SUNDAY CANDLE?
 2025.10.27,03:00:00,66.208,66.235,65.918,66.19,0.512396		<! MARKET OPEN
 
@@ -21,7 +22,15 @@ NO 2025.11.23,23:00 CANDLE					                <! MISSING SUNDAY CANDLE
 
 DECEMBER(4H):
 
-NO MORE SUNDAY 23:00 CANDLES
+NO MORE SUNDAY 23:00 CANDLES.
+
+The Daylight Saving Time (DST) change in November 2025 occurred on:
+
+🗓️ Date: Sunday, November 2, 2025
+
+DST change. That's a bug i need to solve. Explains why the candles did line up
+when switching between GMT+3 and GMT+2. Hence all these commits. So we need to
+shift based on what date it is. I need to build logic for that.
 ```
 
 
