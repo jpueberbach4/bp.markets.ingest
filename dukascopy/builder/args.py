@@ -30,7 +30,7 @@ import argparse
 import sys
 import uuid
 from datetime import datetime
-from helper import CustomArgumentParser, resolve_selections, get_available_data_from_fs
+from helper import BuilderConfig, CustomArgumentParser, resolve_selections, get_available_data_from_fs
 # Assuming config is correctly imported
 # from config.app_config import BuilderConfig
 
@@ -38,14 +38,6 @@ from helper import CustomArgumentParser, resolve_selections, get_available_data_
 DEFAULT_AFTER = "1970-01-01 00:00:00"
 DEFAULT_UNTIL = "3000-01-01 00:00:00"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
-
-
-# Placeholder for imported class
-class BuilderConfig:
-    class paths:
-        temp = "data/temp" # Placeholder attribute to allow code to run
-    pass
-
 
 def parse_args(config: BuilderConfig):
     """
