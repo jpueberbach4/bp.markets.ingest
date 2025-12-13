@@ -58,7 +58,11 @@ Time shifts cannot be applied incrementally because timestamps affect all aggreg
 
 >When you apply ```config.dukascopy-mt4.yaml```. Perform a rebuild from scratch ```./rebuild-full.sh```.
 
->I detected DST change on commodities (BRENT). Looking for a way how to solve this. 
+>**Bug: Dukascopy Time Zone Drift (DST Issue)** \
+\
+The Dukascopy MT server time shifts between GMT+2 (Standard Time) and GMT+3 (Daylight Saving Time), causing historical OHLC candles to be improperly aligned and binned. \
+\
+Fix: Implement date-aware logic in transform.py to dynamically switch the time_shift_ms parameter between 7,200,000 GMT+2 and 10,800,000 GMT+3, based on the European DST calendar. This dynamic shift must be gated by a configuration flag. Tomorrow i will fix it. Have to investigate what it means for Crypto (24/7 market).
 
 ## Notice
 
