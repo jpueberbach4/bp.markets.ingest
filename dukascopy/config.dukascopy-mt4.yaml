@@ -52,17 +52,7 @@ transform:
     data: data/transform/1m           # Output directory for transform
     historic: cache                   # Historical downloads
     live: data/temp                   # Live downloads
-  symbols:
-    BRENT.CMD-USD:
-      time_shift_ms: 10800000
-    GAS.CMD-USD:
-      time_shift_ms: 10800000
-    LIGHT.CMD-USD:
-      time_shift_ms: 10800000
-    XAU-USD:
-      time_shift_ms: 10800000
     
-
 # Below you will find the configuration for the resample.py script. 
 resample:
   round_decimals: 8                   # Number of decimals to round OHLCV to
