@@ -72,7 +72,12 @@ def main():
         require_tos_acceptance()
 
         # Load application configuration
-        app_config = load_app_config()
+        # User config overrides default
+        if Path("config.user.yaml").exists():
+            config = load_app_config('config.user.yaml')
+        else:
+            config = load_app_config('config.yaml')
+        
         config = app_config.builder
 
         # Parse and validate command-line arguments
