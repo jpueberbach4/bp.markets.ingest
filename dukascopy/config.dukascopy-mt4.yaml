@@ -122,12 +122,6 @@ resample:
           label: "left"
           closed: "left"
           source: "1h"
-          origin: "09:00"   # Starting point of time-bins
-        8h:                     
-          rule: "8H"        # 4-hourly timeframe
-          label: "left"
-          closed: "left"
-          source: "4h"
           origin: "09:00"   # Starting point of time-bins    
     # Commodities     
     BRENT.CMD-USD:          # verified: OK (1h->1W)
@@ -138,12 +132,6 @@ resample:
           closed: "left"
           source: "1h"
           origin: "07:00"   # Starting point of time-bins
-        8h:                     
-          rule: "8H"        # 8-hourly timeframe
-          label: "left"
-          closed: "left"
-          source: "4h"
-          origin: "07:00"   # Starting point of time-bins
     GAS.CMD-USD:            # verified: NO
        timeframes:
         4h:                     
@@ -151,13 +139,7 @@ resample:
           label: "left"
           closed: "left"
           source: "1h"
-          origin: "09:00"   # Starting point of time-bin
-        8h:                     
-          rule: "8H"        # 8-hourly timeframe
-          label: "left"
-          closed: "left"
-          source: "4h"
-          origin: "09:00"   # Starting point of time-bins  
+          origin: "09:00"   # Starting point of time-bin 
     LIGHT.CMD-USD:          # verified: OK (1h->1W)
        timeframes:
         4h:                     
@@ -166,12 +148,6 @@ resample:
           closed: "left"
           source: "1h"
           origin: "07:00"   # Starting point of time-bins
-        8h:                     
-          rule: "8H"        # 8-hourly timeframe
-          label: "left"
-          closed: "left"
-          source: "4h"
-          origin: "07:00"   # Starting point of time-bins
     XAU-USD:                # verified: OK (1h->1W) 
        timeframes:
         4h:                     
@@ -179,12 +155,6 @@ resample:
           label: "left"
           closed: "left"
           source: "1h"
-          origin: "09:00"   # Starting point of time-bins
-        8h:                     
-          rule: "8H"        # 8-hourly timeframe
-          label: "left"
-          closed: "left"
-          source: "4h"
           origin: "09:00"   # Starting point of time-bins
     # Crypto: no override needed GMT+2 default binning seems OK.
     # Indices
@@ -214,13 +184,7 @@ resample:
           label: "left"
           closed: "left"
           source: "1h"
-          origin: "08:10"   # Starting point of time-bins
-        8h:                     
-          rule: "8H"        # 8-hourly timeframe
-          label: "left"
-          closed: "left"
-          source: "4h"
-          origin: "08:10"   # Starting point of time-bins   
+          origin: "08:10"   # Starting point of time-bins  
     DEU.IDX-EUR:            # verified: OK (1h->1W)
       timeframes:
         4h:                     
@@ -228,12 +192,6 @@ resample:
           label: "left"
           closed: "left"
           source: "1h"
-          origin: "09:00"   # Starting point of time-bins
-        8h:                     
-          rule: "8H"        # 8-hourly timeframe
-          label: "left"
-          closed: "left"
-          source: "4h"
           origin: "09:00"   # Starting point of time-bins
     DOLLAR.IDX-USD:         # verified: OK (1h->1W)
        timeframes:
@@ -243,12 +201,6 @@ resample:
           closed: "left"
           source: "1h"
           origin: "07:00"   # Starting point of time-bins
-        8h:                     
-          rule: "8H"        # 8-hourly timeframe
-          label: "left"
-          closed: "left"
-          source: "4h"
-          origin: "07:00"   # Starting point of time-bins
     GBR.IDX-GBP:            # verified: OK (1h->1W)
       timeframes:
         4h:                     
@@ -257,12 +209,6 @@ resample:
           closed: "left"
           source: "1h"
           origin: "09:00"   # Starting point of time-bins
-        8h:                     
-          rule: "8H"        # 8-hourly timeframe
-          label: "left"
-          closed: "left"
-          source: "4h"
-          origin: "09:00"   # Starting point of time-bins
     JPN.IDX-JPY:            # verified: OK (1h->1W)
        timeframes:
         4h:                     
@@ -270,12 +216,6 @@ resample:
           label: "left"
           closed: "left"
           source: "1h"
-          origin: "09:00"   # Starting point of time-bins
-        8h:                     
-          rule: "8H"        # 8-hourly timeframe
-          label: "left"
-          closed: "left"
-          source: "4h"
           origin: "09:00"   # Starting point of time-bins     
     USA30.IDX-USD:          # verified: OK (1h->1W)
        timeframes:
@@ -285,12 +225,6 @@ resample:
           closed: "left"
           source: "1h"
           origin: "09:00"   # Starting point of time-bins
-        8h:                     
-          rule: "8H"        # 8-hourly timeframe
-          label: "left"
-          closed: "left"
-          source: "4h"
-          origin: "09:00"   # Starting point of time-bins
     USA500.IDX-USD:         # verified: NO
        timeframes:
         4h:                     
@@ -298,12 +232,6 @@ resample:
           label: "left"
           closed: "left"
           source: "1h"
-          origin: "09:00"   # Starting point of time-bins
-        8h:                     
-          rule: "8H"        # 8-hourly timeframe
-          label: "left"
-          closed: "left"
-          source: "4h"
           origin: "09:00"   # Starting point of time-bins
     USATECH.IDX-USD:        # verified: NO
        timeframes:
@@ -313,12 +241,7 @@ resample:
           closed: "left"
           source: "1h"
           origin: "09:00"   # Starting point of time-bins
-        8h:                     
-          rule: "8H"        # 8-hourly timeframe
-          label: "left"
-          closed: "left"
-          source: "4h"
-          origin: "09:00"   # Starting point of time-bins  
+
 
 
     
