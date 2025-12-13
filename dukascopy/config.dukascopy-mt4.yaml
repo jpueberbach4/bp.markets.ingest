@@ -1,12 +1,34 @@
-## This file is a configuration file, tailored to Dukascopy MT4
-## Note: under development, incomplete
-## 
-## Below you will find the configuration for the aggregate.py script. 
+# Dukascopy MT4 Data Pipeline Configuration
+#
+# This configuration file controls the behavior of the Dukascopy MT4 data processing suite,
+# including downloading, transforming, aggregating, and resampling historical and live market data.
+#
+# Sections:
+# 1. aggregate: Controls input/output paths for aggregation.
+# 2. download: Retry/backoff settings, timeouts, rate limits, and paths for historical/live downloads.
+# 3. transform: Time-shifting, rounding, input/output paths, and preparation for aggregation/resampling.
+# 4. resample: Batch size, rounding precision, multi-timeframe resampling rules, and per-symbol overrides.
+#
+# Purpose:
+# - Automate crash-resilient ETL pipelines for financial market data.
+# - Support incremental updates with strict time-bin alignment across multiple timeframes.
+# - Allow flexibility for various asset classes (forex, commodities, indices, crypto, bonds).
+#
+# Usage:
+# - Imported by ETL scripts to configure paths, timeframes, rate limits, and resampling rules.
+# - Customization per instrument or timeframe via the `symbols` section.
+#
+# Note:
+# - Under development; features/settings may change.
+# - Paths are relative to project root unless specified otherwise.
+
+# Below you will find the configuration for the aggregate.py script. 
 aggregate:
   paths:
     data: data/aggregate/1m           # Output path for aggregate
     source: data/transform/1m         # Input path for aggregate
-## Below you will find the configuration for the download.py script. 
+
+# Below you will find the configuration for the download.py script. 
 download:
   max_retries: 3                      # Number of retries before downloader raises
   backoff_factor: 2                   # Exponential backoff factor (wait time)
@@ -15,7 +37,8 @@ download:
   paths:
     historic: cache                   # Historical downloads
     live: data/temp                   # Live downloads
-## Below you will find the configuration for the transform.py script. 
+
+# Below you will find the configuration for the transform.py script. 
 transform:
   time_shift_ms: 7200000              # How many milliseconds should we shift (0=UTC, 7200000=GMT+2 (eg MT4 Dukascopy) )
   round_decimals: 8                   # Number of decimals to round OHLCV to
@@ -23,7 +46,8 @@ transform:
     data: data/transform/1m           # Output directory for transform
     historic: cache                   # Historical downloads
     live: data/temp                   # Live downloads
-## Below you will find the configuration for the resample.py script. 
+
+# Below you will find the configuration for the resample.py script. 
 resample:
   round_decimals: 8                   # Number of decimals to round OHLCV to
   batch_size: 250000                  # Maximum number of lines to read per batch
@@ -101,7 +125,15 @@ resample:
           label: "left"
           closed: "left"
           source: "1h"
-          origin: "07:00"   # Starting point of time-bins 
+          origin: "07:00"   # Starting point of time-bins
+    GAS.CMD-USD:            # verified: NO
+       timeframes:
+        4h:                     
+          rule: "4H"        # 4-hourly timeframe
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "09:00"   # Starting point of time-bins   
     LIGHT.CMD-USD:          # verified: OK (1h->1W)
        timeframes:
         4h:                     
@@ -142,7 +174,7 @@ resample:
           source: "30m"
           origin: "08:10"   # Starting point of time-bins
         4h:                     
-          rule: "4H"        # 1 hour timeframe
+          rule: "4H"        # 4 hour timeframe
           label: "left"
           closed: "left"
           source: "1h"
@@ -170,7 +202,7 @@ resample:
           label: "left"
           closed: "left"
           source: "1h"
-          origin: "09:00"   # Starting point of time-bins    
+          origin: "09:00"   # Starting point of time-bins
     JPN.IDX-JPY:            # verified: OK (1h->1W)
        timeframes:
         4h:                     
@@ -187,7 +219,7 @@ resample:
           closed: "left"
           source: "1h"
           origin: "09:00"   # Starting point of time-bins
-    USA500.IDX-USD:
+    USA500.IDX-USD:         # verified: NO
        timeframes:
         4h:                     
           rule: "4H"        # 4-hourly timeframe
@@ -195,7 +227,7 @@ resample:
           closed: "left"
           source: "1h"
           origin: "09:00"   # Starting point of time-bins
-    USATECH.IDX-USD:
+    USATECH.IDX-USD:        # verified: NO
        timeframes:
         4h:                     
           rule: "4H"        # 4-hourly timeframe
