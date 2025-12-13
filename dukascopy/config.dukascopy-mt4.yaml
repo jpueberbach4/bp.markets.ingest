@@ -54,11 +54,13 @@ transform:
     live: data/temp                   # Live downloads
   symbols:
     BRENT.CMD-USD:
-      shift_time_ms: 10800000
+      time_shift_ms: 10800000
+    GAS.CMD-USD:
+      time_shift_ms: 10800000
     LIGHT.CMD-USD:
-      shift_time_ms: 10800000
+      time_shift_ms: 10800000
     XAU-USD:
-      shift_time_ms: 10800000
+      time_shift_ms: 10800000
     
 
 # Below you will find the configuration for the resample.py script. 
