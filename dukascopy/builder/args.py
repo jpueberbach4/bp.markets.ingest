@@ -30,7 +30,8 @@ import argparse
 import sys
 import uuid
 from datetime import datetime
-from helper import BuilderConfig, CustomArgumentParser, resolve_selections, get_available_data_from_fs
+from config.app_config import BuilderConfig 
+from helper import CustomArgumentParser, resolve_selections, get_available_data_from_fs
 # Assuming config is correctly imported
 # from config.app_config import BuilderConfig
 
