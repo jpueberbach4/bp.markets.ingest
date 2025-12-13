@@ -74,9 +74,9 @@ def main():
         # Load application configuration
         # User config overrides default
         if Path("config.user.yaml").exists():
-            config = load_app_config('config.user.yaml')
+            app_config = load_app_config('config.user.yaml')
         else:
-            config = load_app_config('config.yaml')
+            app_config = load_app_config('config.yaml')
         
         config = app_config.builder
 
