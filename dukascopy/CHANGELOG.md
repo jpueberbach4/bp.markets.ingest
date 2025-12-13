@@ -32,15 +32,14 @@ git reset --hard origin/main
 - **Documentation**: Updated README with instructions
 
 ### For Existing Users
-Non-breaking. Meet the power of Parquet and DuckDB :)
+Non-breaking.
 
-## [0.5.0-staging] - 2025-12-10
+## [0.5.0-stable] - 2025-12-14
 
 ### Changed
-- **Feature**: CSV Builder with --mt4 support
-- **Feature**: Builder --list support
+- **Feature**: Parquet/CSV Builder updates (--mt4 and --list support)
 - **Feature**: Added time_shift_ms to support MT4 alignment
-- **Feature**: Building towards full MT4 compatibility
+- **Config**: Added Dukascopy MT4 configuration example
 - **Documentation**: Updated README with instructions
 
 ### For Existing Users

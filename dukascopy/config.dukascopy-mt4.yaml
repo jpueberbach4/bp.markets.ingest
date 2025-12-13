@@ -28,6 +28,12 @@ aggregate:
     data: data/aggregate/1m           # Output path for aggregate
     source: data/transform/1m         # Input path for aggregate
 
+## Below you will find the configuration for the builder script
+builder:
+  paths:
+    data: data                        # Input path for builder
+    temp: data/temp/builder           # Temporary path for builder
+
 # Below you will find the configuration for the download.py script. 
 download:
   max_retries: 3                      # Number of retries before downloader raises

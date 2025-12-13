@@ -1,8 +1,36 @@
+# Dukascopy Data Pipeline Configuration
+#
+# This configuration file controls the behavior of the Dukascopy data processing suite,
+# including downloading, transforming, aggregating, and resampling historical and live market data.
+#
+# Sections:
+# 1. aggregate: Controls input/output paths for aggregation.
+# 2. download: Retry/backoff settings, timeouts, rate limits, and paths for historical/live downloads.
+# 3. transform: Time-shifting, rounding, input/output paths, and preparation for aggregation/resampling.
+# 4. resample: Batch size, rounding precision, multi-timeframe resampling rules, and per-symbol overrides.
+#
+# Purpose:
+# - Automate crash-resilient ETL pipelines for financial market data.
+# - Support incremental updates with strict time-bin alignment across multiple timeframes.
+# - Allow flexibility for various asset classes (forex, commodities, indices, crypto, bonds).
+#
+# Usage:
+# - Imported by ETL scripts to configure paths, timeframes, rate limits, and resampling rules.
+# - Customization per instrument or timeframe via the `symbols` section.
+#
+# Note:
+# - Paths are relative to project root unless specified otherwise.
+
 ## Below you will find the configuration for the aggregate.py script. 
 aggregate:
   paths:
     data: data/aggregate/1m           # Output path for aggregate
     source: data/transform/1m         # Input path for aggregate
+## Below you will find the configuration for the builder script
+builder:
+  paths:
+    data: data                        # Input path for builder
+    temp: data/temp/builder           # Temporary path for builder
 ## Below you will find the configuration for the download.py script. 
 download:
   max_retries: 3                      # Number of retries before downloader raises

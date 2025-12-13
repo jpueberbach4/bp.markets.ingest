@@ -50,15 +50,13 @@
 - main and other branches: bleeding-edge, early access
 - releases: stable, less functionality
 
-❗ WARNING: Are you on MT4? CHANGE ```time_shift_ms```. When changing ```time_shift_ms``` after building a dataset:
-- Delete ALL data: rm -rf ./data/*
-- Rebuild from scratch: START_DATE=2005-01-01 ./run.sh
+❗ WARNING: Are you on MT4? CHANGE ```time_shift_ms```. When changing ```time_shift_ms``` while already having a dataset, execute ```./rebuild-full.sh```
 
 Time shifts cannot be applied incrementally because timestamps affect all aggregation boundaries.
 
 >I’m building a **Dukascopy** MT4–tailored configuration file, ```config.dukascopy-mt4.yaml```. You can review it to get a sense of how this configuration file is structured and how it can be extended. If you are using an other broker, you can use the file for reference.
 
->When you apply ```config.dukascopy-mt4.yaml```. Perform a rebuild from scratch. See troubleshooting section.
+>When you apply ```config.dukascopy-mt4.yaml```. Perform a rebuild from scratch ```./rebuild-full.sh```.
 
 ## Notice
 
@@ -197,10 +195,8 @@ Configure your symbols as shown in the next section of this readme.
 Next, run the pipeline with:
 
 ```sh
-START_DATE=2005-01-01 ./run.sh
+./rebuild-full.sh
 ```
-
->Running run.sh without a START_DATE means incremental mode.
 
 Optionally, configure a cronjob for periodical execution: 
 
@@ -249,7 +245,7 @@ The pipeline will begin downloading the symbol's historical data (this may take 
 
 The new symbol is now added and will be updated automatically during each incremental run.
 
->When you don't stop the crontab periodic execution before changing the symbol list, you will need to rebuild!
+>When you don't stop the crontab periodic execution before changing the symbol list, you will need to ```rebuild-full.sh```!
 
 ---
 
@@ -263,7 +259,7 @@ To override the default configuration, create a user-specific copy:
 cp config.yaml config.user.yaml
 ```
 
-❗**IMPORTANT** If you backtest against MT4, or use this for MT4, it makes sense to configure ```time_shift_ms```. When you already have a dataset and change ```time_shift_ms```, you will need to do a rebuild from scratch. See troubleshooting section for more information on how to do that. When you only change timeframes, a ```./rebuild-weekly.sh``` is sufficient.
+❗**IMPORTANT** If you backtest against MT4, or use this for MT4, it makes sense to configure ```time_shift_ms```. When you already have a dataset and change ```time_shift_ms```, you will need to do a rebuild from scratch using ```./rebuild-full.sh```. When you only change timeframes, a ```./rebuild-weekly.sh``` is sufficient.
 
 The configuration file is straightforward and mostly self-explanatory. Adjust values as needed to suit your data and workflow.
 
@@ -273,6 +269,11 @@ aggregate:
   paths:
     data: data/aggregate/1m           # Output path for aggregate
     source: data/transform/1m         # Input path for aggregate
+## Below you will find the configuration for the builder script
+builder:
+  paths:
+    data: data                        # Input path for builder
+    temp: data/temp/builder           # Temporary path for builder
 ## Below you will find the configuration for the download.py script. 
 download:
   max_retries: 3                      # Number of retries before downloader raises
@@ -401,7 +402,7 @@ time, open, high, low, close, volume
 | volume | Double/Float | DOUBLE |
 
 **Note on Precision:**
-- Timestamps are (by default) in UTC and follow YYYY-MM-DD HH:MM:SS (use ```transform.time_shift_ms``` to shift to eg GMT+2)
+- Timestamps are (by default) in UTC and follow YYYY-MM-DD HH:MM:SS (use ```time_shift_ms``` to shift to eg GMT+2)
 - Price values are rounded to configurable decimal places (default: 8)
 - Volume represents the total trading activity for the period
 
@@ -464,23 +465,22 @@ Build a mixed symbol, mixed timeframe parquet file
 ```
 
 ```sh
-usage: build-parquet.sh [-h] --select SYMBOL/TF1,TF2:modifier,... [--after AFTER]
-              [--until UNTIL] (--output FILE_PATH | --output_dir DIR_PATH)
-              [--compression {snappy,gzip,brotli,zstd,lz4,none}] [--force] 
-              [--dry-run] [--partition] [--keep-temp]
+usage: build-(parquet|csv).sh [-h] (--select SYMBOL/TF1,TF2:modifier,... | --list) 
+       [--after AFTER] [--until UNTIL] [--output FILE_PATH] [--output_dir DIR_PATH]
+       [--csv | --parquet] [--compression {snappy,gzip,brotli,zstd,lz4,none}] [--mt4] 
+       [--force] [--dry-run] [--partition] [--keep-temp]
 
 Batch extraction utility for symbol/timeframe datasets.
 
 optional arguments:
   -h, --help            show this help message and exit
   --select SYMBOL/TF1,TF2:modifier,...
-                        Defines how symbols and timeframes are selected. Wildcards (*) are NOT supported.
-                        The skiplast modifier can be applied to exclude the last row of a timeframe.
+                        Defines how symbols and timeframes are selected for extraction.
+  --list                Dump out all available symbol/timeframe pairs and exit.
   --after AFTER         Start date/time (inclusive). Format: YYYY-MM-DD HH:MM:SS (Default: 1970-01-01 00:00:00)
   --until UNTIL         End date/time (exclusive). Format: YYYY-MM-DD HH:MM:SS (Default: 3000-01-01 00:00:00)
-  --output FILE_PATH    Write a single merged Parquet file.
-  --output_dir DIR_PATH
-                        Write a partitioned Parquet dataset.
+  --csv                 Write as CSV.
+  --parquet             Write as Parquet (default).
   --compression {snappy,gzip,brotli,zstd,lz4,none}
                         Compression codec for Parquet output.
   --mt4                 Splits merged CSV into files compatible with MT4.
@@ -488,6 +488,11 @@ optional arguments:
   --dry-run             Parse/resolve arguments only; do not run extraction.
   --partition           Enable Hive-style partitioned output (requires --output_dir).
   --keep-temp           Retain intermediate files.
+
+Output Configuration (Required for Extraction Mode):
+  --output FILE_PATH    Write a single merged output file.
+  --output_dir DIR_PATH
+                        Write a partitioned dataset.
 
 ```
 
@@ -630,12 +635,12 @@ rm cache/2024/03/EURUSD_20240315.json  # Remove corrupted file
 
 project_root/
 ├── symbols.txt                                # List of trading symbols
-├── download.py                                # Download Dukascopy JSON data
-├── transform.py                               # Transform JSON -> OHLC CSV
-├── aggregate.py                               # Aggregate CSVs per symbol
-├── resample.py                                # Cascaded resampling to other timeframes
-├── run.py                                     # Runs all stages of the pipeline within a single pool, in correct order
-├── run.sh                                     # Runs run.py
+├── etl                                        # ETL pipeline code
+├── builder                                    # Builder code
+├── build-csv.sh                               # CSV builder script
+├── build-parquet.sh                           # Parquet builder script
+├── run.sh                                     # Runs ETL pipeline
+├── rebuild-full.sh                            # Rebuild from scratch
 ├── rebuild-weekly.sh                          # Redownload data from last week and rebuild (safety-net regarding backfilling)
 ├── cache/                                     # Cached historical JSON data
 │   └── YYYY/
@@ -788,7 +793,7 @@ tail --follow indicator.txt
 
 ## DuckDB (Advanced users)
 
-**Following the introduction of Parquet support, this section will be revised. CSV files now function only as a lightweight storage format.** (planned this weekend)
+**Following the introduction of Parquet support, this section will be revised. CSV files now function only as a lightweight storage format.**
 
 ```sh
 pip install duckdb
