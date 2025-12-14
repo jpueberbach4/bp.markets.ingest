@@ -80,6 +80,9 @@ transform:
       - GBR.IDX-GBP
       - DEU.IDX-EUR
       - BUND.TR-EUR
+      - VOL.IDX-USD
+      - NLD.IDX-EUR
+      - USD-JPY
       - EUR-USD                     # This is MT4 server wide. Not symbol specific.
 
 # Below you will find the configuration for the resample.py script. 
