@@ -68,7 +68,9 @@ This is pretty amusing. I can’t just rely on a European time zone for detectio
 \
 So I need to detect the relative offset for a given date based on America/New_York, and then, based on the difference between UTC and localized New York time, decide whether to use GMT+3 or GMT+2.\
 \
-To make things even more complicated, this behavior appears to be symbol-specific. That means we’ll need to configure symbol lists with their respective time zone rules. This will take a while.
+To make things even more complicated, this behavior appears to be symbol-specific. That means we’ll need to configure symbol lists with their respective time zone rules. This will take a while. \
+\
+see: https://www.dukascopy.com/swiss/english/about/ournews/daylight-saving-time-2025-in-the-us
 
 ## Notice
 
