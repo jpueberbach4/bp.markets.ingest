@@ -802,7 +802,9 @@ tail --follow indicator.txt
 ```
 
 **Goal:** Wrap up the above two functionalities into an MVP before Christmas, so I can resume C++ work at the start of next year. Current codebase is under 1,500 lines of actual LOC; target is to stay below 3,000.
-                             
+
+>Idea (unexplored): If feasible and data access allows, get approval to replay financial calendar events through replay.sh as "control structures". This is something I’ll likely need as well, but it hasn’t been explored yet (0.8 feature?).
+
 >Cascaded indicator engine (1.0) (if still needed after replay.sh + plugins)
 
 >MSSIB Extension for DuckDB
