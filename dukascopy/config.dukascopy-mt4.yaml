@@ -143,13 +143,13 @@ resample:
     BUND.TR-EUR:
       timeframes:
         4h:                     
-          rule: "4H"        # 4-hourly timeframe
+          rule: "4H"        # 2025-12-14: OK
           label: "left"
           closed: "left"
           source: "1h"
           origin: "09:00"   # In MT4: first 4H candle of the day starts at this time   
     # Commodities     
-    BRENT.CMD-USD:
+    BRENT.CMD-USD:          # 2025-12-14: OK
        timeframes:
         4h:                     
           rule: "4H"
@@ -157,7 +157,7 @@ resample:
           closed: "left"
           source: "1h"
           origin: "03:00"   # In MT4: first 4H candle of the day starts at this time
-    GAS.CMD-USD:
+    GAS.CMD-USD:            # 2025-12-14: OK
        timeframes:
         4h:                     
           rule: "4H"
@@ -165,7 +165,7 @@ resample:
           closed: "left"
           source: "1h"
           origin: "01:00"   # In MT4: first 4H candle of the day starts at this time
-    LIGHT.CMD-USD:
+    LIGHT.CMD-USD:          # 2025-12-14: OK
        timeframes:
         4h:                     
           rule: "4H"
@@ -173,7 +173,7 @@ resample:
           closed: "left"
           source: "1h"
           origin: "01:00"   # In MT4: first 4H candle of the day starts at this time
-    XAU-USD: 
+    XAU-USD:                # 2025-12-14: OK
        timeframes:
         4h:                     
           rule: "4H"
@@ -181,7 +181,8 @@ resample:
           closed: "left"
           source: "1h"
           origin: "01:00"   # In MT4: first 4H candle of the day starts at this time
-    # Crypto: no override needed GMT+2 default binning seems OK.
+    # Crypto: Quick look: no override needed
+    #         GMT+2 default binning seems OK.
     # Indices
     AUS.IDX-AUD:             # verified: OK (5m->1W)
       # This is an "anomaly" in the pond of fish
@@ -213,28 +214,28 @@ resample:
     DEU.IDX-EUR:            # verified: OK (1h->1W)
       timeframes:
         4h:                     
-          rule: "4H"        # 4-hourly timeframe
+          rule: "4H"
           label: "left"
           closed: "left"
           source: "1h"
           origin: "09:00"   # Starting point of time-bins
-    DOLLAR.IDX-USD:         # verified: OK (1h->1W)
+    DOLLAR.IDX-USD:         # 2025-12-14: OK
        timeframes:
         4h:                     
-          rule: "4H"        # 4-hourly timeframe
+          rule: "4H"
           label: "left"
           closed: "left"
           source: "1h"
-          origin: "07:00"   # Starting point of time-bins
-    GBR.IDX-GBP:            # verified: OK (1h->1W)
+          origin: "03:00"   # In MT4: first 4H candle of the day starts at this time
+    GBR.IDX-GBP:
       timeframes:
         4h:                     
-          rule: "4H"        # 4-hourly timeframe
+          rule: "4H"
           label: "left"
           closed: "left"
           source: "1h"
           origin: "09:00"   # Starting point of time-bins
-    JPN.IDX-JPY:            # verified: OK (1h->1W)
+    JPN.IDX-JPY:
        timeframes:
         4h:                     
           rule: "4H"        # 4-hourly timeframe
@@ -242,30 +243,30 @@ resample:
           closed: "left"
           source: "1h"
           origin: "09:00"   # Starting point of time-bins     
-    USA30.IDX-USD:          # verified: OK (1h->1W)
+    USA30.IDX-USD:          # 2025-12-14: OK
        timeframes:
         4h:                     
-          rule: "4H"        # 4-hourly timeframe
+          rule: "4H"
           label: "left"
           closed: "left"
           source: "1h"
-          origin: "09:00"   # Starting point of time-bins
-    USA500.IDX-USD:         # verified: NO
+          origin: "01:00"   # In MT4: first 4H candle of the day starts at this time
+    USA500.IDX-USD:         # 2025-12-14: OK
        timeframes:
         4h:                     
-          rule: "4H"        # 4-hourly timeframe
+          rule: "4H"
           label: "left"
           closed: "left"
           source: "1h"
-          origin: "09:00"   # Starting point of time-bins
-    USATECH.IDX-USD:        # verified: NO
+          origin: "01:00"   # In MT4: first 4H candle of the day starts at this time
+    USATECH.IDX-USD:        # 2025-12-14: OK
        timeframes:
         4h:                     
-          rule: "4H"        # 4-hourly timeframe
+          rule: "4H"
           label: "left"
           closed: "left"
           source: "1h"
-          origin: "09:00"   # Starting point of time-bins
+          origin: "01:00"   # In MT4: first 4H candle of the day starts at this time
 
 
 
