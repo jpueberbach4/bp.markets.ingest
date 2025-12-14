@@ -140,47 +140,47 @@ resample:
   # Support per symbol overrides
   symbols:
     # Bonds
-    BUND.TR-EUR:            # verified: OK (1h->1W)
+    BUND.TR-EUR:
       timeframes:
         4h:                     
           rule: "4H"        # 4-hourly timeframe
           label: "left"
           closed: "left"
           source: "1h"
-          origin: "09:00"   # Starting point of time-bins    
+          origin: "09:00"   # In MT4: first 4H candle of the day starts at this time   
     # Commodities     
-    BRENT.CMD-USD:          # verified: OK (1h->1W)
+    BRENT.CMD-USD:
        timeframes:
         4h:                     
-          rule: "4H"        # 4-hourly timeframe
+          rule: "4H"
           label: "left"
           closed: "left"
           source: "1h"
-          origin: "07:00"   # Starting point of time-bins
-    GAS.CMD-USD:            # verified: NO
+          origin: "03:00"   # In MT4: first 4H candle of the day starts at this time
+    GAS.CMD-USD:
        timeframes:
         4h:                     
-          rule: "4H"        # 4-hourly timeframe
+          rule: "4H"
           label: "left"
           closed: "left"
           source: "1h"
-          origin: "09:00"   # Starting point of time-bin 
-    LIGHT.CMD-USD:          # verified: OK (1h->1W)
+          origin: "01:00"   # In MT4: first 4H candle of the day starts at this time
+    LIGHT.CMD-USD:
        timeframes:
         4h:                     
-          rule: "4H"        # 4-hourly timeframe
+          rule: "4H"
           label: "left"
           closed: "left"
           source: "1h"
-          origin: "07:00"   # Starting point of time-bins
-    XAU-USD:                # verified: OK (1h->1W) 
+          origin: "01:00"   # In MT4: first 4H candle of the day starts at this time
+    XAU-USD: 
        timeframes:
         4h:                     
-          rule: "4H"        # 4-hourly timeframe
+          rule: "4H"
           label: "left"
           closed: "left"
           source: "1h"
-          origin: "09:00"   # Starting point of time-bins
+          origin: "01:00"   # In MT4: first 4H candle of the day starts at this time
     # Crypto: no override needed GMT+2 default binning seems OK.
     # Indices
     AUS.IDX-AUD:             # verified: OK (5m->1W)
