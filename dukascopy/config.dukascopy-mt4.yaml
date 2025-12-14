@@ -58,43 +58,52 @@ transform:
         -240: 10800000                # UTC-4 (US DST) -> GMT+3 shift
         -300: 7200000                 # UTC-5 (US Standard) -> GMT+2 shift
       symbols:                        # Basically you add any symbol you are using here.
-symbols:
-    # --- Commodities (Precious Metals & Energy) ---
-  - BRENT.CMD-USD
-  - COPPER.CMD-USD
-  - DIESEL.CMD-USD
-  - GAS.CMD-USD
-  - LIGHT.CMD-USD
-  - XAG-USD
-  - XAU-USD
-  - XPD.CMD-USD
-  - XPT.CMD-USD
+      # --- Commodities (Precious Metals & Energy) ---
+      - BRENT.CMD-USD
+      - COPPER.CMD-USD
+      - DIESEL.CMD-USD
+      - GAS.CMD-USD
+      - LIGHT.CMD-USD
+      - XAG-USD
+      - XAU-USD
+      - XPD.CMD-USD
+      - XPT.CMD-USD
 
-    # --- Soft Commodities ---
-  - COTTON.CMD-USX
-  - OJUICE.CMD-USX
-  - SOYBEAN.CMD-USX
+      # --- Soft Commodities ---
+      - COTTON.CMD-USX
+      - OJUICE.CMD-USX
+      - SOYBEAN.CMD-USX
 
-    # --- Currencies ---
-  - DOLLAR.IDX-USD
-  - USD-JPY
+      # --- Currencies ---
+      - DOLLAR.IDX-USD
+      - USD-JPY
+      - EUR-USD
+      - GBP-USD
+      - USD-CHF
+      - AUD-USD
+      - USD-CAD
+      - NZD-USD
+      - XAU-USD
+      - BTC-USD
+      - EUR-MXN
+      - EUR-NZD
 
-    # --- Indices (US) ---
-  - USA30.IDX-USD
-  - USA500.IDX-USD
-  - USATECH.IDX-USD
-  - USSC2000.IDX-USD
-  - VOL.IDX-USD
+      # --- Indices (US) ---
+      - USA30.IDX-USD
+      - USA500.IDX-USD
+      - USATECH.IDX-USD
+      - USSC2000.IDX-USD
+      - VOL.IDX-USD
 
-    # --- Indices (Non-US) ---
-  - DEU.IDX-EUR       # German Index (DAX)
-  - GBR.IDX-GBP       # UK Index (FTSE 100)
-  - JPN.IDX-JPY       # Japanese Index (Nikkei)
-  - NLD.IDX-EUR       # Netherlands Index (AEX)
+      # --- Indices (Non-US) ---
+      - DEU.IDX-EUR       # German Index (DAX)
+      - GBR.IDX-GBP       # UK Index (FTSE 100)
+      - JPN.IDX-JPY       # Japanese Index (Nikkei)
+      - NLD.IDX-EUR       # Netherlands Index (AEX)
 
-    # --- Bonds/Rates ---
-  - BUND.TR-EUR
-  - USTBOND.TR-USD    # This is MT4 server wide. Not symbol specific.
+      # --- Bonds/Rates ---
+      - BUND.TR-EUR
+      - USTBOND.TR-USD    # This is MT4 server wide. Not symbol specific.
 
 # Below you will find the configuration for the resample.py script. 
 resample:
