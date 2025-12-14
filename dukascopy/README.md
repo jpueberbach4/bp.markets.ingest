@@ -70,7 +70,43 @@ So I need to detect the relative offset for a given date based on America/New_Yo
 \
 To make things even more complicated, this behavior appears to be symbol-specific. That means we’ll need to configure symbol lists with their respective time zone rules. This will take a while. \
 \
-see: https://www.dukascopy.com/swiss/english/about/ournews/daylight-saving-time-2025-in-the-us
+see: https://www.dukascopy.com/swiss/english/about/ournews/daylight-saving-time-2025-in-the-us \
+\
+It will become very tedious to configure (first implement, then performance):
+```sh
+transform:
+  time_shift_ms: 7200000              # How many milliseconds should we shift (0=UTC, 7200000=GMT+2 (eg MT4 Dukascopy) )
+  round_decimals: 8                   # Number of decimals to round OHLCV to
+  paths:
+    data: data/transform/1m           # Output directory for transform
+    historic: cache                   # Historical downloads
+    live: data/temp                   # Live downloads
+  timezones:
+    America/New_York:
+      offset_to_shift_map:
+        -240: 10800000  # UTC-4 (US DST) -> GMT+3 shift
+        -300: 7200000   # UTC-5 (US Standard) -> GMT+2 shift
+      symbols:
+      - XAU-USD
+      - XAG-USD
+      - XPT.CMD-USD
+      - XPD.CMD-USD
+      - BRENT.CMD-USD
+      - LIGHT.CMD-USD
+      - DIESEL.CMD-USD
+      - GAS.CMD-USD
+      - COPPER.CMD-USD
+      - OJUICE.CMD-USX
+      - SOYBEAN.CMD-USX
+      - COTTON.CMD-USX
+      - USA30.IDX-USD
+      - USA500.IDX-USD
+      - USATECH.IDX-USD
+      - USSC2000.IDX-USD
+      - JPN.IDX-JPY
+      - DOLLAR.IDX-USD
+      - USTBOND.TR-USD
+```
 
 ## Notice
 
