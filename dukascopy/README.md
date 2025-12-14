@@ -90,13 +90,19 @@ transform:
 
 To me, it's not exactly clear how Crypto is handled. I have sent an e-mail.
 
-## Notice - edge cases
+## **Tests**
 
-Of course, I’m checking many different aspects, and I can say that I’m encountering several unexpected behaviors. Below is a list of findings, edge cases.
+- Major Forex. Excellent.
+- Major Crosses. Good.
+- Dollar index, Volatility index. Good.
+- Energy: Brent, WTI, Diesel, GAS. Great.
+- Metals: XAU slightly off but (very) usable, Copper is way off (still need to check why, likely data)
+- Indices: US indices. Excellent. DAX. Good. NL. Good. Nikkie. Excellent. Still working on the others.
+- Bonds: BUND, USNOTE. Good. Gilt not checked (yet).
+- A weird edge-case: NZD-USD (Weekly unusable). Daily. Fine.
 
-| Symbol | Case |
-| :--- | :--- |
-| NZDUSD | **NZDUSD – Weekly (28/29 September 2025, MT4)** While scrolling backward, the chart suddenly handles the start of the week differently. Sunday data is merged into Monday, and the week begins on Monday (the Sunday daily candle’s open price is shifted to Monday’s open). The following week, however, the week starts on Sunday, and from that point onward Monday candles continue to open on Sunday. I can’t help to wonder how many more of these oddities I’m going to uncover during my checkups. |
+What was checked? 5m for major forex. Weekly and daily, sometimes 1h and sometimes 15m. Need to build
+automation to perform accuracy tests (maybe later).
 
 ## Notice
 
