@@ -82,12 +82,6 @@ class DownloadConfig:
     paths: DownloadPaths = field(default_factory=DownloadPaths)
 
 @dataclass
-class TransformSymbolOverride:
-    """Per-symbol configuration overrides."""
-    # How much ms should we shift time by (0=UTC, 7200000=GMT+2)
-    time_shift_ms: int = 0
-
-@dataclass
 class TransformTimezone:
     """
     Holds the required MT4 shift values mapped to the trigger timezone's UTC offset.
@@ -119,7 +113,6 @@ class TransformConfig:
     time_shift_dst_tz: str = "Europe/Athens"
     # How much decimals we need to round to
     round_decimals: int = 10
-    symbols: Dict[str, TransformSymbolOverride] = field(default_factory=dict)
     paths: TransformPaths = field(default_factory=TransformPaths)
     timezones: Dict[str, TransformTimezone] = field(default_factory=dict)
 
