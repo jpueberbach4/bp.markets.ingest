@@ -105,7 +105,7 @@ What was checked? 5m for major forex. Weekly and daily, sometimes 1h and sometim
 automation to perform accuracy tests (maybe later).
 
 ```sh
-Example (why sometimes price are bit different):
+Example (why sometimes prices are bit different):
 
 5 Minute aggregation we have performed, output:
 
@@ -133,6 +133,9 @@ Based on this data, the aggregation is 100% correct. Data is not EXACTLY
 the same as in MT4. But very very close. I have seen this boundary-
 price issue multiple times during my checks. 
 ```
+
+![MT4](images/examplepricediff.png)
+
 
 ## Notice
 
