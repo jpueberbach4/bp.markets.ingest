@@ -77,6 +77,13 @@ transform:
       - JPN.IDX-JPY
       - DOLLAR.IDX-USD
       - USTBOND.TR-USD
+    Europe/Berlin:
+      offset_to_shift_map:            # Defines a map to shift based on offset minutes
+        120: 10800000                 # UTC+2 (CEST/Berlin DST) -> GMT+3 shift
+        60: 7200000                   # UTC+1 (CET/Berlin Standard) -> GMT+2 shift
+      symbols:
+      - DEU.IDX-EUR
+      - BUND.TR-EUR 
 
 # Below you will find the configuration for the resample.py script. 
 resample:
@@ -143,7 +150,7 @@ resample:
     BUND.TR-EUR:
       timeframes:
         4h:                     
-          rule: "4H"        # 2025-12-14: OK
+          rule: "4H"        # 2025-12-14: OK (week-open 1m frame is not equal to MT4 (data-issue))
           label: "left"
           closed: "left"
           source: "1h"
@@ -211,14 +218,14 @@ resample:
           closed: "left"
           source: "1h"
           origin: "08:10"   # Starting point of time-bins  
-    DEU.IDX-EUR:            # verified: OK (1h->1W)
+    DEU.IDX-EUR:            # 2025-12-14: OK
       timeframes:
         4h:                     
           rule: "4H"
           label: "left"
           closed: "left"
           source: "1h"
-          origin: "09:00"   # Starting point of time-bins
+          origin: "01:00"   # In MT4: first 4H candle of the day starts at this time
     DOLLAR.IDX-USD:         # 2025-12-14: OK
        timeframes:
         4h:                     
