@@ -144,10 +144,10 @@ resample:
   # Support per symbol overrides
   symbols:
     # Bonds
-    BUND.TR-EUR:
+    BUND.TR-EUR:            # 2025-12-14: OK (week-open 1m frame is not equal to MT4 (data-issue))
       timeframes:
         4h:                     
-          rule: "4H"        # 2025-12-14: OK (week-open 1m frame is not equal to MT4 (data-issue))
+          rule: "4H"        
           label: "left"
           closed: "left"
           source: "1h"
@@ -155,7 +155,7 @@ resample:
     USTBOND.TR-USD:         # 2025-12-14: OK (week-open 1m frame is not equal to MT4 (data-issue))
       timeframes:
         4h:                     
-          rule: "4H"        # 2025-12-14: OK
+          rule: "4H"        
           label: "left"
           closed: "left"
           source: "1h"
