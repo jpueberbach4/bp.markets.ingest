@@ -59,13 +59,13 @@ transform:
         -300: 7200000                 # UTC-5 (US Standard) -> GMT+2 shift
       symbols:                        # Basically you add any symbol you are using here.
       # --- Commodities (Precious Metals & Energy) ---
-      - BRENT.CMD-USD
+      - BRENT.CMD-USD                 # OK
       - COPPER.CMD-USD
       - DIESEL.CMD-USD
-      - GAS.CMD-USD
-      - LIGHT.CMD-USD
+      - GAS.CMD-USD                   # OK
+      - LIGHT.CMD-USD                 # OK
       - XAG-USD
-      - XAU-USD
+      - XAU-USD                       # SLIGHTLY-OFF
       - XPD.CMD-USD
       - XPT.CMD-USD
 
@@ -75,34 +75,33 @@ transform:
       - SOYBEAN.CMD-USX
 
       # --- Currencies ---
-      - DOLLAR.IDX-USD
-      - USD-JPY
-      - EUR-USD
-      - GBP-USD
-      - USD-CHF
-      - AUD-USD
-      - USD-CAD
-      - NZD-USD
-      - XAU-USD
-      - EUR-MXN
-      - EUR-NZD
+      - DOLLAR.IDX-USD                # OK
+      - USD-JPY                       # OK
+      - EUR-USD                       # OK
+      - GBP-USD                       # OK
+      - USD-CHF                       # OK
+      - AUD-USD                       # OK
+      - USD-CAD                       # OK
+      - NZD-USD                       # EDGE-CASE!!
+      - EUR-MXN                       # NOT-IN-MT
+      - EUR-NZD                       # OK
 
       # --- Indices (US) ---
-      - USA30.IDX-USD
-      - USA500.IDX-USD
-      - USATECH.IDX-USD
+      - USA30.IDX-USD                 # OK
+      - USA500.IDX-USD                # OK
+      - USATECH.IDX-USD               # OK
       - USSC2000.IDX-USD
-      - VOL.IDX-USD
+      - VOL.IDX-USD                   # OK
 
       # --- Indices (Non-US) ---
-      - DEU.IDX-EUR       # German Index (DAX)
-      - GBR.IDX-GBP       # UK Index (FTSE 100)
-      - JPN.IDX-JPY       # Japanese Index (Nikkei)
-      - NLD.IDX-EUR       # Netherlands Index (AEX)
+      - DEU.IDX-EUR                   # OK - German Index (DAX)
+      - GBR.IDX-GBP                   #      UK Index (FTSE 100)
+      - JPN.IDX-JPY                   # OK - Japanese Index (Nikkei)
+      - NLD.IDX-EUR                   # OK - Netherlands Index (AEX)
 
       # --- Bonds/Rates ---
-      - BUND.TR-EUR
-      - USTBOND.TR-USD    # This is MT4 server wide. Not symbol specific.
+      - BUND.TR-EUR                   # OK (only week-start off by 0.01 or 0.02)
+      - USTBOND.TR-USD                # OK (only week-start off by 0.01 or 0.02)
 
 # Below you will find the configuration for the resample.py script. 
 resample:
