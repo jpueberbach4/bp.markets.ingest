@@ -84,7 +84,6 @@ transform:
       - USD-CAD
       - NZD-USD
       - XAU-USD
-      - BTC-USD
       - EUR-MXN
       - EUR-NZD
 
