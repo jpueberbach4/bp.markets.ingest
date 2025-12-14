@@ -152,7 +152,7 @@ resample:
           closed: "left"
           source: "1h"
           origin: "09:00"   # In MT4: first 4H candle of the day starts at this time
-    USTBOND.TR-USD:
+    USTBOND.TR-USD:         # 2025-12-14: OK (week-open 1m frame is not equal to MT4 (data-issue))
       timeframes:
         4h:                     
           rule: "4H"        # 2025-12-14:
