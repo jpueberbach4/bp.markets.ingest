@@ -62,7 +62,13 @@ Time shifts cannot be applied incrementally because timestamps affect all aggreg
 \
 The Dukascopy MT server time shifts between GMT+2 (Standard Time) and GMT+3 (Daylight Saving Time), causing historical OHLC candles to be improperly aligned and binned. \
 \
-Fix: Implement date-aware logic in transform.py to dynamically switch the time_shift_ms parameter between 7,200,000 GMT+2 and 10,800,000 GMT+3, based on the European DST calendar. This dynamic shift must be gated by a configuration flag. Tomorrow i will fix it. Have to investigate what it means for Crypto (24/7 market).
+Fix: Implement date-aware logic in transform.py to dynamically switch the time_shift_ms parameter between 7,200,000 GMT+2 and 10,800,000 GMT+3, based on the European DST calendar. This dynamic shift must be gated by a configuration flag. Tomorrow i will fix it. Have to investigate what it means for Crypto (24/7 market).\
+\
+This is pretty amusing. I can’t just rely on a European time zone for detection, because in Europe DST (winter time) already ends in October. Instead, the system follows the U.S. DST change on November 2 and only then switches from GMT+3 to GMT+2. \
+\
+So I need to detect the relative offset for a given date based on America/New_York, and then, based on the difference between UTC and localized New York time, decide whether to use GMT+3 or GMT+2.\
+\
+To make things even more complicated, this behavior appears to be symbol-specific. That means we’ll need to configure symbol lists with their respective time zone rules. This will take a while.
 
 ## Notice
 
