@@ -62,7 +62,9 @@ Time shifts cannot be applied incrementally because timestamps affect all aggreg
 \
 The Dukascopy MT server time shifts between GMT+2 (Standard Time) and GMT+3 (Daylight Saving Time), causing historical OHLC candles to be improperly aligned and binned. \
 \
-I have implemented a fix for this. See ```config.dukascopy-mt4.yaml``` transform.timezones configuration. Performance impact is limited. Still testing.
+I have implemented a fix for this. See ```config.dukascopy-mt4.yaml``` transform.timezones configuration. Performance impact is limited. Still testing.\
+\
+**First evaluation on BRENT:** Yes, much much much better :)
 
 ## Notice
 
