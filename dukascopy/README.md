@@ -64,15 +64,9 @@ The Dukascopy MT server time shifts between GMT+2 (Standard Time) and GMT+3 (Day
 \
 Fix: Implement date-aware logic in transform.py to dynamically switch the time_shift_ms parameter between 7,200,000 GMT+2 and 10,800,000 GMT+3, based on the European DST calendar. This dynamic shift must be gated by a configuration flag. Tomorrow i will fix it. Have to investigate what it means for Crypto (24/7 market).\
 \
-This is pretty amusing. I can’t just rely on a European time zone for detection, because in Europe DST (winter time) already ends in October. Instead, the system follows the U.S. DST change on November 2 and only then switches from GMT+3 to GMT+2. \
-\
-So I need to detect the relative offset for a given date based on America/New_York, and then, based on the difference between UTC and localized New York time, decide whether to use GMT+3 or GMT+2.\
-\
-To make things even more complicated, this behavior appears to be symbol-specific. That means we’ll need to configure symbol lists with their respective time zone rules. This will take a while. \
-\
 see: https://www.dukascopy.com/swiss/english/about/ournews/daylight-saving-time-2025-in-the-us \
 \
-It will become very tedious to configure (first implement, then performance):
+It will become tedious to configure (first implement, then performance). Performance will be achieved by caching, first per worker, later, global in the processpool (mp.manager?). Ultimate result: one relative offset (to UTC) calculation per timezone per day.
 ```sh
 transform:
   time_shift_ms: 7200000              # How many milliseconds should we shift (0=UTC, 7200000=GMT+2 (eg MT4 Dukascopy) )
@@ -92,22 +86,9 @@ transform:
       - XPT.CMD-USD
       - XPD.CMD-USD
       - BRENT.CMD-USD
-      - LIGHT.CMD-USD
-      - DIESEL.CMD-USD
-      - GAS.CMD-USD
-      - COPPER.CMD-USD
-      - OJUICE.CMD-USX
-      - SOYBEAN.CMD-USX
-      - COTTON.CMD-USX
-      - USA30.IDX-USD
-      - USA500.IDX-USD
-      - USATECH.IDX-USD
-      - USSC2000.IDX-USD
-      - JPN.IDX-JPY
-      - DOLLAR.IDX-USD
+      ...
       - USTBOND.TR-USD
 ```
-**I need coffee. Lots of it. **
 
 ## Notice
 
