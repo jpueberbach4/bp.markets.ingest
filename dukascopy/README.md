@@ -90,6 +90,14 @@ transform:
 
 To me, it's not exactly clear how Crypto is handled. I have sent an e-mail.
 
+## Notice - edge cases
+
+I am ofcourse checking a lot of things and i can tell you, that i am encountering unexpected behaviors. Below is a list of findings/edge cases.
+
+| Symbol | Case |
+| :--- | :--- |
+| NZDUSD | **NZDUSD – Weekly (28/29 September 2025, MT4)** While scrolling backward, the chart suddenly handles the start of the week differently. Sunday data is merged into Monday, and the week begins on Monday (the Sunday daily candle’s open price is shifted to Monday’s open). The following week, however, the week starts on Sunday, and from that point onward Monday candles continue to open on Sunday. I can’t help to wonder how many more of these oddities I’m going to uncover during my checkups. |
+
 ## Notice
 
 Backfilling is not currently supported, as our pipeline processes data strictly forward. Because of this, historical data—particularly for illiquid pairs and at the highest granularity—may be skewed. Backfilling has been identified as a must-have feature.
