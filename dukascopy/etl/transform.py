@@ -26,6 +26,7 @@ import pandas as pd
 import numpy as np
 import orjson
 import os
+from dst import get_symbol_time_shift_ms
 from datetime import date
 from pathlib import Path
 from config.app_config import AppConfig, TransformConfig, load_app_config
@@ -80,11 +81,8 @@ def transform_symbol(symbol: str, dt: date, app_config: AppConfig) -> bool:
     with open(cache_path, "rb") as file:
         data = orjson.loads(file.read())
 
-    time_shift_ms = config.time_shift_ms
-    # Timeshift per symbol
-    symbol_override = config.symbols.get(symbol)
-    if symbol_override:
-        time_shift_ms = symbol_override.time_shift_ms
+    # Timeshift per symbol, overridable in YAML config
+    time_shift_ms = get_symbol_time_shift_ms(dt, symbol, config)
 
     # Vectorized computation of cumulative OHLC and timestamps
     times   = np.cumsum(np.array(data['times'], dtype=np.int64) * data['shift']) + (data['timestamp'] + time_shift_ms)

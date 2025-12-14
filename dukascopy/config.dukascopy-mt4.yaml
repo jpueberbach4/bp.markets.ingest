@@ -52,7 +52,32 @@ transform:
     data: data/transform/1m           # Output directory for transform
     historic: cache                   # Historical downloads
     live: data/temp                   # Live downloads
-    
+  timezones:
+    America/New_York:                 # eg New York linked commodities
+      offset_to_shift_map:            # Defines a map to shift based on offset minutes
+        -240: 10800000                # UTC-4 (US DST) -> GMT+3 shift
+        -300: 7200000                 # UTC-5 (US Standard) -> GMT+2 shift
+      symbols:
+      - XAU-USD
+      - XAG-USD
+      - XPT.CMD-USD
+      - XPD.CMD-USD
+      - BRENT.CMD-USD
+      - LIGHT.CMD-USD
+      - DIESEL.CMD-USD
+      - GAS.CMD-USD
+      - COPPER.CMD-USD
+      - OJUICE.CMD-USX
+      - SOYBEAN.CMD-USX
+      - COTTON.CMD-USX
+      - USA30.IDX-USD
+      - USA500.IDX-USD
+      - USATECH.IDX-USD
+      - USSC2000.IDX-USD
+      - JPN.IDX-JPY
+      - DOLLAR.IDX-USD
+      - USTBOND.TR-USD
+
 # Below you will find the configuration for the resample.py script. 
 resample:
   round_decimals: 8                   # Number of decimals to round OHLCV to

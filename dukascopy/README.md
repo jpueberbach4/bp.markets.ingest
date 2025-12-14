@@ -58,37 +58,11 @@ Time shifts cannot be applied incrementally because timestamps affect all aggreg
 
 >When you apply ```config.dukascopy-mt4.yaml```. Perform a rebuild from scratch ```./rebuild-full.sh```.
 
->**Bug: Dukascopy Time Zone Drift (DST Issue)** \
+>**Info: Dukascopy Time Zone Drift (DST Issue) - Resolved? testing** \
 \
 The Dukascopy MT server time shifts between GMT+2 (Standard Time) and GMT+3 (Daylight Saving Time), causing historical OHLC candles to be improperly aligned and binned. \
 \
-Fix: Implement date-aware logic in transform.py to dynamically switch the time_shift_ms parameter between 7,200,000 GMT+2 and 10,800,000 GMT+3, based on the European DST calendar. This dynamic shift must be gated by a configuration flag. Tomorrow i will fix it. Have to investigate what it means for Crypto (24/7 market).\
-\
-see: https://www.dukascopy.com/swiss/english/about/ournews/daylight-saving-time-2025-in-the-us \
-\
-It will become tedious to configure (first implement, then performance). Performance will be achieved by caching, first per worker, later, global in the processpool (mp.manager?). Ultimate result: one relative offset (to UTC) calculation per timezone per day.
-```sh
-transform:
-  time_shift_ms: 7200000              # How many milliseconds should we shift (0=UTC, 7200000=GMT+2 (eg MT4 Dukascopy) )
-  round_decimals: 8                   # Number of decimals to round OHLCV to
-  paths:
-    data: data/transform/1m           # Output directory for transform
-    historic: cache                   # Historical downloads
-    live: data/temp                   # Live downloads
-  timezones:
-    America/New_York:
-      offset_to_shift_map:
-        -240: 10800000  # UTC-4 (US DST) -> GMT+3 shift
-        -300: 7200000   # UTC-5 (US Standard) -> GMT+2 shift
-      symbols:
-      - XAU-USD
-      - XAG-USD
-      - XPT.CMD-USD
-      - XPD.CMD-USD
-      - BRENT.CMD-USD
-      ...
-      - USTBOND.TR-USD
-```
+I have implemented a fix for this. See ```config.dukascopy-mt4.yaml``` transform.timezones configuration. Performance impact is limited. Still testing.
 
 ## Notice
 

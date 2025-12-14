@@ -88,6 +88,19 @@ class TransformSymbolOverride:
     time_shift_ms: int = 0
 
 @dataclass
+class TransformTimezone:
+    """
+    Holds the required MT4 shift values mapped to the trigger timezone's UTC offset.
+    
+    Example: 
+    -240: 10800000 (UTC-4 US DST maps to GMT+3 MT4 Shift)
+    -300: 3600000  (UTC-5 US Standard maps to GMT+1 Custom Shift)
+    """
+    # Key: UTC Offset in minutes (int); Value: Final MT4 shift in ms (int)
+    offset_to_shift_map: Dict[int, int] = field(default_factory=dict)
+    symbols: List[str] = field(default_factory=list)
+
+@dataclass
 class TransformPaths:
     """Directory paths used by the script."""
     # Input directory for historic
@@ -100,12 +113,15 @@ class TransformPaths:
 @dataclass
 class TransformConfig:
     """The root configuration for the download.py script."""
-    # How much ms should we shift time by (0=UTC, 7200000=GMT+2)
+    # How much ms should we shift time by (0=UTC, 7200000=GMT+2 (winter-time offset))
     time_shift_ms: int = 0
+    # What timezone do we use to determine DST alignment relative to UTC
+    time_shift_dst_tz: str = "Europe/Athens"
     # How much decimals we need to round to
     round_decimals: int = 10
     symbols: Dict[str, TransformSymbolOverride] = field(default_factory=dict)
     paths: TransformPaths = field(default_factory=TransformPaths)
+    timezones: Dict[str, TransformTimezone] = field(default_factory=dict)
 
 @dataclass
 class AppConfig:
