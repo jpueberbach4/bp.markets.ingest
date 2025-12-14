@@ -800,6 +800,8 @@ tail --follow indicator.txt
 # perform time-travel debugging—limitless flexibility.
 
 ```
+
+**Goal:** Wrap up the above two functionalities into an MVP before Christmas, so I can resume C++ work at the start of next year. Current codebase is under 1,500 lines of actual LOC; target is to stay below 3,000.
                              
 >Cascaded indicator engine (1.0) (if still needed after replay.sh + plugins)
 
