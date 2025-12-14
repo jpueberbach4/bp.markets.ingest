@@ -60,8 +60,8 @@ transform:
       symbols:                        # Basically you add any symbol you are using here.
       # --- Commodities (Precious Metals & Energy) ---
       - BRENT.CMD-USD                 # OK
-      - COPPER.CMD-USD
-      - DIESEL.CMD-USD
+      - COPPER.CMD-USD                # OFF - DONT USE
+      - DIESEL.CMD-USD                # OK
       - GAS.CMD-USD                   # OK
       - LIGHT.CMD-USD                 # OK
       - XAG-USD
@@ -183,6 +183,22 @@ resample:
           origin: "01:00"   # In MT4: first 4H candle of the day starts at this time    
     # Commodities     
     BRENT.CMD-USD:          # 2025-12-14: OK
+       timeframes:
+        4h:                     
+          rule: "4H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "03:00"   # In MT4: first 4H candle of the day starts at this time
+    COPPER.CMD-USD:         # 2025-12-14: 
+       timeframes:
+        4h:                     
+          rule: "4H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "03:00"   # In MT4: first 4H candle of the day starts at this time    
+    DIESEL.CMD-USD:         # 2025-12-14: 
        timeframes:
         4h:                     
           rule: "4H"

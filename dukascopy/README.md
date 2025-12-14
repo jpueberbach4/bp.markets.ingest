@@ -92,7 +92,7 @@ To me, it's not exactly clear how Crypto is handled. I have sent an e-mail.
 
 ## Notice - edge cases
 
-I am ofcourse checking a lot of things and i can tell you, that i am encountering unexpected behaviors. Below is a list of findings/edge cases.
+Of course, I’m checking many different aspects, and I can say that I’m encountering several unexpected behaviors. Below is a list of findings, edge cases.
 
 | Symbol | Case |
 | :--- | :--- |
