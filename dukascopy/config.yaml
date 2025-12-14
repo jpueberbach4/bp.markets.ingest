@@ -49,12 +49,12 @@ transform:
     historic: cache                   # Historical downloads
     live: data/temp                   # Live downloads
   timezones:
-    America/New_York:                 # eg New York linked commodities
+    America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 based on DST change of this timezone
       offset_to_shift_map:            # Defines a map to shift based on offset minutes
         -240: 10800000                # UTC-4 (US DST) -> GMT+3 shift
         -300: 7200000                 # UTC-5 (US Standard) -> GMT+2 shift
-      symbols:
-      - SYMBOL1
+      symbols:                        # Basically you add any symbol you are using here.
+      - SYMBOL1                       # Investigation about Crypto is ongoing. 
       - SYMBOL2
 ## Below you will find the configuration for the resample.py script. 
 resample:

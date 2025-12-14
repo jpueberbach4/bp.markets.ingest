@@ -53,12 +53,12 @@ transform:
     historic: cache                   # Historical downloads
     live: data/temp                   # Live downloads
   timezones:
-    America/New_York:                 # eg New York linked commodities
+    America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 based on DST change of this timezone
       offset_to_shift_map:            # Defines a map to shift based on offset minutes
         -240: 10800000                # UTC-4 (US DST) -> GMT+3 shift
         -300: 7200000                 # UTC-5 (US Standard) -> GMT+2 shift
-      symbols:
-      - XAU-USD
+      symbols:                        # Basically you add any symbol you are using here.
+      - XAU-USD                       # Investigation about Crypto is ongoing. 
       - XAG-USD
       - XPT.CMD-USD
       - XPD.CMD-USD
@@ -77,13 +77,10 @@ transform:
       - JPN.IDX-JPY
       - DOLLAR.IDX-USD
       - USTBOND.TR-USD
-    Europe/Berlin:
-      offset_to_shift_map:            # Defines a map to shift based on offset minutes
-        120: 10800000                 # UTC+2 (CEST/Berlin DST) -> GMT+3 shift
-        60: 7200000                   # UTC+1 (CET/Berlin Standard) -> GMT+2 shift
-      symbols:
+      - GBR.IDX-GBP
       - DEU.IDX-EUR
-      - BUND.TR-EUR 
+      - BUND.TR-EUR
+      - EUR-USD                     # This is MT4 server wide. Not symbol specific.
 
 # Below you will find the configuration for the resample.py script. 
 resample:

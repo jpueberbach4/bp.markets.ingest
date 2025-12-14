@@ -70,6 +70,26 @@ Note that the configuration is not yet complete and may change again in the futu
 
 The solution has been tested on BRENT, and weekly candles are now correctly aligned. Performance impact of fix is limited, so no additional performance tuning regarding the new logic will be done.
 
+```sh
+transform:
+  time_shift_ms: 7200000              # How many milliseconds should we shift (0=UTC, 7200000=GMT+2 (eg MT4 Dukascopy))
+  round_decimals: 8                   # Number of decimals to round OHLCV to
+  paths:
+    data: data/transform/1m           # Output directory for transform
+    historic: cache                   # Historical downloads
+    live: data/temp                   # Live downloads
+  timezones:
+    America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 based on DST change of this timezone
+      offset_to_shift_map:            # Defines a map to shift based on offset minutes
+        -240: 10800000                # UTC-4 (US DST) -> GMT+3 shift
+        -300: 7200000                 # UTC-5 (US Standard) -> GMT+2 shift
+      symbols:                --!>    # Basically you add any symbol you are using here. <!--
+      - SYMBOL1               --!>    # Investigation about Crypto is ongoing.           <!--
+      - SYMBOL2
+```
+
+To me, it's not exactly clear how Crypto is handled. I have sent an e-mail.
+
 ## Notice
 
 Backfilling is not currently supported, as our pipeline processes data strictly forward. Because of this, historical data—particularly for illiquid pairs and at the highest granularity—may be skewed. Backfilling has been identified as a must-have feature.
@@ -304,12 +324,12 @@ transform:
     historic: cache                   # Historical downloads
     live: data/temp                   # Live downloads
   timezones:
-    America/New_York:                 # eg New York linked commodities
+    America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 based on DST change of this timezone
       offset_to_shift_map:            # Defines a map to shift based on offset minutes
         -240: 10800000                # UTC-4 (US DST) -> GMT+3 shift
         -300: 7200000                 # UTC-5 (US Standard) -> GMT+2 shift
-      symbols:
-      - SYMBOL1                       # Symbol like XAU-USD (See dukascopy-mt4 config)
+      symbols:                        # Basically you add any symbol you are using here.
+      - SYMBOL1                       # Investigation about Crypto is ongoing. 
       - SYMBOL2
 ## Below you will find the configuration for the resample.py script. 
 resample:
