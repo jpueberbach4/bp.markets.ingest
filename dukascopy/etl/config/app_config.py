@@ -109,8 +109,6 @@ class TransformConfig:
     """The root configuration for the download.py script."""
     # How much ms should we shift time by (0=UTC, 7200000=GMT+2 (winter-time offset))
     time_shift_ms: int = 0
-    # What timezone do we use to determine DST alignment relative to UTC
-    time_shift_dst_tz: str = "Europe/Athens"
     # How much decimals we need to round to
     round_decimals: int = 10
     paths: TransformPaths = field(default_factory=TransformPaths)
