@@ -58,32 +58,43 @@ transform:
         -240: 10800000                # UTC-4 (US DST) -> GMT+3 shift
         -300: 7200000                 # UTC-5 (US Standard) -> GMT+2 shift
       symbols:                        # Basically you add any symbol you are using here.
-      - XAU-USD                       # Investigation about Crypto is ongoing. 
-      - XAG-USD
-      - XPT.CMD-USD
-      - XPD.CMD-USD
-      - BRENT.CMD-USD
-      - LIGHT.CMD-USD
-      - DIESEL.CMD-USD
-      - GAS.CMD-USD
-      - COPPER.CMD-USD
-      - OJUICE.CMD-USX
-      - SOYBEAN.CMD-USX
-      - COTTON.CMD-USX
-      - USA30.IDX-USD
-      - USA500.IDX-USD
-      - USATECH.IDX-USD
-      - USSC2000.IDX-USD
-      - JPN.IDX-JPY
-      - DOLLAR.IDX-USD
-      - USTBOND.TR-USD
-      - GBR.IDX-GBP
-      - DEU.IDX-EUR
-      - BUND.TR-EUR
-      - VOL.IDX-USD
-      - NLD.IDX-EUR
-      - USD-JPY
-      - EUR-USD                     # This is MT4 server wide. Not symbol specific.
+symbols:
+    # --- Commodities (Precious Metals & Energy) ---
+  - BRENT.CMD-USD
+  - COPPER.CMD-USD
+  - DIESEL.CMD-USD
+  - GAS.CMD-USD
+  - LIGHT.CMD-USD
+  - XAG-USD
+  - XAU-USD
+  - XPD.CMD-USD
+  - XPT.CMD-USD
+
+    # --- Soft Commodities ---
+  - COTTON.CMD-USX
+  - OJUICE.CMD-USX
+  - SOYBEAN.CMD-USX
+
+    # --- Currencies ---
+  - DOLLAR.IDX-USD
+  - USD-JPY
+
+    # --- Indices (US) ---
+  - USA30.IDX-USD
+  - USA500.IDX-USD
+  - USATECH.IDX-USD
+  - USSC2000.IDX-USD
+  - VOL.IDX-USD
+
+    # --- Indices (Non-US) ---
+  - DEU.IDX-EUR       # German Index (DAX)
+  - GBR.IDX-GBP       # UK Index (FTSE 100)
+  - JPN.IDX-JPY       # Japanese Index (Nikkei)
+  - NLD.IDX-EUR       # Netherlands Index (AEX)
+
+    # --- Bonds/Rates ---
+  - BUND.TR-EUR
+  - USTBOND.TR-USD    # This is MT4 server wide. Not symbol specific.
 
 # Below you will find the configuration for the resample.py script. 
 resample:
@@ -289,10 +300,3 @@ resample:
           closed: "left"
           source: "1h"
           origin: "01:00"   # In MT4: first 4H candle of the day starts at this time
-
-
-
-
-    
-
-
