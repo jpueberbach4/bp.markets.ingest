@@ -58,13 +58,17 @@ Time shifts cannot be applied incrementally because timestamps affect all aggreg
 
 >When you apply ```config.dukascopy-mt4.yaml```. Perform a rebuild from scratch ```./rebuild-full.sh```.
 
->**Info: Dukascopy Time Zone Drift (DST Issue) - Resolved? testing** \
-\
-The Dukascopy MT server time shifts between GMT+2 (Standard Time) and GMT+3 (Daylight Saving Time), causing historical OHLC candles to be improperly aligned and binned. \
-\
-I have implemented a fix for this. See ```config.dukascopy-mt4.yaml``` transform.timezones configuration. Performance impact is limited. Still testing.\
-\
-**First evaluation on BRENT:** Yes, much much much better :)
+## Notice
+
+**Dukascopy Time Zone Drift (DST Issue)**
+
+The Dukascopy MT server switches between GMT+2 (standard time) and GMT+3 (daylight saving time based on America/New_York timezone), which caused historical OHLC candles to be misaligned and incorrectly binned. A fix has been implemented in the transform layer to correctly handle this behavior.
+
+If you are working with Dukascopy MT4, copy the timezones block from ```config.dukascopy-mt4.yaml``` into your ```config.user.yaml```, then run ```./rebuild-full.sh```.
+
+Note that the configuration is not yet complete and may change again in the future as support for additional symbols is added.
+
+The solution has been tested on BRENT, and weekly candles are now correctly aligned. Performance impact of fix is limited, so no additional performance tuning regarding the new logic will be done.
 
 ## Notice
 
@@ -299,6 +303,14 @@ transform:
     data: data/transform/1m           # Output directory for transform
     historic: cache                   # Historical downloads
     live: data/temp                   # Live downloads
+  timezones:
+    America/New_York:                 # eg New York linked commodities
+      offset_to_shift_map:            # Defines a map to shift based on offset minutes
+        -240: 10800000                # UTC-4 (US DST) -> GMT+3 shift
+        -300: 7200000                 # UTC-5 (US Standard) -> GMT+2 shift
+      symbols:
+      - SYMBOL1                       # Symbol like XAU-USD (See dukascopy-mt4 config)
+      - SYMBOL2
 ## Below you will find the configuration for the resample.py script. 
 resample:
   round_decimals: 8                    # Number of decimals to round OHLCV to
