@@ -112,6 +112,8 @@ resample:
 
   # Support per symbol overrides
   symbols:
+    includes:
+    - path/file/to/include/*.yaml     # You can include files in any key using this pattern
     BTC-USDXX:
       # Override number of decimal places to round to
       round_decimals: 12
