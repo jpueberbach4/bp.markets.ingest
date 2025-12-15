@@ -64,7 +64,7 @@ import copy
 import os
 import pandas as pd
 import yaml
-from dataclasses import asdict
+
 from config.app_config import AppConfig, ResampleConfig, ResampleSymbolOverride, load_app_config
 from pathlib import Path
 from tqdm import tqdm

@@ -1,5 +1,6 @@
 import copy
-from typing import Optional
+from dataclasses import asdict
+import yaml
 
 from config.app_config import AppConfig, ResampleConfig, ResampleSymbolOverride
 
@@ -83,5 +84,12 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleCo
         if symbol_override.skip_timeframes:
             for timeframe_key in symbol_override.skip_timeframes:
                 merged_config.timeframes.pop(timeframe_key, None)
+
+    if False:
+        print(yaml.safe_dump(
+            asdict(merged_config),
+            default_flow_style=False,
+            sort_keys=False,
+        ))
 
     return merged_config
