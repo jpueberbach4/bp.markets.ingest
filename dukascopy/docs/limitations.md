@@ -24,7 +24,9 @@ In resample.resample_batch(sio):
 - if defined, prefilter for each rule based on time-boundary of rule, determine origin, filter data
 - push filtered data + data-specific origin to df.resample
 - any remaining data left? prefilter again with alternative rules, repeat
-- any remaining data but filters comeup empty? fallback to default 
+- any remaining data but filters comeup empty? fallback to default
+
+(ofcourse, this needs to be timezone-aware)
 
 Until this fix has been implemented, the AUS.IDX-AUD is not really usable.
 
