@@ -41,6 +41,9 @@
 
 - [General notices and caveats](docs/notices.md)
 - [Limitations](docs/limitations.md)
+
+**Update:** HTTP and REPLAY have been postponed until the session fix is in place for AUS.IDX and HKG.IDX. The priority is to get the data correct first, then extend functionality. HTTP and REPLAY have limited value if we can’t reliably query all required sources, especially since I rely heavily on the indices.
+
 ---
 
 ## What Is This Tool Used For?
