@@ -71,6 +71,8 @@ from tqdm import tqdm
 from io import StringIO
 from typing import Tuple, IO
 
+from config.app_config import AppConfig, load_app_config # remove later
+
 VERBOSE = os.getenv('VERBOSE', '0').lower() in ('1', 'true', 'yes', 'on')
 
 def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleConfig:
@@ -118,6 +120,8 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleCo
         # Merge custom timeframes, overriding global ones if needed
         if symbol_override.timeframes:
             merged_config.timeframes.update(symbol_override.timeframes)
+
+        # implement session-trading timeframe override here
 
         # Remove any skipped timeframes (absolute priority)
         if symbol_override.skip_timeframes:
@@ -478,3 +482,8 @@ def fork_resample(args) -> bool:
     resample_symbol(symbol, config)
 
     return True
+
+
+if __name__ == "__main__":
+    config = load_app_config('config.user.yaml')
+    fork_resample(["AUS.IDX-AUD", config])

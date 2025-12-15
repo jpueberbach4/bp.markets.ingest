@@ -16,7 +16,7 @@
               - Map parsed YAML dictionaries into strongly-typed dataclass structures
 
               Note: Heavily AI-assisted boilerplate code. 
-              
+
  Requirements:
      - Python 3.8+
  
@@ -29,6 +29,29 @@ import glob
 from dataclasses import dataclass, fields, field
 from typing import Dict, List, Optional, Type, TypeVar, Any
 
+
+@dataclass
+class ResampleSymbolTradingSessionRange:
+    """Defines the 'from' and 'to' times for a single time range."""
+    from_time: str = field(metadata={'yaml_key': 'from'}) 
+    to_time: str = field(metadata={'yaml_key': 'to'})
+
+
+@dataclass
+class ResampleSymbolTradingSession:
+    """
+    Configuration for a single named session (e.g., 'day-session').
+    """
+    ranges: Dict[str, ResampleSymbolTradingSessionRange] = field(default_factory=dict)
+    timeframes: Dict[str, 'ResampleTimeframeConfig'] = field(default_factory=dict)
+
+@dataclass
+class ResampleSymbolTradingSessionConfig:
+    """
+    The main container for all session-aware resampling logic for a symbol.
+    """
+    timezone: str = ""
+    sessions: Dict[str, ResampleSymbolTradingSession] = field(default_factory=dict)
 
 @dataclass
 class ResampleTimeframeConfig:
@@ -53,6 +76,7 @@ class ResampleSymbolOverride:
     batch_size: Optional[int] = None
     skip_timeframes: List[str] = field(default_factory=list)
     timeframes: Dict[str, ResampleTimeframeConfig] = field(default_factory=dict)
+    sessions: Optional[ResampleSymbolTradingSessionConfig] = field(default=None, metadata={'yaml_key': 'sessions'})
 
 
 @dataclass
