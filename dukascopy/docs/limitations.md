@@ -56,6 +56,7 @@ resample:
     - config/resample/default.rules.yaml
   # Support per symbol overrides
   symbols:
+    includes:
     - config/resample/symbols/BUND.TR-EUR.yaml
     - config/resample/symbols/BRENT.CMD-USD.yaml
     - config/resample/symbols/*-USD.yaml
