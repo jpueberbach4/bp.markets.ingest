@@ -1,0 +1,50 @@
+America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 based on DST change of this timezone
+  offset_to_shift_map:            # Defines a map to shift based on offset minutes
+    -240: 10800000                # UTC-4 (US DST) -> GMT+3 shift
+    -300: 7200000                 # UTC-5 (US Standard) -> GMT+2 shift
+  symbols:                        # Basically you add any symbol you are using here.
+  # --- Commodities (Precious Metals & Energy) ---
+  - BRENT.CMD-USD                 # OK
+  - COPPER.CMD-USD                # OFF - DONT USE
+  - DIESEL.CMD-USD                # OK
+  - GAS.CMD-USD                   # OK
+  - LIGHT.CMD-USD                 # OK
+  - XAG-USD
+  - XAU-USD                       # SLIGHTLY-OFF
+  - XPD.CMD-USD
+  - XPT.CMD-USD
+
+  # --- Soft Commodities ---
+  - COTTON.CMD-USX
+  - OJUICE.CMD-USX
+  - SOYBEAN.CMD-USX
+
+  # --- Currencies ---
+  - DOLLAR.IDX-USD                # OK
+  - USD-JPY                       # OK
+  - EUR-USD                       # OK
+  - GBP-USD                       # OK
+  - USD-CHF                       # OK
+  - AUD-USD                       # OK
+  - USD-CAD                       # OK
+  - NZD-USD                       # W1 is unusable
+  - EUR-MXN                       # NOT-IN-MT
+  - EUR-NZD                       # OK
+
+  # --- Indices (US) ---
+  - AUS.IDX-AUD                   # OFF - DONT USE
+  - USA30.IDX-USD                 # OK
+  - USA500.IDX-USD                # OK
+  - USATECH.IDX-USD               # OK
+  - USSC2000.IDX-USD
+  - VOL.IDX-USD                   # OK
+
+  # --- Indices (Non-US) ---
+  - DEU.IDX-EUR                   # OK - German Index (DAX)
+  - GBR.IDX-GBP                   #      UK Index (FTSE 100)
+  - JPN.IDX-JPY                   # OK - Japanese Index (Nikkei)
+  - NLD.IDX-EUR                   # OK - Netherlands Index (AEX)
+
+  # --- Bonds/Rates ---
+  - BUND.TR-EUR                   # OK (only week-start off by 0.01 or 0.02)
+  - USTBOND.TR-USD                # OK (only week-start off by 0.01 or 0.02)

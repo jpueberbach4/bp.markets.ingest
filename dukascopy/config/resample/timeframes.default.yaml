@@ -1,0 +1,52 @@
+1m:
+  source: "data/aggregate/1m"     # No rule, no resample, source defines output path for this timeframe
+5m:
+  rule: "5T"                      # 5-minute timeframe
+  label: "left"                   # Label (timestamp) assigned to each resampled interval comes from the left (start) edge of the window
+  closed: "left"                  # Window is left-inclusive, right-exclusive
+  source: "1m"                    # Uses 1m timeframe as input (see previous entry)
+15m:
+  rule: "15T"                     # 15-minute timeframe
+  label: "left"
+  closed: "left"
+  source: "5m"                    # Uses 5m timeframe as input (see previous entry)
+30m:
+  rule: "30T"                     # And so on....
+  label: "left"
+  closed: "left"
+  source: "15m"
+1h:
+  rule: "1H"
+  label: "left"
+  closed: "left"
+  source: "30m"
+4h:
+  rule: "4H"
+  label: "left"
+  closed: "left"
+  source: "1h"
+8h:
+  rule: "8H"
+  label: "left"
+  closed: "left"
+  source: "4h"
+1d:
+  rule: "1D"
+  label: "left"
+  closed: "left"
+  source: "8h"
+1W:
+  rule: "W-MON"
+  label: "left"
+  closed: "left"
+  source: "1d"
+1M:
+  rule: "MS"
+  label: "left"
+  closed: "left"
+  source: "1d"
+1Y:
+  rule: "AS"
+  label: "left"
+  closed: "left"
+  source: "1M"
