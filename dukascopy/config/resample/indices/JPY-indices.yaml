@@ -1,5 +1,5 @@
 JPN.IDX-JPY:            # 2025-12-14: OK
-    timeframes:
+  timeframes:
     4h:                     
       rule: "4H"
       label: "left"
