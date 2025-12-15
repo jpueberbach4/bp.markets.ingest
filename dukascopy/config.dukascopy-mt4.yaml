@@ -82,15 +82,16 @@ transform:
       - USD-CHF                       # OK
       - AUD-USD                       # OK
       - USD-CAD                       # OK
-      - NZD-USD                       # EDGE-CASE!!
+      - NZD-USD                       # W1 is unusable
       - EUR-MXN                       # NOT-IN-MT
       - EUR-NZD                       # OK
 
       # --- Indices (US) ---
+      - AUS.IDX-AUD                   # OFF - DONT USE
       - USA30.IDX-USD                 # OK
       - USA500.IDX-USD                # OK
       - USATECH.IDX-USD               # OK
-      - USSC2000.IDX-USD              # SLIGHTLY-OFF
+      - USSC2000.IDX-USD
       - VOL.IDX-USD                   # OK
 
       # --- Indices (Non-US) ---
@@ -233,7 +234,14 @@ resample:
     # Crypto: Quick look: no override needed
     #         GMT+2 default binning seems OK.
     # Indices
-    AUS.IDX-AUD:             # verified: NO
+    AUS.IDX-AUD:             # 2025-12-14: **NOT-OK**
+      # The Aussie index requires additional software work. The MT candles are aligned with session breaks, 
+      # which must be accounted for. Support for session breaks was already a planned feature (as some forex 
+      # instruments also have breaks). One possible approach is to introduce an additional window rule—for 
+      # example, allowing an hourly candle to use conditional timestamp logic. This could specify that from 
+      # time A to time B one origin rule applies, and from time C to time D a different origin rule applies.
+      # 
+      # Until this is implemented, the Aussie index is currently unusable.
       timeframes:
         15m:                     
           rule: "15T"        # 15 minute timeframe

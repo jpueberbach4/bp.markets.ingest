@@ -111,7 +111,7 @@ time, open, high, low, close, volume
 
 ```
 
-**Conclusion?** Data is not EXACTLY the same as in MT4. But very close (still usable). 
+**Conclusion?** Data is not EXACTLY the same as in MT4. But very close (very usable). 
 I have seen this boundary-price issue multiple times spanning various assets.
 
 I had no problems running backtests with 15m and above.
