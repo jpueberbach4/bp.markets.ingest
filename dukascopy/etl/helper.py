@@ -6,7 +6,7 @@ from config.app_config import AppConfig, ResampleConfig, ResampleSymbolOverride,
 
 
 
-def resample_get_settings_for_symbol(symbol:str, app_config: AppConfig) -> Dict[str, ResampleSymbolTradingSession]:
+def resample_get_sessions_for_symbol(symbol:str, app_config: AppConfig) -> Dict[str, ResampleSymbolTradingSession]:
     """
     This method emulates a Dict[str, ResampleSymbolTradingSession] 
     Even if no session is specified, it returns ResampleTradingSession Dictionary with the following
