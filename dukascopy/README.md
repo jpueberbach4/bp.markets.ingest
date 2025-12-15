@@ -46,6 +46,7 @@
 
 This is a tricky feature and potentially a performance killer - the "simple solution" will kill performance 100%. So, i am looking into "unconventional methods". Ofcourse, when no symbol.session is set, it will do the regular logic, so if performance (partly) dies, it will only be for some indices and only on full rebuilds.
 
+**Decision:** i will first implement it in pure python and then convert it to Cython. There are some python loops involved that will dramatically decrease performance. When the Cython variant arrives, only x86_64 will be supported. For most users this will work, but for those not, they can default to the pure python version (only for those indices that need it, like AUS.IDX-AUD).
 ---
 
 ## What Is This Tool Used For?
