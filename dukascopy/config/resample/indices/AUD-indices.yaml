@@ -4,7 +4,14 @@ AUS.IDX-AUD:             # 2025-12-14: **NOT-OK**
   # instruments also have breaks). 
   #
   # First proposal for the session-aware implementation
-  timezone: Australia/Sydney 
+  timezone: Australia/Sydney
+  timeframes:
+    4h:                     
+      rule: "4H"
+      label: "left"
+      closed: "left"
+      source: "1h"
+      origin: "00:20"     
   sessions:
     # Timezone to map ranges to
     # After mapping of times, the times will be normalized to MT4 server times

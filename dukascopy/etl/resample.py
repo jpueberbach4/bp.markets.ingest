@@ -109,6 +109,7 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleCo
     symbol_override: ResampleSymbolOverride = global_config.symbols.get(symbol)
 
     if symbol_override:
+
         # Override global round_decimals if specified
         if symbol_override.round_decimals is not None:
             merged_config.round_decimals = symbol_override.round_decimals
@@ -121,7 +122,14 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleCo
         if symbol_override.timeframes:
             merged_config.timeframes.update(symbol_override.timeframes)
 
-        # implement session-trading timeframe override here
+        # This symbol has session-specific timeframes configured
+        if symbol_override.sessions:
+            # Extend session timeframes, using merged_config.timeframes as base
+            # Basically: global.timeframes + symbol.timeframes + symbol.session.timeframes 
+            for ident, symbol_override_session in symbol_override.sessions.items():
+                base_timeframes = copy.deepcopy(merged_config.timeframes)
+                base_timeframes.update(symbol_override_session.timeframes)
+                merged_config.symbols.get(symbol).sessions.get(ident).timeframes = base_timeframes
 
         # Remove any skipped timeframes (absolute priority)
         if symbol_override.skip_timeframes:

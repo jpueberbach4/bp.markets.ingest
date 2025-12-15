@@ -27,7 +27,7 @@
 import yaml
 import glob
 from dataclasses import dataclass, fields, field
-from typing import Dict, List, Optional, Type, TypeVar, Any
+from typing import Dict, List, Optional, Type, TypeVar, Any, Union, get_origin, get_args
 
 
 @dataclass
@@ -44,14 +44,6 @@ class ResampleSymbolTradingSession:
     """
     ranges: Dict[str, ResampleSymbolTradingSessionRange] = field(default_factory=dict)
     timeframes: Dict[str, 'ResampleTimeframeConfig'] = field(default_factory=dict)
-
-@dataclass
-class ResampleSymbolTradingSessionConfig:
-    """
-    The main container for all session-aware resampling logic for a symbol.
-    """
-    timezone: str = ""
-    sessions: Dict[str, ResampleSymbolTradingSession] = field(default_factory=dict)
 
 @dataclass
 class ResampleTimeframeConfig:
@@ -76,7 +68,8 @@ class ResampleSymbolOverride:
     batch_size: Optional[int] = None
     skip_timeframes: List[str] = field(default_factory=list)
     timeframes: Dict[str, ResampleTimeframeConfig] = field(default_factory=dict)
-    sessions: Optional[ResampleSymbolTradingSessionConfig] = field(default=None, metadata={'yaml_key': 'sessions'})
+    timezone: str = ""
+    sessions: Dict[str, ResampleSymbolTradingSession] = field(default_factory=dict, metadata={'yaml_key': 'sessions'})
 
 
 @dataclass
@@ -155,45 +148,89 @@ class AppConfig:
 
 T = TypeVar("T")
 
-
+# AI generated but manually adjusted
 def load_config_data(config_class: Type[T], data: Dict[str, Any]) -> T:
     """
     Recursively map a dictionary into a nested dataclass structure.
 
-    Unknown fields in the input dictionary are ignored. Nested dataclasses
-    and dictionaries of dataclasses are handled automatically.
+    Includes robust handling for Optional, nested Dataclasses, Dicts of Dataclasses,
+    and string forward references.
     """
-    # Map field names to their declared types
+    # Collect declared field names and types from the target dataclass
     field_definitions = {f.name: f.type for f in fields(config_class)}
+
+    # Arguments to be passed into the dataclass constructor
     final_args: Dict[str, Any] = {}
 
+    # Global scope is used to resolve forward-referenced types (string annotations)
+    global_scope = globals()
+
     for name, value in data.items():
-        # Skip unknown configuration keys
-        if name not in field_definitions:
+        # Map YAML key to dataclass field name (via metadata override if present)
+        field_name = name
+        found_field = next(
+            (f for f in fields(config_class) if f.metadata.get("yaml_key") == name),
+            None
+        )
+        if found_field:
+            field_name = found_field.name
+        elif name not in field_definitions:
+            # Ignore unknown keys in the input data
             continue
 
-        field_type = field_definitions[name]
+        field_type = field_definitions[field_name]
 
-        # Nested dataclass
-        if hasattr(field_type, "__dataclass_fields__"):
-            final_args[name] = load_config_data(field_type, value)
+        # Unwrap Optional[T] / Union[T, None] to get the underlying type
+        unwrapped_type = field_type
+        if get_origin(field_type) is Union:
+            args = [a for a in get_args(field_type) if a is not type(None)]
+            if args:
+                unwrapped_type = args[0]
 
-        # Dictionary field (possibly mapping to dataclasses)
-        elif getattr(field_type, "__origin__", None) is dict:
-            _, value_type = field_type.__args__
-            if hasattr(value_type, "__dataclass_fields__"):
-                final_args[name] = {
-                    k: load_config_data(value_type, v)
-                    for k, v in value.items()
-                }
+        # Case 1: Field is a nested dataclass
+        if hasattr(unwrapped_type, "__dataclass_fields__"):
+            if value is not None:
+                # Recursively construct the nested dataclass
+                final_args[field_name] = load_config_data(unwrapped_type, value)
             else:
-                final_args[name] = value
+                # Preserve None for Optional[Dataclass]
+                final_args[field_name] = None
+            continue
 
-        # Primitive or list field
+        # Case 2: Field is a dictionary (possibly mapping to dataclasses)
+        origin = get_origin(unwrapped_type)
+        if origin is dict:
+            if value is None:
+                # Normalize missing dictionaries to empty dicts
+                final_args[field_name] = {}
+                continue
+
+            args = get_args(field_type)
+            if len(args) == 2:
+                value_type = args[1]
+
+                # Resolve forward-referenced value types
+                if isinstance(value_type, str):
+                    value_type = global_scope.get(value_type)
+
+                if value_type is not None and hasattr(value_type, "__dataclass_fields__"):
+                    # Dict[str, Dataclass] → recursively load each value
+                    final_args[field_name] = {
+                        k: load_config_data(value_type, v)
+                        for k, v in value.items()
+                    }
+                    continue
+
+            # Fallback for Dict[str, primitive] or unsupported value types
+            final_args[field_name] = value
+
+        # Case 3: Primitive types, lists, or other generics
         else:
-            final_args[name] = value
+            final_args[field_name] = value
 
+    # Instantiate and return the populated dataclass
     return config_class(**final_args)
+
 
 
 def _resolve_yaml_includes(data: Dict[str, Any]) -> Dict[str, Any]:
