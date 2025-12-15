@@ -14,6 +14,23 @@ cp config.yaml config.user.yaml
 
 The configuration file is straightforward and mostly self-explanatory. Adjust values as needed to suit your data and workflow.
 
+**Note:** If you need to add custom configuration files that should be included alongside the main config, create a config.user directory. This directory is explicitly excluded from Git, so your local changes won’t be tracked or cause noise in version control.
+
+```yaml
+transform:
+  time_shift_ms: 0                    # How many milliseconds should we shift (0=UTC, 7200000=GMT+2 (eg MT4 Dukascopy) ) (!IMPORTANT!)
+  round_decimals: 8                   # Number of decimals to round OHLCV to
+  paths:
+    data: data/transform/1m           # Output directory for transform
+    historic: cache                   # Historical downloads
+    live: data/temp                   # Live downloads
+  timezones:
+    includes:
+    - config.user/my/custom/config/files/*.yaml
+```
+
+Full configuration example with explanatory details:
+
 ```yaml
 ## Below you will find the configuration for the aggregate.py script. 
 aggregate:
