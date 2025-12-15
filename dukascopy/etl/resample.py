@@ -131,6 +131,12 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleCo
                 base_timeframes.update(symbol_override_session.timeframes)
                 merged_config.symbols.get(symbol).sessions.get(ident).timeframes = base_timeframes
 
+                # If symbol.skip_timeframes is set, pop off the session-based timeframes that match
+                # We dont support per-session skip_timeframes because thats a non-use-case
+                if symbol_override.skip_timeframes:
+                    for timeframe_key in symbol_override.skip_timeframes:
+                        merged_config.symbols.get(symbol).sessions.get(ident).timeframes.pop(timeframe_key, None)
+
         # Remove any skipped timeframes (absolute priority)
         if symbol_override.skip_timeframes:
             for timeframe_key in symbol_override.skip_timeframes:
