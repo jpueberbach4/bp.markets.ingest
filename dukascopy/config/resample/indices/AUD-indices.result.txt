@@ -1,0 +1,154 @@
+round_decimals: 8
+batch_size: 250000
+paths:
+  data: data/resample
+timeframes:
+  1m:
+    rule: null
+    label: null
+    closed: null
+    origin: epoch
+    source: data/aggregate/1m
+  5m:
+    rule: 5T
+    label: left
+    closed: left
+    origin: epoch
+    source: 1m
+  15m:
+    rule: 15T
+    label: left
+    closed: left
+    origin: epoch
+    source: 5m
+  30m:
+    rule: 30T
+    label: left
+    closed: left
+    origin: epoch
+    source: 15m
+  1h:
+    rule: 1H
+    label: left
+    closed: left
+    origin: epoch
+    source: 30m
+symbols:
+  AUS.IDX-AUD:
+    round_decimals: null
+    batch_size: null
+    skip_timeframes:
+    - 4h
+    - 8h
+    - 1d
+    - 1W
+    - 1M
+    - 1Y
+    timeframes:
+      1m:
+        rule: null
+        label: null
+        closed: null
+        origin: epoch
+        source: data/aggregate/1m
+      5m:
+        rule: 5T
+        label: left
+        closed: left
+        origin: epoch
+        source: 1m
+      15m:
+        rule: 15T
+        label: left
+        closed: left
+        origin: epoch
+        source: 5m
+      30m:
+        rule: 30T
+        label: left
+        closed: left
+        origin: epoch
+        source: 15m
+      1h:
+        rule: 1H
+        label: left
+        closed: left
+        origin: 00:20
+        source: 39m
+    timezone: Australia/Sydney
+    sessions:
+      day-session:
+        ranges:
+          day:
+            from_time: 09:50
+            to_time: '16:30'
+        timeframes:
+          1m:
+            rule: null
+            label: null
+            closed: null
+            origin: epoch
+            source: data/aggregate/1m
+          5m:
+            rule: 5T
+            label: left
+            closed: left
+            origin: epoch
+            source: 1m
+          15m:
+            rule: 15T
+            label: left
+            closed: left
+            source: 5m
+            origin: 00:50
+          30m:
+            rule: 30T
+            label: left
+            closed: left
+            source: 15m
+            origin: 00:50
+          1h:
+            rule: 1H
+            label: left
+            closed: left
+            source: 30m
+            origin: 00:50
+      after-hours:
+        ranges:
+          day:
+            from_time: '17:10'
+            to_time: '23:59'
+          night:
+            from_time: 00:00
+            to_time: 07:00
+        timeframes:
+          1m:
+            rule: null
+            label: null
+            closed: null
+            origin: epoch
+            source: data/aggregate/1m
+          5m:
+            rule: 5T
+            label: left
+            closed: left
+            origin: epoch
+            source: 1m
+          15m:
+            rule: 15T
+            label: left
+            closed: left
+            source: 5m
+            origin: 08:10
+          30m:
+            rule: 30T
+            label: left
+            closed: left
+            source: 15m
+            origin: 08:10
+          1h:
+            rule: 1H
+            label: left
+            closed: left
+            source: 30m
+            origin: 08:10

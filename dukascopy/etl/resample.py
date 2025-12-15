@@ -127,7 +127,7 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleCo
         
         # This symbol has SYMBOL-specific timeframes configured
         if symbol_override.timeframes:
-            base_timeframes = merged_config.timeframes
+            base_timeframes = copy.deepcopy(merged_config.timeframes)
             base_timeframes.update(symbol_override.timeframes)
             merged_config.symbols.get(symbol).timeframes = base_timeframes
             
