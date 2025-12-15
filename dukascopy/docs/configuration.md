@@ -1,5 +1,7 @@
 ## Pipeline Configuration (v0.3 and above)
 
+[Example for Dukascopy](../config.dukascopy-mt4.yaml)
+
 A default ```config.yaml``` is included with the project. This file controls the behavior of the aggregate, download, transform and resample engine. You can now define custom timeframes and apply per-symbol overrides as needed.
 
 To override the default configuration, create a user-specific copy:
