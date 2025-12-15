@@ -49,7 +49,7 @@ Last 1 minute data 31 oktober (correct values and timestamps with MT4 1m data)
 
 **NOVEMBER 2 SWITCH TO WINTER TIME, GO BACK 1 HOUR IN USA/NEWYORK**
 
-31 OKTOBER, FIRST 1H candle at 00:50
+3 NOVEMBER, FIRST 1H candle at 00:50
 
 First 1 minute data 3 november (correct values and timestamps with MT4 1m data)
 
