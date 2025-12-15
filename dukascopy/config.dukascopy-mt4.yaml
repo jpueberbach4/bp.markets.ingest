@@ -242,6 +242,13 @@ resample:
       # time A to time B one origin rule applies, and from time C to time D a different origin rule applies.
       # 
       # Until this is implemented, the Aussie index is currently unusable.
+      #
+      # Implementation details:
+      #   if conditional logic specified: 
+      #     filter: df.between_time(time-A, time-B) -> resample with origin A
+      #     filter: df.between_time(time-C, time-D) -> resample with origin B
+      #     two-phase resample
+      # When? Soon. Performance impact limited (need to test)
       timeframes:
         15m:                     
           rule: "15T"        # 15 minute timeframe
