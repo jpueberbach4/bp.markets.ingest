@@ -30,7 +30,7 @@ In resample.resample_batch(sio):
 
 Until this fix has been implemented, the AUS.IDX-AUD is not really usable.
 
-### YAML configuration is becoming huge
+### YAML configuration is becoming huge - **implemented, available in main**
 
 Given the number of “abnormalities” we need to support, the YAML file is at risk of becoming very large. I plan to add support for an include pattern so the configuration can be split into separate files by section, override, and similar concerns.
 
