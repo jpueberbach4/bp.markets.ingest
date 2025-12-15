@@ -41,6 +41,9 @@
 
 - [General notices and caveats](docs/notices.md)
 - [Limitations](docs/limitations.md)
+
+Session-support: I am trying to do the same with the offset-column injection trick. Adding an additional column "session" to the dataframe with .apply(), which adds the session-name (day, after-hours) based on the interval a timestamp belongs to. Then grouping by it and resample per group. Then merge the results, order by timestamp asc, get the last candle bytr-offset column (for crash safety and the incremental state). Think it will work, but performance is going to hit (optimize later, Cython?).
+
 ---
 
 ## What Is This Tool Used For?
