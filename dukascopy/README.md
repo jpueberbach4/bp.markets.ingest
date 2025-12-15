@@ -44,6 +44,8 @@
 
 **Update:** HTTP and REPLAY have been postponed until the session fix is in place for AUS.IDX and HKG.IDX. The priority is to get the data correct first, then extend functionality. HTTP and REPLAY have limited value if we can’t reliably query all required sources, especially since I rely heavily on the indices.
 
+This is a tricky feature and potentially a performance killer - the "simple solution" will kill performance 100%. So, i am looking into "unconventional methods". Ofcourse, when no symbol.session is set, it will do the regular logic, so if performance (partly) dies, it will only be for some indices and only on full rebuilds.
+
 ---
 
 ## What Is This Tool Used For?
