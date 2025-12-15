@@ -1,6 +1,6 @@
 ## Limitations
 
-While the tool is becoming pretty excellent, it is worth nothing that there are (still) some important limitations which makes 100% support for all sources, currently, not possible.
+While the tool is becoming pretty excellent, it is worth noting that there are (still) some important limitations which makes 100% support for all sources, currently, not possible.
 
 ### Session windows - indices, forex with breaks
 
@@ -27,3 +27,39 @@ In resample.resample_batch(sio):
 - any remaining data but filters comeup empty? fallback to default 
 
 Until this fix has been implemented, the AUS.IDX-AUD is not really usable.
+
+### YAML configuration is becoming huge
+
+Given the number of “abnormalities” we need to support, the YAML file is at risk of becoming very large. I plan to add support for an include pattern so the configuration can be split into separate files by section, override, and similar concerns.
+
+Example:
+
+```yaml
+transform:
+  time_shift_ms: 7200000              # How many milliseconds should we shift (0=UTC, 7200000=GMT+2 (eg MT4 Dukascopy) )
+  round_decimals: 8                   # Number of decimals to round OHLCV to
+  paths:
+    data: data/transform/1m           # Output directory for transform
+    historic: cache                   # Historical downloads
+    live: data/temp                   # Live downloads
+  timezones:
+    includes:
+    - config/timezones/America-New_York.yaml
+...
+resample:
+  round_decimals: 8                   # Number of decimals to round OHLCV to
+  batch_size: 250000                  # Maximum number of lines to read per batch
+  paths:
+    data: data/resample               # Output directory for resampled timeframes
+  timeframes:
+    includes:
+    - config/resample/default.rules.yaml
+  # Support per symbol overrides
+  symbols:
+    - config/resample/symbols/BUND.TR-EUR.yaml
+    - config/resample/symbols/BRENT.CMD-USD.yaml
+    - config/resample/symbols/*-USD.yaml
+
+```
+
+This will help organize the configuration a lot better.
