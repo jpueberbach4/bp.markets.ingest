@@ -2,7 +2,27 @@ import copy
 from dataclasses import asdict
 import yaml
 
-from config.app_config import AppConfig, ResampleConfig, ResampleSymbolOverride
+from config.app_config import AppConfig, ResampleConfig, ResampleSymbolOverride, ResampleSymbolTradingSession
+
+
+
+def resample_get_settings_for_symbol(symbol:str, app_config: AppConfig) -> Dict[str, ResampleSymbolTradingSession]:
+    """
+    This method emulates a Dict[str, ResampleSymbolTradingSession] 
+    Even if no session is specified, it returns ResampleTradingSession Dictionary with the following
+    
+    - normalized from-to range (00:00->23:59) as shifted_time (from transform)
+    - a list of timeframes
+
+    If sessions are present for the symbol
+    - normalizes the from-to-range based on timezone and as shifted_time (from transform)
+    - returns immediately
+
+    This will make it easier for the resample engine to handle it (one uniform dict[key, object]) which
+    the resample engine can loop through.
+    """
+    pass
+
 
 def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleConfig:
     """
