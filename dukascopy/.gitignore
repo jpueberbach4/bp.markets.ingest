@@ -14,3 +14,4 @@ dukascopy.db
 tests/*
 config.user/*
 *.parquet
+*.csv
