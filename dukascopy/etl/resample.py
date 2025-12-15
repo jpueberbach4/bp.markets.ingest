@@ -118,11 +118,25 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleCo
         if symbol_override.batch_size is not None:
             merged_config.batch_size = symbol_override.batch_size
 
-        # Merge custom timeframes, overriding global ones if needed
+        # NOTE TO DEV: WE HAVE CHANGED A CRITICAL PART BELOW.
+        #      DEFAULT RESAMPLE ENGINE DEPENDS ON ROOT TIMEFRAMES OBJECT
+        #      RESAMPLE ENGINE WILL NEED TO CHECK IN DEEPEST LEVEL FIRST AND 
+        #      THEN TRAVERSE UPWARDS, ALL THE WAY TO ROOT
+        #      IE SESSION NOT EXIST, CHECK SYMBOL, IF NOT EXISTS, CHECK ROOT
+        #      TODO: OPTIMIZE THE CODE BELOW
+        
+        # This symbol has SYMBOL-specific timeframes configured
         if symbol_override.timeframes:
-            merged_config.timeframes.update(symbol_override.timeframes)
+            base_timeframes = merged_config.timeframes
+            base_timeframes.update(symbol_override.timeframes)
+            merged_config.symbols.get(symbol).timeframes = base_timeframes
+            
+            # If symbol.skip_timeframes is set, pop off the symbol-based timeframes that match
+            if symbol_override.skip_timeframes:
+                for timeframe_key in symbol_override.skip_timeframes:
+                    merged_config.symbols.get(symbol).timeframes.pop(timeframe_key, None)
 
-        # This symbol has session-specific timeframes configured
+        # This symbol has SESSION-specific timeframes configured
         if symbol_override.sessions:
             # Extend session timeframes, using merged_config.timeframes as base
             # Basically: global.timeframes + symbol.timeframes + symbol.session.timeframes 
@@ -141,6 +155,12 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleCo
         if symbol_override.skip_timeframes:
             for timeframe_key in symbol_override.skip_timeframes:
                 merged_config.timeframes.pop(timeframe_key, None)
+
+    print(yaml.safe_dump(asdict(merged_config),
+        default_flow_style=False,
+        sort_keys=False,
+    ))
+    os.exit(0)
 
     return merged_config
 
