@@ -6,7 +6,7 @@ flock -x 200
 echo Deleting data/*...
 rm -rf ./data/transform ./data/aggregate ./data/resample ./data/temp
 echo Rebuilding...
-START_DATE=2005-01-01 NOLOCK=1 ./run.sh
+START_DATE=2020-06-01 NOLOCK=1 ./run.sh
 echo Done.
 # Release lock
 exec 200>&-

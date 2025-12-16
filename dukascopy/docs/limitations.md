@@ -2,7 +2,7 @@
 
 While the tool is becoming pretty excellent, it is worth noting that there are (still) some important limitations which makes 100% support for all sources, currently, not possible.
 
-### Session windows - indices, forex with breaks
+### Session windows - indices, forex with breaks (**In development**)
 
 Example: AUS.IDX-AUD (index). The Aussie index has 2 trading sessions (for futures and derivatives). 
 

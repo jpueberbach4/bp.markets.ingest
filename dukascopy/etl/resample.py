@@ -64,67 +64,21 @@ import copy
 import os
 import pandas as pd
 import yaml
-from dataclasses import asdict
-from config.app_config import AppConfig, ResampleConfig, ResampleSymbolOverride, load_app_config
+
+from config.app_config import AppConfig, ResampleConfig, ResampleSymbol, load_app_config, resample_get_symbol_config
 from pathlib import Path
 from tqdm import tqdm
 from io import StringIO
-from typing import Tuple, IO
+from typing import Tuple, IO, Optional
+from dataclasses import asdict
+from helper import resample_resolve_paths, ResampleTracker
+
+from config.app_config import AppConfig, load_app_config # remove later
+
 
 VERBOSE = os.getenv('VERBOSE', '0').lower() in ('1', 'true', 'yes', 'on')
 
-def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleConfig:
-    """
-    Generate a merged resample configuration for a specific symbol.
 
-    This function starts from the global resample configuration and applies
-    any symbol-specific overrides defined in `app_config.symbols`. Overrides
-    may include:
-        - round_decimals
-        - batch_size
-        - custom timeframes
-        - skipped timeframes (absolute priority)
-
-    Parameters
-    ----------
-    symbol : str
-        The trading symbol for which to generate the configuration (e.g., "BTC-USDT").
-    app_config : AppConfig
-        The root application configuration containing the global resample
-        settings and any symbol-specific overrides.
-
-    Returns
-    -------
-    ResampleConfig
-        A new ResampleConfig instance with global settings merged with
-        symbol-specific overrides.
-    """
-    # Start with global resample configuration
-    global_config: ResampleConfig = app_config.resample
-    merged_config: ResampleConfig = copy.deepcopy(global_config)
-
-    # Check for symbol-specific overrides
-    symbol_override: ResampleSymbolOverride = global_config.symbols.get(symbol)
-
-    if symbol_override:
-        # Override global round_decimals if specified
-        if symbol_override.round_decimals is not None:
-            merged_config.round_decimals = symbol_override.round_decimals
-
-        # Override global batch_size if specified
-        if symbol_override.batch_size is not None:
-            merged_config.batch_size = symbol_override.batch_size
-
-        # Merge custom timeframes, overriding global ones if needed
-        if symbol_override.timeframes:
-            merged_config.timeframes.update(symbol_override.timeframes)
-
-        # Remove any skipped timeframes (absolute priority)
-        if symbol_override.skip_timeframes:
-            for timeframe_key in symbol_override.skip_timeframes:
-                merged_config.timeframes.pop(timeframe_key, None)
-
-    return merged_config
 
 def resample_read_index(index_path: Path) -> Tuple[int, int]:
     """
@@ -212,35 +166,17 @@ def resample_write_index(index_path: Path, input_position: int, output_position:
     os.replace(index_temp_path, index_path)
     return True
 
-def resample_batch_read(f_input: IO, header: str, config: ResampleConfig) -> Tuple[StringIO, bool]:
-    """
-    Read a batch of lines from an input file-like object while recording their byte offsets.
-
-    This function reads up to `BATCH_SIZE` lines from `f_input`, capturing the file offset
-    immediately before each line is read. It writes the resulting rows—along with an added
-    `offset` column—into a `StringIO` buffer that begins with the provided header plus the
-    new column name.
-
-    Parameters
-    ----------
-    f_input : IO
-        A file-like object opened for reading. Must support `tell()` and `readline()`.
-    header : str
-        The CSV header line to be written first in the output, without the `offset` column.
-    config: ResampleConfig
-        Config object
-
-    Returns
-    -------
-    Tuple[StringIO, bool]
-        A tuple containing:
-        - A `StringIO` object positioned at the beginning, containing the header and batch data.
-        - A boolean indicating whether end-of-file was reached during this read.
-    """
+def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol, symbol:str, ident:str) -> Tuple[StringIO, bool]:
     sio = StringIO()
-    sio.write(f"{header.strip()},offset\n")
+    sio.write(f"{header.strip()},origin,offset\n")
 
     eof_reached = False
+    last_key = None
+
+    tracker = ResampleTracker(config)
+
+    # Determine if we only have a default session (one bin origin)
+    is_default_session = tracker.is_default_session(config)
 
     # Read a chunk of lines along with their raw input offsets
     for _ in range(config.batch_size):
@@ -249,50 +185,33 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleConfig) -> Tup
         if not line:
             eof_reached = True
             break
-        sio.write(f"{line.strip()},{offset_before}\n")  # offset column injection for traceability
-    
+
+        # Here we go, performance killer:
+        if not is_default_session:            
+            # We use the origin in the resample to filter by
+            session = tracker.get_active_session(line)
+
+            # Cache-key, if key same, no need to switch origin
+            current_key = f"{session}/{line[:10]}"
+            if current_key != last_key:
+                # Date or session changed, update origin
+                origin = tracker.get_active_origin(line, ident, session, config)
+                # Update cache-key
+                last_key = current_key
+
+        else:
+            origin = config.sessions.get("default").timeframes.get(ident).origin
+
+        # If is default session, we immediate come here, no performance kill
+        sio.write(f"{line.strip()},{origin},{offset_before}\n")  # offset column injection for traceability
+
+    # Rewind sio  
     sio.seek(0)
 
     return sio, eof_reached
 
-def resample_batch(sio: StringIO, rule: str, label: str, closed: str, origin: str, config: ResampleConfig) -> Tuple[pd.DataFrame, int]:
-    """
-    Resample a batch of OHLCV rows (with byte-offset tracking) into a higher timeframe.
+def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.DataFrame, int]:
 
-    Parameters
-    ----------
-    sio : StringIO
-        An in-memory CSV chunk containing raw 1m (or upstream) candles plus an
-        appended `offset` column. The first line must contain the header.
-    rule : str
-        Pandas resampling rule (e.g., "5T", "15T", "1H", "1D").
-    label : str
-        Whether the resampled window label is placed on the 'left' or 'right' edge.
-    closed : str
-        Which side of the resample window is closed ('left' or 'right').
-    config: ResampleConfig
-        Config object
-
-    Returns
-    -------
-    pd.DataFrame
-        A resampled OHLCV DataFrame with:
-            - open:   first value in window
-            - high:   maximum value in window
-            - low:    minimum value in window
-            - close:  last value in window
-            - volume: sum of volumes in window
-        All numeric fields are rounded to `config.round_decimals`.
-    int
-        Offset of last raw contributing candle (next input offset)
-
-    Notes
-    -----
-    This function performs **no I/O**. It operates on a single in-memory batch
-    and is used by the incremental resampling engine. The `offset` field is
-    critical for crash-safe reconstruction of the final (possibly incomplete)
-    candle, enabling precise forward-only incremental processing.
-    """
     # Load into DataFrame
     df = pd.read_csv(
         sio,
@@ -302,20 +221,61 @@ def resample_batch(sio: StringIO, rule: str, label: str, closed: str, origin: st
         date_format="%Y-%m-%d %H:%M:%S"
     )
 
-    # Resample into target timeframe
-    resampled = df.resample(rule, label=label, closed=closed, origin=origin).agg({
-        'open': 'first',
-        'high': 'max',
-        'low': 'min',
-        'close': 'last',
-        'volume': 'sum',
-        'offset': 'first'  # identifies source raw candle for the window
-    })
+    # construct an empty array to catch the resamples in
+    resampled_list = []
+
+    # get a unique list of all the origins available in dataframe
+    origins = df['origin'].unique().tolist()
+
+    # now loop through each origin and build a dateframe per origin, resample
+    # this will make the session-column obsolete
+    for origin in origins:
+
+        # just get the first session, whether its default or an other session
+        # we only care about the rule, the label and the closed (origin is already determined)
+        _, session = next(iter(config.sessions.items()))
+        
+        # get timeframe from any session (its about the rule, label etc)
+        timeframe = session.timeframes.get(ident)
+
+        # get the rule, label and closed value
+        rule, label, closed = [timeframe.rule, timeframe.label, timeframe.closed]
+
+        # filter dataframe by the origin and copy (this is the extra vectorized call)
+        origin_df = df[df['origin'] == origin].copy()
+
+        # we dont need the origin anymore, drop it immediately
+        origin_df.drop(columns=["origin"], inplace=True)
+
+        # resample for this origin
+        origin_resampled = origin_df.resample(rule, label=label, closed=closed, origin=origin).agg({
+            'open': 'first',
+            'high': 'max',
+            'low': 'min',
+            'close': 'last',
+            'volume': 'sum',
+            'offset': 'first'       # identifies source raw candle for the window
+        })
+        # drop zero and NaN volume (remove gaps)
+        origin_resampled = origin_resampled[origin_resampled['volume'].notna() & (origin_resampled['volume'] != 0)]
+        # add it to the resampled list
+        resampled_list.append(origin_resampled)
+
+    # Marge results and sort dataframe on index
+    resampled = pd.concat(resampled_list).sort_index()
+
+    # we always reconstruct last candle, so we always should have something
+    if resampled.empty:
+        raise ValueError(
+            f"Resampled result for sessions were empty. This is impossible behavior."
+        )
+
+    # Now continue with regular logic
 
     # Offset points to the position of the first raw input record that forms this row 
     next_input_position = int(resampled.iloc[-1]['offset'])
 
-    # Remove offset column immediately
+    # Remove offset and session column immediately
     resampled.drop(columns=["offset"], inplace=True)
 
     # Round numerical values to avoid floating drift
@@ -362,49 +322,24 @@ def resample_symbol(symbol: str, app_config: AppConfig) -> bool:
     bool
         Always returns True for now. This may be extended in the future for status reporting.
     """
+    # Main output path
+    data_path = Path(app_config.resample.paths.data)
+
+    # Override config with ResampleSymbol type (need to clear that up later)
     config = resample_get_symbol_config(symbol, app_config)
 
-    # Main output path
-    data_path = config.paths.data
-
     for _, ident in enumerate(config.timeframes):
-        # Get ResampleTimeFrame
-        timeframe = config.timeframes.get(ident)
 
-        # Handle case of no rule = direct input path
-        if not timeframe.rule:
-            if not Path(f"{timeframe.source}/{symbol}.csv").exists():
-                raise IOError(f"Invalid configuration for timeframe {ident}")
+        # Determine paths (refactored to a helper function)
+        input_path, output_path, index_path, skip = resample_resolve_paths(symbol, ident, data_path, config)
+
+        # If there was an error during resolve, break out of loop
+        if skip:
             continue
-        
-        # Construct file paths
-        if config.timeframes.get(timeframe.source).rule is not None:
-            input_path = Path(f"{data_path}/{timeframe.source}/{symbol}.csv")
-        else:
-            input_path = Path(f"{config.timeframes.get(timeframe.source).source}/{symbol}.csv")
-
-        output_path = Path(f"{data_path}/{ident}/{symbol}.csv")
-        index_path = Path(f"{data_path}/{ident}/index/{symbol}.idx")
-
-        rule, label, closed, origin = [timeframe.rule, timeframe.label, timeframe.closed, timeframe.origin]
-
-        # Ensure input path exists
-        if not input_path.exists():
-            if VERBOSE:
-                tqdm.write(f"  No base {ident} data for {symbol} → skipping cascading timeframes")
-            return True
 
         # Load the saved offsets (or create if not exists)
         input_position, output_position = resample_read_index(index_path)
-
-        # Ensure output file exists
-        if not output_path.exists():
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(output_path, "w"):
-                pass
-
         with open(input_path, "r") as f_input, open(output_path, "r+") as f_output:
-
             # Always read the header from input file
             header = f_input.readline()
 
@@ -422,10 +357,10 @@ def resample_symbol(symbol: str, app_config: AppConfig) -> bool:
             while True:
 
                 # Read a StringIO batch from f_input
-                sio, eof_reached = resample_batch_read(f_input, header, config)
+                sio, eof_reached = resample_batch_read(f_input, header, config, symbol, ident)
 
                 # Resample the sio batch
-                resampled, next_input_position = resample_batch(sio, rule, label, closed, origin, config) 
+                resampled, next_input_position = resample_batch(sio, ident, config) 
 
                 # Rewrite the output file from its last known position
                 f_output.seek(output_position)
@@ -478,3 +413,20 @@ def fork_resample(args) -> bool:
     resample_symbol(symbol, config)
 
     return True
+
+
+if __name__ == "__main__":
+    config = load_app_config('config.user.yaml')
+    sessions = resample_get_symbol_config("AUS.IDX-AUD", config)
+    #sessions = resample_get_symbol_config("USA30.IDX-USD", config)
+    #sessions = resample_get_symbol_config("USA500.IDX-USD", config)
+
+    print(yaml.safe_dump(asdict(sessions),
+        default_flow_style=False,
+        sort_keys=False,))
+
+    #fork_resample(["AUS.IDX-AUD", config])
+
+
+    fork_resample(["AUS.IDX-AUD", config])
+    

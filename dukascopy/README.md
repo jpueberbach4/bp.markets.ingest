@@ -42,7 +42,6 @@
 - [General notices and caveats](docs/notices.md)
 - [Limitations](docs/limitations.md)
 
-
 ---
 
 ## What Is This Tool Used For?
