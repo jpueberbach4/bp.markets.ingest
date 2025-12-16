@@ -71,7 +71,7 @@ from tqdm import tqdm
 from io import StringIO
 from typing import Tuple, IO, Optional
 from dataclasses import asdict
-from helper import resample_get_symbol_config, resample_resolve_paths
+from helper import resample_get_symbol_config, resample_resolve_paths, resample_is_default_session
 
 from config.app_config import AppConfig, load_app_config # remove later
 
@@ -166,17 +166,6 @@ def resample_write_index(index_path: Path, input_position: int, output_position:
     os.replace(index_temp_path, index_path)
     return True
 
-# This is an anti-performance killer method for those entries that do not need special session handling
-def resample_is_default_session(config: ResampleSymbol) -> bool:
-    for name, session in config.sessions.items():
-        if name == "default":
-            if session.ranges.get('default'):
-                if (session.ranges.get('default').from_time == "00:00:00" and 
-                    session.ranges.get('default').to_time == "23:59:59"):
-                    return True
-    return False
-
-
 def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol) -> Tuple[StringIO, bool]:
     """
     Read a batch of lines from an input file-like object while recording their byte offsets.
@@ -268,7 +257,7 @@ def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.Dat
         # drop session column
 
         # temporarily identical behavior (to test old functionality still works OK)
-        timeframe = config.sessions.get('default').timeframes.get(ident)
+        timeframe = config.timeframes.get(ident)
         # Get rule, label, closed and origin
         rule, label, closed, origin = [timeframe.rule, timeframe.label, timeframe.closed, timeframe.origin]
         # Resample into target timeframe
@@ -278,7 +267,8 @@ def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.Dat
             'low': 'min',
             'close': 'last',
             'volume': 'sum',
-            'offset': 'first'  # identifies source raw candle for the window
+            'session': 'first',     # Keeps the session ID in the result
+            'offset': 'first'       # identifies source raw candle for the window
         })
 
     else:
@@ -294,7 +284,8 @@ def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.Dat
             'low': 'min',
             'close': 'last',
             'volume': 'sum',
-            'offset': 'first'  # identifies source raw candle for the window
+            'session': 'first',     # Keeps the session ID in the result
+            'offset': 'first'       # identifies source raw candle for the window
         })
 
     # Offset points to the position of the first raw input record that forms this row 
@@ -356,17 +347,15 @@ def resample_symbol(symbol: str, app_config: AppConfig) -> bool:
     for _, ident in enumerate(config.timeframes):
 
         # Determine paths (refactored to a helper function)
-        input_path, output_path, index_path, ok = resample_resolve_paths(symbol, ident, data_path, config)
+        input_path, output_path, index_path, skip = resample_resolve_paths(symbol, ident, data_path, config)
 
         # If there was an error during resolve, break out of loop
-        if not ok:
-            return False
+        if skip:
+            continue
 
         # Load the saved offsets (or create if not exists)
         input_position, output_position = resample_read_index(index_path)
-
         with open(input_path, "r") as f_input, open(output_path, "r+") as f_output:
-
             # Always read the header from input file
             header = f_input.readline()
 
@@ -382,7 +371,7 @@ def resample_symbol(symbol: str, app_config: AppConfig) -> bool:
             eof_reached = False
 
             while True:
-
+                
                 # Read a StringIO batch from f_input
                 sio, eof_reached = resample_batch_read(f_input, header, config)
 

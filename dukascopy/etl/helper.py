@@ -7,6 +7,49 @@ import yaml
 from config.app_config import AppConfig, ResampleConfig, ResampleSymbol, ResampleSymbolTradingSession
 
 
+def resample_is_default_session(config: ResampleSymbol) -> bool:
+    """
+    Determine whether a symbol is using the implicit default 24-hour session.
+
+    A session is considered the default session if:
+    - It is named "default"
+    - It defines a single range named "default"
+    - The range spans the full trading day from 00:00:00 to 23:59:59
+
+    Parameters
+    ----------
+    config : ResampleSymbol
+        The resolved resample configuration for a symbol, including its
+        trading sessions and time ranges.
+
+    Returns
+    -------
+    bool
+        True if the symbol uses the implicit full-day default session,
+        False otherwise.
+    """
+    # Iterate through all configured sessions for the symbol
+    for name, session in config.sessions.items():
+
+        # Only the session named "default" can qualify
+        if name == "default":
+
+            # Ensure the default time range exists
+            default_range = session.ranges.get("default")
+            if not default_range:
+                continue
+
+            # Check whether the range spans the full 24-hour day
+            if (
+                default_range.from_time == "00:00:00"
+                and default_range.to_time == "23:59:59"
+            ):
+                return True
+
+    # No qualifying default session was found
+    return False
+
+
 def resample_resolve_paths(
     symbol: str,
     ident: str,
@@ -37,7 +80,7 @@ def resample_resolve_paths(
             input_path: Optional[Path],   # None if this is a root timeframe
             output_path: Path,            # Destination CSV path
             index_path: Path,             # Destination index path
-            cascade: bool                 # Whether cascading resample should occur
+            cascade: bool                 # Whether we should skip (continue) in calling loop
         )
     """
     # Fetch the timeframe configuration for the requested identifier
@@ -46,14 +89,12 @@ def resample_resolve_paths(
     # Root timeframe: no resampling rule, data comes directly from the source
     if not timeframe.rule:
         root_source = Path(f"{timeframe.source}/{symbol}.csv")
-
-        print(root_source)
         # Root source must exist or resampling cannot proceed
         if not root_source.exists():
             raise IOError(f"Root source missing for {ident}: {root_source}")
 
-        # No cascading resample required for root timeframes
-        return None, root_source, Path(), False
+        # No cascading resample required for root timeframes, skip = True
+        return None, root_source, Path(), True
 
     # Identify the source timeframe this resample depends on
     source_tf = config.timeframes.get(timeframe.source)
@@ -80,7 +121,9 @@ def resample_resolve_paths(
             tqdm.write(
                 f"  No base {ident} data for {symbol} → skipping cascading timeframes"
             )
-        return None, root_source, Path(), False
+        raise ValueError(
+            f"  No base {ident} data for {symbol} → skipping cascading timeframes"
+        )
 
     # Ensure the output file and its parent directories exist
     if not output_path.exists():
@@ -89,7 +132,7 @@ def resample_resolve_paths(
             pass
 
     # Valid cascading resample paths resolved
-    return input_path, output_path, index_path, True
+    return input_path, output_path, index_path, False
 
 
 def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleSymbol:

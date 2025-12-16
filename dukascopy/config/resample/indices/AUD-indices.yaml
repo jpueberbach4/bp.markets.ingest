@@ -11,8 +11,8 @@ AUS.IDX-AUD:             # 2025-12-14: **NOT-OK**
       rule: "1H"
       label: "left"
       closed: "left"
-      source: "39m"
-      origin: "00:20"     
+      source: "30m"
+      origin: "epoch"     
   sessions:
     # Timezone to map ranges to
     # After mapping of times, the times will be normalized to MT4 server times
