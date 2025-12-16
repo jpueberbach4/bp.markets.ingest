@@ -5,12 +5,12 @@ America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 
   symbols:                        # Basically you add any symbol you are using here.
   # --- Commodities (Precious Metals & Energy) ---
   - BRENT.CMD-USD                 # OK
-  - COPPER.CMD-USD                # OFF - DONT USE
+  - COPPER.CMD-USD                # OK
   - DIESEL.CMD-USD                # OK
   - GAS.CMD-USD                   # OK
   - LIGHT.CMD-USD                 # OK
-  - XAG-USD
-  - XAU-USD                       # SLIGHTLY-OFF
+  - XAG-USD                       # OK
+  - XAU-USD                       # OK
   - XPD.CMD-USD
   - XPT.CMD-USD
 
