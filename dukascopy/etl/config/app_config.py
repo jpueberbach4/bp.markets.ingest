@@ -46,7 +46,7 @@ class ResampleSymbolTradingSession:
     timeframes: Dict[str, 'ResampleTimeframeConfig'] = field(default_factory=dict)
 
 @dataclass
-class ResampleTimeframeConfig:
+class ResampleTimeframe:
     """Configuration for a single resampled timeframe."""
     rule: Optional[str] = None
     label: Optional[str] = None
@@ -62,12 +62,12 @@ class ResamplePaths:
 
 
 @dataclass
-class ResampleSymbolOverride:
+class ResampleSymbol:
     """Per-symbol overrides for resampling behavior."""
     round_decimals: Optional[int] = None
     batch_size: Optional[int] = None
     skip_timeframes: List[str] = field(default_factory=list)
-    timeframes: Dict[str, ResampleTimeframeConfig] = field(default_factory=dict)
+    timeframes: Dict[str, ResampleTimeframe] = field(default_factory=dict)
     timezone: str = ""
     sessions: Dict[str, ResampleSymbolTradingSession] = field(default_factory=dict, metadata={'yaml_key': 'sessions'})
 
@@ -78,8 +78,8 @@ class ResampleConfig:
     round_decimals: int = 8
     batch_size: int = 250_000
     paths: ResamplePaths = field(default_factory=ResamplePaths)
-    timeframes: Dict[str, ResampleTimeframeConfig] = field(default_factory=dict)
-    symbols: Dict[str, ResampleSymbolOverride] = field(default_factory=dict)
+    timeframes: Dict[str, ResampleTimeframe] = field(default_factory=dict)
+    symbols: Dict[str, ResampleSymbol] = field(default_factory=dict)
 
 
 @dataclass

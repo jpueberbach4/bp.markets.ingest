@@ -65,13 +65,13 @@ import os
 import pandas as pd
 import yaml
 
-from config.app_config import AppConfig, ResampleConfig, ResampleSymbolOverride, load_app_config
+from config.app_config import AppConfig, ResampleConfig, ResampleSymbol, load_app_config
 from pathlib import Path
 from tqdm import tqdm
 from io import StringIO
-from typing import Tuple, IO
+from typing import Tuple, IO, Optional
 from dataclasses import asdict
-from helper import resample_get_symbol_config, resample_get_sessions_for_symbol
+from helper import resample_get_symbol_config, resample_resolve_paths
 
 from config.app_config import AppConfig, load_app_config # remove later
 
@@ -284,6 +284,25 @@ def resample_batch(sio: StringIO, rule: str, label: str, closed: str, origin: st
     # Return the resampled dataframe
     return resampled, next_input_position
 
+
+def resample_symbol_session_aware(symbol: str, app_config: AppConfig) -> bool:
+    # Retrieven the SymbolOverride Object (has override.sessions and override.timeframes)
+    config = resample_get_symbol_config(symbol, app_config)
+
+    # Main output path
+    data_path = config.paths.data
+
+    # Timeframes are normalized, we use override.timeframes just to get the enumeration done
+    # Timeframes in sessions consist of same timeframes keys
+    # We do not support support for different sources per timeframe per session!! 
+    # This would make the code unnecessarily complex (goes beyond the scope why this was changed, its only origin binning change)
+    for _, ident in enumerate(config.timeframes):
+        # determine input paths
+        pass
+
+
+
+
 def resample_symbol(symbol: str, app_config: AppConfig) -> bool:
     """
     Incrementally resample OHLCV data for a single trading symbol across all configured timeframes.
@@ -322,40 +341,21 @@ def resample_symbol(symbol: str, app_config: AppConfig) -> bool:
     data_path = config.paths.data
 
     for _, ident in enumerate(config.timeframes):
-        # Get ResampleTimeFrame
-        timeframe = config.timeframes.get(ident)
 
-        # Handle case of no rule = direct input path
-        if not timeframe.rule:
-            if not Path(f"{timeframe.source}/{symbol}.csv").exists():
-                raise IOError(f"Invalid configuration for timeframe {ident}")
-            continue
-        
-        # Construct file paths
-        if config.timeframes.get(timeframe.source).rule is not None:
-            input_path = Path(f"{data_path}/{timeframe.source}/{symbol}.csv")
-        else:
-            input_path = Path(f"{config.timeframes.get(timeframe.source).source}/{symbol}.csv")
+        # Determine paths (refactored to a helper function)
+        input_path, output_path, index_path, cont = resample_resolve_paths(symbol, ident, config)
 
-        output_path = Path(f"{data_path}/{ident}/{symbol}.csv")
-        index_path = Path(f"{data_path}/{ident}/index/{symbol}.idx")
+        # If there was an error during resolve, break out of loop
+        if not cont:
+            return False
 
-        rule, label, closed, origin = [timeframe.rule, timeframe.label, timeframe.closed, timeframe.origin]
-
-        # Ensure input path exists
-        if not input_path.exists():
-            if VERBOSE:
-                tqdm.write(f"  No base {ident} data for {symbol} → skipping cascading timeframes")
-            return True
+        # rule, label, closed, origin = [timeframe.rule, timeframe.label, timeframe.closed, timeframe.origin]
 
         # Load the saved offsets (or create if not exists)
         input_position, output_position = resample_read_index(index_path)
 
-        # Ensure output file exists
-        if not output_path.exists():
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(output_path, "w"):
-                pass
+        # code is nonfunction, so exit
+        os.exit
 
         with open(input_path, "r") as f_input, open(output_path, "r+") as f_output:
 
@@ -436,9 +436,12 @@ def fork_resample(args) -> bool:
 
 if __name__ == "__main__":
     config = load_app_config('config.user.yaml')
-    sessions = resample_get_sessions_for_symbol("AUS.IDX-AUD", config)
-    sessions = resample_get_sessions_for_symbol("USA30.IDX-USD", config)
-    sessions = resample_get_sessions_for_symbol("USA500.IDX-USD", config)
+    sessions = resample_get_symbol_config("AUS.IDX-AUD", config)
+    #sessions = resample_get_symbol_config("USA30.IDX-USD", config)
+    #sessions = resample_get_symbol_config("USA500.IDX-USD", config)
 
+    print(yaml.safe_dump(asdict(sessions),
+        default_flow_style=False,
+        sort_keys=False,))
 
     #fork_resample(["AUS.IDX-AUD", config])

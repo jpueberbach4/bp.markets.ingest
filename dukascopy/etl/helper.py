@@ -1,31 +1,99 @@
 import copy
 from dataclasses import asdict
-from typing import Dict
+from typing import Dict, Tuple, Optional
+from pathlib import Path
 import yaml
 
-from config.app_config import AppConfig, ResampleConfig, ResampleSymbolOverride, ResampleSymbolTradingSession
+from config.app_config import AppConfig, ResampleConfig, ResampleSymbol, ResampleSymbolTradingSession
 
 
+def resample_resolve_paths(
+    symbol: str,
+    ident: str,
+    config: ResampleConfig,
+) -> Tuple[Optional[Path], Path, Path, bool]:
+    """
+    Resolve input, output, and index file paths for a resample timeframe.
 
-def resample_get_sessions_for_symbol(symbol:str, app_config: AppConfig) -> Dict[str, ResampleSymbolTradingSession]:
-    config = resample_get_symbol_config(symbol, app_config)
+    This function determines where the input data should be read from and
+    where the resampled output and index files should be written to, based
+    on the timeframe configuration and its source dependency.
 
-    if True:
-        for key, session in config.sessions.items():
-            print("="*80)
-            print(f"{symbol} => Session({key}):")
-            print("="*80)
-            print(
-                yaml.safe_dump(
-                    asdict(session),
-                    default_flow_style=False,
-                    sort_keys=False,
-                )
+    Parameters
+    ----------
+    symbol : str
+        Trading symbol being processed (e.g. "AUS.IDX-AUD").
+    ident : str
+        Timeframe identifier (e.g. "5m", "1h").
+    config : ResampleConfig
+        Fully merged resample configuration containing all timeframe
+        definitions and paths.
+
+    Returns
+    -------
+    tuple
+        (
+            input_path: Optional[Path],   # None if this is a root timeframe
+            output_path: Path,            # Destination CSV path
+            index_path: Path,             # Destination index path
+            cascade: bool                 # Whether cascading resample should occur
+        )
+    """
+    # Fetch the timeframe configuration for the requested identifier
+    timeframe: ResampleTimeframe = config.timeframes.get(ident)
+
+    # Base directory where resampled data is stored
+    data_path = config.paths.data
+
+    # Root timeframe: no resampling rule, data comes directly from the source
+    if not timeframe.rule:
+        root_source = Path(f"{timeframe.source}/{symbol}.csv")
+
+        # Root source must exist or resampling cannot proceed
+        if not root_source.exists():
+            raise IOError(f"Root source missing for {ident}: {root_source}")
+
+        # No cascading resample required for root timeframes
+        return None, root_source, Path(), False
+
+    # Identify the source timeframe this resample depends on
+    source_tf = config.timeframes.get(timeframe.source)
+    if not source_tf:
+        raise ValueError(
+            f"Timeframe {ident} references unknown source: {timeframe.source}"
+        )
+
+    # Determine input path depending on whether the source itself is resampled
+    if source_tf.rule is not None:
+        input_path = Path(data_path) / timeframe.source / f"{symbol}.csv"
+    else:
+        input_path = Path(source_tf.source) / f"{symbol}.csv"
+
+    # Output CSV path for the resampled timeframe
+    output_path = Path(data_path) / ident / f"{symbol}.csv"
+
+    # Index path used for incremental or partial resampling
+    index_path = Path(data_path) / ident / "index" / f"{symbol}.idx"
+
+    # If input data does not exist, cascading resample cannot continue
+    if not input_path.exists():
+        if VERBOSE:
+            tqdm.write(
+                f"  No base {ident} data for {symbol} → skipping cascading timeframes"
             )
+        return None, root_source, Path(), False
 
-    return config.sessions
+    # Ensure the output file and its parent directories exist
+    if not output_path.exists():
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, "w"):
+            pass
 
-def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleSymbolOverride:
+    # Valid cascading resample paths resolved
+    return input_path, output_path, index_path, True
+
+
+def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleSymbol:
     """
     Build and return the fully merged resample configuration for a single symbol.
 
@@ -35,7 +103,7 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleSy
         3. Session-level overrides
         4. skip_timeframes (absolute priority, applied last)
 
-    The returned object is a ResampleSymbolOverride containing resolved
+    The returned object is a ResampleSymbol containing resolved
     primitives, timeframes, and sessions ready for consumption by the
     resampling engine.
 
@@ -48,7 +116,7 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleSy
 
     Returns
     -------
-    ResampleSymbolOverride
+    ResampleSymbol
         The resolved symbol configuration including session-aware timeframes.
     """
     # Copy the global resample configuration to avoid mutating the source config
@@ -57,10 +125,10 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleSy
 
     # Ensure a symbol override always exists to simplify merge logic
     if not merged_config.symbols.get(symbol):
-        merged_config.symbols.update({symbol: ResampleSymbolOverride()})
+        merged_config.symbols.update({symbol: ResampleSymbol()})
 
     # Fetch the symbol override instance
-    symbol_override: ResampleSymbolOverride = merged_config.symbols.get(symbol)
+    symbol_override: ResampleSymbol = merged_config.symbols.get(symbol)
 
     # Resolve primitive overrides, falling back to global defaults
     symbol_override.round_decimals = (
