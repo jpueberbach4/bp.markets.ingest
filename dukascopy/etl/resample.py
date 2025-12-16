@@ -209,21 +209,21 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol) -> Tup
         
         session = "default"
         if not is_default_session:
-            # we need to test, what is faster?
-            # apply here an additional session column?
-            # benefit of doing it here is that we can scan each timestamp of each column and assign it
-            # the correct session. it's line by line
-            # alternative? do it with grouping in the resample_batch function. but its more difficult
-            # to do it correctly in resample_batch, because of DST switches in symbol.timezone
-            
-            # conclusion. we will do it first here. we can cythonize this. if needed
-            # AI says: If you add complex "Session" logic (checking timestamps against ranges, handling DST), 
-            # Cython will be drastically faster (10x–50x) than Python for those specific calculations.
-
-            # So lets do it... first version, in here
-
-            # Note: if only one 24h session, just append one column with fixed value, 
-            # resample_batch will then follow regular logic (no grouping in there)
+            # get the date from the line
+            # do we have a date-to-shift mapping in the cache?
+            # if not:
+            #   for each session
+            #       map the from_time and to_time using timezone in MT4 server time (for that date)
+            #       cache the mapping for this date (so any subsequent same date lines to not need to do expensive recalc)
+            #       (CACHE[date][session-name][range-id][(from|to)_time] = mapped_(from|to)_time)
+            #       Since date is aordered ascending, we only need to keep the last item, optimize for that later
+            #   
+            # now, for each session (this is going to be expensive!)
+            #    for session_name, cache_session in CACHE[date]
+            #       for each range_name in CACHE[session_name][ranges]
+            #           if datetime(line) >= CACHE[session_name][ranges][range_name]['from_time'] and
+            #               datetime(line) <= CACHE[session_name][ranges][range_name]['to_time']
+            #               assign session to session-name 
             pass
 
         sio.write(f"{line.strip()},{session},{offset_before}\n")  # offset column injection for traceability
@@ -248,13 +248,15 @@ def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.Dat
     )
 
     if not is_default_session:
-        # Here comes the new logic
-        # we already have a session column
-        # for each session, group by it
-        # then resample, keep result in memory
-        # repeat for other session(s)
-        # merge the batches, order by timestamp asc
-        # drop session column
+        # for each session, filter dataframe by its session-name (using a mask) -> as a copy
+        # (keep old dataframe intact (monitor memory usage))
+        # resample on the filtered dataframe with the specic origin
+        # keep in memory, repeat
+
+        # no more sessions? merge dataframes, sort by time asc
+        # continue logic
+
+        # alternative way: do not make a copy but use group (see what gives best performance)
 
         # temporarily identical behavior (to test old functionality still works OK)
         timeframe = config.timeframes.get(ident)
@@ -371,7 +373,7 @@ def resample_symbol(symbol: str, app_config: AppConfig) -> bool:
             eof_reached = False
 
             while True:
-                
+
                 # Read a StringIO batch from f_input
                 sio, eof_reached = resample_batch_read(f_input, header, config)
 
