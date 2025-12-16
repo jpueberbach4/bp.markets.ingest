@@ -70,7 +70,8 @@ from pathlib import Path
 from tqdm import tqdm
 from io import StringIO
 from typing import Tuple, IO
-from helper import resample_get_symbol_config
+from dataclasses import asdict
+from helper import resample_get_symbol_config, resample_get_sessions_for_symbol
 
 from config.app_config import AppConfig, load_app_config # remove later
 
@@ -435,4 +436,8 @@ def fork_resample(args) -> bool:
 
 if __name__ == "__main__":
     config = load_app_config('config.user.yaml')
-    fork_resample(["AUS.IDX-AUD", config])
+    sessions = resample_get_sessions_for_symbol("AUS.IDX-AUD", config)
+    #sessions = resample_get_sessions_for_symbol("USA500.IDX-USD", config)
+
+
+    #fork_resample(["AUS.IDX-AUD", config])

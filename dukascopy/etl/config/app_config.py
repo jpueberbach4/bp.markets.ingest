@@ -33,8 +33,8 @@ from typing import Dict, List, Optional, Type, TypeVar, Any, Union, get_origin, 
 @dataclass
 class ResampleSymbolTradingSessionRange:
     """Defines the 'from' and 'to' times for a single time range."""
-    from_time: str = field(metadata={'yaml_key': 'from'}) 
-    to_time: str = field(metadata={'yaml_key': 'to'})
+    from_time: str = field(default="00:00:00",metadata={'yaml_key': 'from'}) 
+    to_time: str = field(default="23:59:59",metadata={'yaml_key': 'to'})
 
 
 @dataclass
