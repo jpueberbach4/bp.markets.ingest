@@ -198,8 +198,6 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol, symbol
             current_timestamp_naive = timestamp.replace(tzinfo=None)
             current_date = timestamp.date()
 
-            print(f"current_date: {current_date} line = {line}")
-
             if current_date != last_date:
                 daily_session_ranges = resample_calculate_sessions_for_date(current_date, config)
                 last_date = current_date
@@ -208,11 +206,21 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol, symbol
             active_session_info = None
             
             # Optimized lookup: Accessing dict keys
+            current_mins = current_timestamp_naive.hour * 60 + current_timestamp_naive.minute
+
             for session_entry in daily_session_ranges:
-                print(
-                    f'{session_entry["start"]} <= {current_timestamp_naive} <= {session_entry["end"]}'
-                )
-                if session_entry["start"] <= current_timestamp_naive <= session_entry["end"]:
+                # Pre-calculate session minutes if not already done in calculate_sessions
+                start_mins = session_entry["start"].hour * 60 + session_entry["start"].minute
+                end_mins = session_entry["end"].hour * 60 + session_entry["end"].minute
+                
+                # Logic for Standard Day Range (e.g., 09:50 to 16:30)
+                if start_mins <= end_mins:
+                    is_active = start_mins <= current_mins <= end_mins
+                # Logic for Wraparound/Midnight Range (e.g., 17:10 to 07:00)
+                else:
+                    is_active = (current_mins >= start_mins) or (current_mins <= end_mins)
+
+                if is_active:
                     active_session_info = session_entry
                     break
         
@@ -263,11 +271,9 @@ def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.Dat
                 # If session had no results, continue next session
                 continue
 
+            # Get the timeframe
             timeframe = session.timeframes.get(ident)
             # Get rule, label, closed and origin
-            print(timeframe)
-            # TODO: I dont like the following, but for now its oke
-            #       The config merging caused the timeframes to become a dict
             rule, label, closed, origin = [timeframe.rule, timeframe.label, timeframe.closed, timeframe.origin]
 
             # Resample into target timeframe
@@ -292,13 +298,11 @@ def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.Dat
                 f"Resampled result for sessions were empty. This is impossible behavior."
             )
         # Now continue with regular logic
-        print(resampled)
     else:
         # No performance killer here. Support for the old (performant way)
         # Session timeframe
         timeframe = config.sessions.get('default').timeframes.get(ident)
         # Get rule, label, closed and origin
-        print(timeframe)
         rule, label, closed, origin = [timeframe.rule, timeframe.label, timeframe.closed, timeframe.origin]
         # Resample into target timeframe
         resampled = df.resample(rule, label=label, closed=closed, origin=origin).agg({

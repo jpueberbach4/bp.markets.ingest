@@ -60,11 +60,12 @@ def resample_calculate_sessions_for_date(current_date, config):
             })
             
 
-    if True: 
+    if False: 
         print(yaml.safe_dump(sessions_for_day,
             default_flow_style=False,
             sort_keys=False,)
         )
+        os.exit
 
     return sessions_for_day
 
@@ -256,6 +257,12 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleSy
                     tf_val = ResampleTimeframe(**tf_val)
                 s_tfs[tf_name] = tf_val
             session.timeframes = s_tfs
+
+    # Handle skip_timeframes
+    for ident in symbol_override.skip_timeframes:
+        for sess_name, session in symbol_override.sessions.items():
+            symbol_override.sessions.get(sess_name).timeframes.pop(ident, None)
+        symbol_override.timeframes.pop(ident, None)
 
     return symbol_override
 

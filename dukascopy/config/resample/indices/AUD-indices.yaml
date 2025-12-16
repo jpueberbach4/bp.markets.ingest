@@ -5,13 +5,13 @@ AUS.IDX-AUD:             # 2025-12-14: **NOT-OK**
   #
   # First proposal for the session-aware implementation
   timezone: Australia/Sydney
-  skip_timeframes: ["4h","8h","1d", "1W","1M","1Y"]
+  skip_timeframes: ["8h"]
   timeframes:
-    1h:                     
-      rule: "1H"
+    1d:                     
+      rule: "1D"
       label: "left"
       closed: "left"
-      source: "30m"
+      source: "4h"
       origin: "08:10"     
   sessions:
     # Timezone to map ranges to
@@ -48,12 +48,12 @@ AUS.IDX-AUD:             # 2025-12-14: **NOT-OK**
           closed: "left"
           source: "1h"
           origin: "00:50"
-        8h:                     
-          rule: "4H"
+        1d:                     
+          rule: "1D"
           label: "left"
           closed: "left"
-          source: "1h"
-          origin: "00:50"  
+          source: "4h"
+          origin: "00:00"   
     after-hours:
       ranges: 
         day:
@@ -87,9 +87,9 @@ AUS.IDX-AUD:             # 2025-12-14: **NOT-OK**
           closed: "left"
           source: "1h"
           origin: "08:10"
-        8h:                     
-          rule: "4H"
+        1d:                     
+          rule: "1D"
           label: "left"
           closed: "left"
-          source: "1h"
-          origin: "08:10"  
+          source: "4h"
+          origin: "00:00"  
