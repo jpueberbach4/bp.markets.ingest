@@ -30,7 +30,7 @@ In resample.resample_batch(sio):
 
 Until this fix has been implemented, the AUS.IDX-AUD is not really usable.
 
-**Update:** Found the right approach: insert the (calculated) origin directly into the DataFrame. The origin is computed per row in resample_batch_read. I’ll need another day to handle the remaining edge cases—for example, before ~6 February 2020 a completely different alignment (“era”) was in effect. It’s starting to look promising. The current approach can also be flattened so it works for non-exotic sessions as well. Overall it’s roughly one extra vectorized operation in exchange for much cleaner and more unified code. For 2025 i have perfect alignment for AUS.IDX-AUD (1h, 4h, all of them). 
+**Update:** There is a version available in staging/0.6. If you want to try it. 
 
 
 ### YAML configuration is becoming huge - **implemented, available in main**
