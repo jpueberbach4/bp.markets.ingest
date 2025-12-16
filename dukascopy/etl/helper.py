@@ -178,22 +178,9 @@ def resample_is_default_session(config: ResampleSymbol) -> bool:
         False otherwise.
     """
     # Iterate through all configured sessions for the symbol
-    for name, session in config.sessions.items():
-
-        # Only the session named "default" can qualify
-        if name == "default":
-
-            # Ensure the default time range exists
-            default_range = session.ranges.get("default")
-            if not default_range:
-                continue
-
-            # Check whether the range spans the full 24-hour day
-            if (
-                default_range.from_time == "00:00:00"
-                and default_range.to_time == "23:59:59"
-            ):
-                return True
+    if len(config.sessions) == 1:
+        if config.sessions.get("default"):
+            return True
 
     # No qualifying default session was found
     return False

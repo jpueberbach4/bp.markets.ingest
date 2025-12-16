@@ -184,9 +184,6 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol, symbol
         if not line:
             eof_reached = True
             break
-        
-        session = "default"
-        origin = "epoch"
 
         # Here we go, performance killer:
         if not is_default_session:
@@ -194,6 +191,8 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol, symbol
             session = resample_get_active_session_from_line(line, config)
             # We use the origin in the resample to filter by
             origin = resample_get_active_origin_from_line(line, ident, session, config)
+        else:
+            origin = config.sessions.get("default").timeframes.get(ident).origin
 
         # If is default session, we immediate come here, no performance kill
         sio.write(f"{line.strip()},{origin},{offset_before}\n")  # offset column injection for traceability
@@ -217,66 +216,62 @@ def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.Dat
         date_format="%Y-%m-%d %H:%M:%S"
     )
 
-    if not is_default_session:
-        # Initialize a list for collecting the per-session dataframes
-        resampled_list = []
+    # construct an empty array to catch the resamples in
+    resampled_list = []
 
-        # oke different approach. we have now origin's in the dataframe
-        origins = df['origin'].unique().tolist()
+    # get a unique list of all the origins available in dataframe
+    origins = df['origin'].unique().tolist()
 
-        # now loop through each origin and build a dateframe per origin, resample
-        # this will make the session-column obsolete
-        for origin in origins:
-            # get timeframe from any session (its about the rule, label etc)
-            timeframe = config.sessions.get("after-hours").timeframes.get(ident)
+    # now loop through each origin and build a dateframe per origin, resample
+    # this will make the session-column obsolete
+    for origin in origins:
 
-            rule, label, closed = [timeframe.rule, timeframe.label, timeframe.closed]
+        # just get the first session, whether its default or an other session
+        # we only care about the rule, the label and the closed (origin is already determined)
+        _, session = next(iter(config.sessions.items()))
+        
+        # get timeframe from any session (its about the rule, label etc)
+        timeframe = session.timeframes.get(ident)
 
-            origin_df = df[df['origin'] == origin].copy()
+        # get the rule, label and closed value
+        rule, label, closed = [timeframe.rule, timeframe.label, timeframe.closed]
 
-            origin_resampled = origin_df.resample(rule, label=label, closed=closed, origin=origin).agg({
-                'open': 'first',
-                'high': 'max',
-                'low': 'min',
-                'close': 'last',
-                'volume': 'sum',
-                'origin': 'first',
-                'offset': 'first'       # identifies source raw candle for the window
-            })
-            origin_resampled = origin_resampled[origin_resampled['volume'].notna() & (origin_resampled['volume'] != 0)]
-            resampled_list.append(origin_resampled)
+        # filter dataframe by the origin and copy (this is the extra vectorized call)
+        origin_df = df[df['origin'] == origin].copy()
 
-        # Marge results and sort dataframe on index
-        resampled = pd.concat(resampled_list).sort_index()
-        # Error out if we had nothing in the resample 
-        # we always reconstruct last candle, so we always should have something
-        if resampled.empty:
-            raise ValueError(
-                f"Resampled result for sessions were empty. This is impossible behavior."
-            )
-        # Now continue with regular logic
-    else:
-        # No performance killer here. Support for the old (performant way)
-        # Session timeframe
-        timeframe = config.sessions.get('default').timeframes.get(ident)
-        # Get rule, label, closed and origin
-        rule, label, closed, origin = [timeframe.rule, timeframe.label, timeframe.closed, timeframe.origin]
-        # Resample into target timeframe
-        resampled = df.resample(rule, label=label, closed=closed, origin=origin).agg({
+        # we dont need the origin anymore, drop it immediately
+        origin_df.drop(columns=["origin"], inplace=True)
+
+        # resample for this origin
+        origin_resampled = origin_df.resample(rule, label=label, closed=closed, origin=origin).agg({
             'open': 'first',
             'high': 'max',
             'low': 'min',
             'close': 'last',
             'volume': 'sum',
-            'origin': 'first',     # Keeps the session ID in the result
             'offset': 'first'       # identifies source raw candle for the window
         })
+        # drop zero and NaN volume (remove gaps)
+        origin_resampled = origin_resampled[origin_resampled['volume'].notna() & (origin_resampled['volume'] != 0)]
+        # add it to the resampled list
+        resampled_list.append(origin_resampled)
+
+    # Marge results and sort dataframe on index
+    resampled = pd.concat(resampled_list).sort_index()
+
+    # we always reconstruct last candle, so we always should have something
+    if resampled.empty:
+        raise ValueError(
+            f"Resampled result for sessions were empty. This is impossible behavior."
+        )
+
+    # Now continue with regular logic
 
     # Offset points to the position of the first raw input record that forms this row 
     next_input_position = int(resampled.iloc[-1]['offset'])
 
     # Remove offset and session column immediately
-    resampled.drop(columns=["offset","origin"], inplace=True)
+    resampled.drop(columns=["offset"], inplace=True)
 
     # Round numerical values to avoid floating drift
     resampled = resampled.round(config.round_decimals)
