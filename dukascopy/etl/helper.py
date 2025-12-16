@@ -1,10 +1,79 @@
 import copy
+import yaml
 from dataclasses import asdict
 from typing import Dict, Tuple, Optional
 from pathlib import Path
-import yaml
-
+from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 from config.app_config import AppConfig, ResampleConfig, ResampleSymbol, ResampleSymbolTradingSession
+
+try:
+    import zoneinfo
+except ImportError:
+    from backports import zoneinfo
+
+def resample_calculate_sessions_for_date(current_date, config):
+    """
+    Calculates session boundaries in MT4 Server Time based on 
+    localized session definitions (e.g., Australia/Sydney).
+    """
+    tz_local = zoneinfo.ZoneInfo(config.timezone) # Australia/Sydney
+
+    # TODO: fix timezone for MT4 server retrieval, currently fixed value
+    tz_server = zoneinfo.ZoneInfo("Etc/GMT-2")    # Example MT4 Server (Fixed Offset) (watchout, posix GMT!)
+    
+    sessions_for_day = []
+
+    for session_name, session_item in config.sessions.items():
+        for range_name, range_item in session_item.ranges.items():
+            # 1. Create localized start/end datetimes
+            start_local = datetime.combine(current_date, 
+                                          datetime.strptime(range_item.from_time, "%H:%M").time(), 
+                                          tzinfo=tz_local)
+            end_local = datetime.combine(current_date, 
+                                        datetime.strptime(range_item.to_time, "%H:%M").time(), 
+                                        tzinfo=tz_local)
+
+            # 2. Handle Overnight ranges (e.g., 17:10 to 07:00)
+            if end_local <= start_local:
+                end_local += timedelta(days=1)
+
+            # 3. Convert to Server Time (MT4)
+            # This automatically handles the DST difference between Sydney and Server
+            start_server = start_local.astimezone(tz_server)
+            end_server = end_local.astimezone(tz_server)
+
+            sessions_for_day.append({
+                "name": session_name,
+                "range": range_name,
+                "start": start_server.replace(tzinfo=None), # Strip tz for comparison
+                "end": end_server.replace(tzinfo=None)
+            })
+            
+
+    print(yaml.safe_dump(sessions_for_day,
+        default_flow_style=False,
+        sort_keys=False,))
+    # we are not done yet, just invalid statement to break
+    os.exit
+    return sessions_for_day
+
+def resample_get_timestamp_from_line(line: str) -> datetime:
+    """
+    Extracts timestamp from a line formatted as:
+    YYYY-MM-DD HH:MM:SS,open,high,low,close,volume...
+    """
+    try:
+        # Extract the first 19 characters (length of YYYY-MM-DD HH:MM:SS)
+        # This is faster than splitting the whole line if the line is long.
+        dt_str = line[:19]
+        
+        # Use fromisoformat for near-native parsing speed
+        return datetime.fromisoformat(dt_str)
+        
+    except ValueError:
+        # Handles cases like headers or empty lines
+        return None
 
 
 def resample_is_default_session(config: ResampleSymbol) -> bool:

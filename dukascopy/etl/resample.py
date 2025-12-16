@@ -71,7 +71,7 @@ from tqdm import tqdm
 from io import StringIO
 from typing import Tuple, IO, Optional
 from dataclasses import asdict
-from helper import resample_get_symbol_config, resample_resolve_paths, resample_is_default_session
+from helper import resample_get_symbol_config, resample_resolve_paths, resample_is_default_session, resample_get_timestamp_from_line, resample_calculate_sessions_for_date
 
 from config.app_config import AppConfig, load_app_config # remove later
 
@@ -167,30 +167,6 @@ def resample_write_index(index_path: Path, input_position: int, output_position:
     return True
 
 def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol) -> Tuple[StringIO, bool]:
-    """
-    Read a batch of lines from an input file-like object while recording their byte offsets.
-
-    This function reads up to `BATCH_SIZE` lines from `f_input`, capturing the file offset
-    immediately before each line is read. It writes the resulting rows—along with an added
-    `offset` column—into a `StringIO` buffer that begins with the provided header plus the
-    new column name.
-
-    Parameters
-    ----------
-    f_input : IO
-        A file-like object opened for reading. Must support `tell()` and `readline()`.
-    header : str
-        The CSV header line to be written first in the output, without the `offset` column.
-    config: ResampleConfig
-        Config object
-
-    Returns
-    -------
-    Tuple[StringIO, bool]
-        A tuple containing:
-        - A `StringIO` object positioned at the beginning, containing the header and batch data.
-        - A boolean indicating whether end-of-file was reached during this read.
-    """
     sio = StringIO()
     sio.write(f"{header.strip()},session,offset\n")
 
@@ -198,6 +174,10 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol) -> Tup
 
     # Determine if we only have a default session (one bin origin)
     is_default_session = resample_is_default_session(config)
+
+    # Initialize variables for session-support
+    last_date = None
+    daily_session_ranges = [] 
 
     # Read a chunk of lines along with their raw input offsets
     for _ in range(config.batch_size):
@@ -208,24 +188,37 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol) -> Tup
             break
         
         session = "default"
-        if not is_default_session:
-            # get the date from the line
-            # do we have a date-to-shift mapping in the cache?
-            # if not:
-            #   for each session
-            #       map the from_time and to_time using timezone in MT4 server time (for that date)
-            #       cache the mapping for this date (so any subsequent same date lines to not need to do expensive recalc)
-            #       (CACHE[date][session-name][range-id][(from|to)_time] = mapped_(from|to)_time)
-            #       Since date is aordered ascending, we only need to keep the last item, optimize for that later
-            #   
-            # now, for each session (this is going to be expensive!)
-            #    for session_name, cache_session in CACHE[date]
-            #       for each range_name in CACHE[session_name][ranges]
-            #           if datetime(line) >= CACHE[session_name][ranges][range_name]['from_time'] and
-            #               datetime(line) <= CACHE[session_name][ranges][range_name]['to_time']
-            #               assign session to session-name 
-            pass
 
+        # Here we go, performance killer:
+        if not is_default_session:
+            # Extract date/time
+            timestamp = resample_get_timestamp_from_line(line)
+
+            # Ensure timestamp is naive if your session "start"/"end" are naive
+            current_timestamp_naive = timestamp.replace(tzinfo=None)
+            current_date = timestamp.date()
+
+            if current_date != last_date:
+                daily_session_ranges = resample_calculate_sessions_for_date(current_date, config)
+                last_date = current_date
+
+            # Quick check against the day's pre-calculated boundaries
+            active_session_info = None
+            
+            # Optimized lookup: Accessing dict keys
+            for session_entry in daily_session_ranges:
+                if session_entry["start"] <= current_timestamp_naive <= session_entry["end"]:
+                    active_session_info = session_entry
+                    break
+        
+            if active_session_info is None:
+                raise ValueError(
+                    f"Line {line} is out_of_market. Your configuration sucks. Fix it!"
+                )
+
+            session = active_session_info["name"]
+        
+        # If is default session, we immediate come here, no performance kill
         sio.write(f"{line.strip()},{session},{offset_before}\n")  # offset column injection for traceability
 
     # Rewind sio  
@@ -446,5 +439,5 @@ if __name__ == "__main__":
     #fork_resample(["AUS.IDX-AUD", config])
 
 
-    fork_resample(["USA30.IDX-USD", config])
+    fork_resample(["AUS.IDX-AUD", config])
     
