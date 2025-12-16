@@ -71,9 +71,7 @@ from tqdm import tqdm
 from io import StringIO
 from typing import Tuple, IO, Optional
 from dataclasses import asdict
-from helper import resample_resolve_paths, resample_is_default_session, \
-                    resample_calculate_sessions_for_date, resample_get_active_session_from_line, \
-                    resample_get_active_origin_from_line
+from helper import resample_resolve_paths, ResampleTracker
 
 from config.app_config import AppConfig, load_app_config # remove later
 
@@ -173,9 +171,12 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol, symbol
     sio.write(f"{header.strip()},origin,offset\n")
 
     eof_reached = False
+    last_key = None
+
+    tracker = ResampleTracker(config)
 
     # Determine if we only have a default session (one bin origin)
-    is_default_session = resample_is_default_session(config)
+    is_default_session = tracker.is_default_session(config)
 
     # Read a chunk of lines along with their raw input offsets
     for _ in range(config.batch_size):
@@ -188,8 +189,16 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol, symbol
         # Here we go, performance killer:
         if not is_default_session:            
             # We use the origin in the resample to filter by
-            session = resample_get_active_session_from_line(line, config)
-            origin = resample_get_active_origin_from_line(line, ident, session, config)
+            session = tracker.get_active_session(line)
+
+            # Cache-key, if key same, no need to switch origin
+            current_key = f"{session}/{line[:10]}"
+            if current_key != last_key:
+                # Date or session changed, update origin
+                origin = tracker.get_active_origin(line, ident, session, config)
+                # Update cache-key
+                last_key = current_key
+
         else:
             origin = config.sessions.get("default").timeframes.get(ident).origin
 
@@ -202,9 +211,6 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol, symbol
     return sio, eof_reached
 
 def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.DataFrame, int]:
-
-    # Determine if we only have a default session (one bin origin)
-    is_default_session = resample_is_default_session(config)
 
     # Load into DataFrame
     df = pd.read_csv(

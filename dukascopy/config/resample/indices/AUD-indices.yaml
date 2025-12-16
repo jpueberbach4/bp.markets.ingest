@@ -8,6 +8,10 @@ AUS.IDX-AUD:             # 2025-12-14: **NOT-OK**
   # Before 6 februari 2020 there was a completely different candle alignment in MT4. Candles at 00:00. 
   #
   # For later when solution done: the origins need to be defined as how the candles appear just after 1-1-YEAR (winter-time in europe).
+  #
+  # Performance impact is massive. 5 years parsing of AUS.IDX-AUD takes 105 seconds. In comparison US30.IDX-USD takes only 15 seconds
+  # for the same amount of data. Reason for this is that we need to calculate to which session every line belongs. Furthermore,
+  # we need to adjust for DST and Australia summer/winter time.
   timezone: Australia/Sydney
   skip_timeframes: ["8h","1d","1W","1M","1Y"]
   timeframes:
