@@ -413,20 +413,3 @@ def fork_resample(args) -> bool:
     resample_symbol(symbol, config)
 
     return True
-
-
-if __name__ == "__main__":
-    config = load_app_config('config.user.yaml')
-    sessions = resample_get_symbol_config("AUS.IDX-AUD", config)
-    #sessions = resample_get_symbol_config("USA30.IDX-USD", config)
-    #sessions = resample_get_symbol_config("USA500.IDX-USD", config)
-
-    print(yaml.safe_dump(asdict(sessions),
-        default_flow_style=False,
-        sort_keys=False,))
-
-    #fork_resample(["AUS.IDX-AUD", config])
-
-
-    fork_resample(["AUS.IDX-AUD", config])
-    
