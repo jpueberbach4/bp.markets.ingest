@@ -5,7 +5,7 @@ AUS.IDX-AUD:             # 2025-12-14: **NOT-OK**
   #
   # First proposal for the session-aware implementation
   timezone: Australia/Sydney
-  skip_timeframes: ["8h"]
+  skip_timeframes: ["8h","1d","1W","1M","1Y"]
   timeframes:
     1d:                     
       rule: "1D"

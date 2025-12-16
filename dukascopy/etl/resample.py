@@ -71,8 +71,11 @@ from tqdm import tqdm
 from io import StringIO
 from typing import Tuple, IO, Optional
 from dataclasses import asdict
-from helper import resample_get_symbol_config, resample_resolve_paths, resample_is_default_session, resample_get_timestamp_from_line, resample_calculate_sessions_for_date, resample_get_active_session_from_line
+from helper import resample_resolve_paths, resample_is_default_session, \
+                    resample_calculate_sessions_for_date, resample_get_active_session_from_line, \
+                    resample_get_active_origin_from_line
 
+from config.resample import resample_get_symbol_config
 from config.app_config import AppConfig, load_app_config # remove later
 
 
@@ -168,7 +171,7 @@ def resample_write_index(index_path: Path, input_position: int, output_position:
 
 def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol, symbol:str, ident:str) -> Tuple[StringIO, bool]:
     sio = StringIO()
-    sio.write(f"{header.strip()},session,offset\n")
+    sio.write(f"{header.strip()},origin,offset\n")
 
     eof_reached = False
 
@@ -184,16 +187,17 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol, symbol
             break
         
         session = "default"
+        origin = "epoch"
 
         # Here we go, performance killer:
         if not is_default_session:
             # Get session name from line
             session = resample_get_active_session_from_line(line, config)
-            # TODO: we also need to get the correct origin (shift the origin time)
-            print(f"{line.strip()},{session},{offset_before}\n")
-        
+            # We use the origin in the resample to filter by
+            origin = resample_get_active_origin_from_line(line, ident, session, config)
+
         # If is default session, we immediate come here, no performance kill
-        sio.write(f"{line.strip()},{session},{offset_before}\n")  # offset column injection for traceability
+        sio.write(f"{line.strip()},{origin},{offset_before}\n")  # offset column injection for traceability
 
     # Rewind sio  
     sio.seek(0)
@@ -218,35 +222,30 @@ def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.Dat
         # Initialize a list for collecting the per-session dataframes
         resampled_list = []
 
-        for name, session in config.sessions.items():
-            # Filter for the specific session (filter-mask, then select->copy)
-            session_df = df[df['session'] == name].copy()
-    
-            if session_df.empty:
-                # If session had no results, continue next session
-                continue
+        # oke different approach. we have now origin's in the dataframe
+        origins = df['origin'].unique().tolist()
 
-            # Get the timeframe
-            timeframe = session.timeframes.get(ident)
-            # Get rule, label, closed and origin
-            rule, label, closed, origin = [timeframe.rule, timeframe.label, timeframe.closed, timeframe.origin]
+        # now loop through each origin and build a dateframe per origin, resample
+        # this will make the session-column obsolete
+        for origin in origins:
+            # get timeframe from any session (its about the rule, label etc)
+            timeframe = config.sessions.get("after-hours").timeframes.get(ident)
 
-            # TODO: implement logic here to adjust the binning based on MT server + Australia timezone shifts
-            #       there is an origin field in the batch too, containing the origin to bin to
-            #       the logic is becoming very tricky. need to simplify it
+            rule, label, closed = [timeframe.rule, timeframe.label, timeframe.closed]
 
-            # Resample into target timeframe
-            session_resampled = session_df.resample(rule, label=label, closed=closed, origin=origin).agg({
+            origin_df = df[df['origin'] == origin].copy()
+
+            origin_resampled = origin_df.resample(rule, label=label, closed=closed, origin=origin).agg({
                 'open': 'first',
                 'high': 'max',
                 'low': 'min',
                 'close': 'last',
                 'volume': 'sum',
-                'session': 'first',     # Keeps the session ID in the result
+                'origin': 'first',
                 'offset': 'first'       # identifies source raw candle for the window
             })
-            # Nerge into the resulting dataframe
-            resampled_list.append(session_resampled)
+            origin_resampled = origin_resampled[origin_resampled['volume'].notna() & (origin_resampled['volume'] != 0)]
+            resampled_list.append(origin_resampled)
 
         # Marge results and sort dataframe on index
         resampled = pd.concat(resampled_list).sort_index()
@@ -270,7 +269,7 @@ def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.Dat
             'low': 'min',
             'close': 'last',
             'volume': 'sum',
-            'session': 'first',     # Keeps the session ID in the result
+            'origin': 'first',     # Keeps the session ID in the result
             'offset': 'first'       # identifies source raw candle for the window
         })
 
@@ -278,7 +277,7 @@ def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.Dat
     next_input_position = int(resampled.iloc[-1]['offset'])
 
     # Remove offset and session column immediately
-    resampled.drop(columns=["offset","session"], inplace=True)
+    resampled.drop(columns=["offset","origin"], inplace=True)
 
     # Round numerical values to avoid floating drift
     resampled = resampled.round(config.round_decimals)
