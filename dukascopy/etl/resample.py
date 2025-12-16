@@ -166,7 +166,17 @@ def resample_write_index(index_path: Path, input_position: int, output_position:
     os.replace(index_temp_path, index_path)
     return True
 
-def resample_batch_read(f_input: IO, header: str, config: ResampleConfig) -> Tuple[StringIO, bool]:
+# This is an anti-performance killer method for those entries that do not need special session handling
+def resample_is_default_session(config: ResampleSymbol) -> bool:
+    for name, session in config.sessions.items():
+        if name == "default":
+            if session.ranges.default:
+                if session.ranges.default.from == "00:00:00" and session.ranges.default.to == "23:59:59":
+                    return True
+    return False
+
+
+def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol) -> Tuple[StringIO, bool]:
     """
     Read a batch of lines from an input file-like object while recording their byte offsets.
 
@@ -192,9 +202,12 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleConfig) -> Tup
         - A boolean indicating whether end-of-file was reached during this read.
     """
     sio = StringIO()
-    sio.write(f"{header.strip()},offset\n")
+    sio.write(f"{header.strip()},session,offset\n")
 
     eof_reached = False
+
+    # Determine if we only have a default session (one bin origin)
+    is_default_session = resample_is_default_session(config)
 
     # Read a chunk of lines along with their raw input offsets
     for _ in range(config.batch_size):
@@ -204,30 +217,36 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleConfig) -> Tup
             eof_reached = True
             break
         
-        # we need to test, what is faster?
-        # apply here an additional session column?
-        # benefit of doing it here is that we can scan each timestamp of each column and assign it
-        # the correct session. it's line by line
-        # alternative? do it with grouping in the resample_batch function. but its more difficult
-        # to do it correctly in resample_batch, because of DST switches in symbol.timezone
+        session = "default"
+        if not is_default_session:
+            # we need to test, what is faster?
+            # apply here an additional session column?
+            # benefit of doing it here is that we can scan each timestamp of each column and assign it
+            # the correct session. it's line by line
+            # alternative? do it with grouping in the resample_batch function. but its more difficult
+            # to do it correctly in resample_batch, because of DST switches in symbol.timezone
+            
+            # conclusion. we will do it first here. we can cythonize this. if needed
+            # AI says: If you add complex "Session" logic (checking timestamps against ranges, handling DST), 
+            # Cython will be drastically faster (10x–50x) than Python for those specific calculations.
 
-        # conclusion. we will do it first here. we can cythonize this. if needed
-        # AI says: If you add complex "Session" logic (checking timestamps against ranges, handling DST), 
-        # Cython will be drastically faster (10x–50x) than Python for those specific calculations.
+            # So lets do it... first version, in here
 
-        # So lets do it... first version, in here
+            # Note: if only one 24h session, just append one column with fixed value, 
+            # resample_batch will then follow regular logic (no grouping in there)
+            pass
 
-        # Note: if only one 24h session, just append one column with fixed value, 
-        # resample_batch will then follow regular logic (no grouping in there)
+        sio.write(f"{line.strip()},{session},{offset_before}\n")  # offset column injection for traceability
 
-
-        sio.write(f"{line.strip()},{offset_before}\n")  # offset column injection for traceability
-    
+    # Rewind sio  
     sio.seek(0)
 
     return sio, eof_reached
 
 def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.DataFrame, int]:
+
+    # Determine if we only have a default session (one bin origin)
+    is_default_session = resample_is_default_session(config)
 
     # Load into DataFrame
     df = pd.read_csv(
@@ -238,32 +257,35 @@ def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.Dat
         date_format="%Y-%m-%d %H:%M:%S"
     )
 
-    # Here comes the new logic
+    if not is_default_session:
+        # Here comes the new logic
 
-    # we already have a session column
-    # for each session, group by it
-    # then resample, keep result in memory
-    # repeat for other session(s)
-    # merge the batches, order by timestamp asc
-    # drop session column
-
-    # continue regular logic
-    
-    # Resample into target timeframe
-    resampled = df.resample(rule, label=label, closed=closed, origin=origin).agg({
-        'open': 'first',
-        'high': 'max',
-        'low': 'min',
-        'close': 'last',
-        'volume': 'sum',
-        'offset': 'first'  # identifies source raw candle for the window
-    })
+        # we already have a session column
+        # for each session, group by it
+        # then resample, keep result in memory
+        # repeat for other session(s)
+        # merge the batches, order by timestamp asc
+        # drop session column
+    else:
+        # Session timeframe
+        timeframe = config.sessions.get('default').timeframes.get(ident)
+        # Get rule, label, closed and origin
+        rule, label, closed, origin = [timeframe.rule, timeframe.label, timeframe.closed, timeframe.origin]
+        # Resample into target timeframe
+        resampled = df.resample(rule, label=label, closed=closed, origin=origin).agg({
+            'open': 'first',
+            'high': 'max',
+            'low': 'min',
+            'close': 'last',
+            'volume': 'sum',
+            'offset': 'first'  # identifies source raw candle for the window
+        })
 
     # Offset points to the position of the first raw input record that forms this row 
     next_input_position = int(resampled.iloc[-1]['offset'])
 
-    # Remove offset column immediately
-    resampled.drop(columns=["offset"], inplace=True)
+    # Remove offset and session column immediately
+    resampled.drop(columns=["offset","session"], inplace=True)
 
     # Round numerical values to avoid floating drift
     resampled = resampled.round(config.round_decimals)
