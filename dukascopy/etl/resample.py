@@ -173,6 +173,7 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol, symbol
     sio.write(f"{header.strip()},origin,offset\n")
 
     eof_reached = False
+    last_date = None
 
     # Determine if we only have a default session (one bin origin)
     is_default_session = resample_is_default_session(config)
@@ -186,11 +187,16 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol, symbol
             break
 
         # Here we go, performance killer:
-        if not is_default_session:
-            # Get session name from line
-            session = resample_get_active_session_from_line(line, config)
+        if not is_default_session:            
             # We use the origin in the resample to filter by
-            origin = resample_get_active_origin_from_line(line, ident, session, config)
+            line_date = line[:10] 
+    
+            # Only run the heavy logic if the date actually rolled over
+            if line_date != last_date:
+                # This heavy function now runs 1 time per ~1440 lines (for M1)
+                session = resample_get_active_session_from_line(line, config)
+                origin = resample_get_active_origin_from_line(line, ident, session, config)
+                last_date = line_date
         else:
             origin = config.sessions.get("default").timeframes.get(ident).origin
 
