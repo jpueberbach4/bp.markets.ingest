@@ -65,7 +65,7 @@ import os
 import pandas as pd
 import yaml
 
-from config.app_config import AppConfig, ResampleConfig, ResampleSymbol, load_app_config
+from config.app_config import AppConfig, ResampleConfig, ResampleSymbol, load_app_config, resample_get_symbol_config
 from pathlib import Path
 from tqdm import tqdm
 from io import StringIO
@@ -75,7 +75,6 @@ from helper import resample_resolve_paths, resample_is_default_session, \
                     resample_calculate_sessions_for_date, resample_get_active_session_from_line, \
                     resample_get_active_origin_from_line
 
-from config.resample import resample_get_symbol_config
 from config.app_config import AppConfig, load_app_config # remove later
 
 
