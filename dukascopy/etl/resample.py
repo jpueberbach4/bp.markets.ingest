@@ -437,7 +437,8 @@ def fork_resample(args) -> bool:
 if __name__ == "__main__":
     config = load_app_config('config.user.yaml')
     sessions = resample_get_sessions_for_symbol("AUS.IDX-AUD", config)
-    #sessions = resample_get_sessions_for_symbol("USA500.IDX-USD", config)
+    sessions = resample_get_sessions_for_symbol("USA30.IDX-USD", config)
+    sessions = resample_get_sessions_for_symbol("USA500.IDX-USD", config)
 
 
     #fork_resample(["AUS.IDX-AUD", config])

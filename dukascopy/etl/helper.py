@@ -13,7 +13,7 @@ def resample_get_sessions_for_symbol(symbol:str, app_config: AppConfig) -> Dict[
     if True:
         for key, session in config.sessions.items():
             print("="*80)
-            print(f"Session({key}):")
+            print(f"{symbol} => Session({key}):")
             print("="*80)
             print(
                 yaml.safe_dump(
@@ -27,71 +27,90 @@ def resample_get_sessions_for_symbol(symbol:str, app_config: AppConfig) -> Dict[
 
 def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleSymbolOverride:
     """
-    Generate a merged resample configuration for a specific symbol.
+    Build and return the fully merged resample configuration for a single symbol.
 
-    This function starts from the global resample configuration and applies
-    any symbol-specific overrides defined in `app_config.symbols`. Overrides
-    may include:
-        - round_decimals
-        - batch_size
-        - custom timeframes
-        - skipped timeframes (absolute priority)
+    The merge order is:
+        1. Global resample configuration
+        2. Symbol-level overrides
+        3. Session-level overrides
+        4. skip_timeframes (absolute priority, applied last)
+
+    The returned object is a ResampleSymbolOverride containing resolved
+    primitives, timeframes, and sessions ready for consumption by the
+    resampling engine.
+
+    Parameters
+    ----------
+    symbol : str
+        Trading symbol identifier (e.g. "AUS.IDX-AUD").
+    app_config : AppConfig
+        Root application configuration.
+
+    Returns
+    -------
+    ResampleSymbolOverride
+        The resolved symbol configuration including session-aware timeframes.
     """
-    # Start with a deep copy of the global resample configuration so we never
-    # mutate the original application config
+    # Copy the global resample configuration to avoid mutating the source config
     global_config: ResampleConfig = app_config.resample
     merged_config: ResampleConfig = copy.deepcopy(global_config)
 
-    # Ensure a symbol override object always exists
-    # This simplifies downstream logic by avoiding repeated None checks
+    # Ensure a symbol override always exists to simplify merge logic
     if not merged_config.symbols.get(symbol):
         merged_config.symbols.update({symbol: ResampleSymbolOverride()})
 
-    # Retrieve the symbol-specific override (now guaranteed to exist)
+    # Fetch the symbol override instance
     symbol_override: ResampleSymbolOverride = merged_config.symbols.get(symbol)
 
-    # Apply symbol-level primitive overrides
-    if symbol_override.round_decimals is None:
-        symbol_override.round_decimals = merged_config.round_decimals 
+    # Resolve primitive overrides, falling back to global defaults
+    symbol_override.round_decimals = (
+        symbol_override.round_decimals or merged_config.round_decimals
+    )
+    symbol_override.batch_size = (
+        symbol_override.batch_size or merged_config.batch_size
+    )
 
-    if symbol_override.batch_size is None:
-        symbol_override.batch_size = merged_config.batch_size
-
-    # Merge global timeframes with symbol-specific timeframes
-    # Symbol timeframes override global ones with the same key
+    # Build the symbol-level timeframe set:
+    # global timeframes first, symbol overrides on top
     base_timeframes = copy.deepcopy(merged_config.timeframes)
     base_timeframes.update(symbol_override.timeframes)
-    merged_config.symbols.get(symbol).timeframes = base_timeframes
+    symbol_override.timeframes = base_timeframes
 
-    # Handle session-specific overrides
+    # Merge session-specific timeframes on top of symbol-level timeframes
     if symbol_override.sessions:
-        # For each session, start from the global timeframes and apply
-        # the session-specific timeframe overrides
-        for ident, symbol_override_session in symbol_override.sessions.items():
-            base_timeframes = copy.deepcopy(merged_config.timeframes)
-            base_timeframes.update(symbol_override_session.timeframes)
-            merged_config.symbols.get(symbol).sessions.get(ident).timeframes = base_timeframes
+        for ident, session in symbol_override.sessions.items():
+            # Start from the fully resolved symbol timeframes
+            s_timeframes = copy.deepcopy(symbol_override.timeframes)
+            # Apply session-specific overrides
+            s_timeframes.update(session.timeframes)
+            # Persist the merged result back into the session
+            session.timeframes = s_timeframes
     else:
-        # If no sessions are defined, create a default 24h session
-        # that simply mirrors the symbol-level timeframes
-        symbol_override.sessions = {
-            "default": {
-                "timeframes": merged_config.symbols.get(symbol).timeframes,
-                "ranges": {
-                    "default": {
-                        "from": "00:00:00",
-                        "to": "23:59:59"
-                    }
-                }
-            }
-        }
+        # Create a default 24h session if none are defined
+        from config.app_config import (
+            ResampleSymbolTradingSession,
+            ResampleSymbolTradingSessionRange,
+        )
 
-    # Apply skip_timeframes with absolute priority
-    # Any skipped timeframe is removed from global, symbol, and session scopes
+        default_range = ResampleSymbolTradingSessionRange(
+            from_time="00:00:00",
+            to_time="23:59:59",
+        )
+        default_session = ResampleSymbolTradingSession(
+            timeframes=copy.deepcopy(symbol_override.timeframes),
+            ranges={"default": default_range},
+        )
+        symbol_override.sessions = {"default": default_session}
+
+    # Apply skip_timeframes with absolute priority across all scopes
     if symbol_override.skip_timeframes:
-        for timeframe_key in symbol_override.skip_timeframes:
-            merged_config.timeframes.pop(timeframe_key, None)
-            merged_config.symbols.get(symbol).timeframes.pop(timeframe_key, None)
-            merged_config.symbols.get(symbol).sessions.get(ident).timeframes.pop(timeframe_key, None)
+        for tf_key in symbol_override.skip_timeframes:
+            # Remove from global view
+            merged_config.timeframes.pop(tf_key, None)
+            # Remove from symbol-level view
+            symbol_override.timeframes.pop(tf_key, None)
+            # Remove from all session-level views
+            for session in symbol_override.sessions.values():
+                session.timeframes.pop(tf_key, None)
 
     return symbol_override
