@@ -170,8 +170,9 @@ def resample_write_index(index_path: Path, input_position: int, output_position:
 def resample_is_default_session(config: ResampleSymbol) -> bool:
     for name, session in config.sessions.items():
         if name == "default":
-            if session.ranges.default:
-                if session.ranges.default.from == "00:00:00" and session.ranges.default.to == "23:59:59":
+            if session.ranges.get('default'):
+                if (session.ranges.get('default').from_time == "00:00:00" and 
+                    session.ranges.get('default').to_time == "23:59:59"):
                     return True
     return False
 
@@ -259,13 +260,13 @@ def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.Dat
 
     if not is_default_session:
         # Here comes the new logic
-
         # we already have a session column
         # for each session, group by it
         # then resample, keep result in memory
         # repeat for other session(s)
         # merge the batches, order by timestamp asc
         # drop session column
+        pass
     else:
         # Session timeframe
         timeframe = config.sessions.get('default').timeframes.get(ident)
@@ -331,18 +332,19 @@ def resample_symbol(symbol: str, app_config: AppConfig) -> bool:
     bool
         Always returns True for now. This may be extended in the future for status reporting.
     """
-    config = resample_get_symbol_config(symbol, app_config)
-
     # Main output path
-    data_path = config.paths.data
+    data_path = Path(app_config.resample.paths.data)
+
+    # Override config with ResampleSymbol type (need to clear that up later)
+    config = resample_get_symbol_config(symbol, app_config)
 
     for _, ident in enumerate(config.timeframes):
 
         # Determine paths (refactored to a helper function)
-        input_path, output_path, index_path, cont = resample_resolve_paths(symbol, ident, config)
+        input_path, output_path, index_path, ok = resample_resolve_paths(symbol, ident, data_path, config)
 
         # If there was an error during resolve, break out of loop
-        if not cont:
+        if not ok:
             return False
 
         # Load the saved offsets (or create if not exists)
@@ -436,3 +438,7 @@ if __name__ == "__main__":
         sort_keys=False,))
 
     #fork_resample(["AUS.IDX-AUD", config])
+
+
+    fork_resample(["USA30.IDX-USD", config])
+    

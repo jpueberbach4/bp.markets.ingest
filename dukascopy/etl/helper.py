@@ -10,6 +10,7 @@ from config.app_config import AppConfig, ResampleConfig, ResampleSymbol, Resampl
 def resample_resolve_paths(
     symbol: str,
     ident: str,
+    data_path: Path,
     config: ResampleConfig,
 ) -> Tuple[Optional[Path], Path, Path, bool]:
     """
@@ -42,13 +43,11 @@ def resample_resolve_paths(
     # Fetch the timeframe configuration for the requested identifier
     timeframe: ResampleTimeframe = config.timeframes.get(ident)
 
-    # Base directory where resampled data is stored
-    data_path = config.paths.data
-
     # Root timeframe: no resampling rule, data comes directly from the source
     if not timeframe.rule:
         root_source = Path(f"{timeframe.source}/{symbol}.csv")
 
+        print(root_source)
         # Root source must exist or resampling cannot proceed
         if not root_source.exists():
             raise IOError(f"Root source missing for {ident}: {root_source}")
