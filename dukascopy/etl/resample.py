@@ -266,8 +266,23 @@ def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.Dat
         # repeat for other session(s)
         # merge the batches, order by timestamp asc
         # drop session column
-        pass
+
+        # temporarily identical behavior (to test old functionality still works OK)
+        timeframe = config.sessions.get('default').timeframes.get(ident)
+        # Get rule, label, closed and origin
+        rule, label, closed, origin = [timeframe.rule, timeframe.label, timeframe.closed, timeframe.origin]
+        # Resample into target timeframe
+        resampled = df.resample(rule, label=label, closed=closed, origin=origin).agg({
+            'open': 'first',
+            'high': 'max',
+            'low': 'min',
+            'close': 'last',
+            'volume': 'sum',
+            'offset': 'first'  # identifies source raw candle for the window
+        })
+
     else:
+        # No performance killer here. Support for the old (performant way)
         # Session timeframe
         timeframe = config.sessions.get('default').timeframes.get(ident)
         # Get rule, label, closed and origin
