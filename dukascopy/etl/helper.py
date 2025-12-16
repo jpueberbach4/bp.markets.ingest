@@ -13,6 +13,59 @@ except ImportError:
     from backports import zoneinfo
 
 
+
+def resample_get_active_session_from_line(line:str, config: ResampleSymbol) -> str:
+
+    # Initialize variables for session-support
+    last_date = None
+    daily_session_ranges = [] 
+
+    timestamp = resample_get_timestamp_from_line(line)
+
+    # Ensure timestamp is naive if your session "start"/"end" are naive
+    current_timestamp_naive = timestamp.replace(tzinfo=None)
+    current_date = timestamp.date()
+
+    if current_date != last_date:
+        daily_session_ranges = resample_calculate_sessions_for_date(current_date, config)
+        last_date = current_date
+
+    # Quick check against the day's pre-calculated boundaries
+    active_session_info = None
+    
+    # Optimized lookup: Accessing dict keys
+    current_mins = current_timestamp_naive.hour * 60 + current_timestamp_naive.minute
+
+    for session_entry in daily_session_ranges:
+        # Pre-calculate session minutes if not already done in calculate_sessions
+        start_mins = session_entry["start"].hour * 60 + session_entry["start"].minute
+        end_mins = session_entry["end"].hour * 60 + session_entry["end"].minute
+        
+        # Logic for Standard Day Range (e.g., 09:50 to 16:30)
+        if start_mins <= end_mins:
+            is_active = start_mins <= current_mins <= end_mins
+        # Logic for Wraparound/Midnight Range (e.g., 17:10 to 07:00)
+        else:
+            is_active = (current_mins >= start_mins) or (current_mins <= end_mins)
+
+        if is_active:
+            active_session_info = session_entry
+            break
+
+    if active_session_info is None:
+        print(yaml.safe_dump(
+            daily_session_ranges,
+            default_flow_style=False,
+            sort_keys=False,
+            )
+        )
+        raise ValueError(
+            f"Line {line} is out_of_market. Your configuration is not OK {symbol}/{ident}"
+        )
+
+    return active_session_info["name"]
+
+
 def get_mt4_server_tz(dt: date) -> zoneinfo.ZoneInfo:
     """
     Returns the MT4 server timezone (GMT+2 or GMT+3) based on 
@@ -35,7 +88,6 @@ def resample_calculate_sessions_for_date(current_date, config):
 
     for session_name, session_item in config.sessions.items():
         for range_name, range_item in session_item.ranges.items():
-            # 1. Create localized start/end datetimes
             start_local = datetime.combine(current_date, 
                                           datetime.strptime(range_item.from_time, "%H:%M").time(), 
                                           tzinfo=tz_local)
@@ -43,12 +95,9 @@ def resample_calculate_sessions_for_date(current_date, config):
                                         datetime.strptime(range_item.to_time, "%H:%M").time(), 
                                         tzinfo=tz_local)
 
-            # 2. Handle Overnight ranges (e.g., 17:10 to 07:00)
             if end_local <= start_local:
                 end_local += timedelta(days=1)
 
-            # 3. Convert to Server Time (MT4)
-            # This automatically handles the DST difference between Sydney and Server
             start_server = start_local.astimezone(tz_server)
             end_server = end_local.astimezone(tz_server)
 

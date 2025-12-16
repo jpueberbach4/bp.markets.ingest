@@ -71,7 +71,7 @@ from tqdm import tqdm
 from io import StringIO
 from typing import Tuple, IO, Optional
 from dataclasses import asdict
-from helper import resample_get_symbol_config, resample_resolve_paths, resample_is_default_session, resample_get_timestamp_from_line, resample_calculate_sessions_for_date
+from helper import resample_get_symbol_config, resample_resolve_paths, resample_is_default_session, resample_get_timestamp_from_line, resample_calculate_sessions_for_date, resample_get_active_session_from_line
 
 from config.app_config import AppConfig, load_app_config # remove later
 
@@ -175,10 +175,6 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol, symbol
     # Determine if we only have a default session (one bin origin)
     is_default_session = resample_is_default_session(config)
 
-    # Initialize variables for session-support
-    last_date = None
-    daily_session_ranges = [] 
-
     # Read a chunk of lines along with their raw input offsets
     for _ in range(config.batch_size):
         offset_before = f_input.tell()
@@ -191,51 +187,10 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol, symbol
 
         # Here we go, performance killer:
         if not is_default_session:
-            # Extract date/time
-            timestamp = resample_get_timestamp_from_line(line)
-
-            # Ensure timestamp is naive if your session "start"/"end" are naive
-            current_timestamp_naive = timestamp.replace(tzinfo=None)
-            current_date = timestamp.date()
-
-            if current_date != last_date:
-                daily_session_ranges = resample_calculate_sessions_for_date(current_date, config)
-                last_date = current_date
-
-            # Quick check against the day's pre-calculated boundaries
-            active_session_info = None
-            
-            # Optimized lookup: Accessing dict keys
-            current_mins = current_timestamp_naive.hour * 60 + current_timestamp_naive.minute
-
-            for session_entry in daily_session_ranges:
-                # Pre-calculate session minutes if not already done in calculate_sessions
-                start_mins = session_entry["start"].hour * 60 + session_entry["start"].minute
-                end_mins = session_entry["end"].hour * 60 + session_entry["end"].minute
-                
-                # Logic for Standard Day Range (e.g., 09:50 to 16:30)
-                if start_mins <= end_mins:
-                    is_active = start_mins <= current_mins <= end_mins
-                # Logic for Wraparound/Midnight Range (e.g., 17:10 to 07:00)
-                else:
-                    is_active = (current_mins >= start_mins) or (current_mins <= end_mins)
-
-                if is_active:
-                    active_session_info = session_entry
-                    break
-        
-            if active_session_info is None:
-                print(yaml.safe_dump(
-                    daily_session_ranges,
-                    default_flow_style=False,
-                    sort_keys=False,
-                  )
-                )
-                raise ValueError(
-                    f"Line {line} is out_of_market. Your configuration sucks. Fix it! {symbol}/{ident}"
-                )
-
-            session = active_session_info["name"]
+            # Get session name from line
+            session = resample_get_active_session_from_line(line, config)
+            # TODO: we also need to get the correct origin (shift the origin time)
+            print(f"{line.strip()},{session},{offset_before}\n")
         
         # If is default session, we immediate come here, no performance kill
         sio.write(f"{line.strip()},{session},{offset_before}\n")  # offset column injection for traceability
@@ -276,6 +231,10 @@ def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.Dat
             # Get rule, label, closed and origin
             rule, label, closed, origin = [timeframe.rule, timeframe.label, timeframe.closed, timeframe.origin]
 
+            # TODO: implement logic here to adjust the binning based on MT server + Australia timezone shifts
+            #       there is an origin field in the batch too, containing the origin to bin to
+            #       the logic is becoming very tricky. need to simplify it
+
             # Resample into target timeframe
             session_resampled = session_df.resample(rule, label=label, closed=closed, origin=origin).agg({
                 'open': 'first',
@@ -289,7 +248,7 @@ def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.Dat
             # Nerge into the resulting dataframe
             resampled_list.append(session_resampled)
 
-        # Marge resulrs and sort dataframe on index
+        # Marge results and sort dataframe on index
         resampled = pd.concat(resampled_list).sort_index()
         # Error out if we had nothing in the resample 
         # we always reconstruct last candle, so we always should have something
