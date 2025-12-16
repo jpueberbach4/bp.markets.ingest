@@ -1,0 +1,140 @@
+HKG.IDX-HKD:
+  timezone: Asia/Hong_Kong
+  # Higher timeframes can be skipped if only processing intraday
+  skip_timeframes: ["1d", "1W", "1M", "1Y"]
+  sessions:
+    # Morning Session: 09:15 - 12:00
+    morning:
+      ranges:
+        mkt_open:
+          from: "09:15"
+          to: "12:00"
+      timeframes:
+        15m:
+          rule: "15T"
+          label: "left"
+          closed: "left"
+          source: "5m"
+          origin: "03:15"
+        30m:
+          rule: "30T"
+          label: "left"
+          closed: "left"
+          source: "15m"
+          origin: "03:15"
+        1h:
+          rule: "1H"
+          label: "left"
+          closed: "left"
+          source: "30m"
+          origin: "03:15"
+        4h:
+          rule: "4H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "03:15"
+
+    # Afternoon Session: 13:00 - 16:30
+    # Note: 16:00 is cash close, but futures trade until 16:30
+    afternoon:
+      ranges:
+        mkt_reopen:
+          from: "13:00"
+          to: "16:30"
+      timeframes:
+        15m:
+          rule: "15T"
+          label: "left"
+          closed: "left"
+          source: "5m"
+          origin: "07:00"
+        30m:
+          rule: "30T"
+          label: "left"
+          closed: "left"
+          source: "15m"
+          origin: "07:00"
+        1h:
+          rule: "1H"
+          label: "left"
+          closed: "left"
+          source: "30m"
+          origin: "07:00"
+        4h:
+          rule: "4H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "07:00"
+
+    # After-Hours Trading (AHT): 17:15 - 03:00
+    aht:
+      ranges:
+        evening_session:
+          from: "17:15"
+          to: "23:59"
+        night_session:
+          from: "00:00"
+          to: "03:00"
+      timeframes:
+        15m:
+          rule: "15T"
+          label: "left"
+          closed: "left"
+          source: "5m"
+          origin: "11:15"
+        30m:
+          rule: "30T"
+          label: "left"
+          closed: "left"
+          source: "15m"
+          origin: "11:15"
+        1h:
+          rule: "1H"
+          label: "left"
+          closed: "left"
+          source: "30m"
+          origin: "11:15"
+        4h:
+          rule: "4H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "11:15"
+    catch-old:
+      ranges: 
+        day:
+          from: "00:00"
+          to: "23:59"
+      timeframes:                    
+        15m:                     
+          rule: "15T"
+          label: "left"
+          closed: "left"
+          source: "5m"
+          origin: "00:00"
+        30m:                     
+          rule: "30T"
+          label: "left"
+          closed: "left"
+          source: "15m"
+          origin: "00:00" 
+        1h:                     
+          rule: "1H"
+          label: "left"
+          closed: "left"
+          source: "30m"
+          origin: "00:00"
+        4h:                     
+          rule: "4H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "00:00"
+        1d:                     
+          rule: "1D"
+          label: "left"
+          closed: "left"
+          source: "4h"
+          origin: "00:00"  

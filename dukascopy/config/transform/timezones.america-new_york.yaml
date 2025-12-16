@@ -32,7 +32,6 @@ America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 
   - EUR-NZD                       # OK
 
   # --- Indices (US) ---
-  - AUS.IDX-AUD                   # OFF - DONT USE
   - USA30.IDX-USD                 # OK
   - USA500.IDX-USD                # OK
   - USATECH.IDX-USD               # OK
@@ -40,8 +39,10 @@ America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 
   - VOL.IDX-USD                   # OK
 
   # --- Indices (Non-US) ---
+  - AUS.IDX-AUD                   # OK - FROM 2020-02-10 ONWARD (STILL WORKING ON THE "ERA" CHANGES OF MT4. WILL BE FINE)
   - DEU.IDX-EUR                   # OK - German Index (DAX)
   - GBR.IDX-GBP                   #      UK Index (FTSE 100)
+  - HKG.IDX-HKD                   #      Hong Kong Index (HSI)
   - JPN.IDX-JPY                   # OK - Japanese Index (Nikkei)
   - NLD.IDX-EUR                   # OK - Netherlands Index (AEX)
 
