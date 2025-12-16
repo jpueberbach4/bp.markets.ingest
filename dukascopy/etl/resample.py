@@ -203,50 +203,32 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleConfig) -> Tup
         if not line:
             eof_reached = True
             break
+        
+        # we need to test, what is faster?
+        # apply here an additional session column?
+        # benefit of doing it here is that we can scan each timestamp of each column and assign it
+        # the correct session. it's line by line
+        # alternative? do it with grouping in the resample_batch function. but its more difficult
+        # to do it correctly in resample_batch, because of DST switches in symbol.timezone
+
+        # conclusion. we will do it first here. we can cythonize this. if needed
+        # AI says: If you add complex "Session" logic (checking timestamps against ranges, handling DST), 
+        # Cython will be drastically faster (10x–50x) than Python for those specific calculations.
+
+        # So lets do it... first version, in here
+
+        # Note: if only one 24h session, just append one column with fixed value, 
+        # resample_batch will then follow regular logic (no grouping in there)
+
+
         sio.write(f"{line.strip()},{offset_before}\n")  # offset column injection for traceability
     
     sio.seek(0)
 
     return sio, eof_reached
 
-def resample_batch(sio: StringIO, rule: str, label: str, closed: str, origin: str, config: ResampleConfig) -> Tuple[pd.DataFrame, int]:
-    """
-    Resample a batch of OHLCV rows (with byte-offset tracking) into a higher timeframe.
+def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.DataFrame, int]:
 
-    Parameters
-    ----------
-    sio : StringIO
-        An in-memory CSV chunk containing raw 1m (or upstream) candles plus an
-        appended `offset` column. The first line must contain the header.
-    rule : str
-        Pandas resampling rule (e.g., "5T", "15T", "1H", "1D").
-    label : str
-        Whether the resampled window label is placed on the 'left' or 'right' edge.
-    closed : str
-        Which side of the resample window is closed ('left' or 'right').
-    config: ResampleConfig
-        Config object
-
-    Returns
-    -------
-    pd.DataFrame
-        A resampled OHLCV DataFrame with:
-            - open:   first value in window
-            - high:   maximum value in window
-            - low:    minimum value in window
-            - close:  last value in window
-            - volume: sum of volumes in window
-        All numeric fields are rounded to `config.round_decimals`.
-    int
-        Offset of last raw contributing candle (next input offset)
-
-    Notes
-    -----
-    This function performs **no I/O**. It operates on a single in-memory batch
-    and is used by the incremental resampling engine. The `offset` field is
-    critical for crash-safe reconstruction of the final (possibly incomplete)
-    candle, enabling precise forward-only incremental processing.
-    """
     # Load into DataFrame
     df = pd.read_csv(
         sio,
@@ -256,6 +238,17 @@ def resample_batch(sio: StringIO, rule: str, label: str, closed: str, origin: st
         date_format="%Y-%m-%d %H:%M:%S"
     )
 
+    # Here comes the new logic
+
+    # we already have a session column
+    # for each session, group by it
+    # then resample, keep result in memory
+    # repeat for other session(s)
+    # merge the batches, order by timestamp asc
+    # drop session column
+
+    # continue regular logic
+    
     # Resample into target timeframe
     resampled = df.resample(rule, label=label, closed=closed, origin=origin).agg({
         'open': 'first',
@@ -283,25 +276,6 @@ def resample_batch(sio: StringIO, rule: str, label: str, closed: str, origin: st
 
     # Return the resampled dataframe
     return resampled, next_input_position
-
-
-def resample_symbol_session_aware(symbol: str, app_config: AppConfig) -> bool:
-    # Retrieven the SymbolOverride Object (has override.sessions and override.timeframes)
-    config = resample_get_symbol_config(symbol, app_config)
-
-    # Main output path
-    data_path = config.paths.data
-
-    # Timeframes are normalized, we use override.timeframes just to get the enumeration done
-    # Timeframes in sessions consist of same timeframes keys
-    # We do not support support for different sources per timeframe per session!! 
-    # This would make the code unnecessarily complex (goes beyond the scope why this was changed, its only origin binning change)
-    for _, ident in enumerate(config.timeframes):
-        # determine input paths
-        pass
-
-
-
 
 def resample_symbol(symbol: str, app_config: AppConfig) -> bool:
     """
@@ -349,13 +323,8 @@ def resample_symbol(symbol: str, app_config: AppConfig) -> bool:
         if not cont:
             return False
 
-        # rule, label, closed, origin = [timeframe.rule, timeframe.label, timeframe.closed, timeframe.origin]
-
         # Load the saved offsets (or create if not exists)
         input_position, output_position = resample_read_index(index_path)
-
-        # code is nonfunction, so exit
-        os.exit
 
         with open(input_path, "r") as f_input, open(output_path, "r+") as f_output:
 
@@ -379,7 +348,7 @@ def resample_symbol(symbol: str, app_config: AppConfig) -> bool:
                 sio, eof_reached = resample_batch_read(f_input, header, config)
 
                 # Resample the sio batch
-                resampled, next_input_position = resample_batch(sio, rule, label, closed, origin, config) 
+                resampled, next_input_position = resample_batch(sio, ident, config) 
 
                 # Rewrite the output file from its last known position
                 f_output.seek(output_position)
