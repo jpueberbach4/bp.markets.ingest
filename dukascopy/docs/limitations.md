@@ -30,6 +30,11 @@ In resample.resample_batch(sio):
 
 Until this fix has been implemented, the AUS.IDX-AUD is not really usable.
 
+This seems to be quite difficult since the data switches behavior. In februari 2020, candles are aligned to HH:00.
+Then from 6 Februari 2020 onwards the aligning to HH:10 and HH:50 starts. I am seeing on how to resolve this.
+I could implement a valid_from, valid_to date for the session rules.... but... anyhow, the basic logic is in place.
+
+
 ### YAML configuration is becoming huge - **implemented, available in main**
 
 Given the number of “abnormalities” we need to support, the YAML file is at risk of becoming very large. I plan to add support for an include pattern so the configuration can be split into separate files by section, override, and similar concerns.
