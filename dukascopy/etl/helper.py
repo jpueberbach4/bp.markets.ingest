@@ -3,7 +3,7 @@ import yaml
 from dataclasses import asdict
 from typing import Dict, Tuple, Optional
 from pathlib import Path
-from datetime import datetime, time, timedelta
+from datetime import datetime, time, timedelta, date
 from datetime import datetime, timedelta
 from config.app_config import AppConfig, ResampleConfig, ResampleSymbol, ResampleSymbolTradingSession
 
@@ -12,15 +12,24 @@ try:
 except ImportError:
     from backports import zoneinfo
 
+
+def get_mt4_server_tz(dt: date) -> zoneinfo.ZoneInfo:
+    """
+    Returns the MT4 server timezone (GMT+2 or GMT+3) based on 
+    whether New York is in Daylight Saving Time on the given date.
+    """
+    nyc_tz = zoneinfo.ZoneInfo("America/New_York")
+    nyc_dt = datetime.combine(dt, time(17, 0)).replace(tzinfo=nyc_tz)
+    offset = 3 if nyc_dt.dst() != timedelta(0) else 2
+    return zoneinfo.ZoneInfo(f"Etc/GMT-{offset}")
+
 def resample_calculate_sessions_for_date(current_date, config):
     """
     Calculates session boundaries in MT4 Server Time based on 
     localized session definitions (e.g., Australia/Sydney).
     """
     tz_local = zoneinfo.ZoneInfo(config.timezone) # Australia/Sydney
-
-    # TODO: fix timezone for MT4 server retrieval, currently fixed value
-    tz_server = zoneinfo.ZoneInfo("Etc/GMT-2")    # Example MT4 Server (Fixed Offset) (watchout, posix GMT!)
+    tz_server = get_mt4_server_tz(current_date)  # Get MT4 server time
     
     sessions_for_day = []
 
@@ -51,11 +60,13 @@ def resample_calculate_sessions_for_date(current_date, config):
             })
             
 
-    print(yaml.safe_dump(sessions_for_day,
-        default_flow_style=False,
-        sort_keys=False,))
-    # we are not done yet, just invalid statement to break
-    os.exit
+    if False: 
+        print(yaml.safe_dump(sessions_for_day,
+            default_flow_style=False,
+            sort_keys=False,)
+        )
+        # we are not done yet, just invalid statement to break
+        os.exit
     return sessions_for_day
 
 def resample_get_timestamp_from_line(line: str) -> datetime:

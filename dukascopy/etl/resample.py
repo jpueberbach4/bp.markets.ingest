@@ -252,6 +252,9 @@ def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.Dat
         # alternative way: do not make a copy but use group (see what gives best performance)
 
         # temporarily identical behavior (to test old functionality still works OK)
+        print(sio.getvalue())
+        os.exit
+
         timeframe = config.timeframes.get(ident)
         # Get rule, label, closed and origin
         rule, label, closed, origin = [timeframe.rule, timeframe.label, timeframe.closed, timeframe.origin]
