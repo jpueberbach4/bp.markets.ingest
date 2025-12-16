@@ -42,11 +42,6 @@
 - [General notices and caveats](docs/notices.md)
 - [Limitations](docs/limitations.md)
 
-**Update:** HTTP and REPLAY have been postponed until the session fix is in place for AUS.IDX and HKG.IDX. The priority is to get the data correct first, then extend functionality. HTTP and REPLAY have limited value if we can’t reliably query all required sources, especially since I rely heavily on the indices.
-
-This is a tricky feature and potentially a performance killer - the "simple solution" will kill performance 100%. So, i am looking into "unconventional methods". Ofcourse, when no symbol.session is set, it will do the regular logic, so if performance (partly) dies, it will only be for some indices and only on full rebuilds.
-
-**Decision:** i will first implement it in pure python and then convert it to Cython. There are some python loops involved that will dramatically decrease performance. When the Cython variant arrives, only x86_64 will be supported. For most users this will work, but for those not, they can default to the pure python version (only for those indices that need it, like AUS.IDX-AUD).
 
 ---
 
