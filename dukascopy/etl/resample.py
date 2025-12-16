@@ -166,7 +166,7 @@ def resample_write_index(index_path: Path, input_position: int, output_position:
     os.replace(index_temp_path, index_path)
     return True
 
-def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol) -> Tuple[StringIO, bool]:
+def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol, symbol:str, ident:str) -> Tuple[StringIO, bool]:
     sio = StringIO()
     sio.write(f"{header.strip()},session,offset\n")
 
@@ -198,6 +198,8 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol) -> Tup
             current_timestamp_naive = timestamp.replace(tzinfo=None)
             current_date = timestamp.date()
 
+            print(f"current_date: {current_date} line = {line}")
+
             if current_date != last_date:
                 daily_session_ranges = resample_calculate_sessions_for_date(current_date, config)
                 last_date = current_date
@@ -207,13 +209,22 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol) -> Tup
             
             # Optimized lookup: Accessing dict keys
             for session_entry in daily_session_ranges:
+                print(
+                    f'{session_entry["start"]} <= {current_timestamp_naive} <= {session_entry["end"]}'
+                )
                 if session_entry["start"] <= current_timestamp_naive <= session_entry["end"]:
                     active_session_info = session_entry
                     break
         
             if active_session_info is None:
+                print(yaml.safe_dump(
+                    daily_session_ranges,
+                    default_flow_style=False,
+                    sort_keys=False,
+                  )
+                )
                 raise ValueError(
-                    f"Line {line} is out_of_market. Your configuration sucks. Fix it!"
+                    f"Line {line} is out_of_market. Your configuration sucks. Fix it! {symbol}/{ident}"
                 )
 
             session = active_session_info["name"]
@@ -241,39 +252,53 @@ def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.Dat
     )
 
     if not is_default_session:
-        # for each session, filter dataframe by its session-name (using a mask) -> as a copy
-        # (keep old dataframe intact (monitor memory usage))
-        # resample on the filtered dataframe with the specic origin
-        # keep in memory, repeat
+        # Initialize a list for collecting the per-session dataframes
+        resampled_list = []
 
-        # no more sessions? merge dataframes, sort by time asc
-        # continue logic
+        for name, session in config.sessions.items():
+            # Filter for the specific session (filter-mask, then select->copy)
+            session_df = df[df['session'] == name].copy()
+    
+            if session_df.empty:
+                # If session had no results, continue next session
+                continue
 
-        # alternative way: do not make a copy but use group (see what gives best performance)
+            timeframe = session.timeframes.get(ident)
+            # Get rule, label, closed and origin
+            print(timeframe)
+            # TODO: I dont like the following, but for now its oke
+            #       The config merging caused the timeframes to become a dict
+            rule, label, closed, origin = [timeframe.rule, timeframe.label, timeframe.closed, timeframe.origin]
 
-        # temporarily identical behavior (to test old functionality still works OK)
-        print(sio.getvalue())
-        os.exit
+            # Resample into target timeframe
+            session_resampled = session_df.resample(rule, label=label, closed=closed, origin=origin).agg({
+                'open': 'first',
+                'high': 'max',
+                'low': 'min',
+                'close': 'last',
+                'volume': 'sum',
+                'session': 'first',     # Keeps the session ID in the result
+                'offset': 'first'       # identifies source raw candle for the window
+            })
+            # Nerge into the resulting dataframe
+            resampled_list.append(session_resampled)
 
-        timeframe = config.timeframes.get(ident)
-        # Get rule, label, closed and origin
-        rule, label, closed, origin = [timeframe.rule, timeframe.label, timeframe.closed, timeframe.origin]
-        # Resample into target timeframe
-        resampled = df.resample(rule, label=label, closed=closed, origin=origin).agg({
-            'open': 'first',
-            'high': 'max',
-            'low': 'min',
-            'close': 'last',
-            'volume': 'sum',
-            'session': 'first',     # Keeps the session ID in the result
-            'offset': 'first'       # identifies source raw candle for the window
-        })
-
+        # Marge resulrs and sort dataframe on index
+        resampled = pd.concat(resampled_list).sort_index()
+        # Error out if we had nothing in the resample 
+        # we always reconstruct last candle, so we always should have something
+        if resampled.empty:
+            raise ValueError(
+                f"Resampled result for sessions were empty. This is impossible behavior."
+            )
+        # Now continue with regular logic
+        print(resampled)
     else:
         # No performance killer here. Support for the old (performant way)
         # Session timeframe
         timeframe = config.sessions.get('default').timeframes.get(ident)
         # Get rule, label, closed and origin
+        print(timeframe)
         rule, label, closed, origin = [timeframe.rule, timeframe.label, timeframe.closed, timeframe.origin]
         # Resample into target timeframe
         resampled = df.resample(rule, label=label, closed=closed, origin=origin).agg({
@@ -371,7 +396,7 @@ def resample_symbol(symbol: str, app_config: AppConfig) -> bool:
             while True:
 
                 # Read a StringIO batch from f_input
-                sio, eof_reached = resample_batch_read(f_input, header, config)
+                sio, eof_reached = resample_batch_read(f_input, header, config, symbol, ident)
 
                 # Resample the sio batch
                 resampled, next_input_position = resample_batch(sio, ident, config) 

@@ -5,7 +5,7 @@ from typing import Dict, Tuple, Optional
 from pathlib import Path
 from datetime import datetime, time, timedelta, date
 from datetime import datetime, timedelta
-from config.app_config import AppConfig, ResampleConfig, ResampleSymbol, ResampleSymbolTradingSession
+from config.app_config import AppConfig, ResampleConfig, ResampleSymbol, ResampleSymbolTradingSession, ResampleTimeframe
 
 try:
     import zoneinfo
@@ -60,13 +60,12 @@ def resample_calculate_sessions_for_date(current_date, config):
             })
             
 
-    if False: 
+    if True: 
         print(yaml.safe_dump(sessions_for_day,
             default_flow_style=False,
             sort_keys=False,)
         )
-        # we are not done yet, just invalid statement to break
-        os.exit
+
     return sessions_for_day
 
 def resample_get_timestamp_from_line(line: str) -> datetime:
@@ -216,6 +215,51 @@ def resample_resolve_paths(
 
 
 def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleSymbol:
+    # 1. Deep copy the global resample config
+    merged_config: ResampleConfig = copy.deepcopy(app_config.resample)
+
+    # 2. Ensure symbol entry exists
+    if symbol not in merged_config.symbols:
+        merged_config.symbols[symbol] = ResampleSymbol()
+
+    symbol_override = merged_config.symbols[symbol]
+
+    # 3. Merge primitives
+    symbol_override.round_decimals = symbol_override.round_decimals or merged_config.round_decimals
+    symbol_override.batch_size = symbol_override.batch_size or merged_config.batch_size
+
+    # 4. Merge Timeframes (Global -> Symbol)
+    base_tfs = copy.deepcopy(merged_config.timeframes)
+    for tf_name, tf_val in symbol_override.timeframes.items():
+        if isinstance(tf_val, dict):
+            # Cast dict to Dataclass if it arrived as a dict from YAML
+            tf_val = ResampleTimeframe(**tf_val)
+        base_tfs[tf_name] = tf_val
+    symbol_override.timeframes = base_tfs
+
+    # 5. Merge Sessions
+    if not symbol_override.sessions:
+        # Create default 24h session if none exists
+        default_range = ResampleSymbolTradingSessionRange(from_time="00:00:00", to_time="23:59:59")
+        symbol_override.sessions = {
+            "default": ResampleSymbolTradingSession(
+                ranges={"default": default_range},
+                timeframes=copy.deepcopy(symbol_override.timeframes)
+            )
+        }
+    else:
+        for sess_name, session in symbol_override.sessions.items():
+            # Ensure session timeframes inherit the symbol's base timeframes
+            s_tfs = copy.deepcopy(symbol_override.timeframes)
+            for tf_name, tf_val in session.timeframes.items():
+                if isinstance(tf_val, dict):
+                    tf_val = ResampleTimeframe(**tf_val)
+                s_tfs[tf_name] = tf_val
+            session.timeframes = s_tfs
+
+    return symbol_override
+
+def resample_get_symbol_configXX(symbol: str, app_config: AppConfig) -> ResampleSymbol:
     """
     Build and return the fully merged resample configuration for a single symbol.
 

@@ -43,7 +43,7 @@ class ResampleSymbolTradingSession:
     Configuration for a single named session (e.g., 'day-session').
     """
     ranges: Dict[str, ResampleSymbolTradingSessionRange] = field(default_factory=dict)
-    timeframes: Dict[str, 'ResampleTimeframeConfig'] = field(default_factory=dict)
+    timeframes: Dict[str, 'ResampleTimeframe'] = field(default_factory=dict)
 
 @dataclass
 class ResampleTimeframe:
