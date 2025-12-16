@@ -12,7 +12,7 @@ AUS.IDX-AUD:             # 2025-12-14: **NOT-OK**
       label: "left"
       closed: "left"
       source: "30m"
-      origin: "epoch"     
+      origin: "08:10"     
   sessions:
     # Timezone to map ranges to
     # After mapping of times, the times will be normalized to MT4 server times
