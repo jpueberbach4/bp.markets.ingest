@@ -11,8 +11,8 @@ America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 
   - LIGHT.CMD-USD                 # OK
   - XAG-USD                       # OK
   - XAU-USD                       # OK
-  - XPD.CMD-USD
-  - XPT.CMD-USD
+  - XPD.CMD-USD                   # OK
+  - XPT.CMD-USD                   # OK
 
   # --- Soft Commodities ---
   - COTTON.CMD-USX
@@ -39,10 +39,10 @@ America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 
   - VOL.IDX-USD                   # OK
 
   # --- Indices (Non-US) ---
-  - AUS.IDX-AUD                   # OK - FROM 2020-02-10 ONWARD (STILL WORKING ON THE "ERA" CHANGES OF MT4. WILL BE FINE)
+  - AUS.IDX-AUD                   # OK - Australian Index (ASX) (checked from 2020-03 to now)
   - DEU.IDX-EUR                   # OK - German Index (DAX)
   - GBR.IDX-GBP                   #      UK Index (FTSE 100)
-  - HKG.IDX-HKD                   #      Hong Kong Index (HSI)
+  - HKG.IDX-HKD                   # OK   Hong Kong Index (HSI) (checked from 2023-06 to now)
   - JPN.IDX-JPY                   # OK - Japanese Index (Nikkei)
   - NLD.IDX-EUR                   # OK - Netherlands Index (AEX)
 
