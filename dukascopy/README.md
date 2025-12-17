@@ -59,12 +59,6 @@ cp config.dukascopy-mt4.yaml config.user.yaml
 
 Please note that next to configuration symbols in symbols.user.txt, you also must make sure that the symbols are specified in ```config/transform/timezones.america-new_york.yaml```. Currently it feels like a bit "ambiguous", i know. Until i know what exactly is up with Crypto, this is the way to do it. Crypto timings may be different because they are 24/7 markets (DST switches would cause candle issues, are they UTC). After finishing up the indices, Crypto is next.
 
-**Note:** There is one more thing. While reviewing the A50 in more detail, I noticed that daylight saving time is being applied on 2 March 2025 in MT4. Since the timezone is set to America/New_York, the shift we do, occurs on 9 March 2025. There is no timezone that transitions to daylight saving time on the first Sunday of March.
-
-Interestingly, the switch back to standard time on 2 November 2025 appears to be handled correctly. This suggests that there may be custom logic in place for timezone shifting—possibly something like “first Sunday of March” and “first Sunday of November.”
-
-If that’s the case, it should be an easy fix, but I’ll need to confirm the exact rules being used. If that’s the case, it should be an easy fix, but I’ll need to confirm the exact rules being used. Otherwise, we may need to invent our own timezone—something like LooneyTunes/MetaQuirks.
-
 **From Portfolio Project to Platform**
 
 What started as a personal project (private use-case) to tackle the intricate problem of temporal alignment in financial data has evolved into a robust, crash-resilient OHLCV resampling system. It now handles global trading sessions, multiple DST transitions, and aligns with real-world platforms like Metatrader.
