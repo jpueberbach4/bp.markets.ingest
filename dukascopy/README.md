@@ -65,6 +65,8 @@ Interestingly, the switch back to standard time on 2 November 2025 appears to be
 
 If that’s the case, it should be an easy fix, but I’ll need to confirm the exact rules being used. Otherwise, we may need to invent our own timezone—something like LooneyTunes/MetaQuirks.
 
+(This does not apply for forex, usd commodities, seems only to happen on non-eu, non-us indices (so far))
+
 
 **From Portfolio Project to Platform**
 
