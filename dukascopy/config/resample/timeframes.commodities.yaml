@@ -54,6 +54,93 @@ OJUICE.CMD-USX:
       closed: "left"
       source: "1h"
       origin: "15:00"
+SOYBEAN.CMD-USX:
+  timezone: America/Chicago
+  skip_timeframes: ["1Y"]  # VALUEERROR: 1Y: 2020-11-01 00:00:00,1051.279,1197.778,1044.239,1168.018,6335.0104
+                           # OUT_OF_MARKET? BUG? CONFIG?
+                           # DEV-NOTE: DUMP CONFIG FOR THIS ASSET, CHECK 1Y TIMEFRAME. LIKELY BUG. EVEN WITH CATCH-OLD
+  sessions:
+    day-session:
+      ranges:
+        open:
+          from: "08:30"
+          to: "13:20"
+      timeframes:
+        5m:
+          rule: "5T"
+          label: "left"
+          closed: "left"
+          source: "1m"
+          origin: "16:31"
+        15m:
+          rule: "15T"
+          label: "left"
+          closed: "left"
+          source: "5m"
+          origin: "16:31"
+        30m:
+          rule: "30T"
+          label: "left"
+          closed: "left"
+          source: "15m"
+          origin: "16:31"
+        1h:
+          rule: "1H"
+          label: "left"
+          closed: "left"
+          source: "30m"
+          origin: "16:31"
+        4h:
+          rule: "4H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "16:31"
+        8h:
+          rule: "8H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "16:31"
+    overnight:
+      ranges:
+        evening:
+          from: "19:00"
+          to: "23:59"
+        night:
+          from: "00:00"
+          to: "07:00"
+      timeframes:
+        4h:
+          rule: "4H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "04:00"
+        8h:
+          rule: "8H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "04:00"
+    catch-old:
+      ranges: 
+        day:
+          from: "00:00"
+          to: "23:59"
+      timeframes:                     
+        4h:                      
+          rule: "4H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "00:00"
+        8h:                      
+          rule: "8H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "00:00"
 XAG-USD:
   timeframes:
     4h:                     
