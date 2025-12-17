@@ -67,6 +67,7 @@ If that’s the case, it should be an easy fix, but I’ll need to confirm the e
 
 (This does not apply for forex, usd commodities, seems only to happen on non-eu, non-us indices (so far))
 
+Another thing is the SGD.IDX-SGD. We have a H4 candle at 10:30, ending at 14:30, in MT. There is data between 14:30 and 15:51 (see 1m chart) but the next H4 candle is at 15:51. Because there is data, which is located within a 11:15 H4 candle, the 11:15 H4 candle is created by the resampler. I will have to see where that data between 14:30 and 15:51 goes in metatrader. To which candle is it merged, to the 10:30 one or to the 15:51 one. Or is the traffic simply dropped. It's of a minor concern atm but eventually i will research it deeply.
 
 **From Portfolio Project to Platform**
 
