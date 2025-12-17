@@ -2,7 +2,7 @@
 
 While the tool is becoming pretty excellent, it is worth noting that there are (still) some important limitations which makes 100% support for all sources, currently, not possible.
 
-### Session windows - indices, forex with breaks
+### Session windows - indices, forex with breaks - **implemented, in testing phase (staging/0.6)**
 
 Example: AUS.IDX-AUD (index). The Aussie index has 2 trading sessions (for futures and derivatives). 
 
@@ -30,7 +30,7 @@ In resample.resample_batch(sio):
 
 Until this fix has been implemented, the AUS.IDX-AUD is not really usable.
 
-**Update:** There is a version available in staging/0.6. If you want to try it. 
+**Update:** There is a version available in staging/0.6. If you want to try it. This doesn't support "regime-changes" yet. Eg. for Aussie index the MT4 platform had a diiferent regime (different aligment policy) before 2020-02-03-ish. With staging/0.6 data is correct from 2020-02-03-ish to now. We will add additional support for "alternative regimes" with a valid-from, valid-to additional filter on the session specs. We will get it 100% right. Just a matter of time (and investment).
 
 
 ### YAML configuration is becoming huge - **implemented, available in main**
