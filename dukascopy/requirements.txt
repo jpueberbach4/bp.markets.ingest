@@ -1,18 +1,22 @@
+# Zoneinfo (Backport for Python 3.8)
+backports.zoneinfo; python_version < "3.9"
+
+# Configuration
+PyYAML >= 6.0.1
+
 # Data handling
-pandas >=2.0.3
-numpy >=1.24.4
+pandas >= 2.0.3
+numpy >= 1.24.4
 
 # Progress bars
-tqdm >=4.67.1
+tqdm >= 4.67.1
 
-# File-based locking
-filelock >=3.16.1
+# File-based locking (Recommended for crash-safety)
+filelock >= 3.16.1
 
-# HTTP requests
-requests >=2.22.0
+# HTTP requests (If downloading raw data)
+requests >= 2.22.0
 
-# Fast JSON parsing
-orjson >=3.10.15
-
-# Database
-duckdb >= 1.3.2
+# Performance (Optional but good for high-freq data)
+orjson >= 3.10.15
+duckdb >= 1.1.0
