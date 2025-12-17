@@ -39,6 +39,12 @@
 
 ## Notice
 
+If your pipeline has broken after a ```git pull```, perform:
+
+```sh
+pip install -r requirements.txt
+```
+
 - [General notices and caveats](docs/notices.md)
 - [Limitations](docs/limitations.md)
 
