@@ -63,7 +63,7 @@ Please note that next to configuration symbols in symbols.user.txt, you also mus
 
 Interestingly, the switch back to standard time on 2 November 2025 appears to be handled correctly. This suggests that there may be custom logic in place for timezone shifting—possibly something like “first Sunday of March” and “first Sunday of November.”
 
-If that’s the case, it should be an easy fix, but I’ll need to confirm the exact rules being used. If that’s the case, it should be an easy fix, but I’ll need to confirm the exact rules being used. Otherwise, we may need to invent our own timezone—something like LooneyTunes/MetaQuirks.
+If that’s the case, it should be an easy fix, but I’ll need to confirm the exact rules being used. Otherwise, we may need to invent our own timezone—something like LooneyTunes/MetaQuirks.
 
 
 **From Portfolio Project to Platform**
