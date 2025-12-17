@@ -51,7 +51,6 @@ America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 
   - NLD.IDX-EUR                   # OK - Netherlands Index (AEX)
   - PLN.IDX-PLN                   # OK - Polish Index (WIG20)
   - SGD.IDX-SGD                   # NOK - Singapore Index (STI) (EDGE CASE ON H4)
-  - SOA.IDX-ZAR                   #    - South Africa Index (JSE)
 
   # --- Bonds/Rates ---
   - BUND.TR-EUR                   # OK (only week-start off by 0.01 or 0.02)
