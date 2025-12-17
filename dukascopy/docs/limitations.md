@@ -2,7 +2,7 @@
 
 While the tool is becoming pretty excellent, it is worth noting that there are (still) some important limitations which makes 100% support for all sources, currently, not possible.
 
-### Session windows - indices, forex with breaks (**In development**)
+### Session windows - indices, forex with breaks - **implemented, available in main**
 
 Example: AUS.IDX-AUD (index). The Aussie index has 2 trading sessions (for futures and derivatives). 
 
@@ -29,6 +29,8 @@ In resample.resample_batch(sio):
 (ofcourse, this needs to be timezone-aware)
 
 Until this fix has been implemented, the AUS.IDX-AUD is not really usable.
+
+**Note:** There is still a fix needed for candle alignment policy changes. This will be ready soon too.
 
 **Update:** Found the right approach: insert the (calculated) origin directly into the DataFrame. The origin is computed per row in resample_batch_read. I’ll need another day to handle the remaining edge cases—for example, before ~6 February 2020 a completely different alignment (“era”) was in effect. It’s starting to look promising. The current approach can also be flattened so it works for non-exotic sessions as well. Overall it’s roughly one extra vectorized operation in exchange for much cleaner and more unified code. For 2025 i have perfect alignment for AUS.IDX-AUD (1h, 4h, all of them). 
 

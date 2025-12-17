@@ -45,6 +45,12 @@ HKG.IDX-HKD:
           closed: "left"
           source: "1h"
           origin: "03:15"
+        8h:
+          rule: "8H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "03:15"
     afternoon:
       ranges:
         reopen:
@@ -71,6 +77,12 @@ HKG.IDX-HKD:
           origin: "07:00"
         4h:
           rule: "4H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "07:00"
+        8h:
+          rule: "8H"
           label: "left"
           closed: "left"
           source: "1h"
@@ -108,6 +120,12 @@ HKG.IDX-HKD:
           closed: "left"
           source: "1h"
           origin: "11:15"
+        8h:
+          rule: "8H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "11:15"
     # to catch any "OLD ERA" behavior of Dukascopy (prevent out_of_market errors)
     catch-old:
       ranges: 
@@ -135,6 +153,12 @@ HKG.IDX-HKD:
           origin: "00:00"
         4h:                     
           rule: "4H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "00:00"
+        8h:                     
+          rule: "8H"
           label: "left"
           closed: "left"
           source: "1h"

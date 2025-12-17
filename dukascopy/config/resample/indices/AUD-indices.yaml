@@ -43,13 +43,13 @@ AUS.IDX-AUD:             # 2025-12-14: OK, but with caveat, see above
           label: "left"
           closed: "left"
           source: "1h"
-          origin: "00:50"
-        1d:                     
-          rule: "1D"
+          origin: "00:50" 
+        8h:                     
+          rule: "8H"
           label: "left"
           closed: "left"
-          source: "4h"
-          origin: "00:00"   
+          source: "1h"
+          origin: "00:50"    
     after-hours:
       ranges: 
         day:
@@ -83,12 +83,12 @@ AUS.IDX-AUD:             # 2025-12-14: OK, but with caveat, see above
           closed: "left"
           source: "1h"
           origin: "08:10"
-        1d:                     
-          rule: "1D"
+        8h:                     
+          rule: "8H"
           label: "left"
           closed: "left"
-          source: "4h"
-          origin: "00:00"
+          source: "1h"
+          origin: "08:10"
     catch-old:
       ranges: 
         day:

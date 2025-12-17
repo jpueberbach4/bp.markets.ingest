@@ -1,56 +1,56 @@
-BRENT.CMD-USD:          # 2025-12-14: OK
+BRENT.CMD-USD:
   timeframes:
     4h:                     
       rule: "4H"
       label: "left"
       closed: "left"
       source: "1h"
-      origin: "03:00"   # In MT4: first 4H candle of the day starts at this time
-COPPER.CMD-USD:         # 2025-12-16: OK 
+      origin: "03:00"
+COPPER.CMD-USD:
   timeframes:
     4h:                     
       rule: "4H"
       label: "left"
       closed: "left"
       source: "1h"
-      origin: "01:00"   # In MT4: first 4H candle of the day starts at this time    
-DIESEL.CMD-USD:         # 2025-12-16: OK
+      origin: "01:00" 
+DIESEL.CMD-USD:
   timeframes:
     4h:                     
       rule: "4H"
       label: "left"
       closed: "left"
       source: "1h"
-      origin: "03:00"   # In MT4: first 4H candle of the day starts at this time
-GAS.CMD-USD:            # 2025-12-14: OK
+      origin: "03:00"
+GAS.CMD-USD:
   timeframes:
     4h:                     
       rule: "4H"
       label: "left"
       closed: "left"
       source: "1h"
-      origin: "01:00"   # In MT4: first 4H candle of the day starts at this time
-LIGHT.CMD-USD:          # 2025-12-14: OK
+      origin: "01:00"
+LIGHT.CMD-USD:
   timeframes:
     4h:                     
       rule: "4H"
       label: "left"
       closed: "left"
       source: "1h"
-      origin: "01:00"   # In MT4: first 4H candle of the day starts at this time
-XAG-USD:                # 2025-12-16: OK
+      origin: "01:00"
+XAG-USD:
   timeframes:
     4h:                     
       rule: "4H"
       label: "left"
       closed: "left"
       source: "1h"
-      origin: "01:00"   # In MT4: first 4H candle of the day starts at this time
-XAU-USD:                # 2025-12-16: OK
+      origin: "01:00"
+XAU-USD:
   timeframes:
     4h:                     
       rule: "4H"
       label: "left"
       closed: "left"
       source: "1h"
-      origin: "01:00"   # In MT4: first 4H candle of the day starts at this time
+      origin: "01:00"

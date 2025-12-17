@@ -12,7 +12,7 @@
 # 
 # Please note that the ORIGIN field is set to the candle alignment as if it were winter in Europe.
 #
-USA30.IDX-USD:          # 2025-12-14: OK
+USA30.IDX-USD:
   timeframes:
     4h:                     
       rule: "4H"
@@ -20,7 +20,7 @@ USA30.IDX-USD:          # 2025-12-14: OK
       closed: "left"
       source: "1h"
       origin: "01:00"
-USA500.IDX-USD:         # 2025-12-14: OK
+USA500.IDX-USD:
   timeframes:
     4h:                     
       rule: "4H"
@@ -28,7 +28,7 @@ USA500.IDX-USD:         # 2025-12-14: OK
       closed: "left"
       source: "1h"
       origin: "01:00"
-USATECH.IDX-USD:        # 2025-12-14: OK
+USATECH.IDX-USD:
   timeframes:
     4h:                     
       rule: "4H"
@@ -36,7 +36,7 @@ USATECH.IDX-USD:        # 2025-12-14: OK
       closed: "left"
       source: "1h"
       origin: "01:00"
-USSC2000.IDX-USD:       # 2025-12-14: OK
+USSC2000.IDX-USD:
   timeframes:
     4h:                     
       rule: "4H"
@@ -44,7 +44,7 @@ USSC2000.IDX-USD:       # 2025-12-14: OK
       closed: "left"
       source: "1h"
       origin: "01:00"
-DOLLAR.IDX-USD:         # 2025-12-14: OK
+DOLLAR.IDX-USD:
   timeframes:
     4h:                     
       rule: "4H"
@@ -52,7 +52,7 @@ DOLLAR.IDX-USD:         # 2025-12-14: OK
       closed: "left"
       source: "1h"
       origin: "03:00"
-VOL.IDX-USD:            # 2025-12-14: OK
+VOL.IDX-USD:
   timeframes:
     4h:                     
       rule: "4H"

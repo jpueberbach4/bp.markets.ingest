@@ -1,16 +1,16 @@
-DEU.IDX-EUR:            # 2025-12-14: OK
+DEU.IDX-EUR:
   timeframes:
     4h:                     
       rule: "4H"
       label: "left"
       closed: "left"
       source: "1h"
-      origin: "01:00"   # In MT4: first 4H candle of the day starts at this time
-NLD.IDX-EUR:            # 2025-12-14: OK
+      origin: "01:00"
+NLD.IDX-EUR:
   timeframes:
     4h:                     
       rule: "4H"
       label: "left"
       closed: "left"
       source: "1h"
-      origin: "09:00"   # In MT4: first 4H candle of the day starts at this time  
+      origin: "09:00" 
