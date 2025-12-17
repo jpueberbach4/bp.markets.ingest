@@ -55,7 +55,7 @@ Please note that next to configuration symbols in symbols.user.txt, you also mus
 
 **From Portfolio Project to Platform**
 
-What started as a personal project (privaye use-case) to tackle the intricate problem of temporal alignment in financial data has evolved into a robust, crash-resilient OHLCV resampling system. It now handles global trading sessions, multiple DST transitions, and aligns with real-world platforms like Metatrader.
+What started as a personal project (private use-case) to tackle the intricate problem of temporal alignment in financial data has evolved into a robust, crash-resilient OHLCV resampling system. It now handles global trading sessions, multiple DST transitions, and aligns with real-world platforms like Metatrader.
 
 The are still some small (pretty easy) remaining tasks to do that will solve the last quircks. Like MT4 candle alignment policy changes, we can see this clearly in the AUS.IDX-AUD chart. Take any set of 4H candles from before 2020 and compare that with most recent candles, focus on the time. Before the weekend these issues will be gone too.
 
