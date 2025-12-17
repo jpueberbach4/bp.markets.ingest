@@ -1,3 +1,17 @@
+# Multiple indices in this file
+# 
+# USA30.IDX-USD (DJIA). The Dow Jones Industrial Average has 2 main trading sessions.
+# USA500.IDX-USD (S&P 500). The U.S. index has 2 main trading sessions.
+# USATECH.IDX-USD (NASDAQ). The U.S. tech index has 2 main trading sessions.
+# ...
+# 
+# Trading sessions:
+#
+# - Day Session: 9:30 AM - 4:00 PM (EST/EDT) **
+# - After-Hours Session: 4:00 PM - 9:30 AM the next morning (EST/EDT) **
+# 
+# Please note that the ORIGIN field is set to the candle alignment as if it were winter in Europe.
+#
 USA30.IDX-USD:          # 2025-12-14: OK
   timeframes:
     4h:                     

@@ -1,4 +1,12 @@
-JPN.IDX-JPY:            # 2025-12-14: OK
+# JPN.IDX-JPY (Nikkei). The Japanese index has 2 main trading sessions.
+#
+# - Day Session: 9:00 AM - 3:00 PM (JST) **
+# - After-Hours Session: 4:30 PM - 6:00 AM the next morning (JST) **
+# - There is a short break between sessions (3:00 PM - 4:30 PM).
+#
+# Please note that the ORIGIN field is set to the candle alignment as if it were winter in Europe.
+#
+JPN.IDX-JPY:
   timeframes:
     4h:                     
       rule: "4H"

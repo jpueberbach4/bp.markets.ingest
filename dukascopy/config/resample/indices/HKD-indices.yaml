@@ -1,9 +1,20 @@
+# HKG.IDX-HKD (HSI). The Aussie index has 3 trading sessions (for futures and derivatives). 
+# 
+# - Morning Session: 9:15 AM - 12:00 PM (HKT)
+# - Afternoon Session: 1:00 PM - 4:30 PM (HKT)
+# - After-Hours Trading (AHT): 5:15 PM - 3:00 AM next day (HKT)
+# - Lunch Break: 12:00 PM - 1:00 PM (1 hour)
+#
+# >>This one is OK from 2023-03-01 to now<< (not further checked atm)
+#
+# MT4 may have different candle alignment policy before that date. If so: another update is incoming.
+#
+# Please note that the ORIGIN field is set to the candle alignment as if it were winter in Europe.
+# 
 HKG.IDX-HKD:
   timezone: Asia/Hong_Kong
-  # Higher timeframes can be skipped if only processing intraday
-  skip_timeframes: ["1d", "1W", "1M", "1Y"]
+  skip_timeframes: []
   sessions:
-    # Morning Session: 09:15 - 12:00
     morning:
       ranges:
         open:
@@ -34,7 +45,6 @@ HKG.IDX-HKD:
           closed: "left"
           source: "1h"
           origin: "03:15"
-    # Afternoon Session: 13:00 - 16:30
     afternoon:
       ranges:
         reopen:
@@ -65,7 +75,6 @@ HKG.IDX-HKD:
           closed: "left"
           source: "1h"
           origin: "07:00"
-    # After-Hours Trading (AHT): 17:15 - 03:00
     after-hours:
       ranges:
         evening:
@@ -99,7 +108,7 @@ HKG.IDX-HKD:
           closed: "left"
           source: "1h"
           origin: "11:15"
-    # to catch any "OLD ERA" behavior of Dukascopy
+    # to catch any "OLD ERA" behavior of Dukascopy (prevent out_of_market errors)
     catch-old:
       ranges: 
         day:
