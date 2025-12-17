@@ -124,6 +124,8 @@ For this Dukascopy Data Pipeline project, the Python dependencies that need to b
 
 | Package    | Version    | Purpose                                                                      |
 |----------- |----------- |---------------------------------------------------------------------------- |
+| `pyyaml`   | >= 6.0.1   | To work with YAML-alike syntaxes                                            |
+| `zoneinfo` | backport   | To work with timezones efficiently                                          |
 | `duckdb`   | >=1.3.2    | Analytical database layer on top of CSV + parquet building helper           |
 | `pandas`   | >=2.0.3    | CSV I/O, data manipulation, aggregation, and incremental loading           |
 | `numpy`    | >=1.24.4   | Vectorized numeric computations, cumulative OHLC calculations              |
