@@ -54,5 +54,5 @@ America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 
   - SGD.IDX-SGD                   # NOK - Singapore Index (STI) (EDGE CASE ON H4)
 
   # --- Bonds/Rates ---
-  - BUND.TR-EUR                   # OK (only week-start off by 0.01 or 0.02)
-  - USTBOND.TR-USD                # OK (only week-start off by 0.01 or 0.02)
+  - BUND.TR-EUR                   # OK
+  - USTBOND.TR-USD                # OK
