@@ -32,6 +32,13 @@ Until this fix has been implemented, the AUS.IDX-AUD is not really usable.
 
 **Update:** There is a version available in staging/0.6. If you want to try it. This doesn't support "regime-changes" yet. Eg. for Aussie index the MT4 platform had a diiferent regime (different aligment policy) before 2020-02-03-ish. With staging/0.6 data is correct from 2020-02-03-ish to now. We will add additional support for "alternative regimes" with a valid-from, valid-to additional filter on the session specs. We will get it 100% right. Just a matter of time (and investment).
 
+```sh
+git fetch -p
+git checkout staging/0.6
+```
+
+**Note:** If you have custom configuration, put any includes in a ```config.user``` directory. If you are strictly following the developments on the Dukascopy tailored approach (use the config.dukascopy-mt4.yaml, copied to config.user.yaml), you don't need to do anything special if your symbol-list is a subset of the symbols specified in config/transform/timezones.america-new_york.yaml, except for a ```./rebuild-full.sh``` if you have/want the HKG or AUS indices. Also COPPER config has been fixed too (was a configuration issue).
+
 
 ### YAML configuration is becoming huge - **implemented, available in main**
 
