@@ -6,6 +6,38 @@ DEU.IDX-EUR:
       closed: "left"
       source: "1h"
       origin: "01:00"
+ESP.IDX-EUR:
+  timeframes:
+    4h:                     
+      rule: "4H"
+      label: "left"
+      closed: "left"
+      source: "1h"
+      origin: "09:00"
+EUS.IDX-EUR:
+  timeframes:
+    4h:                     
+      rule: "4H"
+      label: "left"
+      closed: "left"
+      source: "1h"
+      origin: "09:00"
+FRA.IDX-EUR:
+  timeframes:
+    4h:                     
+      rule: "4H"
+      label: "left"
+      closed: "left"
+      source: "1h"
+      origin: "09:00"
+ITA.IDX-EUR:
+  timeframes:
+    4h:                     
+      rule: "4H"
+      label: "left"
+      closed: "left"
+      source: "1h"
+      origin: "09:00"    
 NLD.IDX-EUR:
   timeframes:
     4h:                     
