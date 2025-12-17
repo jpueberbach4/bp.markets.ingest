@@ -1,0 +1,11 @@
+
+# London Stock Exchange (LSE) Trading Hours (FTSE 100 Index)
+# 
+GBR.IDX-GBP:
+  timeframes:
+    4h:                     
+      rule: "4H"
+      label: "left"
+      closed: "left"
+      source: "1h"
+      origin: "01:00"   # In MT4: first 4H candle of the day starts at this time
