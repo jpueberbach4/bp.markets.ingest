@@ -5,7 +5,7 @@ USA30.IDX-USD:          # 2025-12-14: OK
       label: "left"
       closed: "left"
       source: "1h"
-      origin: "01:00"   # In MT4: first 4H candle of the day starts at this time
+      origin: "01:00"
 USA500.IDX-USD:         # 2025-12-14: OK
   timeframes:
     4h:                     
@@ -13,7 +13,7 @@ USA500.IDX-USD:         # 2025-12-14: OK
       label: "left"
       closed: "left"
       source: "1h"
-      origin: "01:00"   # In MT4: first 4H candle of the day starts at this time
+      origin: "01:00"
 USATECH.IDX-USD:        # 2025-12-14: OK
   timeframes:
     4h:                     
@@ -21,7 +21,7 @@ USATECH.IDX-USD:        # 2025-12-14: OK
       label: "left"
       closed: "left"
       source: "1h"
-      origin: "01:00"   # In MT4: first 4H candle of the day starts at this time
+      origin: "01:00"
 USSC2000.IDX-USD:       # 2025-12-14: OK
   timeframes:
     4h:                     
@@ -29,7 +29,7 @@ USSC2000.IDX-USD:       # 2025-12-14: OK
       label: "left"
       closed: "left"
       source: "1h"
-      origin: "01:00"   # In MT4: first 4H candle of the day starts at this time
+      origin: "01:00"
 DOLLAR.IDX-USD:         # 2025-12-14: OK
   timeframes:
     4h:                     
@@ -37,7 +37,7 @@ DOLLAR.IDX-USD:         # 2025-12-14: OK
       label: "left"
       closed: "left"
       source: "1h"
-      origin: "03:00"   # In MT4: first 4H candle of the day starts at this time
+      origin: "03:00"
 VOL.IDX-USD:            # 2025-12-14: OK
   timeframes:
     4h:                     
@@ -45,4 +45,4 @@ VOL.IDX-USD:            # 2025-12-14: OK
       label: "left"
       closed: "left"
       source: "1h"
-      origin: "01:00"   # In MT4: first 4H candle of the day starts at this time 
+      origin: "01:00"

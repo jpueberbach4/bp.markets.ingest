@@ -5,14 +5,14 @@ America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 
   symbols:                        # Basically you add any symbol you are using here.
   # --- Commodities (Precious Metals & Energy) ---
   - BRENT.CMD-USD                 # OK
-  - COPPER.CMD-USD                # OFF - DONT USE
+  - COPPER.CMD-USD                # OK
   - DIESEL.CMD-USD                # OK
   - GAS.CMD-USD                   # OK
   - LIGHT.CMD-USD                 # OK
-  - XAG-USD
-  - XAU-USD                       # SLIGHTLY-OFF
-  - XPD.CMD-USD
-  - XPT.CMD-USD
+  - XAG-USD                       # OK
+  - XAU-USD                       # OK
+  - XPD.CMD-USD                   # OK
+  - XPT.CMD-USD                   # OK
 
   # --- Soft Commodities ---
   - COTTON.CMD-USX
@@ -28,20 +28,20 @@ America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 
   - AUD-USD                       # OK
   - USD-CAD                       # OK
   - NZD-USD                       # W1 is unusable
-  - EUR-MXN                       # NOT-IN-MT
   - EUR-NZD                       # OK
 
   # --- Indices (US) ---
-  - AUS.IDX-AUD                   # OFF - DONT USE
   - USA30.IDX-USD                 # OK
   - USA500.IDX-USD                # OK
   - USATECH.IDX-USD               # OK
-  - USSC2000.IDX-USD
+  - USSC2000.IDX-USD              # OK
   - VOL.IDX-USD                   # OK
 
   # --- Indices (Non-US) ---
+  - AUS.IDX-AUD                   # OK - Australian Index (ASX) (checked from 2020-03 to now)
   - DEU.IDX-EUR                   # OK - German Index (DAX)
   - GBR.IDX-GBP                   # OK - UK Index (FTSE 100)
+  - HKG.IDX-HKD                   # OK - Hong Kong Index (HSI) (checked from 2023-06 to now)
   - JPN.IDX-JPY                   # OK - Japanese Index (Nikkei)
   - NLD.IDX-EUR                   # OK - Netherlands Index (AEX)
 

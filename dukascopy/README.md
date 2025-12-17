@@ -42,6 +42,8 @@
 - [General notices and caveats](docs/notices.md)
 - [Limitations](docs/limitations.md)
 
+>This staging/0.6 branch contains fixes for both the HKG (HSI) and AUS (ASX) index. Looks pretty good. However, there are "ERA"-changes. I mean with that Dukascopy or at least it's MT4 platform changed how it processes these two assets. Eg for ASX this fix works from 2020-02-10 upwards. Before that date, we have different alignment. I will implement a "session valid from to" to handle these cases. Expect the same for HKG index. Quick check showed me that also HKG index is now fine for at least year 2025.
+
 ---
 
 ## What Is This Tool Used For?

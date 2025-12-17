@@ -281,6 +281,7 @@ def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.Dat
         rule, label, closed = [timeframe.rule, timeframe.label, timeframe.closed]
 
         # Filter rows for this origin and drop the 'origin' column
+        # NOTE: This can now be parellized, each thread an origin
         origin_df = df[df['origin'] == origin].copy()
         origin_df.drop(columns=["origin"], inplace=True)
 
