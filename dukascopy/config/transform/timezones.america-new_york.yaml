@@ -41,7 +41,7 @@ America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 
 
   # --- Indices (Non-US) ---
   - DEU.IDX-EUR                   # OK - German Index (DAX)
-  - GBR.IDX-GBP                   #      UK Index (FTSE 100)
+  - GBR.IDX-GBP                   # OK - UK Index (FTSE 100)
   - JPN.IDX-JPY                   # OK - Japanese Index (Nikkei)
   - NLD.IDX-EUR                   # OK - Netherlands Index (AEX)
 
