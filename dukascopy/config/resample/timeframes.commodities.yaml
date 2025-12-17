@@ -54,3 +54,19 @@ XAU-USD:
       closed: "left"
       source: "1h"
       origin: "01:00"
+XPD.CMD-USD:
+  timeframes:
+    4h:                     
+      rule: "4H"
+      label: "left"
+      closed: "left"
+      source: "1h"
+      origin: "01:00"
+XPT.CMD-USD:
+  timeframes:
+    4h:                     
+      rule: "4H"
+      label: "left"
+      closed: "left"
+      source: "1h"
+      origin: "01:00"
