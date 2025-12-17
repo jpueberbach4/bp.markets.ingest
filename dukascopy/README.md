@@ -53,6 +53,12 @@ cp config.dukascopy-mt4.yaml config.user.yaml
 
 Please note that next to configuration symbols in symbols.user.txt, you also must make sure that the symbols are specified in ```config/transform/timezones.america-new_york.yaml```. Currently it feels like a bit "ambiguous", i know. Until i know what exactly is up with Crypto, this is the way to do it. Crypto timings may be different because they are 24/7 markets (DST switches would cause candle issues, are they UTC). After finishing up the indices, Crypto is next.
 
+**From Portfolio Project to Platform**
+
+What started as a personal project (privaye use-case) to tackle the intricate problem of temporal alignment in financial data has evolved into a robust, crash-resilient OHLCV resampling system. It now handles global trading sessions, multiple DST transitions, and aligns with real-world platforms like Metatrader.
+
+The are still some small (pretty easy) remaining tasks to do that will solve the last quircks. Like MT4 candle alignment policy changes, we can see this clearly in the AUS.IDX-AUD chart. Take any set of 4H candles from before 2020 and compare that with most recent candles, focus on the time. Before the weekend these issues will be gone too.
+
 ---
 
 ## What Is This Tool Used For?
