@@ -13,7 +13,15 @@ COPPER.CMD-USD:
       label: "left"
       closed: "left"
       source: "1h"
-      origin: "01:00" 
+      origin: "01:00"
+COTTON.CMD-USX:
+  timeframes:
+    4h:                     
+      rule: "4H"
+      label: "left"
+      closed: "left"
+      source: "1h"
+      origin: "04:00"
 DIESEL.CMD-USD:
   timeframes:
     4h:                     
@@ -38,6 +46,14 @@ LIGHT.CMD-USD:
       closed: "left"
       source: "1h"
       origin: "01:00"
+OJUICE.CMD-USX:
+  timeframes:
+    4h:                     
+      rule: "4H"
+      label: "left"
+      closed: "left"
+      source: "1h"
+      origin: "15:00"
 XAG-USD:
   timeframes:
     4h:                     
