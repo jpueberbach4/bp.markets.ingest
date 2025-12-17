@@ -12,6 +12,28 @@
 # 
 # Please note that the ORIGIN field is set to the candle alignment as if it were winter in Europe.
 #
+CHI.IDX-USD:
+  timezone: Asia/Shanghai
+  skip_timeframes: []
+  sessions:
+    morning:
+      ranges:
+        open:
+          from: "00:00"
+          to: "23:59"
+      timeframes:
+        4h:
+          rule: "4H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "03:00"
+        8h:
+          rule: "8H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "03:00"
 USA30.IDX-USD:
   timeframes:
     4h:                     

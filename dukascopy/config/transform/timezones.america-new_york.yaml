@@ -39,6 +39,7 @@ America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 
 
   # --- Indices (Non-US) ---
   - AUS.IDX-AUD                   # OK - Australian Index (ASX) (checked from 2020-03 to now)
+  - CHI.IDX-USD                   # OK - Chinese Index (A50)
   - CHE.IDX-CHF                   # OK - Swiss Index (SMI)
   - DEU.IDX-EUR                   # OK - German Index (DAX)
   - ESP.IDX-EUR                   # OK - Spanish Index (IBEX 35)
