@@ -56,7 +56,7 @@ OJUICE.CMD-USX:
       origin: "15:00"
 SOYBEAN.CMD-USX:
   timezone: America/Chicago
-  skip_timeframes: ["1Y"]  # VALUEERROR: 1Y: 2020-11-01 00:00:00,1051.279,1197.778,1044.239,1168.018,6335.0104
+  skip_timeframes: []  # VALUEERROR: 1Y: 2020-11-01 00:00:00,1051.279,1197.778,1044.239,1168.018,6335.0104
                            # OUT_OF_MARKET? BUG? CONFIG?
                            # DEV-NOTE: DUMP CONFIG FOR THIS ASSET, CHECK 1Y TIMEFRAME. LIKELY BUG. EVEN WITH CATCH-OLD
   sessions:
@@ -124,23 +124,10 @@ SOYBEAN.CMD-USX:
           source: "1h"
           origin: "04:00"
     catch-old:
-      ranges: 
-        day:
-          from: "00:00"
-          to: "23:59"
-      timeframes:                     
-        4h:                      
-          rule: "4H"
-          label: "left"
-          closed: "left"
-          source: "1h"
-          origin: "00:00"
-        8h:                      
-          rule: "8H"
-          label: "left"
-          closed: "left"
-          source: "1h"
-          origin: "00:00"
+      ranges:
+        gap:
+          from: "07:00"
+          to: "08:29"    
 XAG-USD:
   timeframes:
     4h:                     

@@ -82,11 +82,16 @@ class ResampleTracker:
                 if s_min <= current_mins <= e_min:
                     return s["name"]
             else:
+                # if e_min < s_min then 
                 # Handle overnight sessions
                 if current_mins >= s_min or current_mins <= e_min:
                     return s["name"]
 
-        raise ValueError(f"Line {line} is out_of_market.")
+        # tricky issue. related to Chicage time. The monthly candle of 2020-11-01 falls into a sunday, hence year has issue
+        # quick fix: return out_of_market as session name
+        return "out_of_market"
+        
+
 
     def get_active_origin(self, line: str, ident: str, session_name: str, config: 'ResampleSymbol') -> str:
         """
@@ -131,6 +136,9 @@ class ResampleTracker:
             if config.sessions.get("default"):
                 return True
         return False
+
+    def print(self):
+        print(yaml.safe_dump(self.daily_session_ranges))
 
     def _get_sessions_for_date(self, current_date, config):
         """

@@ -219,8 +219,15 @@ def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol, symbol
             # Cache key to detect session/date changes
             current_key = f"{session}/{line[:10]}"
             if current_key != last_key:
-                # Update origin only if session or date changed
-                origin = tracker.get_active_origin(line, ident, session, config)
+                # Ugly hack for Soybean bug on yearly TF
+                if session == "out_of_market":
+                    origin = "epoch"
+                    if not ident in ["1W","1M","1Y"]:
+                        tracker.print()
+                        raise ValueError(f"{ident} line {line} is out_of_market")
+                else:
+                    # Update origin only if session or date changed
+                    origin = tracker.get_active_origin(line, ident, session, config)
                 last_key = current_key
         else:
             # For default session, origin is static
