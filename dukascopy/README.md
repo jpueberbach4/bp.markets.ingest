@@ -74,6 +74,8 @@ What started as a personal project (private use-case) to tackle the intricate pr
 
 The are still some small (pretty easy) remaining tasks to do that will solve the last quircks. Like MT4 candle alignment policy changes, we can see this clearly in the AUS.IDX-AUD chart. Take any set of 4H candles from before 2020 and compare that with most recent candles, focus on the time. Before the weekend these issues will be gone too.
 
+Most enterprise engineers (including myself) would, normally, solve these kind of problems using Kafka, RabbitMQ, TimescaleDB or other alike approaches. What this project shows, is that, sometimes, simple engineering can outperform expensive enterprise systems.
+
 ---
 
 ## What Is This Tool Used For?
