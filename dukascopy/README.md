@@ -42,7 +42,16 @@
 - [General notices and caveats](docs/notices.md)
 - [Limitations](docs/limitations.md)
 
->This staging/0.6 branch contains fixes for both the HKG (HSI) and AUS (ASX) index. Looks pretty good. However, there are "ERA"-changes. I mean with that Dukascopy or at least it's MT4 platform changed how it processes these two assets. Eg for ASX this fix works from 2020-02-10 upwards. Before that date, we have different alignment. I will implement a "session valid from to" to handle these cases. Expect the same for HKG index. Quick check showed me that also HKG index is now fine for at least year 2025.
+Main now holds a fix in order to handle special cases like AUS.IDX-AUD, HKG.IDX-HKD etc. For "new-comers" it's most easy to follow the Dukascopy configuration.
+
+After clone:
+
+```sh
+cp config.dukascopy-mt4.yaml config.user.yaml
+./rebuild-full.sh
+```
+
+Please note that next to configuration symbols in symbols.user.txt, you also must make sure that the symbols are specified in ```config/transform/timezones.america-new_york.yaml```. Currently it feels like a bit "ambiguous", i know. Until i know what exactly is up with Crypto, this is the way to do it. Crypto timings may be different because they are 24/7 markets (DST switches would cause candle issues, are they UTC). After finishing up the indices, Crypto is next.
 
 ---
 
