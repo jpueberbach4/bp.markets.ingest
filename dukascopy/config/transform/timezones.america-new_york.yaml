@@ -44,13 +44,13 @@ America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 
   - ESP.IDX-EUR                   # OK - Spanish Index (IBEX 35)
   - EUS.IDX-EUR                   # OK - Euro Index (Euro Stoxx)
   - FRA.IDX-EUR                   # OK - French Index (CAC 40)
-  - ITA.IDX-EUR                   #    - Italian Index (FTSE MIB)
+  - ITA.IDX-EUR                   # OK - Italian Index (FTSE MIB)
   - GBR.IDX-GBP                   # OK - UK Index (FTSE 100)
   - HKG.IDX-HKD                   # OK - Hong Kong Index (HSI) (checked from 2023-06 to now)
   - JPN.IDX-JPY                   # OK - Japanese Index (Nikkei)
   - NLD.IDX-EUR                   # OK - Netherlands Index (AEX)
   - PLN.IDX-PLN                   # OK - Polish Index (WIG20)
-  - SGD.IDX-SGD                   #    - Singapore Index (STI)
+  - SGD.IDX-SGD                   # NOK - Singapore Index (STI) (EDGE CASE ON H4)
   - SOA.IDX-ZAR                   #    - South Africa Index (JSE)
 
   # --- Bonds/Rates ---

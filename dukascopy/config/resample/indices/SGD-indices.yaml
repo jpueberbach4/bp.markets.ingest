@@ -1,0 +1,148 @@
+# SGX.IDX-SGD (STI). The Singapore index trading sessions for futures.
+# 
+# - Morning Session: 08:30 AM - 12:00 PM (SGT)
+# - Afternoon Session: 1:00 PM - 5:20 PM (SGT)
+# - After-Hours Trading (T+1): 5:50 PM - 5:15 AM next day (SGT)
+# - Lunch Break: 12:00 PM - 1:00 PM (1 hour)
+#
+# Note: The 'origin' fields align with the start of each specific session 
+# to ensure candle consistency within that trading window.
+# 
+# NOTE! THIS ONE IS UNSUPPORTED ATM. EDGE CASE ON 4H CANDLES.
+# IT CREATES A 11:15 CANDLE, WHICH SHOULD GET INCLUDED IN 10:30 CANDLE.
+# I CAN DEFINATELY FIX THIS BUT ITS FOR A LATER CONCERN
+#
+# UP UNTIL H4 CHART ITS FINE, EG 1H IS OK
+SGD.IDX-SGD:
+  timezone: Asia/Singapore
+  skip_timeframes: []
+  sessions:
+    morning:
+      ranges:
+        open:
+          from: "08:30"
+          to: "17:20"
+      timeframes:
+        5m:
+          rule: "5T"
+          label: "left"
+          closed: "left"
+          source: "1m"
+          origin: "02:30"
+        15m:
+          rule: "15T"
+          label: "left"
+          closed: "left"
+          source: "5m"
+          origin: "02:30"
+        30m:
+          rule: "30T"
+          label: "left"
+          closed: "left"
+          source: "15m"
+          origin: "02:30"
+        1h:
+          rule: "1H"
+          label: "left"
+          closed: "left"
+          source: "30m"
+          origin: "02:30"
+        4h:
+          rule: "4H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "02:30"
+        8h:
+          rule: "8H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "02:30"
+    after-hours:
+      ranges:
+        evening:
+          from: "17:50"
+          to: "23:59"
+        night:
+          from: "00:00"
+          to: "05:15"
+      timeframes:
+        5m:
+          rule: "5T"
+          label: "left"
+          closed: "left"
+          source: "1m"
+          origin: "15:51"
+        15m:
+          rule: "15T"
+          label: "left"
+          closed: "left"
+          source: "5m"
+          origin: "15:51"
+        30m:
+          rule: "30T"
+          label: "left"
+          closed: "left"
+          source: "15m"
+          origin: "15:51"
+        1h:
+          rule: "1H"
+          label: "left"
+          closed: "left"
+          source: "30m"
+          origin: "15:51"
+        4h:
+          rule: "4H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "15:51"
+        8h:
+          rule: "8H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "15:51"
+    catch-old:
+      ranges: 
+        day:
+          from: "00:00"
+          to: "23:59"
+      timeframes:                     
+        15m:                      
+          rule: "15T"
+          label: "left"
+          closed: "left"
+          source: "5m"
+          origin: "00:00"
+        30m:                      
+          rule: "30T"
+          label: "left"
+          closed: "left"
+          source: "15m"
+          origin: "00:00" 
+        1h:                      
+          rule: "1H"
+          label: "left"
+          closed: "left"
+          source: "30m"
+          origin: "00:00"
+        4h:                      
+          rule: "4H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "00:00"
+        8h:                      
+          rule: "8H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "00:00"
+        1d:                      
+          rule: "1D"
+          label: "left"
+          closed: "left"
+          source: "4h"
+          origin: "00:00"
