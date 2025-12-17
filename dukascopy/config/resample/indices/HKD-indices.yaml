@@ -6,7 +6,7 @@ HKG.IDX-HKD:
     # Morning Session: 09:15 - 12:00
     morning:
       ranges:
-        mkt_open:
+        open:
           from: "09:15"
           to: "12:00"
       timeframes:
@@ -34,12 +34,10 @@ HKG.IDX-HKD:
           closed: "left"
           source: "1h"
           origin: "03:15"
-
     # Afternoon Session: 13:00 - 16:30
-    # Note: 16:00 is cash close, but futures trade until 16:30
     afternoon:
       ranges:
-        mkt_reopen:
+        reopen:
           from: "13:00"
           to: "16:30"
       timeframes:
@@ -67,14 +65,13 @@ HKG.IDX-HKD:
           closed: "left"
           source: "1h"
           origin: "07:00"
-
     # After-Hours Trading (AHT): 17:15 - 03:00
-    aht:
+    after-hours:
       ranges:
-        evening_session:
+        evening:
           from: "17:15"
           to: "23:59"
-        night_session:
+        night:
           from: "00:00"
           to: "03:00"
       timeframes:
@@ -102,6 +99,7 @@ HKG.IDX-HKD:
           closed: "left"
           source: "1h"
           origin: "11:15"
+    # to catch any "OLD ERA" behavior of Dukascopy
     catch-old:
       ranges: 
         day:

@@ -3,42 +3,6 @@ AUS.IDX-AUD:             # 2025-12-14: **NOT-OK**
   timezone: Australia/Sydney
   skip_timeframes: ["8h","1d","1W","1M","1Y"]  
   sessions:
-    catch-old:
-      ranges: 
-        day:
-          from: "07:00"
-          to: "09:49"
-      timeframes:                    
-        15m:                     
-          rule: "15T"
-          label: "left"
-          closed: "left"
-          source: "5m"
-          origin: "00:00"
-        30m:                     
-          rule: "30T"
-          label: "left"
-          closed: "left"
-          source: "15m"
-          origin: "00:00" 
-        1h:                     
-          rule: "1H"
-          label: "left"
-          closed: "left"
-          source: "30m"
-          origin: "00:00"
-        4h:                     
-          rule: "4H"
-          label: "left"
-          closed: "left"
-          source: "1h"
-          origin: "00:00"
-        1d:                     
-          rule: "1D"
-          label: "left"
-          closed: "left"
-          source: "4h"
-          origin: "00:00"  
     day-session:
       ranges: 
         day:
@@ -113,4 +77,40 @@ AUS.IDX-AUD:             # 2025-12-14: **NOT-OK**
           label: "left"
           closed: "left"
           source: "4h"
-          origin: "00:00"  
+          origin: "00:00"
+    catch-old:
+      ranges: 
+        day:
+          from: "07:00"
+          to: "09:49"
+      timeframes:                    
+        15m:                     
+          rule: "15T"
+          label: "left"
+          closed: "left"
+          source: "5m"
+          origin: "00:00"
+        30m:                     
+          rule: "30T"
+          label: "left"
+          closed: "left"
+          source: "15m"
+          origin: "00:00" 
+        1h:                     
+          rule: "1H"
+          label: "left"
+          closed: "left"
+          source: "30m"
+          origin: "00:00"
+        4h:                     
+          rule: "4H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "00:00"
+        1d:                     
+          rule: "1D"
+          label: "left"
+          closed: "left"
+          source: "4h"
+          origin: "00:00"   
