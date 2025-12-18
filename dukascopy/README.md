@@ -39,8 +39,6 @@
 
 ## Notice
 
-**Today:** I'm happy with the indices, so today Crypto analysis and implementation.
-
 If your pipeline has broken after a ```git pull```, perform:
 
 ```sh
@@ -59,6 +57,8 @@ cp config.dukascopy-mt4.yaml config.user.yaml
 ./rebuild-full.sh
 ```
 
+**Note:** Crypto has been checked and example configuration has been added (see config/transform/timezones*.yaml)
+
 Please note that next to configuration symbols in symbols.user.txt, you also must make sure that the symbols are specified in ```config/transform/timezones.america-new_york.yaml```. Currently it feels like a bit "ambiguous", i know. Until i know what exactly is up with Crypto, this is the way to do it. Crypto timings may be different because they are 24/7 markets (DST switches would cause candle issues, are they UTC). After finishing up the indices, Crypto is next.
 
 **Note:** There is one more thing. While reviewing the A50 in more detail, I noticed that daylight saving time is being applied on 2 March 2025 in MT4. Since the timezone is set to America/New_York, the shift we do, occurs on 9 March 2025. There is no timezone that transitions to daylight saving time on the first Sunday of March.
@@ -69,15 +69,13 @@ If that’s the case, it should be an easy fix, but I’ll need to confirm the e
 
 (This does not apply for forex, usd commodities, seems only to happen on non-eu, non-us indices (so far))
 
-Another thing is the SGD.IDX-SGD. We have a H4 candle at 10:30, ending at 14:30, in MT. There is data between 14:30 and 15:51 (see 1m chart) but the next H4 candle is at 15:51. Because there is data, which is located within a 11:15 H4 candle, the 11:15 H4 candle is created by the resampler. I will have to see where that data between 14:30 and 15:51 goes in metatrader. To which candle is it merged, to the 10:30 one or to the 15:51 one. Or is the traffic simply dropped. It's of a minor concern atm but eventually i will research it deeply.
+**Note:** Another thing is the SGD.IDX-SGD. We have a H4 candle at 10:30, ending at 14:30, in MT. There is data between 14:30 and 15:51 (see 1m chart) but the next H4 candle is at 15:51. Because there is data, which is located within a 11:15 H4 candle, the 11:15 H4 candle is created by the resampler. I will have to see where that data between 14:30 and 15:51 goes in metatrader. To which candle is it merged, to the 10:30 one or to the 15:51 one. Or is the traffic simply dropped. It's of a minor concern atm but eventually i will research it deeply.
 
 **From Portfolio Project to Platform**
 
 What started as a personal project (private use-case) to tackle the intricate problem of temporal alignment in financial data has evolved into a robust, crash-resilient OHLCV resampling system. It now handles global trading sessions, multiple DST transitions, and aligns with real-world platforms like Metatrader.
 
 The are still some small (pretty easy) remaining tasks to do that will solve the last quircks. Like MT4 candle alignment policy changes, we can see this clearly in the AUS.IDX-AUD chart. Take any set of 4H candles from before 2020 and compare that with most recent candles, focus on the time. Before the weekend these issues will be gone too.
-
-Most enterprise engineers (including myself) would, normally, solve these kind of problems using Kafka, RabbitMQ, TimescaleDB or other alike approaches. What this project shows, is that, sometimes, simple engineering can outperform expensive enterprise systems.
 
 ---
 

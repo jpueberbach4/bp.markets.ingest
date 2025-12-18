@@ -30,6 +30,12 @@ America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 
   - NZD-USD                       # W1 is unusable (EDGE CASE)
   - EUR-NZD                       # OK
 
+  # --- Crypto (Bitcoin) ---
+  - BTC-USD                       # OK - Bitcoin vs US Dollar
+  - BTC-CHF                       # OK - Bitcoin vs Swiss Franc
+  - BTC-EUR                       # OK - Bitcoin vs Euro
+  - BTC-GBP                       # OK - Bitcoin vs Pound Sterling
+
   # --- Indices (US) ---
   - USA30.IDX-USD                 # OK
   - USA500.IDX-USD                # OK
