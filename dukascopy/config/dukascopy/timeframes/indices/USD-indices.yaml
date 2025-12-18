@@ -28,12 +28,6 @@ CHI.IDX-USD:
           closed: "left"
           source: "1h"
           origin: "03:00"
-        8h:
-          rule: "8H"
-          label: "left"
-          closed: "left"
-          source: "1h"
-          origin: "03:00"
 USA30.IDX-USD:
   timeframes:
     4h:                     
