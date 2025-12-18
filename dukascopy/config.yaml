@@ -1,6 +1,6 @@
-# Dukascopy Data Pipeline Configuration
+# Dukascopy MT4 Data Pipeline Configuration
 #
-# This configuration file controls the behavior of the Dukascopy data processing suite,
+# This configuration file controls the behavior of the Dukascopy MT4 data processing suite,
 # including downloading, transforming, aggregating, and resampling historical and live market data.
 #
 # Sections:
@@ -19,19 +19,22 @@
 # - Customization per instrument or timeframe via the `symbols` section.
 #
 # Note:
+# - Under development; features/settings may change.
 # - Paths are relative to project root unless specified otherwise.
 
-## Below you will find the configuration for the aggregate.py script. 
+# Below you will find the configuration for the aggregate.py script. 
 aggregate:
   paths:
     data: data/aggregate/1m           # Output path for aggregate
     source: data/transform/1m         # Input path for aggregate
+
 ## Below you will find the configuration for the builder script
 builder:
   paths:
     data: data                        # Input path for builder
     temp: data/temp/builder           # Temporary path for builder
-## Below you will find the configuration for the download.py script. 
+
+# Below you will find the configuration for the download.py script. 
 download:
   max_retries: 3                      # Number of retries before downloader raises
   backoff_factor: 2                   # Exponential backoff factor (wait time)
@@ -40,110 +43,31 @@ download:
   paths:
     historic: cache                   # Historical downloads
     live: data/temp                   # Live downloads
-## Below you will find the configuration for the transform.py script. 
+
+# Below you will find the configuration for the transform.py script. 
 transform:
-  time_shift_ms: 0                    # How many milliseconds should we shift (0=UTC, 10800000=GMT+3 (eg MT4 Dukascopy) )
+  time_shift_ms: 7200000              # How many milliseconds should we shift (0=UTC, 7200000=GMT+2 (eg MT4 Dukascopy) )
   round_decimals: 8                   # Number of decimals to round OHLCV to
   paths:
     data: data/transform/1m           # Output directory for transform
     historic: cache                   # Historical downloads
     live: data/temp                   # Live downloads
   timezones:
-    America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 based on DST change of this timezone
-      offset_to_shift_map:            # Defines a map to shift based on offset minutes
-        -240: 10800000                # UTC-4 (US DST) -> GMT+3 shift
-        -300: 7200000                 # UTC-5 (US Standard) -> GMT+2 shift
-      symbols:                        # Basically you add any symbol you are using here.
-      - SYMBOL1                       # Investigation about Crypto is ongoing. 
-      - SYMBOL2
-## Below you will find the configuration for the resample.py script. 
+    includes:
+    - config/dukascopy/timezones/*.yaml
+
+# Below you will find the configuration for the resample.py script. 
 resample:
   round_decimals: 8                   # Number of decimals to round OHLCV to
   batch_size: 250000                  # Maximum number of lines to read per batch
   paths:
     data: data/resample               # Output directory for resampled timeframes
   timeframes:
-    1m:
-      source: "data/aggregate/1m"     # No rule, no resample, source defines output path for this timeframe
-    5m:
-      rule: "5T"                      # 5-minute timeframe
-      label: "left"                   # Label (timestamp) assigned to each resampled interval comes from the left (start) edge of the window
-      closed: "left"                  # Window is left-inclusive, right-exclusive
-      source: "1m"                    # Uses 1m timeframe as input (see previous entry)
-    15m:
-      rule: "15T"                     # 15-minute timeframe
-      label: "left"
-      closed: "left"
-      source: "5m"                    # Uses 5m timeframe as input (see previous entry)
-    30m:
-      rule: "30T"                     # And so on....
-      label: "left"
-      closed: "left"
-      source: "15m"
-    1h:
-      rule: "1H"
-      label: "left"
-      closed: "left"
-      source: "30m"
-    4h:
-      rule: "4H"
-      label: "left"
-      closed: "left"
-      source: "1h"
-    8h:
-      rule: "8H"
-      label: "left"
-      closed: "left"
-      source: "4h"
-    1d:
-      rule: "1D"
-      label: "left"
-      closed: "left"
-      source: "8h"
-    1W:
-      rule: "W-MON"
-      label: "left"
-      closed: "left"
-      source: "1d"
-    1M:
-      rule: "MS"
-      label: "left"
-      closed: "left"
-      source: "1d"
-    1Y:
-      rule: "AS"
-      label: "left"
-      closed: "left"
-      source: "1M"
-
+    includes:
+    - config/dukascopy/timeframes/default.yaml
   # Support per symbol overrides
   symbols:
-    DEU.IDX-EUR: 
-      # DAX alignment fix for 4-hourly timeframe
-      timeframes:
-        4h:                     
-          rule: "4H"        # 4-hourly timeframe
-          label: "left"
-          closed: "left"
-          source: "1h"
-          origin: "09:00"   # Starting point of time-bin
-    BTC-USDXX:
-      # Override number of decimal places to round to
-      round_decimals: 12
-      # Override batch size
-      batch_size: 500000 
-      # Skip timeframes
-      skip_timeframes: ["1W", "1M", "1Y"]   
-      # Support for custom timeframes or overrides
-      timeframes:
-        5h:                     
-          rule: "5H"        # 5-hourly timeframe
-          label: "left"
-          closed: "left"
-          source: "1h"
-        1d:
-          rule: "1D"
-          label: "right"    # Different labeling
-          closed: "left"
-          source: "8h"
-
+    includes:
+    - config/dukascopy/timeframes/bonds.yaml
+    - config/dukascopy/timeframes/commodities.yaml
+    - config/dukascopy/timeframes/indices/*.yaml
