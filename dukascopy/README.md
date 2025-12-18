@@ -45,7 +45,7 @@ If your pipeline has broken after a ```git pull```, perform:
 pip install -r requirements.txt
 ```
 
->**Also:** ❗ I have moved the config files to have clearer attribution for Dukascopy SA. Recopy the file ```cp config.dukascopy-mt4.yaml config.user.yaml``` or adjust the includes paths manually. ❗ I am sorry if this was a breaking change for you. To prevent this in the future. Use a ```config.user``` directory and put the configuration files in there (```cp -arf config config.user```). Next, modify the includes in your ```config.user.yaml``` to point to the ```config.user``` directory. I try to prevent this as much as possible.
+>**Warning:** ❗ If you receive a warning on run.sh: I have moved the config files to have clearer attribution for Dukascopy SA. If you are using a default configuration, just re-init with ```./setup-dukascopy.sh```. This will prevent similar breaking issue on configuration in the future.
 
 - [General notices and caveats](docs/notices.md)
 - [Limitations](docs/limitations.md)
