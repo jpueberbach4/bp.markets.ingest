@@ -50,43 +50,6 @@ This will prevent breaking-change issues on configuration in the future.
 - [General notices and caveats](docs/notices.md)
 - [Limitations](docs/limitations.md)
 
-Main now holds a fix in order to handle special cases like AUS.IDX-AUD, HKG.IDX-HKD etc. For "new-comers" it's most easy to follow the Dukascopy configuration.
-
-After clone:
-
-```sh
-cp config.dukascopy-mt4.yaml config.user.yaml
-./rebuild-full.sh
-```
-
-**Note:** Crypto has been checked and example configuration has been added (see config/transform/timezones*.yaml). Now that Bitcoin also falls into the "America/New_York"-timezone category, i will add support for wildcards there. This will capture any symbols that are not specifically configured.
-
-Please note that next to configuration symbols in symbols.user.txt, you also must make sure that the symbols are specified in ```config/transform/timezones.america-new_york.yaml```. Currently it feels like a bit "ambiguous", i know. Until i know what exactly is up with Crypto, this is the way to do it. Crypto timings may be different because they are 24/7 markets (DST switches would cause candle issues, are they UTC). After finishing up the indices, Crypto is next.
-
-**Note:** There is one more thing. While reviewing the A50 in more detail, I noticed that daylight saving time is being applied on 2 March 2025 in MT4. Since the timezone is set to America/New_York, the shift we do, occurs on 9 March 2025. There is no timezone that transitions to daylight saving time on the first Sunday of March.
-
-Interestingly, the switch back to standard time on 2 November 2025 appears to be handled correctly. This suggests that there may be custom logic in place for timezone shifting—possibly something like “first Sunday of March” and “first Sunday of November.”
-
-If that’s the case, it should be an easy fix, but I’ll need to confirm the exact rules being used. Otherwise, we may need to invent our own timezone—something like LooneyTunes/MetaQuirks.
-
-(This does not apply for forex, usd commodities, seems only to happen on non-eu, non-us indices (so far))
-
-**Note:** To give an example of what this resampler now handles. Lets take the HKG.IDX. 3 trading sessions, 4H chart (you may compare with MT4).
-
-```sh
-2025-12-17 03:15:00,25309.201,25343.699,25166.501,25292.295,4.56463       << 4H candle start
-2025-12-17 07:00:00,25278.719,25496.154,25212.56,25437.613,5.26749        << NO 4 hours passed yet (3h45m has passed)
-                                                                             But new 4H candle (MT4 does it this way)
-2025-12-17 11:15:00,25439.348,25537.199,25439.348,25522.054,0.730942      << Here gap is 4h15m > 4H > normal
-2025-12-17 15:15:00,25521.001,25585.319,25364.254,25392.519,2.344496
-2025-12-18 03:15:00,25257.119,25509.499,25244.013,25354.019,4.676446
-2025-12-18 07:00:00,25370.313,25510.199,25326.395,25486.96,4.59597
-```
-
-We support all of it. Pretty unique experience (for me). These "anomalies".
-
-**Note:** Another thing is the SGD.IDX-SGD. We have a H4 candle at 10:30, ending at 14:30, in MT. There is data between 14:30 and 15:51 (see 1m chart) but the next H4 candle is at 15:51. Because there is data, which is located within a 11:15 H4 candle, the 11:15 H4 candle is created by the resampler. I will have to see where that data between 14:30 and 15:51 goes in metatrader. To which candle is it merged, to the 10:30 one or to the 15:51 one. Or is the traffic simply dropped. It's of a minor concern atm but eventually i will research it deeply.
-
 **From Portfolio Project to Platform**
 
 What started as a personal project (private use-case) to tackle the intricate problem of temporal alignment in financial data has evolved into a robust, crash-resilient OHLCV resampling system. It now handles global trading sessions, multiple DST transitions, and aligns with real-world platforms like Metatrader.
@@ -172,7 +135,7 @@ For this Dukascopy Data Pipeline project, the Python dependencies that need to b
 Install with:
 
 ```sh
-pip install -r requirements.txt
+./setup-dukascopy.sh
 ```
 
 ---
