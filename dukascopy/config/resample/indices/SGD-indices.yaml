@@ -10,7 +10,8 @@
 # 
 # NOTE! THIS ONE IS UNSUPPORTED ATM. EDGE CASE ON 4H CANDLES.
 # IT CREATES A 11:15 CANDLE, WHICH SHOULD GET INCLUDED IN 10:30 CANDLE.
-# I CAN DEFINATELY FIX THIS BUT ITS FOR A LATER CONCERN
+# I CAN DEFINATELY FIX THIS BUT ITS FOR A LATER CONCERN.
+# THERE IS DATA BETWEEN 14:30 and 15:45. HENCE CREATES THAT CANDLE.
 #
 # UP UNTIL H4 CHART ITS FINE, EG 1H IS OK
 SGD.IDX-SGD:
@@ -49,12 +50,6 @@ SGD.IDX-SGD:
           origin: "02:30"
         4h:
           rule: "4H"
-          label: "left"
-          closed: "left"
-          source: "1h"
-          origin: "02:30"
-        8h:
-          rule: "8H"
           label: "left"
           closed: "left"
           source: "1h"
@@ -98,51 +93,8 @@ SGD.IDX-SGD:
           closed: "left"
           source: "1h"
           origin: "15:51"
-        8h:
-          rule: "8H"
-          label: "left"
-          closed: "left"
-          source: "1h"
-          origin: "15:51"
     catch-old:
       ranges: 
         day:
           from: "00:00"
           to: "23:59"
-      timeframes:                     
-        15m:                      
-          rule: "15T"
-          label: "left"
-          closed: "left"
-          source: "5m"
-          origin: "00:00"
-        30m:                      
-          rule: "30T"
-          label: "left"
-          closed: "left"
-          source: "15m"
-          origin: "00:00" 
-        1h:                      
-          rule: "1H"
-          label: "left"
-          closed: "left"
-          source: "30m"
-          origin: "00:00"
-        4h:                      
-          rule: "4H"
-          label: "left"
-          closed: "left"
-          source: "1h"
-          origin: "00:00"
-        8h:                      
-          rule: "8H"
-          label: "left"
-          closed: "left"
-          source: "1h"
-          origin: "00:00"
-        1d:                      
-          rule: "1D"
-          label: "left"
-          closed: "left"
-          source: "4h"
-          origin: "00:00"

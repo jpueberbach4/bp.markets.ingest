@@ -37,7 +37,7 @@ ITA.IDX-EUR:
       label: "left"
       closed: "left"
       source: "1h"
-      origin: "09:00"    
+      origin: "09:00" 
 NLD.IDX-EUR:
   timeframes:
     4h:                     
@@ -45,4 +45,5 @@ NLD.IDX-EUR:
       label: "left"
       closed: "left"
       source: "1h"
-      origin: "09:00" 
+      origin: "09:00"
+

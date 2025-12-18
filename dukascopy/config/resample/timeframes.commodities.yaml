@@ -96,12 +96,6 @@ SOYBEAN.CMD-USX:
           closed: "left"
           source: "1h"
           origin: "16:31"
-        8h:
-          rule: "8H"
-          label: "left"
-          closed: "left"
-          source: "1h"
-          origin: "16:31"
     overnight:
       ranges:
         evening:
@@ -117,30 +111,11 @@ SOYBEAN.CMD-USX:
           closed: "left"
           source: "1h"
           origin: "04:00"
-        8h:
-          rule: "8H"
-          label: "left"
-          closed: "left"
-          source: "1h"
-          origin: "04:00"
     catch-old:
       ranges: 
         day:
           from: "00:00"
           to: "23:59"
-      timeframes:                     
-        4h:                      
-          rule: "4H"
-          label: "left"
-          closed: "left"
-          source: "1h"
-          origin: "00:00"
-        8h:                      
-          rule: "8H"
-          label: "left"
-          closed: "left"
-          source: "1h"
-          origin: "00:00"
 XAG-USD:
   timeframes:
     4h:                     

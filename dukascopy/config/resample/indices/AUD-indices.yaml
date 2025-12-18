@@ -43,13 +43,7 @@ AUS.IDX-AUD:             # 2025-12-14: OK, but with caveat, see above
           label: "left"
           closed: "left"
           source: "1h"
-          origin: "00:50" 
-        8h:                     
-          rule: "8H"
-          label: "left"
-          closed: "left"
-          source: "1h"
-          origin: "00:50"    
+          origin: "00:50"     
     after-hours:
       ranges: 
         day:
@@ -83,45 +77,8 @@ AUS.IDX-AUD:             # 2025-12-14: OK, but with caveat, see above
           closed: "left"
           source: "1h"
           origin: "08:10"
-        8h:                     
-          rule: "8H"
-          label: "left"
-          closed: "left"
-          source: "1h"
-          origin: "08:10"
     catch-old:
       ranges: 
         day:
           from: "07:00"
           to: "09:49"
-      timeframes:                    
-        15m:                     
-          rule: "15T"
-          label: "left"
-          closed: "left"
-          source: "5m"
-          origin: "00:00"
-        30m:                     
-          rule: "30T"
-          label: "left"
-          closed: "left"
-          source: "15m"
-          origin: "00:00" 
-        1h:                     
-          rule: "1H"
-          label: "left"
-          closed: "left"
-          source: "30m"
-          origin: "00:00"
-        4h:                     
-          rule: "4H"
-          label: "left"
-          closed: "left"
-          source: "1h"
-          origin: "00:00"
-        1d:                     
-          rule: "1D"
-          label: "left"
-          closed: "left"
-          source: "4h"
-          origin: "00:00"   

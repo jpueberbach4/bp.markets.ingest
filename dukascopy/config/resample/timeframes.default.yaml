@@ -25,16 +25,11 @@
   label: "left"
   closed: "left"
   source: "1h"
-8h:
-  rule: "8H"
-  label: "left"
-  closed: "left"
-  source: "4h"
 1d:
   rule: "1D"
   label: "left"
   closed: "left"
-  source: "8h"
+  source: "4h"
 1W:
   rule: "W-MON"
   label: "left"

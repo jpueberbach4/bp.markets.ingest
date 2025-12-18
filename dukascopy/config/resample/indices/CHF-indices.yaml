@@ -1,4 +1,9 @@
-# Swiss Market Index (SMI)
+# Swiss Market Index (SMI). The Swiss index has 1 trading sessions (for futures and derivatives). 
+# 
+# - Day Session: 9:00 AM - 5:30 PM (CET).
+#
+# Please note that the ORIGIN field is set to the candle alignment as if it were winter in Europe.
+#
 CHE.IDX-CHF:
   timeframes:
     4h:                     
@@ -7,9 +12,3 @@ CHE.IDX-CHF:
       closed: "left"
       source: "1h"
       origin: "09:00"
-    8h:                     
-      rule: "8H"
-      label: "left"
-      closed: "left"
-      source: "4h"
-      origin: "09:00"  
