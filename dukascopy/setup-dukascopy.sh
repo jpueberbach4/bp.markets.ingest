@@ -1,5 +1,9 @@
 #!/bin/bash
 
+echo Checking if all python dependencies are installed...
+pip install -r requirements.txt
+echo Done.
+echo 
 echo Initializing default Dukascopy configuration...
 
 mkdir -p config.user
