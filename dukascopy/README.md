@@ -45,6 +45,8 @@ If your pipeline has broken after a ```git pull```, perform:
 pip install -r requirements.txt
 ```
 
+>**Also:** ❗ I have moved the config files to have clearer attribution for Dukascopy SA. Recopy the file ```cp config.dukascopy-mt4.yaml config.user.yaml``` or adjust the includes paths manually. ❗
+
 - [General notices and caveats](docs/notices.md)
 - [Limitations](docs/limitations.md)
 
