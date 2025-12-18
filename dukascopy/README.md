@@ -57,7 +57,7 @@ cp config.dukascopy-mt4.yaml config.user.yaml
 ./rebuild-full.sh
 ```
 
-**Note:** Crypto has been checked and example configuration has been added (see config/transform/timezones*.yaml)
+**Note:** Crypto has been checked and example configuration has been added (see config/transform/timezones*.yaml). Now that Bitcoin also falls into the "America/New_York"-timezone category, i will add support for wildcards there. This will capture any symbols that are not specifically configured.
 
 Please note that next to configuration symbols in symbols.user.txt, you also must make sure that the symbols are specified in ```config/transform/timezones.america-new_york.yaml```. Currently it feels like a bit "ambiguous", i know. Until i know what exactly is up with Crypto, this is the way to do it. Crypto timings may be different because they are 24/7 markets (DST switches would cause candle issues, are they UTC). After finishing up the indices, Crypto is next.
 
