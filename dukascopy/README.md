@@ -65,9 +65,11 @@ This will prevent breaking-change issues on configuration in the future.
 - Wildcard support on the timezone stuff to add a "default fallback"
 - Perhaps other things.... 
 
-It's a limited list. Looks actually pretty good. Pretty satisfied. After this list we move on to HTTP and REPLAY. See [here](docs/future.md) for more information. I don't know if I will achieve the goal, likely not, might be off by one week-or two (because of the session-issue i am delayed. i have a data-first mentality).
+It's a limited list. Looks actually pretty good.
 
 This is "reverse engineering" of the MT4 platform.
+
+**Note:** This system is more and more getting tailored to Dukascopy. I dont have time to test this with other brokers like FXCM or IGMarkets. Chances are, that these brokers have different rules regarding to the assets they "broker for". Different alignment policies, etc. The system can be used with other brokers since the 1m base data should be near equal at any broker. Prices are factual, market-wide. If differences: you will have to tailor it to these brokers yourself. It's a tedious job but the reward is there if you succeed.
 
 **From Portfolio Project to Platform**
 
