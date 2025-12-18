@@ -39,13 +39,13 @@
 
 ## Notice
 
-If your pipeline has broken after a ```git pull```, perform:
+If your pipeline has broken after a ```git pull``` or receive the warning "Notice, there were breaking config changes! See README for more information!", perform (if using default configuration, except for symbols.user.txt):
 
 ```sh
-pip install -r requirements.txt
+./setup-dukascopy.sh
 ```
 
->**Warning:** ❗ If you receive a warning on run.sh: I have moved the config files to have clearer attribution for Dukascopy SA. If you are using a default configuration, just re-init with ```./setup-dukascopy.sh```. This will prevent similar breaking issue on configuration in the future.
+This will prevent breaking-change issues on configuration in the future.
 
 - [General notices and caveats](docs/notices.md)
 - [Limitations](docs/limitations.md)
