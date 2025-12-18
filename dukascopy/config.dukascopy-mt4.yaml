@@ -54,7 +54,7 @@ transform:
     live: data/temp                   # Live downloads
   timezones:
     includes:
-    - config/transform/*.yaml
+    - config/dukascopy/timezones/*.yaml
 
 # Below you will find the configuration for the resample.py script. 
 resample:
@@ -64,13 +64,13 @@ resample:
     data: data/resample               # Output directory for resampled timeframes
   timeframes:
     includes:
-    - config/resample/timeframes.default.yaml
+    - config/dukascopy/timeframes/default.yaml
   # Support per symbol overrides
   symbols:
     includes:
-    - config/resample/timeframes.bonds.yaml
-    - config/resample/timeframes.commodities.yaml
-    - config/resample/indices/*.yaml
+    - config/dukascopy/timeframes/bonds.yaml
+    - config/dukascopy/timeframes/commodities.yaml
+    - config/dukascopy/timeframes/indices/*.yaml
     
 
 
