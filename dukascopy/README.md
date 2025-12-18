@@ -50,6 +50,23 @@ This will prevent breaking-change issues on configuration in the future.
 - [General notices and caveats](docs/notices.md)
 - [Limitations](docs/limitations.md)
 
+**Note:** The data part is not finished yet. Still bugs/features to resolve:
+
+- Soybean 1Y timeframe throws out_of_market error \
+  1Y timeframe disabled on that asset \
+  Happens because of timezone America/Chicago and start of month being on a Sunday. \
+  Who trades it anyways, but will get fixed.
+- Compatibility for "alignment policy changes" in MT4 eg for AUS.IDX-AUD \
+  Adding valid_from, valid_to attributes on sessions to allow for different session allocation for specific dateranges.
+- Strange quirk with the SGD.IDX. H4 \
+  1m data is present, outside of 4H timeframes, creating a candle we dont see in MT4. What to do with it? (research)
+- Wildcard support on the timezone stuff to add a "default fallback"
+- Perhaps other things.... 
+
+It's a limited list. Looks actually pretty good. Pretty satisfied. After this list we move on to HTTP and REPLAY.
+
+This is "reverse engineering" of the MT4 platform.
+
 **From Portfolio Project to Platform**
 
 What started as a personal project (private use-case) to tackle the intricate problem of temporal alignment in financial data has evolved into a robust, crash-resilient OHLCV resampling system. It now handles global trading sessions, multiple DST transitions, and aligns with real-world platforms like Metatrader.
