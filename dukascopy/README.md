@@ -69,6 +69,20 @@ If that’s the case, it should be an easy fix, but I’ll need to confirm the e
 
 (This does not apply for forex, usd commodities, seems only to happen on non-eu, non-us indices (so far))
 
+**Note:** To give an example of what this resampler now handles. Lets take the HKG.IDX. 3 trading sessions, 4H chart (you may compare with MT4).
+
+```sh
+2025-12-17 03:15:00,25309.201,25343.699,25166.501,25292.295,4.56463       << 4H candle start
+2025-12-17 07:00:00,25278.719,25496.154,25212.56,25437.613,5.26749        << NO 4 hours passed yet (3h45m has passed)
+                                                                             But new 4H candle (MT4 does it this way)
+2025-12-17 11:15:00,25439.348,25537.199,25439.348,25522.054,0.730942      << Here gap is 4h15m > 4H > normal
+2025-12-17 15:15:00,25521.001,25585.319,25364.254,25392.519,2.344496
+2025-12-18 03:15:00,25257.119,25509.499,25244.013,25354.019,4.676446
+2025-12-18 07:00:00,25370.313,25510.199,25326.395,25486.96,4.59597
+```
+
+We support all of it. Pretty unique experience (for me). These "anomalies".
+
 **Note:** Another thing is the SGD.IDX-SGD. We have a H4 candle at 10:30, ending at 14:30, in MT. There is data between 14:30 and 15:51 (see 1m chart) but the next H4 candle is at 15:51. Because there is data, which is located within a 11:15 H4 candle, the 11:15 H4 candle is created by the resampler. I will have to see where that data between 14:30 and 15:51 goes in metatrader. To which candle is it merged, to the 10:30 one or to the 15:51 one. Or is the traffic simply dropped. It's of a minor concern atm but eventually i will research it deeply.
 
 **From Portfolio Project to Platform**
