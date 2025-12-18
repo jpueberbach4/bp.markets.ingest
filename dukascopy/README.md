@@ -63,7 +63,7 @@ This will prevent breaking-change issues on configuration in the future.
 - Wildcard support on the timezone stuff to add a "default fallback"
 - Perhaps other things.... 
 
-It's a limited list. Looks actually pretty good. Pretty satisfied. After this list we move on to HTTP and REPLAY. See [here](docs/future.md) for more information. I don't know if I will achieve the goal, likely not, might be off by a one week or two (because of the session-issue i am delayed. i have a data-first mentality).
+It's a limited list. Looks actually pretty good. Pretty satisfied. After this list we move on to HTTP and REPLAY. See [here](docs/future.md) for more information. I don't know if I will achieve the goal, likely not, might be off by one week-or two (because of the session-issue i am delayed. i have a data-first mentality).
 
 This is "reverse engineering" of the MT4 platform.
 
