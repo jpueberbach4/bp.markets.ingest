@@ -39,6 +39,8 @@
 
 ## Notice
 
+**Today:** I'm happy with the indices, so today Crypto analysis and implementation.
+
 If your pipeline has broken after a ```git pull```, perform:
 
 ```sh
