@@ -192,6 +192,10 @@ def main():
         # Load YAML config (currently only resample support)
         config = load_config()
 
+        if not len(config.resample.timeframes):
+            print("Notice, there were breaking config changes! See README for more information!")
+            sys.exit(1)
+
         # Generate list of dates to process (from START_DATE to today UTC)
         start_dt = datetime.strptime(START_DATE, "%Y-%m-%d").date()
         today_dt = datetime.now(timezone.utc).date()
