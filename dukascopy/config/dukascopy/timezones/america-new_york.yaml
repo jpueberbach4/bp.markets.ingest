@@ -21,70 +21,13 @@ America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 
 
   # --- Currencies ---
   - DOLLAR.IDX-USD                # OK - US Dollar Index
-  - AUD-CAD                       # Australian Dollar vs Canadian Dollar
-  - AUD-CHF                       # Australian Dollar vs Swiss Franc
-  - AUD-JPY                       # Australian Dollar vs Yen
-  - AUD-NZD                       # Australian Dollar vs New Zealand Dollar
-  - AUD-SGD                       # Australian Dollar vs Singapore Dollar
   - AUD-USD                       # OK - Australian Dollar vs US Dollar
-  - CAD-CHF                       # Canadian Dollar vs Swiss Franc
-  - CAD-HKD                       # Canadian Dollar vs Hong Kong Dollar
-  - CAD-JPY                       # Canadian Dollar vs Yen
-  - CHF-JPY                       # Swiss Franc vs Yen
-  - CHF-PLN                       # Swiss Franc vs Zloty
-  - CHF-SGD                       # Swiss Franc vs Singapore Dollar
-  - EUR-AUD                       # Euro vs Australian Dollar
-  - EUR-CAD                       # Euro vs Canadian Dollar
-  - EUR-CHF                       # Euro vs Swiss Franc
-  - EUR-CZK                       # Euro vs Czech Koruna
-  - EUR-DKK                       # Euro vs Danish Krone
-  - EUR-GBP                       # Euro vs Pound Sterling
-  - EUR-HKD                       # Euro vs Hong Kong Dollar
-  - EUR-HUF                       # Euro vs Hungarian Forint
-  - EUR-JPY                       # Euro vs Yen
-  - EUR-MXN                       # Euro vs Mexican Peso
-  - EUR-NOK                       # Euro vs Norwegian Krone
   - EUR-NZD                       # OK - Euro vs New Zealand Dollar
-  - EUR-PLN                       # Euro vs Zloty
-  - EUR-SEK                       # Euro vs Swedish Krona
-  - EUR-SGD                       # Euro vs Singapore Dollar
-  - EUR-TRY                       # Euro vs Turkish Lira
   - EUR-USD                       # OK - Euro vs US Dollar
-  - EUR-ZAR                       # Euro vs Rand
-  - GBP-AUD                       # Pound Sterling vs Australian Dollar
-  - GBP-CAD                       # Pound Sterling vs Canadian Dollar
-  - GBP-CHF                       # Pound Sterling vs Swiss Franc
-  - GBP-JPY                       # Pound Sterling vs Yen
-  - GBP-NZD                       # Pound Sterling vs New Zealand Dollar
   - GBP-USD                       # OK - Pound Sterling vs US Dollar
-  - HKD-JPY                       # Hong Kong Dollar vs Yen
-  - MXN-JPY                       # Mexican Peso vs Yen
-  - NZD-CAD                       # New Zealand Dollar vs Canadian Dollar
-  - NZD-CHF                       # New Zealand Dollar vs Swiss Franc
-  - NZD-JPY                       # New Zealand Dollar vs Yen
-  - NZD-SGD                       # New Zealand Dollar vs Singapore Dollar
-  - NZD-USD                       # NOK - New Zealand Dollar vs US Dollar (W1 unusable)
-  - SGD-JPY                       # Singapore Dollar vs Yen
-  - TRY-JPY                       # Turkish Lira vs Yen
   - USD-CAD                       # OK - US Dollar vs Canadian Dollar
   - USD-CHF                       # OK - US Dollar vs Swiss Franc
-  - USD-CNH                       # US Dollar vs Chinese Yuan
-  - USD-CZK                       # US Dollar vs Czech Koruna
-  - USD-DKK                       # US Dollar vs Danish Krone
-  - USD-HKD                       # US Dollar vs Hong Kong Dollar
-  - USD-HUF                       # US Dollar vs Hungarian Forint
-  - USD-ILS                       # US Dollar vs Israeli Shekel
   - USD-JPY                       # OK - US Dollar vs Yen
-  - USD-MXN                       # US Dollar vs Mexican Peso
-  - USD-NOK                       # US Dollar vs Norwegian Krone
-  - USD-PLN                       # US Dollar vs Zloty
-  - USD-RON                       # US Dollar vs Romanian Leu
-  - USD-SEK                       # US Dollar vs Swedish Krona
-  - USD-SGD                       # US Dollar vs Singapore Dollar
-  - USD-THB                       # US Dollar vs Thai Baht
-  - USD-TRY                       # US Dollar vs Turkish Lira
-  - USD-ZAR                       # US Dollar vs Rand
-  - ZAR-JPY                       # Rand vs Yen
 
   # --- Crypto (Bitcoin) ---
   - BTC-USD                       # OK - Bitcoin vs US Dollar
@@ -119,3 +62,9 @@ America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 
   # --- Bonds/Rates ---
   - BUND.TR-EUR                   # OK
   - USTBOND.TR-USD                # OK
+
+  # --- Stocks ---
+  - AAPL.US-USD                   # OK
+
+  # --- Catch ALL ---
+  - '*'                           # This catches any asset

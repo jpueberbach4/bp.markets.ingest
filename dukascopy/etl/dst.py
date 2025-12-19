@@ -89,8 +89,8 @@ def get_symbol_time_shift_ms(dt: date, symbol: str, config: TransformConfig) -> 
     """
     # Iterate through configured timezones
     for name, timezone in config.timezones.items():
-        # Check whether the symbol belongs to this timezone group
-        if symbol in timezone.symbols:
+        # Check whether the symbol or the wildcard '*' belongs to this timezone group
+        if symbol in timezone.symbols or '*' in timezone.symbols:
             try:
                 # Compute the UTC offset for the given date
                 offset_in_minutes = get_utc_offset_minutes(dt, name)
