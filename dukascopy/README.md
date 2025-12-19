@@ -62,6 +62,8 @@ This will prevent breaking-change issues on configuration in the future.
   Adding valid_from, valid_to attributes on sessions to allow for different session allocation for specific dateranges.
 - Strange quirk with the SGD.IDX. H4 \
   1m data is present, outside of 4H timeframes, creating a candle we dont see in MT4. What to do with it? (research)
+- Sessions are currently mapped, fixed, to America/New_York. Make it based on the symbol's timezone setting \
+  in transform.timezones.
 - Perhaps other things.... 
 
 It's a limited list. Looks actually pretty good.
