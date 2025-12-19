@@ -8,7 +8,9 @@
 - **Filesystem-native** → No database required
 - **NVMe/SSD Preferred** → High IOPS critical for performance
 
----
+## Self describing data
+
+Self-describing data for incremental processing: Each row includes its byte position (for crash recovery) and session origin (for proper time grouping), eliminating complex state tracking.
 
 ## Fail-Fast
 
