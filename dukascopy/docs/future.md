@@ -53,7 +53,7 @@ tail --follow indicator.txt
 
 **Goal:** Before end of year finishing up the data (100 percent correctness against MT4 is the target, currently ~95 percent). First two weeks of next year round up above two features with a basic set of plugins (SMA, EMA, MACD, RSI, Bollinger, perhaps others). Happy holidays :)
 
->Idea (unexplored): If feasible and data access allows, get approval to replay financial calendar events through replay.sh as "control structures". This is something I’ll likely need as well, but it hasn’t been explored yet (0.8 feature?).
+>Idea (unexplored): ~~If feasible and data access allows, get approval to replay financial calendar events through replay.sh as "control structures". This is something I’ll likely need as well, but it hasn’t been explored yet (0.8 feature?)~~. I will provide for the option of multiple --mix-with flag. If you have a CSV with ```timestamp,customdata1,customdata2,...``` it will push the customdata1,customdata2 in the outgoing eventstream exactly on that timestamp. This way you can mix anything into it. Including calendar events. This is for the first version. Later i will have a look if we can obtain that calendar data without breaking any TOS. 
 
 >Cascaded indicator engine (1.0) (if still needed after replay.sh + plugins)
 
