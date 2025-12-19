@@ -62,7 +62,6 @@ This will prevent breaking-change issues on configuration in the future.
   Adding valid_from, valid_to attributes on sessions to allow for different session allocation for specific dateranges.
 - Strange quirk with the SGD.IDX. H4 \
   1m data is present, outside of 4H timeframes, creating a candle we dont see in MT4. What to do with it? (research)
-- Wildcard support on the timezone stuff to add a "default fallback"
 - Perhaps other things.... 
 
 It's a limited list. Looks actually pretty good.
