@@ -64,7 +64,8 @@ America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 
   - USTBOND.TR-USD                # OK
 
   # --- Stocks ---
-  - AAPL.US-USD                   # OK
+  - AAPL.US-USD                   # NOK - Missing input-data (14:00-16:00)
+                                  #       Other source needed?
 
   # --- Catch ALL ---
   - '*'                           # This catches any asset
