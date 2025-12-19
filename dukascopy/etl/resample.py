@@ -216,6 +216,7 @@ class ResampleEngine:
                 - StringIO buffer containing the enriched CSV batch.
                 - eof flag indicating whether end-of-file was reached.
         """
+        # Initialize StrinIO buffer
         sio = StringIO()
 
         # Extend header with metadata columns
@@ -415,7 +416,10 @@ class ResampleWorker:
             # Process batches until EOF
             while True:
                 sio, eof = engine.prepare_batch(f_in, header)
-                resampled, next_in_pos = engine.process_resample(sio)
+                try:
+                    resampled, next_in_pos = engine.process_resample(sio)
+                finally:
+                    sio.close()
 
                 # Rewrite output up to last confirmed position
                 f_out.seek(output_pos)
