@@ -10,6 +10,10 @@
 
 ---
 
+## Stateless State Tracking
+
+Incremental financial data processing requires robust handling of partial processing states across system interruptions while maintaining session-aware temporal boundaries. Traditional approaches rely on complex state machines and external checkpointing systems that introduce fragility and obscure data lineage. We present a method where processing metadata—including session-specific origin timestamps and precise byte offsets—is embedded directly within the data stream, enabling stateless recovery, transparent session segmentation, and deterministic resumption from arbitrary interruption points through simple data self-description rather than external state management.
+
 ## Fail-Fast
 
 This pipeline follows a **strict fail-fast philosophy**:
