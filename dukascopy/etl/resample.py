@@ -2,438 +2,372 @@
 # -*- coding: utf-8 -*-
 """
 ===============================================================================
- File:        resample.py
+ File:        helper.py
  Author:      JP Ueberbach
- Created:     2025-11-15
- Description:
-     
-     Incremental, crash-resilient OHLCV resampling engine for append-only
-     time-series data. Each symbol's raw CSV file grows strictly by appending
-     new rows, and previously written data never changes. The script uses
-     forward-moving byte offsets to resume processing exactly where it left
-     off, without ever re-reading or re-writing completed candles. The last
-     resampled candle is always considered (potentially incomplete).
+ Created:     2025-12-19
+ Description: Conversion to OOP - Incremental OHLCV resampling engine.
 
-     Core properties:
+              This module provides two main components:
 
-         • Append-only input model:
-             Raw symbol CSVs are strictly append-only. Byte offsets stored in
-             per-symbol index files remain permanently valid.
+              - ResampleEngine: Handles incremental, batch-based resampling for
+                a single symbol and target timeframe, including index tracking 
+                for resumable runs.
+              - ResampleWorker: Orchestrates resampling across all configured 
+                timeframes for a given symbol.
 
-         • Deterministic incremental resampling:
-             New rows are processed in batches, aggregated into higher
-             timeframes (1m → 5m → 15m → 30m → 1h → …), and written exactly
-             once. Finished candles are never touched again.
-
-         • Crash-safe last-candle rewrite:
-             Only the final, potentially incomplete resampled candle is ever
-             truncated and regenerated. On restart, the engine reconstructs
-             this candle from upstream offsets with no risk of corrupting any
-             historical output.
-
-         • Zero backtracking:
-             The pipeline never reprocesses historical data, never scans from
-             the beginning of a file, and never rewrites completed output.
-
-         • Cascading multi-timeframe pipeline:
-             Each timeframe resamples from the output of the previous one,
-             forming a forward-only DAG of incremental transformations.
-             
-             Note: Monthly candles are resampled from daily data rather than
-             weekly data to ensure proper alignment, since weeks often
-             span two calendar months.
-
-     The result is a high-performance, low-IO, idempotent resampling system
-     designed for large datasets and continuous ingestion.
-
-     NOTE: timestamps are already normalized in transform.py (UTC-relative).
-
- Usage:
-     python3 resample.py
+              The design supports cascading resampling (e.g. 1m → 5m → 1h), 
+              session-aware origins, and crash-safe progress tracking via index 
+              files.
 
  Requirements:
      - Python 3.8+
      - Pandas
-     - tqdm
+     - Tqdm
 
  License:
      MIT License
 ===============================================================================
 """
-import copy 
 import os
 import pandas as pd
-import yaml
-
-from config.app_config import AppConfig, ResampleConfig, ResampleSymbol, load_app_config, resample_get_symbol_config
 from pathlib import Path
-from tqdm import tqdm
 from io import StringIO
 from typing import Tuple, IO, Optional
-from dataclasses import asdict
-from helper import resample_resolve_paths, ResampleTracker
+from tqdm import tqdm
 
-from config.app_config import AppConfig, load_app_config # remove later
+from config.app_config import AppConfig, ResampleSymbol, resample_get_symbol_config
+from helper import ResampleTracker
 
-
+# Enable verbose logging via environment variable
 VERBOSE = os.getenv('VERBOSE', '0').lower() in ('1', 'true', 'yes', 'on')
 
 
-
-def resample_read_index(index_path: Path) -> Tuple[int, int]:
+class ResampleEngine:
     """
-    Read the incremental resampling index file and return the stored offsets.
+    Performs incremental resampling for a single symbol and timeframe.
 
-    Parameters
-    ----------
-    index_path : Path
-        Path to the `.idx` file storing the resampler's progress for a single
-        symbol and timeframe. The file contains exactly two lines:
-            1) input_position  – byte offset in the upstream CSV already processed
-            2) output_position – byte offset in the output CSV already written
-
-    Returns
-    -------
-    Tuple[int, int]
-        (input_position, output_position), both guaranteed to be integers.
-
-    Notes
-    -----
-    These offsets allow the resampling engine to:
-        - Resume exactly where it left off after a crash or restart.
-        - Avoid re-reading previously processed input data.
-        - Avoid rewriting historical output candles.
-    The index file is always written atomically elsewhere in the pipeline to
-    ensure it is safe against partial writes or corruption.
+    The engine:
+    - Resolves input/output/index file paths
+    - Tracks read/write offsets for resumable processing
+    - Reads input data in batches
+    - Applies pandas resampling rules
     """
-    if not index_path.exists():
-        resample_write_index(index_path, 0, 0)
-        return 0, 0
-    
-    with open(index_path, 'r') as f_idx:
-        lines = f_idx.readlines()[:2]
-        if len(lines) != 2:
-            raise IOError(f"Index file {index_path} corrupted or incomplete.")
-        input_position, output_position = [
-            int(line.strip()) for line in lines
-        ]
-    return input_position, output_position
 
-def resample_write_index(index_path: Path, input_position: int, output_position: int) -> bool:
-    """
-    Atomically persist updated read/write offsets for a symbol's resampling state.
+    def __init__(self, symbol: str, ident: str, config: ResampleSymbol, data_path: Path):
+        """
+        Initialize the resampling engine for a specific symbol and timeframe.
 
-    This function writes the incremental processing offsets
-    (the raw-input byte offset and the resampled-output byte offset)
-    using a crash-safe, atomic replace:
+        Args:
+            symbol: Trading symbol (e.g. "BTCUSDT")
+            ident: Timeframe identifier (e.g. "5m", "1h")
+            config: Symbol-specific resampling configuration
+            data_path: Base directory for resampled data
+        """
+        self.symbol = symbol
+        self.ident = ident
+        self.config = config
+        self.tracker = ResampleTracker(config)
+        self.data_path = data_path
 
-        1. A temporary file "<index_path>.tmp" is written containing:
-               <input_position>
-               <output_position>
+        # Paths and state resolved dynamically
+        self.input_path: Optional[Path] = None
+        self.output_path: Optional[Path] = None
+        self.index_path: Optional[Path] = None
+        self.is_root: bool = False
 
-        2. The temporary file is flushed and fsync-safe at the Python level.
+        # Resolve all filesystem paths immediately
+        self._resolve_paths()
 
-        3. os.replace() is used to atomically overwrite the existing index file.
+    def _resolve_paths(self):
+        """
+        Resolve input, output, and index paths for the current timeframe.
 
-    Atomic replacement guarantees that:
-        • The index file is always either the old valid version or the new one.
-        • A crash, power loss, or kill signal cannot leave a partial write.
-        • Offsets are never corrupted, preserving the append-only invariant.
+        Determines whether the timeframe is a root (non-resampled) source
+        or derived from another timeframe, validates required files,
+        and prepares output directories if needed.
+        """
+        timeframe = self.config.timeframes.get(self.ident)
 
-    Parameters
-    ----------
-    index_path : Path
-        Path to the index file storing incremental resampling offsets
-        (input_position on line 1, output_position on line 2).
+        # Root timeframe: no resampling rule, source is external CSV
+        if not timeframe.rule:
+            root_source = Path(f"{timeframe.source}/{self.symbol}.csv")
+            if not root_source.exists():
+                raise IOError(f"Root source missing for {self.ident}: {root_source}")
 
-    input_position : int
-        Byte-offset in the append-only input CSV marking the first unprocessed row.
+            self.input_path = None
+            self.output_path = root_source
+            self.index_path = Path()
+            self.is_root = True
+            return
 
-    output_position : int
-        Byte-offset in the resampled output CSV where new data should be appended.
+        # Locate source timeframe configuration
+        source_tf = self.config.timeframes.get(timeframe.source)
+        if not source_tf:
+            raise ValueError(
+                f"Timeframe {self.ident} references unknown source: {timeframe.source}"
+            )
 
-    Returns
-    -------
-    bool
-        Always returns True for now, indicating that the atomic write completed.
-    """
-    index_path.parent.mkdir(parents=True, exist_ok=True)
-    index_temp_path = Path(f"{index_path}.tmp")
-    with open(index_temp_path, "w") as f_idx:
-        f_idx.write(f"{input_position}\n{output_position}")
-        f_idx.flush()
-
-    os.replace(index_temp_path, index_path)
-    return True
-
-def resample_batch_read(f_input: IO, header: str, config: ResampleSymbol, symbol: str, ident: str) -> Tuple[StringIO, bool]:
-    """
-    Read a batch of lines from the input CSV, appending origin and byte offset.
-
-    This function reads up to `config.batch_size` lines from the input file,
-    determines the active session and origin for each row, and writes the result
-    into a StringIO buffer along with the byte offset of each input line. It 
-    supports both default sessions (single origin) and multiple trading sessions.
-
-    Parameters
-    ----------
-    f_input : IO
-        Input file-like object to read raw CSV lines from.
-    header : str
-        CSV header line to include in the output StringIO.
-    config : ResampleSymbol
-        Configuration for the symbol including session and timeframe information.
-    symbol : str
-        Trading symbol identifier.
-    ident : str
-        Timeframe identifier.
-
-    Returns
-    -------
-    Tuple[StringIO, bool]
-        - StringIO containing the batch with appended 'origin' and 'offset' columns.
-        - EOF flag (True if end of input file reached during this batch).
-    """
-    sio = StringIO()
-    # Write header including origin and offset columns
-    sio.write(f"{header.strip()},origin,offset\n")
-
-    eof_reached = False  # Flag to track if end of input is reached
-    last_key = None      # Cache key to avoid redundant origin calculations
-
-    tracker = ResampleTracker(config)
-    # Check if symbol has only a default session
-    is_default_session = tracker.is_default_session(config)
-
-    # Read up to batch_size lines from input
-    for _ in range(config.batch_size):
-        offset_before = f_input.tell()  # Save current byte offset
-        line = f_input.readline()       # Read one line from input
-        if not line:
-            eof_reached = True
-            break
-
-        if not is_default_session:
-            # Determine the active session for this line
-            session = tracker.get_active_session(line)
-            # Cache key to detect session/date changes
-            current_key = f"{session}/{line[:10]}"
-            if current_key != last_key:
-                # Update origin only if session or date changed
-                origin = tracker.get_active_origin(line, ident, session, config)
-                last_key = current_key
+        # Determine input path based on whether the source itself is resampled
+        if source_tf.rule is not None:
+            input_path = self.data_path / timeframe.source / f"{self.symbol}.csv"
         else:
-            # For default session, origin is static
-            origin = config.sessions.get("default").timeframes.get(ident).origin
+            input_path = Path(source_tf.source) / f"{self.symbol}.csv"
 
-        # Write the line with origin and input byte offset for traceability
-        sio.write(f"{line.strip()},{origin},{offset_before}\n")
+        # Define output CSV and index file paths
+        output_path = self.data_path / self.ident / f"{self.symbol}.csv"
+        index_path = self.data_path / self.ident / "index" / f"{self.symbol}.idx"
 
-    # Rewind StringIO to the beginning for downstream reading
-    sio.seek(0)
-    return sio, eof_reached
+        # Validate input existence
+        if not input_path.exists():
+            if VERBOSE:
+                tqdm.write(f"  No base {self.ident} data for {self.symbol} → skipping")
+            raise ValueError(f"No base data for {self.symbol} at {self.ident}")
+
+        # Ensure output file exists
+        if not output_path.exists():
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.touch()
+
+        self.input_path = input_path
+        self.output_path = output_path
+        self.index_path = index_path
+        self.is_root = False
+
+    def read_index(self) -> Tuple[int, int]:
+        """
+        Read the persisted input/output offsets from the index file.
+
+        Returns:
+            A tuple of (input_position, output_position)
+        """
+        if not self.index_path or not self.index_path.exists():
+            # Initialize index if missing
+            self.write_index(0, 0)
+            return 0, 0
+
+        with open(self.index_path, 'r') as f:
+            lines = f.readlines()[:2]
+            if len(lines) == 2:
+                return int(lines[0].strip()), int(lines[1].strip())
+            return 0, 0
+
+    def write_index(self, input_pos: int, output_pos: int):
+        """
+        Atomically write updated input/output offsets to disk.
+
+        Args:
+            input_pos: Byte offset in the input file
+            output_pos: Byte offset in the output file
+        """
+        self.index_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Write to temporary file for atomic replace
+        temp_path = self.index_path.with_suffix('.tmp')
+        with open(temp_path, "w") as f:
+            f.write(f"{input_pos}\n{output_pos}")
+            f.flush()
+
+        os.replace(temp_path, self.index_path)
+
+    def prepare_batch(self, f_input: IO, header: str) -> Tuple[StringIO, bool]:
+        """
+        Read a batch of raw rows and enrich them with origin and offset data.
+
+        Args:
+            f_input: Open input file handle
+            header: CSV header line
+
+        Returns:
+            A tuple of (StringIO buffer containing batch CSV data, eof flag)
+        """
+        sio = StringIO()
+        sio.write(f"{header.strip()},origin,offset\n")
+
+        eof = False
+        last_key = None
+
+        # Session/origin resolution helpers
+        is_default = self.tracker.is_default_session(self.config)
+        primary_session = next(iter(self.config.sessions.values()))
+        default_origin = primary_session.timeframes.get(self.ident).origin
+
+        # Read up to batch_size lines
+        for _ in range(self.config.batch_size):
+            offset_before = f_input.tell()
+            line = f_input.readline()
+
+            if not line:
+                eof = True
+                break
+
+            # Resolve origin dynamically if sessions are non-default
+            if not is_default:
+                session = self.tracker.get_active_session(line)
+                current_key = f"{session}/{line[:10]}"
+                if current_key != last_key:
+                    origin = self.tracker.get_active_origin(
+                        line, self.ident, session, self.config
+                    )
+                    last_key = current_key
+            else:
+                origin = default_origin
+
+            sio.write(f"{line.strip()},{origin},{offset_before}\n")
+
+        sio.seek(0)
+        return sio, eof
+
+    def process_resample(self, sio: StringIO) -> Tuple[pd.DataFrame, int]:
+        """
+        Resample a prepared batch into the target timeframe.
+
+        Args:
+            sio: StringIO buffer containing batch CSV data
+
+        Returns:
+            A tuple of:
+            - Resampled DataFrame
+            - Next input file position to resume from
+        """
+        df = pd.read_csv(sio, parse_dates=["time"], index_col="time")
+        if df.empty:
+            raise ValueError("Empty batch read from StringIO")
+
+        resampled_list = []
+
+        # Use the primary session's timeframe configuration
+        session = next(iter(self.config.sessions.values()))
+        tf_cfg = session.timeframes.get(self.ident)
+
+        # Resample independently per origin
+        for origin, origin_df in df.groupby('origin'):
+            res = origin_df.resample(
+                tf_cfg.rule,
+                label=tf_cfg.label,
+                closed=tf_cfg.closed,
+                origin=origin
+            ).agg({
+                'open': 'first',
+                'high': 'max',
+                'low': 'min',
+                'close': 'last',
+                'volume': 'sum',
+                'offset': 'first'
+            })
+
+            # Drop empty or invalid bars
+            res = res[res['volume'].gt(0) & res['volume'].notna()]
+            resampled_list.append(res)
+
+        # Combine all origins into a single DataFrame
+        full_resampled = pd.concat(resampled_list).sort_index()
+
+        # Determine resume offset from the last completed bar
+        next_input_pos = int(full_resampled.iloc[-1]['offset'])
+
+        # Final formatting
+        full_resampled = (
+            full_resampled
+            .drop(columns=["offset"])
+            .round(self.config.round_decimals)
+        )
+        full_resampled.index = full_resampled.index.strftime("%Y-%m-%d %H:%M:%S")
+
+        return full_resampled, next_input_pos
 
 
-def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.DataFrame, int]:
+class ResampleWorker:
     """
-    Resample a batch of OHLCV rows for a given symbol and timeframe.
-
-    Reads a batch of input rows from a StringIO object, splits them by 'origin',
-    resamples each origin separately using the configured rules, and combines the 
-    results into a single DataFrame. Returns the resampled DataFrame and the 
-    byte offset of the last input row used.
-
-    Parameters
-    ----------
-    sio : StringIO
-        StringIO buffer containing the batch of CSV input rows, including
-        'origin' and 'offset' columns.
-    ident : str
-        Timeframe identifier for the target resampling (e.g., "5m", "1h").
-    config : ResampleSymbol
-        Symbol configuration object containing session and timeframe rules.
-
-    Returns
-    -------
-    Tuple[pd.DataFrame, int]
-        - Resampled DataFrame with OHLCV values and datetime index.
-        - Byte offset of the last input row used, to update the index file.
+    Coordinates resampling across all configured timeframes for a symbol.
     """
-    # Load batch into a DataFrame with time as index
-    df = pd.read_csv(
-        sio,
-        header=0,
-        parse_dates=["time"],
-        index_col="time",
-        date_format="%Y-%m-%d %H:%M:%S"
-    )
 
-    # Store resampled data for each origin
-    resampled_list = []
+    def __init__(self, symbol: str, app_config: AppConfig):
+        """
+        Initialize the worker for a given symbol.
 
-    # Identify all unique origin values in this batch
-    origins = df['origin'].unique().tolist()
+        Args:
+            symbol: Trading symbol
+            app_config: Global application configuration
+        """
+        self.symbol = symbol
+        self.app_config = app_config
+        self.config = resample_get_symbol_config(symbol, app_config)
+        self.data_path = Path(app_config.resample.paths.data)
 
-    for origin in origins:
-        # Use the first session's timeframe to get the resampling rules
-        _, session = next(iter(config.sessions.items()))
-        timeframe = session.timeframes.get(ident)
-        rule, label, closed = [timeframe.rule, timeframe.label, timeframe.closed]
+    def run(self):
+        """
+        Execute resampling sequentially for all configured timeframes.
+        """
+        for ident in self.config.timeframes:
+            try:
+                engine = ResampleEngine(self.symbol, ident, self.config, self.data_path)
 
-        # Filter rows for this origin and drop the 'origin' column
-        # NOTE: This can now be parellized, each thread an origin
-        origin_df = df[df['origin'] == origin].copy()
-        origin_df.drop(columns=["origin"], inplace=True)
+                # Root timeframes are pass-through only
+                if engine.is_root:
+                    continue
 
-        # Resample the origin-specific DataFrame
-        origin_resampled = origin_df.resample(
-            rule, label=label, closed=closed, origin=origin
-        ).agg({
-            'open': 'first',
-            'high': 'max',
-            'low': 'min',
-            'close': 'last',
-            'volume': 'sum',
-            'offset': 'first'  # capture the input offset of first row in window
-        })
+                self._execute_engine(engine)
 
-        # Remove gaps: rows with zero or NaN volume
-        origin_resampled = origin_resampled[
-            origin_resampled['volume'].notna() & (origin_resampled['volume'] != 0)
-        ]
+            except (ValueError, IOError) as e:
+                if VERBOSE:
+                    print(f"  Skipping {ident} for {self.symbol}: {e}")
+                continue
 
-        # Append the resampled DataFrame to the list
-        resampled_list.append(origin_resampled)
+    def _execute_engine(self, engine: ResampleEngine):
+        """
+        Run the incremental resampling loop for a single engine.
 
-    # Combine all origins into a single DataFrame and sort by time
-    resampled = pd.concat(resampled_list).sort_index()
+        Args:
+            engine: Initialized ResampleEngine instance
+        """
+        input_pos, output_pos = engine.read_index()
 
-    # Ensure we have data; otherwise, raise an error
-    if resampled.empty:
-        raise ValueError("Resampled result for sessions were empty. This is impossible behavior.")
+        with open(engine.input_path, "r") as f_in, open(engine.output_path, "r+") as f_out:
+            # Read and possibly write header
+            header = f_in.readline()
 
-    # Capture the input byte offset for the last row processed
-    next_input_position = int(resampled.iloc[-1]['offset'])
+            if input_pos > 0:
+                f_in.seek(input_pos)
 
-    # Remove the temporary 'offset' column
-    resampled.drop(columns=["offset"], inplace=True)
+            if output_pos == 0:
+                f_out.write(header)
+                output_pos = f_out.tell()
 
-    # Round numerical values to avoid floating-point drift
-    resampled = resampled.round(config.round_decimals)
-
-    # Filter any remaining rows with zero or NaN volume
-    resampled = resampled[resampled['volume'].notna() & (resampled['volume'] != 0)]
-
-    # Ensure index is formatted as YYYY-MM-DD HH:MM:SS
-    resampled.index = resampled.index.strftime("%Y-%m-%d %H:%M:%S")
-
-    return resampled, next_input_position
-
-
-def resample_symbol(symbol: str, app_config: AppConfig) -> bool:
-    """
-    Incrementally resample OHLCV data for a single trading symbol across all configured timeframes.
-
-    The function performs a forward-only, crash-resilient resampling pipeline:
-        - Loads symbol-specific configuration.
-        - Reads the input CSV in batches, tracking byte offsets.
-        - Resamples each batch into the target timeframe.
-        - Rewrites the last candle to ensure completeness.
-        - Persists read/write offsets atomically to ensure crash safety.
-        - Skips timeframes if input data is missing.
-
-    Parameters
-    ----------
-    symbol : str
-        Trading symbol identifier (e.g., "BTC-USDT").
-    app_config : AppConfig
-        The application configuration containing global and per-symbol settings.
-
-    Returns
-    -------
-    bool
-        Always returns True to indicate successful resampling.
-    """
-    # Determine the base path for resampled data
-    data_path = Path(app_config.resample.paths.data)
-
-    # Get the merged ResampleSymbol configuration for the symbol
-    config = resample_get_symbol_config(symbol, app_config)
-
-    for _, ident in enumerate(config.timeframes):
-        # Resolve input/output/index paths for this timeframe
-        input_path, output_path, index_path, skip = resample_resolve_paths(symbol, ident, data_path, config)
-        if skip:
-            continue
-
-        # Read saved offsets or create default if index missing
-        input_position, output_position = resample_read_index(index_path)
-        with open(input_path, "r") as f_input, open(output_path, "r+") as f_output:
-            # Read header line from input
-            header = f_input.readline()
-
-            # Seek to last processed position in input
-            if input_position > 0:
-                f_input.seek(input_position)
-
-            # Initialize output file with header if new
-            if output_position == 0:
-                f_output.write(header)
-                output_position = f_output.tell()
-
-            eof_reached = False
-
+            # Process until EOF
             while True:
-                # Read a batch from input and annotate with origin and offset
-                sio, eof_reached = resample_batch_read(f_input, header, config, symbol, ident)
+                sio, eof = engine.prepare_batch(f_in, header)
+                resampled, next_in_pos = engine.process_resample(sio)
 
-                # Resample the batch into the target timeframe
-                resampled, next_input_position = resample_batch(sio, ident, config) 
+                # Rewrite output up to last confirmed position
+                f_out.seek(output_pos)
+                f_out.truncate(output_pos)
+                f_out.write(resampled.iloc[:-1].to_csv(index=True, header=False))
+                f_out.flush()
 
-                # Seek to the last known output position
-                f_output.seek(output_position)
+                # Persist index before writing final row
+                output_pos = f_out.tell()
+                engine.write_index(next_in_pos, output_pos)
 
-                # Crash-safe rewrite: truncate to last committed position
-                f_output.truncate(output_position)
+                # Write trailing bar (kept open for next batch)
+                f_out.write(resampled.tail(1).to_csv(index=True, header=False))
 
-                # Write all fully complete candles
-                f_output.write(resampled.iloc[:-1].to_csv(index=True, header=False))
-                f_output.flush()
-
-                # Update output position and index file
-                output_position = f_output.tell()
-                resample_write_index(index_path, next_input_position, output_position)
-
-                # Write the last (potentially incomplete) candle
-                f_output.write(resampled.tail(1).to_csv(index=True, header=False))
-
-                # Stop if end-of-file reached
-                if eof_reached:
-                    if VERBOSE:
-                        tqdm.write(f"  ✓ {symbol} {ident}")
+                if eof:
                     break
 
-                # Seek to next input offset for next batch
-                f_input.seek(next_input_position)
-
-    return True
-
+                f_in.seek(next_in_pos)
 
 
 def fork_resample(args) -> bool:
     """
-    Process all dates for a single symbol sequentially.
+    Multiprocessing-friendly entry point for symbol resampling.
 
-    Intended for use with multiprocessing where each worker handles
-    one symbol over the full date range.
+    Args:
+        args: Tuple of (symbol, app_config)
 
-    Parameters
-    ----------
-    args : tuple
-        Tuple containing (symbol, list of dates, config).
+    Returns:
+        True on successful completion
     """
     symbol, config = args
-    
-    resample_symbol(symbol, config)
-
+    worker = ResampleWorker(symbol, config)
+    worker.run()
     return True
