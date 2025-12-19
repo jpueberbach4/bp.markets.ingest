@@ -49,7 +49,7 @@ This will prevent breaking-change issues on configuration in the future.
 
 >Do not run this when you have custom configuration. If you have custom configuration, create a ```config.user``` directory, copy your current config in there and adjust the "includes" paths in config.user.yaml to point to their new locations. Advice is to merge your own configuration with the configuration provided by the system.
 
-- [General notices and caveats](docs/notices.md)
+- [General notices, latest updates, caveats, etc](docs/notices.md)
 - [Limitations](docs/limitations.md)
 
 
