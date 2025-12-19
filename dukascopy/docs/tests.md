@@ -4,7 +4,7 @@
 - Major Crosses. Good.
 - Dollar index, Volatility index. Good.
 - Energy: Brent, WTI, Diesel, GAS. Great.
-- Metals: XAU slightly off but (very) usable, Copper is way off (still need to check why, likely data)
+- Metals: XAU (gold), XAG (silver), XPD (palladium), XPT (platinum), Copper. Good.
 - Indices: US indices. Excellent. DAX. Good. NL. Good. Nikkie. Excellent.
 - Special Indices are being handled better: AUS.IDX, HKG.IDX, CHI.IDX, SGD.IDX are almost excellent too.
 - Bonds: BUND, USNOTE. Good. Gilt not checked (yet).
