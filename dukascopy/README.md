@@ -70,13 +70,13 @@ It's a limited list. Looks actually pretty good.
 
 This is "reverse engineering" of the MT4 platform.
 
+**Note:** The ETL part of this project has been converted to OOP. Making it slightly less readable but better maintainable and testable.
+
 **Note:** This system is more and more getting tailored to Dukascopy. I dont have time to test this with other brokers like FXCM or IGMarkets. Chances are, that these brokers have different rules regarding to the assets they "broker for". Different alignment policies, etc. The system can be used with other brokers since the 1m base data should be near equal at any broker. Prices are factual, market-wide. If differences: you will have to tailor it to these brokers yourself. It's a tedious job but the reward is there if you succeed.
 
 **From Portfolio Project to Platform**
 
 What started as a personal project (private use-case) to tackle the intricate problem of temporal alignment in financial data has evolved into a robust, crash-resilient OHLCV resampling system. It now handles global trading sessions, multiple DST transitions, and aligns with real-world platforms like Metatrader.
-
-This is becoming a very powerful tool now that each asset is completely configurable regarding to timeshifting, timeframes and sessions.
 
 ---
 

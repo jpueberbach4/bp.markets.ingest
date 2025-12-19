@@ -4,10 +4,11 @@
 ===============================================================================
  File:        download.py
  Author:      JP Ueberbach
- Created:     2025-11-09
- Description: Download Dukascopy minute-level delta JSON candle (HST) data for all
-              symbols listed in 'symbols.txt'. Supports historical and
-              current-day downloads with automatic folder structure management.
+ Created:     2025-12-19
+ Description: Conversion to OOP - Download Dukascopy minute-level delta JSON 
+              candle (HST) data for all symbols listed in 'symbols.txt'. Supports 
+              historical and current-day downloads with automatic folder structure 
+              management.
 
  Usage:
      python3 download.py
@@ -21,224 +22,283 @@
      MIT License
 ===============================================================================
 """
-
-import pandas as pd
-import requests
 import os
 import time
 import orjson
+import requests
 import numpy as np
 from datetime import date, datetime, timezone
 from pathlib import Path
-from config.app_config import AppConfig, DownloadConfig, load_app_config
+from typing import Tuple, Optional
 
-ENABLE_BACKFILL_FILTER = True  # We do not support backfilling atm. Forward only pipeline.
+from config.app_config import AppConfig, DownloadConfig
 
-session = None                 # Session per worker
-last_request_time = 0.0        # Rate-limit helper
-
-def download_filter_backfilled_items(temp_path: Path, cache_path: Path) -> bool:
+class DownloadEngine:
     """
-    Merges new data from a temporary file into a cached dataset while skipping backfilled items.
-
-    This function ensures that only data **occurring after the last timestamp in the cache** is appended
-    from the temporary dataset. Any overlapping or backfilled entries are ignored. The function uses
-    cumulative sums of the `"times"` array, adjusted by the `"shift"` and `"timestamp"` values, to 
-    compute the cutoff for new data.
-
-    Args:
-        temp_path (Path): Path to the temporary file containing new data in JSON format.
-        cache_path (Path): Path to the cached file containing existing data in JSON format.
-
-    Returns:
-        bool: 
-            - True if new data was appended to the cache.  
-            - False if no new data was found or if the cache does not exist.
-
-    Raises:
-        Exception: Propagates any exception encountered during reading, processing, or writing.
-
-    Notes:
-        - Both files are expected to be in `orjson` JSON format, containing the keys:
-          `"times"`, `"opens"`, `"highs"`, `"lows"`, `"closes"`, `"volumes"`, `"shift"`, and `"timestamp"`.
-        - Uses vectorized NumPy operations for efficiency.
-        - The temporary file is updated in-place with the merged result.
-        - Errors are printed for debugging before being re-raised.
+    Encapsulates HTTP access, rate limiting, retry logic, and continuity-safe
+    merging of Dukascopy JSON delta candle data.
     """
-    if not cache_path.exists():
-        return False
 
-    try:
+    last_request_time = 0.0 
+
+    def __init__(self, config: DownloadConfig):
+        """
+        Initialize the download engine.
+
+        Args:
+            config: Download-related configuration parameters.
+        """
+        self.config = config
+        self.session = requests.Session()
+
+    def get_url(self, symbol: str, dt: date) -> str:
+        """
+        Build the Dukascopy API URL for a given symbol and date.
+
+        Uses the live endpoint for the current UTC date and the historical
+        endpoint for all past dates.
+
+        Args:
+            symbol: Trading symbol (e.g. "EURUSD").
+            dt: Date for which data is requested.
+
+        Returns:
+            Fully-qualified Dukascopy API URL.
+        """
+        today_dt = datetime.now(timezone.utc).date()
+
+        if dt == today_dt:
+            # Live endpoint (no date path)
+            return f"https://jetta.dukascopy.com/v1/candles/minute/{symbol}/BID"
+
+        # Historical endpoint
+        return (
+            f"https://jetta.dukascopy.com/v1/candles/minute/"
+            f"{symbol}/BID/{dt.year}/{dt.month}/{dt.day}"
+        )
+
+    def fetch_data(self, url: str) -> str:
+        """
+        Fetch JSON candle data from Dukascopy with rate limiting and retries.
+
+        Applies:
+        - Requests-per-second throttling
+        - Exponential backoff on retryable errors
+        - Immediate failure on non-retryable errors
+
+        Args:
+            url: Fully-qualified request URL.
+
+        Returns:
+            Raw response body as a string.
+
+        Raises:
+            requests.exceptions.RequestException: If all retries fail.
+        """
+        for attempt in range(self.config.max_retries):
+            try:
+                # Enforce global rate limit
+                min_interval = (
+                    1.0 / self.config.rate_limit_rps
+                    if self.config.rate_limit_rps > 0
+                    else 0
+                )
+                elapsed = time.monotonic() - DownloadEngine.last_request_time
+                sleep_needed = max(0, min_interval - elapsed)
+
+                if sleep_needed > 0:
+                    time.sleep(sleep_needed)
+
+                # Perform HTTP request
+                response = self.session.get(
+                    url,
+                    headers={
+                        "Accept-Encoding": "gzip, deflate",
+                        "User-Agent": "dukascopy-downloader/1.1 (+https://github.com/jpueberbach4/bp.markets.ingest/blob/main/dukascopy/etl/download.py)",
+                    },
+                    timeout=self.config.timeout,
+                )
+                response.raise_for_status()
+
+                # Update request timestamp after success
+                DownloadEngine.last_request_time = time.monotonic()
+                return response.text
+
+            except requests.exceptions.RequestException as e:
+                status_code = getattr(e.response, "status_code", 0)
+
+                # Retry only on server errors or rate limiting
+                if (
+                    attempt < self.config.max_retries - 1
+                    and (status_code >= 500 or status_code == 429)
+                ):
+                    wait_time = self.config.backoff_factor ** attempt
+                    time.sleep(wait_time)
+                    continue
+
+                raise e
+
+        return ""
+
+    def filter_backfilled_items(self, temp_path: Path, cache_path: Path) -> bool:
+        """
+        Merge newly downloaded data into an existing cache while ensuring
+        strict forward-only time continuity.
+
+        Uses vectorized NumPy operations to identify the first new candle
+        after the cached cutoff timestamp.
+
+        Args:
+            temp_path: Path to newly downloaded temporary JSON file.
+            cache_path: Path to existing cached JSON file.
+
+        Returns:
+            True if a merge occurred, False otherwise.
+        """
+        if not cache_path.exists():
+            return False
+
         with open(temp_path, "r+b") as f_temp, open(cache_path, "rb") as f_cache:
-            # Read and parse data
             data_temp = orjson.loads(f_temp.read())
             data_cache = orjson.loads(f_cache.read())
 
-            # Rollover can be cache.times = [], skip this routine, just use temp
-            if not len(data_cache['times']):
+            if not data_cache["times"]:
                 return False
 
-            # Precompute cumulative sums (vectorized)
-            cut_off = (np.cumsum(np.array(data_cache['times'], dtype=np.int64) * data_cache['shift']) + data_cache['timestamp'])[-1]
-            times_temp = (np.cumsum(np.array(data_temp['times'], dtype=np.int64) * data_temp['shift']) + data_temp['timestamp'])
+            # Compute last cached timestamp
+            cut_off = (
+                np.cumsum(
+                    np.array(data_cache["times"], dtype=np.int64)
+                    * data_cache["shift"]
+                )
+                + data_cache["timestamp"]
+            )[-1]
 
-            # Get mask (filter)
+            # Compute timestamps for new data
+            times_temp = (
+                np.cumsum(
+                    np.array(data_temp["times"], dtype=np.int64)
+                    * data_temp["shift"]
+                )
+                + data_temp["timestamp"]
+            )
+
+            # Find first index strictly after cutoff
             mask = times_temp > cut_off
-
-            # Find first index where temp data exceeds cutoff (vectorized)
             indices = np.where(mask)[0]
             idx = indices[0] if indices.size > 0 else None
 
             if idx is not None:
-                # If appendable rows, extend
-                for column in ["times","opens","highs","lows","closes","volumes"]:
-                    # Bulk extend all columns at once instead of nested loops
-                    data_cache[column].extend(data_temp[column][idx:])
+                # Append only forward-continuous data
+                for col in ["times", "opens", "highs", "lows", "closes", "volumes"]:
+                    data_cache[col].extend(data_temp[col][idx:])
 
-            # Write back optimized - single seek/truncate/write operation
+            # Overwrite temp file with merged result
             f_temp.seek(0)
             f_temp.truncate(0)
             f_temp.write(orjson.dumps(data_cache))
-        
+
         return True
-    except Exception as e:
-        # Log error for debugging
-        raise e
 
-def download_symbol(symbol: str, dt: date, app_config: AppConfig) -> bool:
+
+class DownloadWorker:
     """
-    Download Dukascopy minute-level delta JSON data for a given symbol and date.
-
-    Handles both historical and current-day downloads:
-        - Historical data is saved in '{CACHE_PATH}/YYYY/MM/'.
-        - Current-day data is saved in '{TEMP_PATH}/'.
-
-    Parameters
-    ----------
-    symbol : str
-        Trading symbol to download.
-    dt : date
-        Date of the data to download.
-    app_config : AppConfig
-        Config object.
-
-    Returns
-    -------
-    bool
-        True if new data was successfully downloaded.
-
-    Notes
-    -----
-    - Retries are implemented.
-    - Creates folders automatically if missing.
+    Coordinates file path resolution, environment rollovers (live vs historical),
+    and atomic persistence of downloaded data.
     """
-    global session # Session per worker
-    global last_request_time  # Rate-limit per worker helper
 
-    if session is None:
-        session = requests.Session()   # Create session ONCE per worker
+    def __init__(self, app_config: AppConfig):
+        """
+        Initialize the download worker.
 
-    config = app_config.download
+        Args:
+            app_config: Global application configuration.
+        """
+        self.app_config = app_config
+        self.config = app_config.download
+        self.engine = DownloadEngine(self.config)
 
-    today_dt = datetime.now(timezone.utc).date()
+    def resolve_paths(self, symbol: str, dt: date) -> Tuple[Path, Path, Path, bool]:
+        """
+        Resolve target, historical, and live file paths for a symbol/date pair.
 
-    # Build output file paths for historical vs. live data
-    historical_archive_path = Path(config.paths.historic) / dt.strftime(f"%Y/%m/{symbol}_%Y%m%d.json")
-    live_staging_path = Path(config.paths.live) / dt.strftime(f"{symbol}_%Y%m%d.json")
+        Args:
+            symbol: Trading symbol.
+            dt: Date of requested data.
 
-    is_historical = not dt == today_dt
+        Returns:
+            A tuple containing:
+            - Final target path
+            - Historical archive path
+            - Live staging path
+            - Boolean indicating historical mode
+        """
+        today_dt = datetime.now(timezone.utc).date()
+        is_historical = not (dt == today_dt)
 
-    if not is_historical:
-        url = f"https://jetta.dukascopy.com/v1/candles/minute/{symbol}/BID"
-        # The final file is the live staging file (mutable)
-        final_target_path = live_staging_path
-    else:
-        url = f"https://jetta.dukascopy.com/v1/candles/minute/{symbol}/BID/{dt.year}/{dt.month}/{dt.day}"
-        # The final file is the historical archive file (immutable)
-        final_target_path = historical_archive_path
+        hist_path = Path(self.config.paths.historic) / dt.strftime(
+            f"%Y/%m/{symbol}_%Y%m%d.json"
+        )
+        live_path = Path(self.config.paths.live) / dt.strftime(
+            f"{symbol}_%Y%m%d.json"
+        )
 
-    # Attempt the download with retry logic
-    for attempt in range(config.max_retries):
+        final_target = hist_path if is_historical else live_path
+        return final_target, hist_path, live_path, is_historical
+
+    def run(self, symbol: str, dt: date) -> bool:
+        """
+        Execute the full download and merge pipeline for a symbol and date.
+
+        Args:
+            symbol: Trading symbol.
+            dt: Date to download.
+
+        Returns:
+            True if successful, False otherwise.
+        """
         try:
-            # Protect the end point
-            min_interval = 1.0 / config.rate_limit_rps if config.rate_limit_rps > 0 else 0
-            
-            time_since_last = time.monotonic() - last_request_time
-            sleep_needed = max(0, min_interval - time_since_last)
-            
-            if sleep_needed > 0:
-                time.sleep(sleep_needed)
+            target, hist_path, live_path, is_historical = self.resolve_paths(symbol, dt)
+            url = self.engine.get_url(symbol, dt)
 
-            # Perform HTTP GET request
-            response = session.get(url, 
-                headers={
-                    "Accept-Encoding": "gzip, deflate",
-                    "User-Agent": "dukascopy-downloader/1.0 (+https://github.com/jpueberbach4/bp.markets.ingest/blob/main/dukascopy/etl/download.py)"
-                },
-                timeout=config.timeout
-            )
-            response.raise_for_status()
+            # Download raw JSON content
+            content = self.engine.fetch_data(url)
 
-            # Request successful, update last_request_time
-            last_request_time = time.monotonic()
-            break
-        except requests.exceptions.RequestException as e:
-            if attempt < config.max_retries - 1:
-                # Check whether the error is temporary (rate limit or server error)
-                status_code = getattr(e.response, 'status_code', 0)
-                if status_code >= 500 or status_code == 429: # 429: Too Many Requests
-                    wait_time = config.backoff_factor ** attempt
-                    print(f"Transient error {status_code}. Retrying in {wait_time}s...")
-                    time.sleep(wait_time)
-                    continue
-                else:
-                    # Non-retriable error (e.g., 404); propagate failure
-                    raise e
-            else:
-                # Final retry failed; propagate exception
-                raise e
+            # Ensure target directory exists
+            target.parent.mkdir(parents=True, exist_ok=True)
+            tmp_path = target.with_suffix(".tmp")
 
-    # Ensure destination directory exists (based on final_target_path)
-    final_target_path.parent.mkdir(parents=True, exist_ok=True)
-        
-    # Write output to the temporary file (.tmp suffix)
-    download_tmp_path = final_target_path.with_suffix('.tmp')
-    with open(download_tmp_path, "w", encoding="utf-8") as f:
-        f.write(response.text)
-    
-    if ENABLE_BACKFILL_FILTER:
-        # Determine the existing file state to use as the cut-off source
-        filter_source_path = historical_archive_path # Default to archive path
+            # Write downloaded content to temporary file
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                f.write(content)
 
-        if live_staging_path.is_file():
-            # If the staging file exists, use it as the source of truth for continuity.
-            # This is CRITICAL for the rollover from live -> historical.
-            filter_source_path = live_staging_path
+            # Merge forward-only data if a cache exists
+            filter_source = live_path if live_path.is_file() else hist_path
+            self.engine.filter_backfilled_items(tmp_path, filter_source)
 
-        download_filter_backfilled_items(download_tmp_path, filter_source_path)
+            # Atomically replace target file
+            os.replace(tmp_path, target)
 
-    # Atomic swap: Overwrite the final destination with the clean, merged data.
-    os.replace(download_tmp_path, final_target_path)
+            # Cleanup live file when historical data is finalized
+            if is_historical:
+                live_path.unlink(missing_ok=True)
 
-    # Remove historical item from live folder if exists (completing the rollover)
-    if is_historical:
-        if live_staging_path.is_file():
-            live_staging_path.unlink(missing_ok=True)
+            return True
 
-    return True
+        except Exception:
+            return False
 
 
 def fork_download(args: tuple) -> bool:
     """
-    Multiprocessing wrapper to download a single symbol/date.
+    Multiprocessing entry point for downloading a single symbol/date pair.
 
-    Parameters
-    ----------
-    args : tuple
-        Tuple containing (symbol, dt, config) to pass to download_symbol.
+    Args:
+        args: Tuple of (symbol, date, app_config).
+
+    Returns:
+        True if download completed successfully.
     """
     symbol, dt, app_config = args
-    
-    download_symbol(symbol, dt, app_config)
-
-    return True
+    worker = DownloadWorker(app_config)
+    return worker.run(symbol, dt)
