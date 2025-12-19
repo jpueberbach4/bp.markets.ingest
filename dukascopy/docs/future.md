@@ -33,7 +33,8 @@ replay.sh --input replay.csv | analyse.sh
 # This is an experiment leveraging in-memory DuckDB.
 
 # Plugins will be fully chainable:
-replay.sh --speed 10 --input replay.csv | tee raw.txt | indicator.sh | tee indicator.txt | \
+replay.sh --speed 10 --input replay.csv | --mix-with calendar-events.csv \
+--mix-with FOMC-5-minutes-before.csv | tee raw.txt | indicator.sh | tee indicator.txt | \
 analyse.sh | tee analyse.txt | ... | imagine.sh > output.txt
 
 # Live tailing of indicator.txt to confirm that indicator scripts are correctly appending new columns 
@@ -46,6 +47,10 @@ tail --follow indicator.txt
 # It gives complete control over the analysis stack, powered by 50+ years of 
 # UNIX tooling. Use any programming language, chain any number of components, 
 # perform time-travel debugging—limitless flexibility.
+
+# For me, this is a dream, if this is done. There is a need for smart interface design 
+# here so injecting something in new in the stream is just a matter of implementing 
+# that interface. Will be fine.
 
 ```
 
