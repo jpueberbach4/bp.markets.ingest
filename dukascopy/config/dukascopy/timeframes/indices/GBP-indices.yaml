@@ -1,4 +1,26 @@
 
+# Instrument-Specific Timeframe Resampling Configuration
+#
+# This section defines custom resampling rules for individual instruments.
+# It overrides or extends the default resampling behavior by specifying how
+# higher timeframes (e.g. 4H) are constructed from lower source timeframes
+# (e.g. 1H) on a per-symbol basis.
+#
+# For each instrument:
+#   - timeframes lists the target timeframes to generate.
+#   - rule defines the resampling interval (pandas-style, e.g. "4H").
+#   - source specifies the base timeframe used for aggregation.
+#   - origin sets the alignment anchor (exchange/session-specific start time).
+#   - label and closed control candle labeling and boundary inclusion.
+#
+# This is primarily used for instruments with non-standard session starts
+# (e.g. bonds), ensuring correct candle alignment and consistent historical
+# aggregation.
+#
+# Please note that the ORIGIN field is set to the candle alignment as if it were winter in Europe.
+#
+# ---
+#
 # London Stock Exchange (LSE) Trading Hours (FTSE 100 Index)
 GBR.IDX-GBP:
   timeframes:

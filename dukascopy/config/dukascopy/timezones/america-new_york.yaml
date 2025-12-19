@@ -1,8 +1,47 @@
+# Asset Timezone Shift Configuration
+#
+# This file defines how market data for different trading symbols should be
+# resampled and time-shifted based on the source timezone and its UTC offset.
+#
+# Each top-level key represents a timezone (e.g. Etc/UTC, America/New_York).
+#
+# For each timezone:
+#   - offset_to_shift_map maps the detected UTC offset (in minutes) to a
+#     timestamp shift (in milliseconds). This is mainly used to align data
+#     to MT4 server time, which switches between GMT+2 and GMT+3 due to DST.
+#   - symbols lists all instruments that should use this timezone/shift logic.
+#
+# The shift is applied dynamically based on the current UTC offset of the
+# timezone (including daylight saving time changes).
+#
+# A wildcard symbol ('*') can be used as a catch-all for any instruments not
+# explicitly listed.
+#
+# Example:
+#   America/New_York
+#     UTC-4 (DST)  -> shift to GMT+3
+#     UTC-5 (STD)  -> shift to GMT+2
+#
+# This configuration ensures consistent candle alignment and correct
+# historical resampling across assets, timeframes, and DST transitions.
+#
+# Timezones are traversed in the order specified below
+# Use the wildcard '*' only on the last timezone entry
+#
+Etc/UTC:                          # This is an example on how to resample assets using UTC
+  offset_to_shift_map:            # Defines a map to shift based on offset minutes
+    0: 0                          # No shift. Incoming data is already UTC. Warning: NO DASH!!
+  symbols:
+  # --- Stocks ---
+  - AAPL.US-USD                   # OK
+
 America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 based on DST change of this timezone
   offset_to_shift_map:            # Defines a map to shift based on offset minutes
     -240: 10800000                # UTC-4 (US DST) -> GMT+3 shift
     -300: 7200000                 # UTC-5 (US Standard) -> GMT+2 shift
   symbols:                        # Basically you add any symbol you are using here.
+                                  # Below can all be removed, because of wildcard. We'll leave it for now because of 
+                                  # registration purposes (still in testphase).
   # --- Commodities (Precious Metals & Energy) ---
   - BRENT.CMD-USD                 # OK
   - COPPER.CMD-USD                # OK
@@ -62,10 +101,6 @@ America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 
   # --- Bonds/Rates ---
   - BUND.TR-EUR                   # OK
   - USTBOND.TR-USD                # OK
-
-  # --- Stocks ---
-  - AAPL.US-USD                   # NOK - Missing input-data (14:00-16:00)
-                                  #       Other source needed?
 
   # --- Catch ALL ---
   - '*'                           # This catches any asset
