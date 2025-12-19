@@ -74,6 +74,8 @@ This is "reverse engineering" of the MT4 platform.
 
 What started as a personal project (private use-case) to tackle the intricate problem of temporal alignment in financial data has evolved into a robust, crash-resilient OHLCV resampling system. It now handles global trading sessions, multiple DST transitions, and aligns with real-world platforms like Metatrader.
 
+This is becoming a very powerful tool now that each asset is completely configurable regarding to timeshifting, timeframes and sessions.
+
 ---
 
 ## What Is This Tool Used For?
