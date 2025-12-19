@@ -33,16 +33,13 @@ from typing import Tuple, Optional
 
 from config.app_config import AppConfig, DownloadConfig
 
-
-# This is hacky. I dont want the overhead of MP-sharing
-# Plus we gave a formula for calculating a rps based on number of cores
-last_request_time = 0.0 
-
 class DownloadEngine:
     """
     Encapsulates HTTP access, rate limiting, retry logic, and continuity-safe
     merging of Dukascopy JSON delta candle data.
     """
+
+    last_request_time = 0.0 
 
     def __init__(self, config: DownloadConfig):
         """
@@ -100,17 +97,15 @@ class DownloadEngine:
         """
         for attempt in range(self.config.max_retries):
             try:
-                # Tsja....
-                global last_request_time
                 # Enforce global rate limit
                 min_interval = (
                     1.0 / self.config.rate_limit_rps
                     if self.config.rate_limit_rps > 0
                     else 0
                 )
-                elapsed = time.monotonic() - last_request_time
+                elapsed = time.monotonic() - DownloadEngine.last_request_time
                 sleep_needed = max(0, min_interval - elapsed)
-                
+
                 if sleep_needed > 0:
                     time.sleep(sleep_needed)
 
@@ -126,7 +121,7 @@ class DownloadEngine:
                 response.raise_for_status()
 
                 # Update request timestamp after success
-                last_request_time = time.monotonic()
+                DownloadEngine.last_request_time = time.monotonic()
                 return response.text
 
             except requests.exceptions.RequestException as e:
