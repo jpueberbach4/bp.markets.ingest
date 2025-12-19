@@ -4,275 +4,198 @@
 ===============================================================================
  File:        aggregate.py
  Author:      JP Ueberbach
- Created:     2025-11-09
- Description: Incrementally aggregates daily trading symbol CSV files into
-              a single per-symbol CSV file. Supports:
-              
-              - Resumable aggregation via atomic index files
-              - Crash-safe incremental writes
-              - Parallel processing across multiple symbols
-              - Day-level CSV input (small files, fully controlled input)
-              
-              This script is designed for high reliability and reproducibility,
-              with no memory concerns due to small per-day files.
+ Created:     2025-12-19
+ Description: Conversion to OOP - Incremental OHLCV aggregation engine.
 
- Usage:
-     python3 aggregate.py
+              This module provides:
+              - AggregateEngine: Handles incremental appending of daily CSVs 
+                to a master symbol file with crash-safe index tracking.
+              - AggregateWorker: Manages the aggregation lifecycle for a symbol 
+                across a range of dates.
 
  Requirements:
      - Python 3.8+
      - Pandas
-     - tqdm
-
- Notes:
-     - Input CSVs must follow the pattern: DATA_PATH/YYYY/MM/{symbol}_YYYYMMDD.csv
-     - Aggregated output CSVs are stored in: AGGREGATE_PATH/{symbol}.csv
-     - Incremental progress is tracked in AGGREGATE_PATH/index/{symbol}.idx
-     - Supports safe recovery from crashes or interruptions
-     - Parallelism is controlled by NUM_PROCESSES (default: os.cpu_count())
-
- License:
-     MIT License
 ===============================================================================
 """
-
-import pandas as pd
 import os
-from datetime import date, datetime
+import pandas as pd
 from pathlib import Path
-from typing import Tuple
-from config.app_config import AppConfig, AggregateConfig, load_app_config
+from datetime import date, datetime
+from typing import Tuple, List
 
-def aggregate_read_index(index_path: Path) -> Tuple[date, int, int]:
+from config.app_config import AppConfig
+
+
+class AggregateEngine:
     """
-    Read the incremental resampling index file and return the stored offsets.
-
-    Parameters
-    ----------
-    index_path : Path
-        Path to the `.idx` file storing the aggregator's progress for a single
-        symbol. The file contains exactly three lines:
-            1) date – a string in format YYYY-MM-DD
-            1) input_position  – byte offset in the upstream CSV already processed
-            2) output_position – byte offset in the output CSV already written
-
-    Returns
-    -------
-    Tuple[date,int, int]
-        (date, input_position, output_position), positions both guaranteed to be integers.
-
-    Notes
-    -----
-    These offsets allow the resampling engine to:
-        - Resume exactly where it left off after a crash or restart.
-        - Avoid re-reading previously processed input data.
-        - Avoid rewriting historical output candles.
-    The index file is always written atomically elsewhere in the pipeline to
-    ensure it is safe against partial writes or corruption.
+    Handles the low-level incremental aggregation of CSV data for a symbol.
     """
-    if not index_path.exists():
-        aggregate_write_index(index_path, datetime.utcfromtimestamp(0).date(), 0, 0)
-        return datetime.utcfromtimestamp(0).date(),0, 0
-    
-    with open(index_path, 'r') as f_idx:
-        lines = f_idx.readlines()[:3]
-        if len(lines) != 3:
-            raise IOError(f"Index file {index_path} corrupted or incomplete.")
-        date_str, input_position, output_position = [
-            line.strip() for line in lines
-        ]
-    return datetime.strptime(date_str, "%Y-%m-%d").date(),int(input_position), int(output_position)
 
-def aggregate_write_index(index_path: Path, dt: date, input_position: int, output_position: int) -> bool:
-    """
-    Write an atomic aggregate index file for crash-safe ETL processing.
+    def __init__(self, symbol: str, app_config: AppConfig):
+        """
+        Initialize the aggregation engine.
 
-    This function writes the index file containing the input date, the last
-    read position in the input (transformed) file, and the last written 
-    position in the aggregate output file. It uses a temporary file and
-    atomic replace to ensure the index file is never partially written.
+        Args:
+            symbol: Trading symbol to aggregate.
+            app_config: Global application configuration.
+        """
+        self.symbol = symbol
+        self.app_config = app_config
+        self.config = app_config.aggregate
+        
+        # Paths for index tracking and master output file
+        self.index_path = Path(self.config.paths.data) / f"index/{self.symbol}.idx"
+        self.output_path = Path(self.config.paths.data) / f"{self.symbol}.csv"
 
-    Parameters
-    ----------
-    index_path : Path
-        Full path to the target index file.
-    dt : date
-        The date corresponding to the input CSV file being aggregated.
-    input_position : int
-        Byte offset or line number indicating how far the input file has
-        been processed.
-    output_position : int
-        Byte offset indicating how far the aggregate file has been written.
+    def read_index(self) -> Tuple[date, int, int]:
+        """
+        Read the last processed date and file positions from the index file.
 
-    Returns
-    -------
-    bool
-        True if the index file was successfully written and replaced.
+        Returns:
+            Tuple containing:
+            - Last processed date
+            - Input file position
+            - Output file position
+        """
+        if not self.index_path.exists():
+            self.write_index(datetime.utcfromtimestamp(0).date(), 0, 0)
+            return datetime.utcfromtimestamp(0).date(), 0, 0
+        
+        with open(self.index_path, 'r') as f_idx:
+            lines = f_idx.readlines()[:3]
+            if len(lines) != 3:
+                raise IOError(f"Index file {self.index_path} corrupted.")
+            
+            date_str, in_pos, out_pos = [line.strip() for line in lines]
+            return datetime.strptime(date_str, "%Y-%m-%d").date(), int(in_pos), int(out_pos)
 
-    Notes
-    -----
-    - The index file format is three lines:
-        1. date in YYYY-MM-DD format
-        2. input position
-        3. output position
-    - This function ensures atomic writes by writing to a temporary file first
-      and then replacing the original file using os.replace().
-    - Parent directories will be created if they do not exist.
-    """
-    index_path.parent.mkdir(parents=True, exist_ok=True)
-    index_temp_path = Path(f"{index_path}.tmp")
-    with open(index_temp_path, "w") as f_idx:
-        date_str = dt.strftime("%Y-%m-%d")
-        f_idx.write(f"{date_str}\n{input_position}\n{output_position}")
-        f_idx.flush()
+    def write_index(self, dt: date, input_position: int, output_position: int):
+        """
+        Atomically write the last processed date and file positions to the index file.
 
-    os.replace(index_temp_path, index_path)
-    return True
+        Args:
+            dt: Last processed date.
+            input_position: Input file position after reading.
+            output_position: Output file position after writing.
+        """
+        self.index_path.parent.mkdir(parents=True, exist_ok=True)
+        temp_path = Path(f"{self.index_path}.tmp")
+        
+        with open(temp_path, "w") as f:
+            f.write(f"{dt:%Y-%m-%d}\n{input_position}\n{output_position}")
+            f.flush()
+        
+        os.replace(temp_path, self.index_path)
 
-def aggregate_symbol(symbol: str, dt: date, app_config: AppConfig) -> bool:
-    """
-    Incrementally load and aggregate CSV data for a single trading symbol and date.
+    def _resolve_input_path(self, dt: date) -> Path:
+        """
+        Determine the path to the daily CSV file for a given date.
 
-    This function appends new rows from a per-day transformed CSV into the
-    aggregated CSV for the symbol, using an index file to track progress.
-    It ensures crash-safe incremental updates by:
+        Args:
+            dt: Date to resolve.
 
-    - Resuming from the last processed position stored in the index file.
-    - Truncating the aggregate CSV if it was partially written.
-    - Updating the index file atomically after successful writes.
+        Returns:
+            Path to the CSV file.
+        """
+        path = Path(self.config.paths.historic) / f"{dt.year}/{dt.month:02}/{self.symbol}_{dt:%Y%m%d}.csv"
+        if not path.exists():
+            path = Path(self.config.paths.live) / f"{self.symbol}_{dt:%Y%m%d}.csv"
+        return path
 
-    Parameters
-    ----------
-    symbol : str
-        Trading symbol to process (e.g., "EURUSD").
-    dt : date
-        The specific date of the source CSV to aggregate.
-    app_config : AppConfig
-        Config object.
+    def process_date(self, dt: date) -> bool:
+        """
+        Aggregate a single day of data into the master CSV file.
 
-    Returns
-    -------
-    bool
-        True if new data was successfully appended to the aggregate CSV.
-        False if:
-        - No new data is available,
-        - The input CSV files are missing,
-        - Or the current date is earlier than the last processed date.
+        Args:
+            dt: Date to process.
 
-    Notes
-    -----
-    - The input CSV is expected to be located in `DATA_PATH/YYYY/MM/{symbol}_YYYYMMDD.csv`.
-    - The aggregated CSV is stored in `AGGREGATE_PATH/{symbol}.csv`.
-    - The index file format is three lines: 
-        1. date (YYYY-MM-DD)
-        2. input_position (byte offset in input CSV)
-        3. output_position (byte offset in aggregate CSV)
-    - The function uses `aggregate_write_index` for atomic index updates.
-    - Any partial writes or crashes can be safely recovered by rerunning this function.
-    """
-    config = app_config.aggregate
-
-
-    # Construct paths
-    index_path = Path(config.paths.data) / f"index/{symbol}.idx"
-    output_path = Path(config.paths.data) / f"{symbol}.csv"
-    input_path = Path(config.paths.historic) / f"{dt.year}/{dt.month:02}/{symbol}_{dt:%Y%m%d}.csv"
-
-    if not input_path.exists():
-        # Assume we should look in data/temp
-        input_path =  Path(config.paths.live) / f"{symbol}_{dt:%Y%m%d}.csv"
+        Returns:
+            True if processing was successful, False otherwise.
+        """
+        input_path = self._resolve_input_path(dt)
         if not input_path.exists():
             return False
-    
-    # Read index file
-    date_from, input_position, output_position = aggregate_read_index(index_path)
 
-    # Skip if this date is already fully processed
-    if dt < date_from:
-        return False
+        date_from, input_position, output_position = self.read_index()
 
-    # Reset input offset if processing a new date
-    if dt > date_from:
-        input_position = 0
+        # Skip already processed dates or reset input position for new dates
+        if dt < date_from:
+            return False
+        if dt > date_from:
+            input_position = 0
 
-    # Ensure output file exists
-    if not output_path.exists():
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(output_path, "w"):
-            pass
+        if not self.output_path.exists():
+            self.output_path.parent.mkdir(parents=True, exist_ok=True)
+            self.output_path.touch()
 
-    # Open files for random access
-    with open(output_path, "r+", encoding="utf-8") as f_output, \
-            open(input_path, "r", encoding="utf-8") as f_input:
+        with open(self.output_path, "r+", encoding="utf-8") as f_out, \
+             open(input_path, "r", encoding="utf-8") as f_in:
 
-            # Always read header
-            header = f_input.readline()
+            header = f_in.readline()
 
             if input_position > 0:
-                # We have partly read this file before, advance pointer
-                f_input.seek(input_position)
+                f_in.seek(input_position)
 
-            # Crash rewind
-            f_output.truncate(output_position)
+            # Rewind output file to last committed position
+            f_out.truncate(output_position)
+            f_out.seek(output_position)
 
-            # Start writing from here
-            f_output.seek(output_position)
-
-            # Output file new, write header
             if output_position == 0:
-                f_output.write(header)
+                f_out.write(header)
             
-            # Read data until we hit EOF
-            data = f_input.read()
-
+            data = f_in.read()
             if not data:
-                # EOF without data
                 return False
 
-            # Append to output
-            f_output.write(data)
-
-            # Flush
-            f_output.flush()
+            f_out.write(data)
+            f_out.flush()
             
-            # Update pointers
-            input_position = f_input.tell()
-            output_position = f_output.tell()
+            # Update index after writing
+            self.write_index(dt, f_in.tell(), f_out.tell())
 
-            # Write index file
-            aggregate_write_index(index_path, dt, input_position, output_position)
-
-    return True
-  
+        return True
 
 
-def fork_aggregate(args) -> bool:
+class AggregateWorker:
     """
-    Process all dates for a single symbol sequentially.
-
-    Intended for use with multiprocessing where each worker handles
-    one symbol over the full date range.
-
-    Parameters
-    ----------
-    args : tuple
-        A tuple of the form (symbol, dates), where:
-        - symbol : str
-            The symbol to aggregate.
-        - dates : list[datetime.date]
-            The list of trading dates to process sequentially.
-        - app_config : AppConfig
-            Config object
-
-    Returns
-    -------
-    bool
-        True if all dates were processed successfully,
-        False if interrupted by the user.
+    Orchestrates the aggregation process for a symbol across multiple dates.
     """
-    symbol, dates, config = args
 
-    for dt in dates:
-        aggregate_symbol(symbol, dt, config)
-    
-    return True
+    def __init__(self, symbol: str, dates: List[date], app_config: AppConfig):
+        """
+        Initialize the aggregation worker.
+
+        Args:
+            symbol: Trading symbol.
+            dates: List of dates to process.
+            app_config: Global application configuration.
+        """
+        self.engine = AggregateEngine(symbol, app_config)
+        self.dates = dates
+
+    def run(self) -> bool:
+        """
+        Sequentially process all assigned dates.
+
+        Returns:
+            True if all dates processed successfully.
+        """
+        for dt in self.dates:
+            self.engine.process_date(dt)
+        return True
+
+
+def fork_aggregate(args: Tuple[str, List[date], AppConfig]) -> bool:
+    """
+    Multiprocessing-friendly entry point.
+
+    Args:
+        args: Tuple containing (symbol, list of dates, app_config).
+
+    Returns:
+        True if aggregation completed successfully.
+    """
+    symbol, dates, app_config = args
+    worker = AggregateWorker(symbol, dates, app_config)
+    return worker.run()
