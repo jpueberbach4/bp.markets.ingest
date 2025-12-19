@@ -88,7 +88,7 @@ class ResampleTracker:
         # Recalculate session ranges if the date has changed
         if date_str != self.last_date:
             dt_obj = datetime.fromisoformat(line[:19])
-            self.daily_session_ranges = self._get_sessions_for_date(dt_obj.date(), self.config)
+            self.daily_session_ranges = self._get_sessions_for_date(dt_obj.date())
 
             # Precompute start and end times in minutes for faster comparisons
             for s in self.daily_session_ranges:
@@ -119,7 +119,7 @@ class ResampleTracker:
         raise ValueError(f"Line {line} is out_of_market.")
 
 
-    def get_active_origin(self, line: str, ident: str, session_name: str, config: 'ResampleSymbol') -> str:
+    def get_active_origin(self, line: str, ident: str, session_name: str) -> str:
         """
         Computes the adjusted origin time for a specific symbol, session, and timeframe.
 
@@ -140,7 +140,7 @@ class ResampleTracker:
         timestamp = datetime.fromisoformat(line[:19])
 
         # Get the session and timeframe configuration
-        session_cfg = config.sessions.get(session_name)
+        session_cfg = self.config.sessions.get(session_name)
         timeframe = session_cfg.timeframes.get(ident)
         base_origin_str = timeframe.origin
 
@@ -150,7 +150,7 @@ class ResampleTracker:
 
         # Reference date in UTC to calculate seasonal shifts
         ref_date = datetime(2025, 1, 1, tzinfo=zoneinfo.ZoneInfo("UTC"))
-        tz_sydney = zoneinfo.ZoneInfo(config.timezone)
+        tz_sydney = zoneinfo.ZoneInfo(self.config.timezone)
         tz_server_ref = self._get_mt4_server_tz(ref_date)
 
         # Calculate the timezone gap between Sydney and server at reference date
@@ -172,25 +172,17 @@ class ResampleTracker:
         return f"{adjusted_h:02d}:{base_m:02d}"
 
 
-    def is_default_session(self, config: ResampleSymbol) -> bool:
+    def is_default_session(self) -> bool:
         """
         Determines if the symbol configuration uses a single default 24-hour session.
-
-        Args:
-            config (ResampleSymbol): The symbol configuration containing session definitions.
 
         Returns:
             bool: True if the configuration has exactly one session named "default", otherwise False.
         """
-        # Check if there is only one session defined
-        if len(config.sessions) == 1:
-            # Check if the single session is named "default"
-            if config.sessions.get("default"):
-                return True
-        return False
+        # Check if there is only one session defined and its name is "default"
+        return len(self.config.sessions) == 1 and "default" in self.config.sessions
 
-
-    def _get_sessions_for_date(self, current_date, config):
+    def _get_sessions_for_date(self, current_date):
         """
         Returns all trading session start and end datetimes in MT4 server time for a given date.
 
@@ -209,7 +201,7 @@ class ResampleTracker:
                 - "end": Session end datetime in server time (timezone-naive)
         """
         # Local timezone from the configuration
-        tz_local = zoneinfo.ZoneInfo(config.timezone)
+        tz_local = zoneinfo.ZoneInfo(self.config.timezone)
 
         # MT4 server timezone for the given date
         tz_server = self._get_mt4_server_tz(current_date)
@@ -217,7 +209,7 @@ class ResampleTracker:
         sessions_for_day = []
 
         # Iterate over all sessions defined in the configuration
-        for session_name, session_item in config.sessions.items():
+        for session_name, session_item in self.config.sessions.items():
             for range_name, range_item in session_item.ranges.items():
                 # Convert local session start and end times to datetime
                 start_local = datetime.combine(

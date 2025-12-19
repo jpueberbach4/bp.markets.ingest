@@ -225,7 +225,7 @@ class ResampleEngine:
         last_key = None
 
         # Determine whether multiple sessions are configured
-        is_default = self.tracker.is_default_session(self.config)
+        is_default = self.tracker.is_default_session()
 
         # Default origin (single-session case)
         primary_session = next(iter(self.config.sessions.values()))
@@ -250,7 +250,7 @@ class ResampleEngine:
                 # Only recompute origin when session/day changes
                 if current_key != last_key:
                     origin = self.tracker.get_active_origin(
-                        line, self.ident, session, self.config
+                        line, self.ident, session
                     )
                     last_key = current_key
             else:
