@@ -52,27 +52,7 @@ This will prevent breaking-change issues on configuration in the future.
 - [General notices and caveats](docs/notices.md)
 - [Limitations](docs/limitations.md)
 
-**Note:** The data part is not finished yet. Still bugs/features to resolve:
 
-- Soybean 1Y timeframe throws out_of_market error \
-  1Y timeframe disabled on that asset \
-  Happens because of timezone America/Chicago and start of month being on a Sunday. \
-  Who trades it anyways, but will get fixed.
-- Compatibility for "alignment policy changes" in MT4 eg for AUS.IDX-AUD \
-  Adding valid_from, valid_to attributes on sessions to allow for different session allocation for specific dateranges.
-- Strange quirk with the SGD.IDX. H4 \
-  1m data is present, outside of 4H timeframes, creating a candle we dont see in MT4. What to do with it? (research)
-- Sessions are currently mapped, fixed, to America/New_York. Make it based on the symbol's timezone setting \
-  in transform.timezones.
-- Perhaps other things.... 
-
-It's a limited list. Looks actually pretty good.
-
-This is "reverse engineering" of the MT4 platform.
-
-**Note:** The ETL part of this project has been converted to OOP. Making it slightly less readable but better maintainable and testable.
-
-**Note:** This system is more and more getting tailored to Dukascopy. I dont have time to test this with other brokers like FXCM or IGMarkets. Chances are, that these brokers have different rules regarding to the assets they "broker for". Different alignment policies, etc. The system can be used with other brokers since the 1m base data should be near equal at any broker. Prices are factual, market-wide. If differences: you will have to tailor it to these brokers yourself. It's a tedious job but the reward is there if you succeed.
 
 **From Portfolio Project to Platform**
 

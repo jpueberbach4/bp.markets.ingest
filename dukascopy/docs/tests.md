@@ -5,9 +5,11 @@
 - Dollar index, Volatility index. Good.
 - Energy: Brent, WTI, Diesel, GAS. Great.
 - Metals: XAU slightly off but (very) usable, Copper is way off (still need to check why, likely data)
-- Indices: US indices. Excellent. DAX. Good. NL. Good. Nikkie. Excellent. Still working on the others.
+- Indices: US indices. Excellent. DAX. Good. NL. Good. Nikkie. Excellent.
+- Special Indices are being handled better: AUS.IDX, HKG.IDX, CHI.IDX, SGD.IDX are almost excellent too.
 - Bonds: BUND, USNOTE. Good. Gilt not checked (yet).
-- A weird edge-case: NZD-USD (Weekly unusable). Daily. Fine.
+- Edge-case: NZD-USD (W1 unusable). Daily. Fine.
+- Edge-case: Soybeans 1Y (disabled 1Y TF)
 
 [Price differences?](troubleshooting.md#price-differences)
 

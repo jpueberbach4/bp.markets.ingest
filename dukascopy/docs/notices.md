@@ -1,3 +1,27 @@
+## Status per 19 December 2025
+
+**Note:** The data part is not finished yet. Still bugs/features to resolve:
+
+- Soybean 1Y timeframe throws out_of_market error \
+  1Y timeframe disabled on that asset \
+  Happens because of timezone America/Chicago and start of month being on a Sunday. \
+  Who trades it anyways, but will get fixed.
+- Compatibility for "alignment policy changes" in MT4 eg for AUS.IDX-AUD \
+  Adding valid_from, valid_to attributes on sessions to allow for different session allocation for specific dateranges.
+- Strange quirk with the SGD.IDX. H4 \
+  1m data is present, outside of 4H timeframes, creating a candle we dont see in MT4. What to do with it? (research)
+- Sessions are currently mapped, fixed, to America/New_York. Make it based on the symbol's timezone setting \
+  in transform.timezones.
+- Perhaps other things.... 
+
+It's a limited list. Looks actually pretty good.
+
+This is "reverse engineering" of the MT4 platform.
+
+**Note:** The ETL part of this project has been converted to OOP. Making it slightly less readable but better maintainable and testable.
+
+**Note:** This system is more and more getting tailored to Dukascopy. I dont have time to test this with other brokers like FXCM or IGMarkets. Chances are, that these brokers have different rules regarding to the assets they "broker for". Different alignment policies, etc. The system can be used with other brokers since the 1m base data should be near equal at any broker. Prices are factual, market-wide. If differences: you will have to tailor it to these brokers yourself. It's a tedious job but the reward is there if you succeed.
+
 ## Notice
 
 **Dukascopy has reviewed this and cleared it. However, we ask you to behave as a good citizin. Thank you**
@@ -9,46 +33,11 @@
 - main and other branches: bleeding-edge, early access
 - releases: stable, less functionality
 
-❗ WARNING: Are you on MT4? CHANGE ```time_shift_ms```. When changing ```time_shift_ms``` while already having a dataset, execute ```./rebuild-full.sh```
-
-Time shifts cannot be applied incrementally because timestamps affect all aggregation boundaries.
-
 >I’m building a **Dukascopy** MT4–tailored configuration file, ```config.dukascopy-mt4.yaml```. You can review it to get a sense of how this configuration file is structured and how it can be extended. If you are using an other broker, you can use the file for reference.
 
 >When you apply ```config.dukascopy-mt4.yaml```. Perform a rebuild from scratch ```./rebuild-full.sh```.
 
-## Notice
-
-**Dukascopy Time Zone Drift (DST Issue)**
-
-The Dukascopy MT server switches between GMT+2 (standard time) and GMT+3 (daylight saving time based on America/New_York timezone), which caused historical OHLC candles to be misaligned and incorrectly binned. A fix has been implemented in the transform layer to correctly handle this behavior.
-
-If you are working with Dukascopy MT4, copy the timezones block from ```config.dukascopy-mt4.yaml``` into your ```config.user.yaml```, then run ```./rebuild-full.sh```.
-
-Note that the configuration is not yet complete and may change again in the future as support for additional symbols is added.
-
-The solution has been tested on BRENT, and weekly candles are now correctly aligned. Performance impact of fix is limited, so no additional performance tuning regarding the new logic will be done.
-
-```sh
-transform:
-  time_shift_ms: 7200000              # How many milliseconds should we shift (0=UTC, 7200000=GMT+2 (eg MT4 Dukascopy))
-  round_decimals: 8                   # Number of decimals to round OHLCV to
-  paths:
-    data: data/transform/1m           # Output directory for transform
-    historic: cache                   # Historical downloads
-    live: data/temp                   # Live downloads
-  timezones:
-    America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 based on DST change of this timezone
-      offset_to_shift_map:            # Defines a map to shift based on offset minutes
-        -240: 10800000                # UTC-4 (US DST) -> GMT+3 shift
-        -300: 7200000                 # UTC-5 (US Standard) -> GMT+2 shift
-      symbols:                --!>    # Basically you add any symbol you are using here. <!--
-      - SYMBOL1               --!>    # Investigation about Crypto is ongoing.           <!--
-      - SYMBOL2
-```
-
-To me, it's not exactly clear how Crypto is handled. I have sent an e-mail.
-
+**Update (19 december)**: When you use the above configuration you get nearly EXACT simulation of the candles in Dukascopy MT4. 
 
 ## Notice
 
