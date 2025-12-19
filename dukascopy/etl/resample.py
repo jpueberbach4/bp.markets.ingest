@@ -276,7 +276,8 @@ def resample_batch(sio: StringIO, ident, config: ResampleSymbol) -> Tuple[pd.Dat
 
     for origin in origins:
         # Use the first session's timeframe to get the resampling rules
-        session = list(config.sessions.values())[0]
+        # Since sessions can grow large, we stick to next-iter
+        _, session = next(iter(config.sessions.items()))
         timeframe = session.timeframes.get(ident)
         rule, label, closed = [timeframe.rule, timeframe.label, timeframe.closed]
 
