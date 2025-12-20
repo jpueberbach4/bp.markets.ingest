@@ -2,16 +2,14 @@
 
 **Note:** The data part is not finished yet. Still bugs/features to resolve:
 
-- Soybean 1Y timeframe throws out_of_market error \
-  1Y timeframe disabled on that asset \
-  Happens because of timezone America/Chicago and start of month being on a Sunday. \
+- Soybean 1Y timeframe throws out_of_market error 1Y timeframe disabled on that asset Happens because of timezone America/Chicago and start of month being on a Sunday. \
   Who trades it anyways, but will get fixed.
-- Compatibility for "alignment policy changes" in MT4 eg for AUS.IDX-AUD \
-  Adding valid_from, valid_to attributes on sessions to allow for different session allocation for specific dateranges.
+- ~~Compatibility for "alignment policy changes" in MT4 eg for AUS.IDX-AUD \
+  Adding valid_from, valid_to attributes on sessions to allow for different session allocation for specific dateranges.~~
 - Strange quirk with the SGD.IDX. H4 \
   1m data is present, outside of 4H timeframes, creating a candle we dont see in MT4. What to do with it? (research)
-- Sessions are currently mapped, fixed, to America/New_York. Make it based on the symbol's timezone setting \
-  in transform.timezones.
+- Sessions are currently mapped, fixed, to America/New_York. \
+  Make it based on the symbol's timezone setting in transform.timezones.
 - Perhaps other things.... 
 
 It's a limited list. Looks actually pretty good.
