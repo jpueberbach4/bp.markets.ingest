@@ -85,7 +85,7 @@ time
 2025-12-19 15:51:00  437.299  438.799  437.141  438.359  0.5280  15:51  2511338
 ```
 
-That's interesting. Tricky issue. Merging seems a better option. Merging is in fact THE ONLY option, for this current design (without bloating the code). Even if we could fix the labelling to 02:30 for the 11:51:00, 12:51:00, 13:51:00,... we would still be stuck with that 2025-12-19 14:51:00 which fall outside of the range 10:30:00-14:30:00 (The H4 candle at 10:30) and before the 2025-12-19 15:51:00 (THE H4 candle at 15:51).
+That's interesting. Tricky issue. Merging seems a better option. Merging is in fact THE ONLY option, for this current design (without bloating the code). Even if we could fix the labelling to 02:30 for the 11:51:00, 12:51:00, 13:51:00,... we would still be stuck with that 2025-12-19 14:51:00 which falls outside of the range 10:30:00-14:30:00 (The H4 candle at 10:30) and before the 2025-12-19 15:51:00 (The H4 candle at 15:51).
 It would fall into a GAP, which then would still create a ghost-candle, only with different values. 
 
 **Decision:** small postprocesssing step when merge is defined. Merging the 2025-12-19 11:51:00 ghost candle into the 2025-12-19 10:30:00 candle.
