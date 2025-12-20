@@ -143,7 +143,6 @@ class ResampleTracker:
             line (str): A line of data containing the timestamp (ISO format) at the start.
             ident (str): The timeframe identifier.
             session_name (str): The name of the session.
-            config (ResampleSymbol): The symbol configuration containing sessions and timeframes.
 
         Returns:
             str: The adjusted origin time in "HH:MM" format, or "epoch" if the base origin is "epoch".
