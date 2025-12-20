@@ -216,56 +216,61 @@ class ResampleEngine:
                 - StringIO buffer containing the enriched CSV batch.
                 - eof flag indicating whether end-of-file was reached.
         """
-        # Initialize StrinIO buffer
+        # Initialize in-memory buffer for the output batch
         sio = StringIO()
 
-        # Extend header with metadata columns
+        # Write CSV header with appended metadata columns
         sio.write(f"{header.strip()},origin,offset\n")
 
+        # Track end-of-file state and last processed session/day key
         eof = False
         last_key = None
 
-        # Determine whether multiple sessions are configured
+        # Check whether the tracker is running in single-session mode
         is_default = self.tracker.is_default_session()
 
-        # Default origin (single-session case)
+        # Precompute origin for the single-session (default) case
         primary_session = next(iter(self.config.sessions.values()))
         default_origin = primary_session.timeframes[self.ident].origin
 
-        # Read up to batch_size rows
+        # Read up to batch_size rows from the input file
         for _ in range(self.config.batch_size):
-            # Capture byte offset before reading
+            # Capture byte offset before reading the row
             offset_before = f_input.tell()
             line = f_input.readline()
 
-            # EOF reached
+            # Stop processing if end-of-file is reached
             if not line:
                 eof = True
                 break
 
-            # Resolve origin dynamically for multi-session setups
+            # Resolve origin dynamically when multiple sessions are configured
             if not is_default:
                 try:
+                    # Determine the active session for the current row
                     session = self.tracker.get_active_session(line)
-                    current_key = f"{session}/{line[:10]}"  # session + date
+                    current_key = f"{session}/{line[:10]}"  # session + date prefix
 
-                    # Only recompute origin when session/day changes
+                    # Recompute origin only when session or day changes
                     if current_key != last_key:
                         origin = self.tracker.get_active_origin(
-                          line, self.ident, session
+                            line, self.ident, session
                         )
                         last_key = current_key
                 except Exception as e:
+                    # Propagate errors encountered during session/origin resolution
                     raise e
-                    print("fuckyou")
             else:
+                # Use precomputed origin for single-session mode
                 origin = default_origin
 
-            # Write enriched row
+            # Write the enriched CSV row to the output buffer
             sio.write(f"{line.strip()},{origin},{offset_before}\n")
 
+        # Reset buffer cursor for downstream consumers
         sio.seek(0)
         return sio, eof
+
 
     def process_resample(self, sio: StringIO) -> Tuple[pd.DataFrame, int]:
         """
@@ -285,7 +290,7 @@ class ResampleEngine:
         Raises:
             ValueError: If the batch contains no data.
         """
-        # Parse CSV batch into DataFrame
+        # Load the prepared CSV batch into a DataFrame indexed by timestamp
         df = pd.read_csv(
             sio,
             parse_dates=["time"],
@@ -293,53 +298,58 @@ class ResampleEngine:
             date_format="%Y-%m-%d %H:%M:%S",
         )
 
+        # Guard against empty batches
         if df.empty:
             raise ValueError("Empty batch read from StringIO")
 
+        # Accumulate per-origin resampled DataFrames
         resampled_list = []
 
-        # Retrieve timeframe configuration (from primary session)
+        # Retrieve timeframe configuration from the primary session
         session = next(iter(self.config.sessions.values()))
         tf_cfg = session.timeframes[self.ident]
 
-        # Resample independently per origin
+        # Resample each origin independently to preserve session boundaries
         for origin, origin_df in df.groupby("origin"):
             res = origin_df.resample(
-                tf_cfg.rule,
-                label=tf_cfg.label,
-                closed=tf_cfg.closed,
-                origin=origin,
+                tf_cfg.rule,              # Resampling rule (e.g., '5T', '1H')
+                label=tf_cfg.label,       # Label alignment for resampled bars
+                closed=tf_cfg.closed,     # Interval closure (left/right)
+                origin=origin,            # Session-aware origin timestamp
             ).agg(
                 {
-                    "open": "first",
-                    "high": "max",
-                    "low": "min",
-                    "close": "last",
-                    "volume": "sum",
-                    "offset": "first",
+                    "open": "first",      # First price in the interval
+                    "high": "max",        # Highest price in the interval
+                    "low": "min",         # Lowest price in the interval
+                    "close": "last",      # Last price in the interval
+                    "volume": "sum",      # Total traded volume
+                    "offset": "first",    # Byte offset for resume tracking
                 }
             )
 
-            # Drop empty or invalid bars
+            # Drop empty or invalid bars (e.g., no volume)
             res = res[res["volume"].gt(0) & res["volume"].notna()]
             resampled_list.append(res)
 
-        # Combine all origins into one sorted DataFrame
+        # Combine all resampled origins into a single, time-sorted DataFrame
         full_resampled = pd.concat(resampled_list).sort_index()
 
-        # Determine resume offset from last completed bar
+        # Determine the resume position from the last completed bar
         next_input_pos = int(full_resampled.iloc[-1]["offset"])
 
-        # Final cleanup and formatting
+        # Remove internal metadata and apply final rounding
         full_resampled = (
             full_resampled.drop(columns=["offset"])
             .round(self.config.round_decimals)
         )
+
+        # Normalize index formatting for downstream consumers
         full_resampled.index = full_resampled.index.strftime(
             "%Y-%m-%d %H:%M:%S"
         )
 
         return full_resampled, next_input_pos
+
 
 class ResampleWorker:
     """
@@ -401,50 +411,56 @@ class ResampleWorker:
         Args:
             engine (ResampleEngine): Initialized resampling engine.
         """
-        # Restore last known input/output positions
+        # Restore last known read/write positions from index files
         input_pos, output_pos = engine.read_index()
 
+        # Open input CSV for reading and output CSV for read/write updates
         with open(engine.input_path, "r") as f_in, open(engine.output_path, "r+") as f_out:
-            # Read CSV header from input
+            # Read and cache the input CSV header
             header = f_in.readline()
 
-            # Resume reading input
+            # Resume input reading from the last processed byte offset
             if input_pos > 0:
                 f_in.seek(input_pos)
 
-            # Write header to output if starting fresh
+            # If starting from a fresh output file, write the CSV header
             if output_pos == 0:
                 f_out.write(header)
                 output_pos = f_out.tell()
 
-            # Process batches until EOF
+            # Process input data incrementally until EOF is reached
             while True:
+                # Read the next batch and enrich it with metadata
                 sio, eof = engine.prepare_batch(f_in, header)
                 try:
+                    # Resample the batch and compute the next input position
                     resampled, next_in_pos = engine.process_resample(sio)
                 finally:
+                    # Ensure the in-memory buffer is always released
                     sio.close()
 
-                # Rewrite output up to last confirmed position
+                # Roll back output file to the last confirmed safe position
                 f_out.seek(output_pos)
                 f_out.truncate(output_pos)
 
-                # Write all completed bars except trailing partial bar
+                # Write all fully completed bars (exclude trailing partial bar)
                 f_out.write(resampled.iloc[:-1].to_csv(index=True, header=False))
                 f_out.flush()
 
-                # Persist progress before writing trailing bar
+                # Persist progress after writing confirmed bars
                 output_pos = f_out.tell()
                 engine.write_index(next_in_pos, output_pos)
 
-                # Write trailing bar (may be updated in next batch)
+                # Write the trailing bar, which may be updated in the next batch
                 f_out.write(resampled.tail(1).to_csv(index=True, header=False))
 
+                # Exit the loop once the input file has been fully consumed
                 if eof:
                     break
 
-                # Resume reading input from computed offset
+                # Resume reading input from the computed byte offset
                 f_in.seek(next_in_pos)
+
 
 
 def fork_resample(args) -> bool:
