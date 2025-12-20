@@ -52,7 +52,7 @@ This will prevent breaking-change issues on configuration in the future.
 - [General notices, latest updates, caveats, etc](docs/notices.md) (updated 20 DEC)
 - [Limitations](docs/limitations.md) (updated 20 DEC)
 
-
+Don't forget to check the [Tools](docs/tools.md) section. It will easy things even more.
 
 **From Portfolio Project to Platform**
 
