@@ -82,19 +82,25 @@ class ResampleTracker:
         Raises:
             ValueError: If the timestamp does not fall into any session.
         """
-        # Extract the date portion from the timestamp line
-        date_str = line[:10]
+        # Setup Timezone and Localized Datetime (This is tricky stuff! Pretty hard.)
+        
+        # Create a ZoneInfo object 
+        tz = zoneinfo.ZoneInfo(self.config.timezone)
+        # Get the datetime from the line and create a UTC-localized datetime object
+        dt_utc = datetime.fromisoformat(line[:19].replace(" ", "T")).replace(tzinfo=zoneinfo.ZoneInfo("UTC"))
+        # Now convert that localized-UTC datetime object into a localized-tz datetime object
+        dt_local = dt_utc.astimezone(tz)
+        # Now retrieve the localized-tz date
+        current_local_date = dt_local.date()
+        # And get its string value in ISO format
+        date_str = current_local_date.isoformat()
 
-        # Recalculate session ranges if the date has changed
+        # Recalculate session ranges if the MARKET date has changed
         if date_str != self.last_date:
-            dt_obj = datetime.fromisoformat(line[:19])
-            self.daily_session_ranges = self._get_sessions_for_date(dt_obj.date())
-
-            # Precompute start and end times in minutes for faster comparisons
+            self.daily_session_ranges = self._get_sessions_for_date(current_local_date)
             for s in self.daily_session_ranges:
                 s['start_m'] = s["start"].hour * 60 + s["start"].minute
                 s['end_m'] = s["end"].hour * 60 + s["end"].minute
-
             self.last_date = date_str
 
         # Compute the current timestamp in minutes
@@ -104,6 +110,12 @@ class ResampleTracker:
 
         # Check which session the current timestamp falls into
         for s in self.daily_session_ranges:
+            # Check if session is within validity date boundaries
+            if s['from'] and dt_local < s['from']:
+                continue
+            if s['to'] and dt_local > s['to']:
+                continue
+            
             s_min = s['start_m']
             e_min = s['end_m']
 
@@ -223,6 +235,22 @@ class ResampleTracker:
                     tzinfo=tz_local,
                 )
 
+                # Calculate when from_date and to_date is set on a session
+                # Question: when is session active in config.timezone datetime
+                # I didnt say it was easy....
+                from_dt_local = None
+                to_dt_local = None
+
+                if session_item.from_date:
+                    from_dt_local = datetime.fromisoformat(
+                        session_item.from_date.replace(" ", "T")
+                    ).replace(tzinfo=tz_local)
+
+                if session_item.to_date:
+                    to_dt_local = datetime.fromisoformat(
+                        session_item.to_date.replace(" ", "T")
+                    ).replace(tzinfo=tz_local)                
+
                 # Adjust for overnight sessions that span midnight
                 if end_local <= start_local:
                     end_local += timedelta(days=1)
@@ -237,6 +265,8 @@ class ResampleTracker:
                     "range": range_name,
                     "start": start_server.replace(tzinfo=None),
                     "end": end_server.replace(tzinfo=None),
+                    "from": from_dt_local,
+                    "to": to_dt_local,
                 })
 
         return sessions_for_day

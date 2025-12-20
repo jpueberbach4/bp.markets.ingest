@@ -2,6 +2,27 @@
 
 While the tool is becoming pretty excellent, it is worth noting that there are (still) some important limitations which makes 100% support for all sources, currently, not possible.
 
+### Session from-to support - Nitpicking BUT "drop support" can also be useful
+
+We have implemented the from_date, to_date for sessions. Using these date-times you can determine between
+what timestamps a session is valid/active. Works like a charm. BUT. Ofcourse something happens when the 
+switches happen. Let's take (again) AUD.IDX-AUD as an example. See configuration for this asset in ```config/dukascopy/timeframes/indices/AUD-indices.yaml```. This is what happens when the day-session and after-hours actually becomes active:
+
+```sh
+2020-02-06 00:00:00,7036.09,7042.08,7011.16,7018.79,1.218572
+2020-02-06 04:00:00,7018.79,7051.07,7018.77,7044.08,2.033202
+2020-02-06 08:00:00,7046.27,7054.63,7031.2,7040.72,0.466506       << CANDLE correct OHLC values
+2020-02-06 12:00:00,7040.65,7056.41,7031.21,7053.07,0.260305      << CANDLE correct OHLC values
+2020-02-06 12:10:00,7052.95,7053.41,7039.0,7049.02,0.313945       << WHOOPS. EXTRA CANDLE. DOESNT EXIST IN Mt4
+2020-02-06 16:10:00,7049.58,7060.14,7032.04,7051.57,0.96395       << CANDLE correct OHLC values
+2020-02-06 20:10:00,7051.51,7057.51,7045.13,7051.1,0.13875
+```
+
+Now, conclusion of this is, that during the switch MT4 has filtered out 1m data between 16:00 and 16:10. Because we don't atm, it creates a "ghost candle" since the data between 16:00 and 16:10 falls within the 12:10 candle (which becomes active during the switch). Now. This is the only candle mismatch in say 10 years,.. so it's nitpicking. BUT. I think it can be useful if we also build "DROP-1m candle between from and to datetime/time is supported. This will also solve the SGD issues. Yes. MT4 likely just drops 1m candles there too (preliminary conclusion though).
+
+I said i want 100 percent correctness, so, yeah... let's just do it.
+
+
 ### Session windows - indices, forex with breaks - **solved, implemented, available in main**
 
 Example: AUS.IDX-AUD (index). The Aussie index has 2 trading sessions (for futures and derivatives). 

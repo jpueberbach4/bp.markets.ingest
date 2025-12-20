@@ -43,6 +43,8 @@ class ResampleSymbolTradingSession:
     """
     Configuration for a single named session (e.g., 'day-session').
     """
+    from_date: str = field(default=None,metadata={'yaml_key': 'from_date'}) 
+    to_date: str = field(default=None,metadata={'yaml_key': 'to_date'})
     ranges: Dict[str, ResampleSymbolTradingSessionRange] = field(default_factory=dict)
     timeframes: Dict[str, 'ResampleTimeframe'] = field(default_factory=dict)
 

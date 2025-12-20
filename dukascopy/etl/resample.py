@@ -27,7 +27,7 @@ from io import StringIO
 from typing import Tuple, IO, Optional
 from tqdm import tqdm
 
-from config.app_config import AppConfig, ResampleSymbol, resample_get_symbol_config
+from config.app_config import AppConfig, ResampleSymbol, resample_get_symbol_config, load_app_config
 from helper import ResampleTracker
 
 # Enable verbose logging via environment variable
@@ -245,15 +245,19 @@ class ResampleEngine:
 
             # Resolve origin dynamically for multi-session setups
             if not is_default:
-                session = self.tracker.get_active_session(line)
-                current_key = f"{session}/{line[:10]}"  # session + date
+                try:
+                    session = self.tracker.get_active_session(line)
+                    current_key = f"{session}/{line[:10]}"  # session + date
 
-                # Only recompute origin when session/day changes
-                if current_key != last_key:
-                    origin = self.tracker.get_active_origin(
-                        line, self.ident, session
-                    )
-                    last_key = current_key
+                    # Only recompute origin when session/day changes
+                    if current_key != last_key:
+                        origin = self.tracker.get_active_origin(
+                          line, self.ident, session
+                        )
+                        last_key = current_key
+                except Exception as e:
+                    raise e
+                    print("fuckyou")
             else:
                 origin = default_origin
 
@@ -459,3 +463,10 @@ def fork_resample(args) -> bool:
     worker = ResampleWorker(symbol, config)
     worker.run()
     return True
+
+
+
+if __name__ == "__main__":
+    # Load YAML config (currently only resample support)
+    config = load_app_config()
+    fork_resample(["AUS.IDX-AUD",config])

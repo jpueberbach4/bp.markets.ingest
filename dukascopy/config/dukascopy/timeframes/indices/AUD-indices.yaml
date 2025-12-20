@@ -32,6 +32,7 @@ AUS.IDX-AUD:
   skip_timeframes: []  
   sessions:
     day-session:
+      from_date: "2025-02-07 01:00:00"  # In Australia/Sydney time
       ranges: 
         day:
           from: "09:50"
@@ -62,6 +63,7 @@ AUS.IDX-AUD:
           source: "1h"
           origin: "00:50"     
     after-hours:
+      from_date: "2025-02-07 01:00:00" # In Australia/Sydney time
       ranges: 
         day:
           from: "17:10"
@@ -94,8 +96,13 @@ AUS.IDX-AUD:
           closed: "left"
           source: "1h"
           origin: "08:10"
-    catch-old:
-      ranges: 
-        day:
-          from: "07:00"
-          to: "09:49"
+    # Before 2020-02-06, different candle policy
+    # Switch on candles happens on Thursday, Feb 6, 4:00 PM (16:00) GMT+2 (MT4 server-time, winter)
+    # Switch on candles happens on Friday, Feb 7, 1:00 AM (01:00) (Australia/Sydney)
+    # Use default epoch time, causes H4 candles to align to 00:00, 04:00,...
+    ancient:
+      to_date: "2025-02-07 00:59:00"
+      ranges:
+        24h:
+          from: "00:00"
+          to: "23:59"
