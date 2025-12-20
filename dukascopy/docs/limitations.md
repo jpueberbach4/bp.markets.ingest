@@ -20,82 +20,15 @@ switches happen. Let's take (again) AUD.IDX-AUD as an example. See configuration
 2020-02-06 20:10:00,7051.51,7057.51,7045.13,7051.1,0.13875
 ```
 
-Now, conclusion of this is, that during the switch MT4 has filtered out 1m data between 16:00 and 16:10 and merged it in the previous candle. Because we don't merge atm, it creates a "ghost candle" since the data between 16:00 and 16:10 falls within the 12:10 candle (which becomes active during the switch). 
-
-Now. This is the only candle mismatch in say 10 years,.. so it's nitpicking. BUT. I think it can be useful if we also build "DROP/MERGE/SHIFT-1m candle between from and to datetime/time" support. This will also solve the SGD issues. Yes. MT4 likely just shifts the 1m candles there too (preliminary conclusion though).
-
-I said i want 100 percent correctness, so, yeah... let's just do it. Timezone stuff is very tricky to implement but the basis seems solid now so this feature shouldnt be too hard.
+Now, conclusion of this is, that during the switch MT4 has filtered out 1m data between 16:00 and 16:10 and merged it in the previous candle. Because we don't merge atm, it creates a "ghost candle" since the data between 16:00 and 16:10 falls within the 12:10 candle (which becomes active during the switch). We will build the merge support as well.
 
 If you want the config change for AUS.IDX-AUD.. copy over the AUD-indices.yaml to your config.user directory. If you choose to do so, you will need to ```./rebuild-resample.sh```. Takes about 3 minutes on 40 symbols (Ryzen 7, NVMe 3).
 
 **Note:** This is a matter of "taste" as well. Some would like to prefer to keep the real day-session and after-hours sessions active, also before FEB 2020, because it's a better "truth". You decide yourself. I am here to align everything 100 pct to MT4.
 
-**Decision:** small postprocesssing step when merge is defined. Merging the 2025-12-19 11:51:00 ghost candle into the 2025-12-19 10:30:00 candle.
+**Decision:** Fix. Small postprocesssing step when merge is defined. Merging the 2025-12-19 11:51:00 ghost candle into the 2025-12-19 10:30:00 candle.
 
-Have a working fixed-code fix:
-
-```python
-# testing
-if self.ident == "4h":
-    ghost_positions = np.where(full_resampled.index.str.endswith("11:51:00"))[0]
-
-    print(ghost_positions)
-    for pos in ghost_positions:
-        # Ensure there is a row before the ghost to merge into
-        if pos > 0:
-            ghost_idx = full_resampled.index[pos]
-            anchor_idx = full_resampled.index[pos - 1]
-            full_resampled.at[anchor_idx, 'high'] = max(full_resampled.at[anchor_idx, 'high'], full_resampled.at[ghost_idx, 'high'])
-            full_resampled.at[anchor_idx, 'low'] = min(full_resampled.at[anchor_idx, 'low'], full_resampled.at[ghost_idx, 'low'])
-            full_resampled.at[anchor_idx, 'close'] = full_resampled.at[ghost_idx, 'close']
-            full_resampled.at[anchor_idx, 'volume'] += full_resampled.at[ghost_idx, 'volume']
-            # We remember the offset of the 10:30 candle. Will be interesting to see how MT4 handles this during that candle
-            # formation. We will see next week.
-
-    # drop all ghosts
-    full_resampled = full_resampled[~full_resampled.index.str.endswith("11:51:00")]
-```
-
-This works. The pointer logic is actually beautiful. Now make this timezone-aware, map this to a configuration structure and it's done.
-
-```sh
-2025-12-17 02:30:00,439.759,439.899,435.447,437.044,1.446
-2025-12-17 06:30:00,436.947,439.299,436.541,439.159,0.5724
-2025-12-17 10:30:00,439.25,440.056,438.944,439.744,0.6696
-2025-12-17 15:51:00,439.659,440.299,435.841,436.344,3.7788
-2025-12-17 19:51:00,436.453,436.856,434.656,434.753,1.4592
-2025-12-18 02:30:00,435.747,437.044,433.953,434.447,1.4484
-2025-12-18 06:30:00,434.547,435.444,434.341,434.959,0.5136
-2025-12-18 10:30:00,434.85,437.199,434.35,436.753,0.8616
-2025-12-18 15:51:00,436.699,438.247,435.847,436.699,2.3928
-2025-12-18 19:51:00,436.55,437.499,435.741,436.25,1.7076
-2025-12-19 02:30:00,436.247,437.956,435.644,436.347,1.1424
-2025-12-19 06:30:00,436.45,436.859,436.041,436.644,0.4968
-2025-12-19 10:30:00,436.556,437.299,436.253,**437.156**,1.05
-2025-12-19 15:51:00,437.299,439.199,437.141,438.953,1.7184
-2025-12-19 19:51:00,439.053,439.259,437.747,438.05,0.414
-```
-
-```yaml
-SGD.IDX-SGD:
-  timezone: Asia/Singapore
-  sessions:
-    morning:
-      ranges:
-      ...
-      timeframes:
-	    ...
-        4h:
-          bugs-bunnies:
-            ghosts:
-               include:
-               - 11:51:00       # Needs to be Asia/Singapore local time
-          rule: "4H"
-          label: "left"
-          closed: "left"
-          source: "1h"
-          origin: "02:30"
-```
+More info soon.
 
 ### Session windows - indices, forex with breaks - **solved, implemented, available in main**
 
