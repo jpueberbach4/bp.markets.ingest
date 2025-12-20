@@ -28,6 +28,8 @@ I said i want 100 percent correctness, so, yeah... let's just do it. Timezone st
 
 If you want the config change for AUS.IDX-AUD.. copy over the AUD-indices.yaml to your config.user directory.
 
+**Note:** This is a matter of "taste" as well. Some would like to prefer to keep the real day-session and after-hours sessions active, also before FEB 2020, because it's a better "truth". You decide yourself. I am here to align everything 100 pct to MT4. 
+
 ### Session windows - indices, forex with breaks - **solved, implemented, available in main**
 
 Example: AUS.IDX-AUD (index). The Aussie index has 2 trading sessions (for futures and derivatives). 
