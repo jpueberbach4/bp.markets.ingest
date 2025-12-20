@@ -93,7 +93,7 @@ SGD.IDX-SGD:
               from_date: 1970-01-01 00:00:00 (optional)
               to_date: 3000-01-01 00:00:00 (optional)
               # The following three values are only needed for SGD
-              # 1H candle falls in between these two times (17:30 Asia/Singapore time)
+              # 4H candle falls in between these two times
               from: 17:20           # Time in Asia/Singapore
               to: 17:50             # Time in Asia/Singapore
               direction: -1         # MERGE left 
