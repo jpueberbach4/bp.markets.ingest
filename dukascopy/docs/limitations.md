@@ -37,13 +37,23 @@ SGD issue:
 ```sh
 2025-12-19 02:30:00,436.247,437.956,435.644,436.347,1.1424
 2025-12-19 06:30:00,436.45,436.859,436.041,436.644,0.4968
-2025-12-19 10:30:00,436.556,436.999,436.253,436.75,0.318         << IN MT4, the close of this candle is 437.156
-2025-12-19 11:51:00,436.444,437.299,436.299,437.156,0.732        << GHOST CANDLE
+2025-12-19 10:30:00,436.556,436.999,436.253,**436.75**,0.318     << IN MT4, the close of this candle is 437.156
+2025-12-19 11:51:00,436.444,437.299,436.299,^^437.156^^,0.732    << GHOST CANDLE
 2025-12-19 15:51:00,437.299,439.199,437.141,438.953,1.7184
 2025-12-19 19:51:00,439.053,439.259,437.747,438.05,0.414
 ```
 
-In MT4, H4, we see that the CLOSE of the 2025-12-19 10:30:00 candle is actually 437.156. Meaning that the H1 candle of 14:30 is shifted LEFT by at least HALF an hour, while leaving them intact on the H1. Meaning that we need to implement the shifting configuration into the H4 timeframe.
+H1 candles (correct):
+```sh
+2025-12-19 10:30:00,436.556,436.999,436.253,**436.75**,0.318
+2025-12-19 11:51:00,436.444,436.999,436.444,436.847,0.1692
+2025-12-19 12:51:00,436.959,436.959,436.299,436.756,0.1284
+2025-12-19 13:51:00,436.85,436.899,436.341,436.556,0.1752 
+2025-12-19 14:51:00,436.453,437.299,436.353,^^437.156^^,0.2592 
+2025-12-19 15:51:00,437.299,438.799,437.141,438.359,0.528
+```
+
+That's interesting. It's not only shift support but also seems a labelling issue. 
 
 ```yaml
 SGD.IDX-SGD:
@@ -75,7 +85,7 @@ SGD.IDX-SGD:
           origin: "02:30"
 ```
 
-This will become the solution.
+This is preliminary. Need to think this over once more.
 
 ### Session windows - indices, forex with breaks - **solved, implemented, available in main**
 
