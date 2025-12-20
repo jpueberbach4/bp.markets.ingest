@@ -114,7 +114,7 @@ if self.ident == "4h":
     full_resampled = full_resampled[~full_resampled.index.str.endswith("11:51:00")]
 ```
 
-This works. The pointer logic is actually beautiful. Now mapping this to a configuration structure and it's done.
+This works. The pointer logic is actually beautiful. Now make this timezone-aware, map this to a configuration structure and it's done.
 
 ```sh
 2025-12-17 02:30:00,439.759,439.899,435.447,437.044,1.446
