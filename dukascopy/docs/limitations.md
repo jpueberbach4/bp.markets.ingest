@@ -30,64 +30,6 @@ If you want the config change for AUS.IDX-AUD.. copy over the AUD-indices.yaml t
 
 **Note:** This is a matter of "taste" as well. Some would like to prefer to keep the real day-session and after-hours sessions active, also before FEB 2020, because it's a better "truth". You decide yourself. I am here to align everything 100 pct to MT4.
 
-**Note:** I will have to estimate what happens with AUS.IDX-AUD on the lower TF's since i cannot access date 2020-02-06 on the hourly and lower timeframes. I will use the recent behavior of SGD to implement that ghost-candle fix also for AUS.IDX-AUD. SGD's behavior will become the "definition" for this fix.
-
-SGD issue:
-
-H4 candles (10:30 and 11:51 incorrect)
-```sh
-2025-12-19 06:30:00,436.45,436.859,436.041,436.644,0.4968
-2025-12-19 10:30:00,436.556,436.999,436.253,**436.75**,0.318     << IN MT4, the close of this candle is 437.156
-2025-12-19 11:51:00,436.444,437.299,436.299,^^437.156^^,0.732    << GHOST CANDLE
-2025-12-19 15:51:00,437.299,439.199,437.141,438.953,1.7184
-2025-12-19 19:51:00,439.053,439.259,437.747,438.05,0.414
-```
-
-Metatrader H4:
-```sh
-2025.12.19,06:30,436.450,436.859,436.041,436.644,414
-2025.12.19,10:30,436.556,437.299,436.253,^^437.156^^,875
-2025.12.19,15:51,437.299,439.199,437.141,438.953,1432
-2025.12.19,19:51,439.053,439.259,437.747,438.050,345
-```
-
-H1 candles (correct):
-```sh
-2025-12-19 10:30:00,436.556,436.999,436.253,**436.75**,0.318
-2025-12-19 11:51:00,436.444,436.999,436.444,436.847,0.1692
-2025-12-19 12:51:00,436.959,436.959,436.299,436.756,0.1284
-2025-12-19 13:51:00,436.85,436.899,436.341,436.556,0.1752 
-2025-12-19 14:51:00,436.453,437.299,436.353,^^437.156^^,0.2592 
-2025-12-19 15:51:00,437.299,438.799,437.141,438.359,0.528
-```
-
-Metatrader H1:
-```sh
-2025.12.19,10:30,436.556,436.999,436.253,**436.750**,265
-2025.12.19,11:51,436.444,436.999,436.444,436.847,141
-2025.12.19,12:51,436.959,436.959,436.299,436.756,107
-2025.12.19,13:51,436.850,436.899,436.341,436.556,146
-2025.12.19,14:51,436.453,437.299,436.353,^^437.156^^,216
-2025.12.19,15:51,437.299,438.799,437.141,438.444,441
-```
-
-Labelling:
-```sh
-                        open     high      low    close  volume origin   offset
-time
-2025-12-19 08:30:00  436.599  436.756  436.241  436.550  0.1284  02:30  2510929
-2025-12-19 09:30:00  436.447  436.859  436.241  436.644  0.1344  02:30  2510987
-2025-12-19 10:30:00  436.556  436.999  436.253  436.750  0.3180  02:30  2511046
-2025-12-19 11:51:00  436.444  436.999  436.444  436.847  0.1692  >>15:51<<  2511103
-2025-12-19 12:51:00  436.959  436.959  436.299  436.756  0.1284  >>15:51<<  2511162
-2025-12-19 13:51:00  436.850  436.899  436.341  436.556  0.1752  >>15:51<<  2511221
-2025-12-19 14:51:00  436.453  437.299  436.353  437.156  0.2592  >>15:51<<  2511279
-2025-12-19 15:51:00  437.299  438.799  437.141  438.359  0.5280  15:51  2511338
-```
-
-That's interesting. Tricky issue. Merging seems a better option. Merging is in fact THE ONLY option, for this current design (without bloating the code). Even if we could fix the labelling to 02:30 for the 11:51:00, 12:51:00, 13:51:00,... we would still be stuck with that 2025-12-19 14:51:00 which falls outside of the range 10:30:00-14:30:00 (The H4 candle at 10:30) and before the 2025-12-19 15:51:00 (The H4 candle at 15:51).
-It would fall into a GAP, which then would still create a ghost-candle, only with different values. 
-
 **Decision:** small postprocesssing step when merge is defined. Merging the 2025-12-19 11:51:00 ghost candle into the 2025-12-19 10:30:00 candle.
 
 Have a working fixed-code fix:
