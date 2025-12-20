@@ -183,8 +183,6 @@ In resample.resample_batch(sio):
 
 Until this fix has been implemented, the AUS.IDX-AUD is not really usable.
 
-**Note:** There is still a fix needed for candle alignment policy changes. This will be ready soon too.
-
 ### YAML configuration is becoming huge - **solved, implemented, available in main**
 
 Given the number of “abnormalities” we need to support, the YAML file is at risk of becoming very large. I plan to add support for an include pattern so the configuration can be split into separate files by section, override, and similar concerns.
