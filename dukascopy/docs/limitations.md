@@ -90,9 +90,7 @@ It would fall into a GAP, which then would still create a ghost-candle, only wit
 
 **Decision:** small postprocesssing step when merge is defined. Merging the 2025-12-19 11:51:00 ghost candle into the 2025-12-19 10:30:00 candle.
 
-~~**Super-tricky issue because of the incremental processing. The pointer logic needs to change for this. Ie we may not change the input position to the H1 file as long as that 10:30 candle is not completed yet (including the merge)**~~
-
-I was exaggerating. Already have a working fixed-code fix:
+Have a working fixed-code fix:
 
 ```python
 # testing
@@ -109,6 +107,8 @@ if self.ident == "4h":
             full_resampled.at[anchor_idx, 'low'] = min(full_resampled.at[anchor_idx, 'low'], full_resampled.at[ghost_idx, 'low'])
             full_resampled.at[anchor_idx, 'close'] = full_resampled.at[ghost_idx, 'close']
             full_resampled.at[anchor_idx, 'volume'] += full_resampled.at[ghost_idx, 'volume']
+            # We remember the offset of the 10:30 candle. Will be interesting to see how MT4 handles this during that candle
+            # formation. We will see next week.
 
     # drop all ghosts
     full_resampled = full_resampled[~full_resampled.index.str.endswith("11:51:00")]
@@ -116,37 +116,23 @@ if self.ident == "4h":
 
 This works. The pointer logic is actually beautiful. Now mapping this to a configuration structure and it's done.
 
-```yaml
-SGD.IDX-SGD:
-  timezone: Asia/Singapore
-  skip_timeframes: []
-  sessions:
-    day-session:
-      ranges:
-        open:
-          from: "08:30"
-          to: "17:20"
-      timeframes:
-        ...
-        4h:
-          merge:
-            every-day:
-              # The following two parameters are needed to fix the AUS.IDX only at specific date
-              from_date: 1970-01-01 00:00:00 (optional)
-              to_date: 3000-01-01 00:00:00 (optional)
-              # The following three values are only needed for SGD
-              # 4H candle falls in between these two times
-              from: 17:20           # Time in Asia/Singapore
-              to: 17:50             # Time in Asia/Singapore
-              direction: -1         # MERGE left 
-          rule: "4H"
-          label: "left"
-          closed: "left"
-          source: "1h"
-          origin: "02:30"
+```sh
+2025-12-17 02:30:00,439.759,439.899,435.447,437.044,1.446
+2025-12-17 06:30:00,436.947,439.299,436.541,439.159,0.5724
+2025-12-17 10:30:00,439.25,440.056,438.944,439.744,0.6696
+2025-12-17 15:51:00,439.659,440.299,435.841,436.344,3.7788
+2025-12-17 19:51:00,436.453,436.856,434.656,434.753,1.4592
+2025-12-18 02:30:00,435.747,437.044,433.953,434.447,1.4484
+2025-12-18 06:30:00,434.547,435.444,434.341,434.959,0.5136
+2025-12-18 10:30:00,434.85,437.199,434.35,436.753,0.8616
+2025-12-18 15:51:00,436.699,438.247,435.847,436.699,2.3928
+2025-12-18 19:51:00,436.55,437.499,435.741,436.25,1.7076
+2025-12-19 02:30:00,436.247,437.956,435.644,436.347,1.1424
+2025-12-19 06:30:00,436.45,436.859,436.041,436.644,0.4968
+2025-12-19 10:30:00,436.556,437.299,436.253,**437.156**,1.05
+2025-12-19 15:51:00,437.299,439.199,437.141,438.953,1.7184
+2025-12-19 19:51:00,439.053,439.259,437.747,438.05,0.414
 ```
-
-This is preliminary. Need to think this over once more.
 
 ### Session windows - indices, forex with breaks - **solved, implemented, available in main**
 
