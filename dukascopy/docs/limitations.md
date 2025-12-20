@@ -32,6 +32,51 @@ If you want the config change for AUS.IDX-AUD.. copy over the AUD-indices.yaml t
 
 **Note:** I will have to estimate what happens with AUS.IDX-AUD on the lower TF's since i cannot access date 2020-02-06 on the hourly and lower timeframes. I will use the recent behavior of SGD to implement that ghost-candle fix also for AUS.IDX-AUD. SGD's behavior will become the "definition" for this fix.
 
+SGD issue:
+
+```sh
+2025-12-19 02:30:00,436.247,437.956,435.644,436.347,1.1424
+2025-12-19 06:30:00,436.45,436.859,436.041,436.644,0.4968
+2025-12-19 10:30:00,436.556,436.999,436.253,436.75,0.318         << IN MT4, the close of this candle is 437.156
+2025-12-19 11:51:00,436.444,437.299,436.299,437.156,0.732        << GHOST CANDLE
+2025-12-19 15:51:00,437.299,439.199,437.141,438.953,1.7184
+2025-12-19 19:51:00,439.053,439.259,437.747,438.05,0.414
+```
+
+In MT4, H4, we see that the CLOSE of the 2025-12-19 10:30:00 candle is actually 437.156. Meaning that the H1 candle of 14:30 is shifted LEFT by at least HALF an hour, while leaving them intact on the H1. Meaning that we need to implement the shifting configuration into the H4 timeframe.
+
+```yaml
+SGD.IDX-SGD:
+  timezone: Asia/Singapore
+  skip_timeframes: []
+  sessions:
+    day-session:
+      ranges:
+        open:
+          from: "08:30"
+          to: "17:20"
+      timeframes:
+        ...
+        4h:
+          shifts:
+            every-day:
+              # The following two parameters are needed to fix the AUS.IDX only at specific date
+              from_date: 1970-01-01 00:00:00 (optional)
+              to_date: 3000-01-01 00:00:00 (optional)
+              # The following three values are only needed for SGD
+              # 1H candle falls in between these two times (17:30 Asia/Singapore time)
+              from: 17:20           # Time in Asia/Singapore
+              to: 17:50             # Time in Asia/Singapore
+              value_ms: -1800000    # SHIFT left, 30 minutes
+          rule: "4H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "02:30"
+```
+
+This will become the solution.
+
 ### Session windows - indices, forex with breaks - **solved, implemented, available in main**
 
 Example: AUS.IDX-AUD (index). The Aussie index has 2 trading sessions (for futures and derivatives). 
