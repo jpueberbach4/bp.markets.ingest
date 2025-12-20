@@ -72,7 +72,7 @@ Metatrader H1:
 ```
 
 
-That's interesting. It's not only shift support but also seems a labelling issue. 
+That's interesting. It's not only shift support but also seems a labelling issue. Merging seems a better option.
 
 ```yaml
 SGD.IDX-SGD:
@@ -87,7 +87,7 @@ SGD.IDX-SGD:
       timeframes:
         ...
         4h:
-          shifts:
+          merge:
             every-day:
               # The following two parameters are needed to fix the AUS.IDX only at specific date
               from_date: 1970-01-01 00:00:00 (optional)
@@ -96,7 +96,7 @@ SGD.IDX-SGD:
               # 1H candle falls in between these two times (17:30 Asia/Singapore time)
               from: 17:20           # Time in Asia/Singapore
               to: 17:50             # Time in Asia/Singapore
-              value_ms: -1800000    # SHIFT left, 30 minutes
+              direction: -1         # MERGE left 
           rule: "4H"
           label: "left"
           closed: "left"
