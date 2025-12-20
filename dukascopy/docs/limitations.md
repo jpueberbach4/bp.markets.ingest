@@ -71,8 +71,23 @@ Metatrader H1:
 2025.12.19,15:51,437.299,438.799,437.141,438.444,441
 ```
 
+Labelling:
+```sh
+                        open     high      low    close  volume origin   offset
+time
+2025-12-19 08:30:00  436.599  436.756  436.241  436.550  0.1284  02:30  2510929
+2025-12-19 09:30:00  436.447  436.859  436.241  436.644  0.1344  02:30  2510987
+2025-12-19 10:30:00  436.556  436.999  436.253  436.750  0.3180  02:30  2511046
+2025-12-19 11:51:00  436.444  436.999  436.444  436.847  0.1692  >>15:51<<  2511103
+2025-12-19 12:51:00  436.959  436.959  436.299  436.756  0.1284  >>15:51<<  2511162
+2025-12-19 13:51:00  436.850  436.899  436.341  436.556  0.1752  >>15:51<<  2511221
+2025-12-19 14:51:00  436.453  437.299  436.353  437.156  0.2592  >>15:51<<  2511279
+2025-12-19 15:51:00  437.299  438.799  437.141  438.359  0.5280  15:51  2511338
+```
 
-That's interesting. It's not only shift support but also seems a labelling issue. Merging seems a better option.
+That's interesting. Tricky issue. Merging seems a better option. Merging is in fact THE ONLY option, for this current design (without bloating the code). Even if we could fix the labelling to 02:30 for the 11:51:00, 12:51:00, 13:51:00,... we would still be stuck with that 2025-12-19 14:51:00 which fall outside of the range 10:30:00-14:30:00 (The H4 candle at 10:30). 
+
+**Decision:** small postprocesssing step when merge is defined. Merging the 2025-12-19 11:51:00 ghost candle into the 2025-12-19 10:30:00 candle.
 
 ```yaml
 SGD.IDX-SGD:
