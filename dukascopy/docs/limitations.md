@@ -134,6 +134,27 @@ This works. The pointer logic is actually beautiful. Now make this timezone-awar
 2025-12-19 19:51:00,439.053,439.259,437.747,438.05,0.414
 ```
 
+```yaml
+SGD.IDX-SGD:
+  timezone: Asia/Singapore
+  sessions:
+    morning:
+      ranges:
+      ...
+      timeframes:
+	    ...
+        4h:
+          bugs-bunnies:
+            ghosts:
+               include:
+               - 11:51:00       # Needs to be Asia/Singapore local time
+          rule: "4H"
+          label: "left"
+          closed: "left"
+          source: "1h"
+          origin: "02:30"
+```
+
 ### Session windows - indices, forex with breaks - **solved, implemented, available in main**
 
 Example: AUS.IDX-AUD (index). The Aussie index has 2 trading sessions (for futures and derivatives). 
