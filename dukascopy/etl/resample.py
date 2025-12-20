@@ -411,50 +411,56 @@ class ResampleWorker:
         Args:
             engine (ResampleEngine): Initialized resampling engine.
         """
-        # Restore last known input/output positions
+        # Restore last known read/write positions from index files
         input_pos, output_pos = engine.read_index()
 
+        # Open input CSV for reading and output CSV for read/write updates
         with open(engine.input_path, "r") as f_in, open(engine.output_path, "r+") as f_out:
-            # Read CSV header from input
+            # Read and cache the input CSV header
             header = f_in.readline()
 
-            # Resume reading input
+            # Resume input reading from the last processed byte offset
             if input_pos > 0:
                 f_in.seek(input_pos)
 
-            # Write header to output if starting fresh
+            # If starting from a fresh output file, write the CSV header
             if output_pos == 0:
                 f_out.write(header)
                 output_pos = f_out.tell()
 
-            # Process batches until EOF
+            # Process input data incrementally until EOF is reached
             while True:
+                # Read the next batch and enrich it with metadata
                 sio, eof = engine.prepare_batch(f_in, header)
                 try:
+                    # Resample the batch and compute the next input position
                     resampled, next_in_pos = engine.process_resample(sio)
                 finally:
+                    # Ensure the in-memory buffer is always released
                     sio.close()
 
-                # Rewrite output up to last confirmed position
+                # Roll back output file to the last confirmed safe position
                 f_out.seek(output_pos)
                 f_out.truncate(output_pos)
 
-                # Write all completed bars except trailing partial bar
+                # Write all fully completed bars (exclude trailing partial bar)
                 f_out.write(resampled.iloc[:-1].to_csv(index=True, header=False))
                 f_out.flush()
 
-                # Persist progress before writing trailing bar
+                # Persist progress after writing confirmed bars
                 output_pos = f_out.tell()
                 engine.write_index(next_in_pos, output_pos)
 
-                # Write trailing bar (may be updated in next batch)
+                # Write the trailing bar, which may be updated in the next batch
                 f_out.write(resampled.tail(1).to_csv(index=True, header=False))
 
+                # Exit the loop once the input file has been fully consumed
                 if eof:
                     break
 
-                # Resume reading input from computed offset
+                # Resume reading input from the computed byte offset
                 f_in.seek(next_in_pos)
+
 
 
 def fork_resample(args) -> bool:
