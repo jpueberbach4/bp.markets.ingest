@@ -90,7 +90,31 @@ It would fall into a GAP, which then would still create a ghost-candle, only wit
 
 **Decision:** small postprocesssing step when merge is defined. Merging the 2025-12-19 11:51:00 ghost candle into the 2025-12-19 10:30:00 candle.
 
-**Super-tricky issue because of the incremental processing. The pointer logic needs to change for this. Ie we may not change the input position to the H1 file as long as that 10:30 candle is not completed yet (including the merge)**
+~~**Super-tricky issue because of the incremental processing. The pointer logic needs to change for this. Ie we may not change the input position to the H1 file as long as that 10:30 candle is not completed yet (including the merge)**~~
+
+I was exaggerating. Already have a working fixed-code fix:
+
+```python
+# testing
+if self.ident == "4h":
+    ghost_positions = np.where(full_resampled.index.str.endswith("11:51:00"))[0]
+
+    print(ghost_positions)
+    for pos in ghost_positions:
+        # Ensure there is a row before the ghost to merge into
+        if pos > 0:
+            ghost_idx = full_resampled.index[pos]
+            anchor_idx = full_resampled.index[pos - 1]
+            full_resampled.at[anchor_idx, 'high'] = max(full_resampled.at[anchor_idx, 'high'], full_resampled.at[ghost_idx, 'high'])
+            full_resampled.at[anchor_idx, 'low'] = min(full_resampled.at[anchor_idx, 'low'], full_resampled.at[ghost_idx, 'low'])
+            full_resampled.at[anchor_idx, 'close'] = full_resampled.at[ghost_idx, 'close']
+            full_resampled.at[anchor_idx, 'volume'] += full_resampled.at[ghost_idx, 'volume']
+
+    # drop all ghosts
+    full_resampled = full_resampled[~full_resampled.index.str.endswith("11:51:00")]
+```
+
+This works. The pointer logic is actually beautiful. Now mapping this to a configuration structure and it's done.
 
 ```yaml
 SGD.IDX-SGD:
