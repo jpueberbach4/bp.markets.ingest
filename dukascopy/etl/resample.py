@@ -290,7 +290,7 @@ class ResampleEngine:
         Raises:
             ValueError: If the batch contains no data.
         """
-        # Parse CSV batch into DataFrame
+        # Load the prepared CSV batch into a DataFrame indexed by timestamp
         df = pd.read_csv(
             sio,
             parse_dates=["time"],
@@ -298,53 +298,58 @@ class ResampleEngine:
             date_format="%Y-%m-%d %H:%M:%S",
         )
 
+        # Guard against empty batches
         if df.empty:
             raise ValueError("Empty batch read from StringIO")
 
+        # Accumulate per-origin resampled DataFrames
         resampled_list = []
 
-        # Retrieve timeframe configuration (from primary session)
+        # Retrieve timeframe configuration from the primary session
         session = next(iter(self.config.sessions.values()))
         tf_cfg = session.timeframes[self.ident]
 
-        # Resample independently per origin
+        # Resample each origin independently to preserve session boundaries
         for origin, origin_df in df.groupby("origin"):
             res = origin_df.resample(
-                tf_cfg.rule,
-                label=tf_cfg.label,
-                closed=tf_cfg.closed,
-                origin=origin,
+                tf_cfg.rule,              # Resampling rule (e.g., '5T', '1H')
+                label=tf_cfg.label,       # Label alignment for resampled bars
+                closed=tf_cfg.closed,     # Interval closure (left/right)
+                origin=origin,            # Session-aware origin timestamp
             ).agg(
                 {
-                    "open": "first",
-                    "high": "max",
-                    "low": "min",
-                    "close": "last",
-                    "volume": "sum",
-                    "offset": "first",
+                    "open": "first",      # First price in the interval
+                    "high": "max",        # Highest price in the interval
+                    "low": "min",         # Lowest price in the interval
+                    "close": "last",      # Last price in the interval
+                    "volume": "sum",      # Total traded volume
+                    "offset": "first",    # Byte offset for resume tracking
                 }
             )
 
-            # Drop empty or invalid bars
+            # Drop empty or invalid bars (e.g., no volume)
             res = res[res["volume"].gt(0) & res["volume"].notna()]
             resampled_list.append(res)
 
-        # Combine all origins into one sorted DataFrame
+        # Combine all resampled origins into a single, time-sorted DataFrame
         full_resampled = pd.concat(resampled_list).sort_index()
 
-        # Determine resume offset from last completed bar
+        # Determine the resume position from the last completed bar
         next_input_pos = int(full_resampled.iloc[-1]["offset"])
 
-        # Final cleanup and formatting
+        # Remove internal metadata and apply final rounding
         full_resampled = (
             full_resampled.drop(columns=["offset"])
             .round(self.config.round_decimals)
         )
+
+        # Normalize index formatting for downstream consumers
         full_resampled.index = full_resampled.index.strftime(
             "%Y-%m-%d %H:%M:%S"
         )
 
         return full_resampled, next_input_pos
+
 
 class ResampleWorker:
     """
