@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ===============================================================================
- File:        helper.py
+ File:        resample.py
  Author:      JP Ueberbach
  Created:     2025-12-19
  Description: Conversion to OOP - Incremental OHLCV resampling engine.
