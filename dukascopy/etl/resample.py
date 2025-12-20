@@ -22,6 +22,7 @@
 """
 import os
 import pandas as pd
+import numpy as np
 from pathlib import Path
 from io import StringIO
 from typing import Tuple, IO, Optional
@@ -334,6 +335,30 @@ class ResampleEngine:
         # Combine all resampled origins into a single, time-sorted DataFrame
         full_resampled = pd.concat(resampled_list).sort_index()
 
+        # Normalize index formatting for downstream consumers
+        full_resampled.index = full_resampled.index.strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+
+        # testing
+        if self.ident == "4h":
+            ghost_positions = np.where(full_resampled.index.str.endswith("11:51:00"))[0]
+
+            print(ghost_positions)
+            for pos in ghost_positions:
+                # Ensure there is a row before the ghost to merge into
+                if pos > 0:
+                    ghost_idx = full_resampled.index[pos]
+                    anchor_idx = full_resampled.index[pos - 1]
+                    full_resampled.at[anchor_idx, 'high'] = max(full_resampled.at[anchor_idx, 'high'], full_resampled.at[ghost_idx, 'high'])
+                    full_resampled.at[anchor_idx, 'low'] = min(full_resampled.at[anchor_idx, 'low'], full_resampled.at[ghost_idx, 'low'])
+                    full_resampled.at[anchor_idx, 'close'] = full_resampled.at[ghost_idx, 'close']
+                    full_resampled.at[anchor_idx, 'volume'] += full_resampled.at[ghost_idx, 'volume']
+
+            # drop all ghosts
+            full_resampled = full_resampled[~full_resampled.index.str.endswith("11:51:00")]
+
+
         # Determine the resume position from the last completed bar
         next_input_pos = int(full_resampled.iloc[-1]["offset"])
 
@@ -343,10 +368,7 @@ class ResampleEngine:
             .round(self.config.round_decimals)
         )
 
-        # Normalize index formatting for downstream consumers
-        full_resampled.index = full_resampled.index.strftime(
-            "%Y-%m-%d %H:%M:%S"
-        )
+
 
         return full_resampled, next_input_pos
 
