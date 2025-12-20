@@ -90,6 +90,8 @@ It would fall into a GAP, which then would still create a ghost-candle, only wit
 
 **Decision:** small postprocesssing step when merge is defined. Merging the 2025-12-19 11:51:00 ghost candle into the 2025-12-19 10:30:00 candle.
 
+**Super-tricky issue because of the incremental processing. The pointer logic needs to change for this. Ie we may not change the input position to the H1 file as long as that 10:30 candle is not completed yet (including the merge)**
+
 ```yaml
 SGD.IDX-SGD:
   timezone: Asia/Singapore
