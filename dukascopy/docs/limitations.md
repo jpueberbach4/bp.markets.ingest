@@ -30,6 +30,8 @@ If you want the config change for AUS.IDX-AUD.. copy over the AUD-indices.yaml t
 
 **Note:** This is a matter of "taste" as well. Some would like to prefer to keep the real day-session and after-hours sessions active, also before FEB 2020, because it's a better "truth". You decide yourself. I am here to align everything 100 pct to MT4.
 
+**Note:** I will have to estimate what happens with AUS.IDX-AUD on the lower TF's since i cannot access date 2020-02-06 on the hourly and lower timmeframes. I will use the recent behavior of SGD to implement that ghost-candle fix also for AUS.IDX-AUD. SGD's behavior will become the "definition" for this fix.
+
 ### Session windows - indices, forex with breaks - **solved, implemented, available in main**
 
 Example: AUS.IDX-AUD (index). The Aussie index has 2 trading sessions (for futures and derivatives). 
