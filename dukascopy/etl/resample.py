@@ -216,56 +216,61 @@ class ResampleEngine:
                 - StringIO buffer containing the enriched CSV batch.
                 - eof flag indicating whether end-of-file was reached.
         """
-        # Initialize StrinIO buffer
+        # Initialize in-memory buffer for the output batch
         sio = StringIO()
 
-        # Extend header with metadata columns
+        # Write CSV header with appended metadata columns
         sio.write(f"{header.strip()},origin,offset\n")
 
+        # Track end-of-file state and last processed session/day key
         eof = False
         last_key = None
 
-        # Determine whether multiple sessions are configured
+        # Check whether the tracker is running in single-session mode
         is_default = self.tracker.is_default_session()
 
-        # Default origin (single-session case)
+        # Precompute origin for the single-session (default) case
         primary_session = next(iter(self.config.sessions.values()))
         default_origin = primary_session.timeframes[self.ident].origin
 
-        # Read up to batch_size rows
+        # Read up to batch_size rows from the input file
         for _ in range(self.config.batch_size):
-            # Capture byte offset before reading
+            # Capture byte offset before reading the row
             offset_before = f_input.tell()
             line = f_input.readline()
 
-            # EOF reached
+            # Stop processing if end-of-file is reached
             if not line:
                 eof = True
                 break
 
-            # Resolve origin dynamically for multi-session setups
+            # Resolve origin dynamically when multiple sessions are configured
             if not is_default:
                 try:
+                    # Determine the active session for the current row
                     session = self.tracker.get_active_session(line)
-                    current_key = f"{session}/{line[:10]}"  # session + date
+                    current_key = f"{session}/{line[:10]}"  # session + date prefix
 
-                    # Only recompute origin when session/day changes
+                    # Recompute origin only when session or day changes
                     if current_key != last_key:
                         origin = self.tracker.get_active_origin(
-                          line, self.ident, session
+                            line, self.ident, session
                         )
                         last_key = current_key
                 except Exception as e:
+                    # Propagate errors encountered during session/origin resolution
                     raise e
-                    print("fuckyou")
             else:
+                # Use precomputed origin for single-session mode
                 origin = default_origin
 
-            # Write enriched row
+            # Write the enriched CSV row to the output buffer
             sio.write(f"{line.strip()},{origin},{offset_before}\n")
 
+        # Reset buffer cursor for downstream consumers
         sio.seek(0)
         return sio, eof
+
 
     def process_resample(self, sio: StringIO) -> Tuple[pd.DataFrame, int]:
         """
