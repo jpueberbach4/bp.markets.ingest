@@ -58,6 +58,8 @@ This will prevent breaking-change issues on configuration in the future.
 
 What started as a personal project (private use-case) to tackle the intricate problem of temporal alignment in financial data has evolved into a robust, crash-resilient OHLCV resampling system. It now handles global trading sessions, multiple DST transitions, and aligns with real-world platforms like Metatrader.
 
+For a niche project, this repository is hugely popular with clones spiking upwards of 300 per day. It seems to solve a real pain. I feel that pain too. That's why i decided to start solving this once and for all and even to "go beyond" (the replay functionality).
+
 ---
 
 ## What Is This Tool Used For?
