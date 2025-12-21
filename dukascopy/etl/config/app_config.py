@@ -32,21 +32,36 @@ from typing import Dict, List, Optional, Type, TypeVar, Any, Union, get_origin, 
 
 
 @dataclass
-class ResampleSymbolTradingSessionRange:
+class ResampleTimeRange:
     """Defines the 'from' and 'to' times for a single time range."""
     from_time: str = field(default="00:00",metadata={'yaml_key': 'from'}) 
     to_time: str = field(default="23:59",metadata={'yaml_key': 'to'})
 
 
 @dataclass
-class ResampleSymbolTradingSession:
+class ResampleDateRange:
+    """Defines the 'from' and 'to' dates for a single date range."""
+    from_date: str = field(default=None,metadata={'yaml_key': 'from_date'}) 
+    to_date: str = field(default=None,metadata={'yaml_key': 'to_date'})
+
+
+@dataclass
+class ResampleSymbolTradingSession(ResampleDateRange):
     """
     Configuration for a single named session (e.g., 'day-session').
     """
-    from_date: str = field(default=None,metadata={'yaml_key': 'from_date'}) 
-    to_date: str = field(default=None,metadata={'yaml_key': 'to_date'})
-    ranges: Dict[str, ResampleSymbolTradingSessionRange] = field(default_factory=dict)
+    ranges: Dict[str, ResampleTimeRange] = field(default_factory=dict)
     timeframes: Dict[str, 'ResampleTimeframe'] = field(default_factory=dict)
+
+
+@dataclass
+class ResampleTimeframeProcessingStep(ResampleDateRange):
+    """
+    Configuration for a pre/post processing step
+    """
+    # DROP/MERGE
+    action: str = field(default=None,metadata={'yaml_key': 'action'}) 
+    # TODO: add support for selection criteria
 
 @dataclass
 class ResampleTimeframe:
@@ -56,6 +71,8 @@ class ResampleTimeframe:
     closed: Optional[str] = None
     origin: str = "epoch"
     source: str = ""
+    pre: Dict[str, ResampleTimeframeProcessingStep] = field(default_factory=dict)
+    post: Dict[str, ResampleTimeframeProcessingStep] = field(default_factory=dict)
 
 
 @dataclass
@@ -411,7 +428,7 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleSy
     # Resolve trading sessions
     if not symbol_override.sessions:
         # No sessions defined: create a default 24-hour trading session
-        default_range = ResampleSymbolTradingSessionRange(
+        default_range = ResampleTimeRange(
             from_time="00:00:00",
             to_time="23:59:59",
         )

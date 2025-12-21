@@ -31,6 +31,9 @@ from tqdm import tqdm
 from config.app_config import AppConfig, ResampleSymbol, resample_get_symbol_config, load_app_config
 from helper import ResampleTracker
 
+from dataclasses import asdict
+import yaml
+
 # Enable verbose logging via environment variable
 VERBOSE = os.getenv("VERBOSE", "0").lower() in ("1", "true", "yes", "on")
 
@@ -507,4 +510,11 @@ def fork_resample(args) -> bool:
 if __name__ == "__main__":
     # Load YAML config (currently only resample support)
     config = load_app_config()
+
+    print(yaml.safe_dump(
+        asdict(config)
+    ))
+
+    os.exit
+
     fork_resample(["AUS.IDX-AUD",config])
