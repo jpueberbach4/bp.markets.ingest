@@ -30,7 +30,17 @@
 # Note: The 'origin' fields align with the start of each specific session 
 # to ensure candle consistency within that trading window.
 # 
-# NOTE! THIS ONE IS UNSUPPORTED ATM. UP UNTIL H4 CHART ITS FINE, EG 1H IS OK
+# This is a metatrader-quirk
+#
+# Summer-time (Europe):
+# - MT4 Shows a 11:30 4H candle AND a 12:51 4H candle
+# Winter-time (Europe)
+# - MT4 Shows a 10:30 4H candle AND NO! 11:51 4H candle
+#
+# I don't understand the behavior of this quirk, i mean, why leave it intact
+# in summer and merge it in winter?
+# 
+# Anyhow. We support that behavior (see post step)
 SGD.IDX-SGD:
   timezone: Asia/Singapore
   skip_timeframes: []
@@ -40,8 +50,7 @@ SGD.IDX-SGD:
         merge-step:
           action: merge
           ends_with:
-          - "11:51:00"
-          - "12:51:00"
+          - "11:51:00" 
           offset: -1
   sessions:
     morning:

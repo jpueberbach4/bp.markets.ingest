@@ -516,25 +516,3 @@ def fork_resample(args) -> bool:
     worker = ResampleWorker(symbol, config)
     worker.run()
     return True
-
-
-
-if __name__ == "__main__":
-    # Load YAML config (currently only resample support)
-    app_config = load_app_config('config.user.yaml')
-
-    # CONFIG IS FUN!!
-    symbol_config = resample_get_symbol_config("SGD.IDX-SGD", app_config)
-
-    session = next(iter(symbol_config.sessions.values()))
-    tf_cfg = session.timeframes["4h"]
-
-    print(yaml.safe_dump(
-        asdict(symbol_config),
-        default_flow_style=False,
-        sort_keys=False,
-    ))
-
-    os.exit
-
-    fork_resample(["AUS.IDX-AUD",config])
