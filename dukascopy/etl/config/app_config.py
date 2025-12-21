@@ -70,7 +70,7 @@ class ResampleTimeframe:
     label: Optional[str] = None
     closed: Optional[str] = None
     origin: str = "epoch"
-    source: str = ""
+    source: Optional[str] = None
     pre: Optional[Dict[str, ResampleTimeframeProcessingStep]] = field(default=None)
     post: Optional[Dict[str, ResampleTimeframeProcessingStep]] = field(default=None)
 
