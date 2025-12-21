@@ -1,6 +1,10 @@
 ## Status per 21 December 2025
 
-**Note:** SGD issue has been fixed. Weird behavior in MT4. Typical MetaQuirk. See comments in [SGD-indices.yaml](../config/dukascopy/timeframes/indices/SGD-indices.yaml). Still need to check it for "alignment policy changes". If you want the fix. Re-pull and copy over the configuration file to your ```config.user``` directory. It's a best practice to create a ```config.user``` directory if you don't have one yet.
+>**Note:** Since the morning of 2025-12-21 10:00 Europe/Amsterdam time (i am Dutch) a fix for the Singapore index is in. I took the liberty to eliminate some of the config bloat as well. Timeframe attributes are now inherited from the defaults if not explicitly specified. ```config``` directory has changed quite a bit. If you are still using default config (except for symbols.user.txt), do a ```./setup-dukascopy.sh```. It will copy the new, simplified config files, to your ```config.user``` directory. Do not do this if you have your own config.
+
+>**To update: ```git checkout main && git pull origin main```**
+
+**Note:** SGD issue has been fixed. Weird behavior in MT4. Typical MetaQuirk. See comments in [SGD-indices.yaml](../config/dukascopy/timeframes/indices/SGD-indices.yaml).
 
 **Note:** The data part is not finished yet. Still bugs/features to resolve:
 
