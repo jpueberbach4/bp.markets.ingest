@@ -39,28 +39,12 @@ HKG.IDX-HKD:
           to: "12:00"
       timeframes:
         15m:
-          rule: "15T"
-          label: "left"
-          closed: "left"
-          source: "5m"
           origin: "03:15"
         30m:
-          rule: "30T"
-          label: "left"
-          closed: "left"
-          source: "15m"
           origin: "03:15"
         1h:
-          rule: "1H"
-          label: "left"
-          closed: "left"
-          source: "30m"
           origin: "03:15"
         4h:
-          rule: "4H"
-          label: "left"
-          closed: "left"
-          source: "1h"
           origin: "03:15"
     afternoon:
       ranges:
@@ -69,28 +53,12 @@ HKG.IDX-HKD:
           to: "16:30"
       timeframes:
         15m:
-          rule: "15T"
-          label: "left"
-          closed: "left"
-          source: "5m"
           origin: "07:00"
         30m:
-          rule: "30T"
-          label: "left"
-          closed: "left"
-          source: "15m"
           origin: "07:00"
         1h:
-          rule: "1H"
-          label: "left"
-          closed: "left"
-          source: "30m"
           origin: "07:00"
         4h:
-          rule: "4H"
-          label: "left"
-          closed: "left"
-          source: "1h"
           origin: "07:00"
     after-hours:
       ranges:
@@ -102,28 +70,12 @@ HKG.IDX-HKD:
           to: "03:00"
       timeframes:
         15m:
-          rule: "15T"
-          label: "left"
-          closed: "left"
-          source: "5m"
           origin: "11:15"
         30m:
-          rule: "30T"
-          label: "left"
-          closed: "left"
-          source: "15m"
           origin: "11:15"
         1h:
-          rule: "1H"
-          label: "left"
-          closed: "left"
-          source: "30m"
           origin: "11:15"
         4h:
-          rule: "4H"
-          label: "left"
-          closed: "left"
-          source: "1h"
           origin: "11:15"
     # to catch any "OLD ERA" behavior of Dukascopy (prevent out_of_market errors)
     catch-old:

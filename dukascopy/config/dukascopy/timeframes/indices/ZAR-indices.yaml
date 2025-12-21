@@ -23,32 +23,12 @@
 SOA.IDX-ZAR:
   timeframes:
     5m:
-      rule: "5T"
-      label: "left"
-      closed: "left"
-      source: "1m"
       origin: "08:31"
     15m:
-      rule: "15T"
-      label: "left"
-      closed: "left"
-      source: "5m"
       origin: "08:31"
     30m:
-      rule: "30T"
-      label: "left"
-      closed: "left"
-      source: "15m"
       origin: "08:31"
     1h:
-      rule: "1H"
-      label: "left"
-      closed: "left"
-      source: "30m"
       origin: "08:31"
     4h:
-      rule: "4H"
-      label: "left"
-      closed: "left"
-      source: "1h"
       origin: "08:31"

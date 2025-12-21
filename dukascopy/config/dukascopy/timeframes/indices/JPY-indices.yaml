@@ -29,8 +29,4 @@
 JPN.IDX-JPY:
   timeframes:
     4h:                     
-      rule: "4H"
-      label: "left"
-      closed: "left"
-      source: "1h"
       origin: "01:00"   

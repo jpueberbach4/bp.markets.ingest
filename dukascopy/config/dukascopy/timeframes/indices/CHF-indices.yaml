@@ -27,8 +27,4 @@
 CHE.IDX-CHF:
   timeframes:
     4h:                     
-      rule: "4H"
-      label: "left"
-      closed: "left"
-      source: "1h"
       origin: "09:00"

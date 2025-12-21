@@ -23,58 +23,30 @@
 BRENT.CMD-USD:
   timeframes:
     4h:                     
-      rule: "4H"
-      label: "left"
-      closed: "left"
-      source: "1h"
       origin: "03:00"
 COPPER.CMD-USD:
   timeframes:
     4h:                     
-      rule: "4H"
-      label: "left"
-      closed: "left"
-      source: "1h"
       origin: "01:00"
 COTTON.CMD-USX:
   timeframes:
     4h:                     
-      rule: "4H"
-      label: "left"
-      closed: "left"
-      source: "1h"
       origin: "04:00"
 DIESEL.CMD-USD:
   timeframes:
     4h:                     
-      rule: "4H"
-      label: "left"
-      closed: "left"
-      source: "1h"
       origin: "03:00"
 GAS.CMD-USD:
   timeframes:
     4h:                     
-      rule: "4H"
-      label: "left"
-      closed: "left"
-      source: "1h"
       origin: "01:00"
 LIGHT.CMD-USD:
   timeframes:
     4h:                     
-      rule: "4H"
-      label: "left"
-      closed: "left"
-      source: "1h"
       origin: "01:00"
 OJUICE.CMD-USX:
   timeframes:
     4h:                     
-      rule: "4H"
-      label: "left"
-      closed: "left"
-      source: "1h"
       origin: "15:00"
 SOYBEAN.CMD-USX:
   timezone: America/Chicago
@@ -89,34 +61,14 @@ SOYBEAN.CMD-USX:
           to: "13:20"
       timeframes:
         5m:
-          rule: "5T"
-          label: "left"
-          closed: "left"
-          source: "1m"
           origin: "16:31"
         15m:
-          rule: "15T"
-          label: "left"
-          closed: "left"
-          source: "5m"
           origin: "16:31"
         30m:
-          rule: "30T"
-          label: "left"
-          closed: "left"
-          source: "15m"
           origin: "16:31"
         1h:
-          rule: "1H"
-          label: "left"
-          closed: "left"
-          source: "30m"
           origin: "16:31"
         4h:
-          rule: "4H"
-          label: "left"
-          closed: "left"
-          source: "1h"
           origin: "16:31"
     overnight:
       ranges:
@@ -128,10 +80,6 @@ SOYBEAN.CMD-USX:
           to: "07:00"
       timeframes:
         4h:
-          rule: "4H"
-          label: "left"
-          closed: "left"
-          source: "1h"
           origin: "04:00"
     catch-old:
       ranges: 
@@ -141,32 +89,16 @@ SOYBEAN.CMD-USX:
 XAG-USD:
   timeframes:
     4h:                     
-      rule: "4H"
-      label: "left"
-      closed: "left"
-      source: "1h"
       origin: "01:00"
 XAU-USD:
   timeframes:
     4h:                     
-      rule: "4H"
-      label: "left"
-      closed: "left"
-      source: "1h"
       origin: "01:00"
 XPD.CMD-USD:
   timeframes:
     4h:                     
-      rule: "4H"
-      label: "left"
-      closed: "left"
-      source: "1h"
       origin: "01:00"
 XPT.CMD-USD:
   timeframes:
     4h:                     
-      rule: "4H"
-      label: "left"
-      closed: "left"
-      source: "1h"
       origin: "01:00"

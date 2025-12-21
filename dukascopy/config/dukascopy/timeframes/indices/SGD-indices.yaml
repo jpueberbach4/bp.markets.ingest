@@ -34,6 +34,15 @@
 SGD.IDX-SGD:
   timezone: Asia/Singapore
   skip_timeframes: []
+  timeframes:
+    4h:
+      post:
+        merge-step:
+          action: merge
+          ends_with:
+          - "11:51:00"
+          - "12:51:00"
+          offset: -1
   sessions:
     morning:
       ranges:
@@ -42,34 +51,14 @@ SGD.IDX-SGD:
           to: "17:20"
       timeframes:
         5m:
-          rule: "5T"
-          label: "left"
-          closed: "left"
-          source: "1m"
           origin: "02:30"
         15m:
-          rule: "15T"
-          label: "left"
-          closed: "left"
-          source: "5m"
           origin: "02:30"
         30m:
-          rule: "30T"
-          label: "left"
-          closed: "left"
-          source: "15m"
           origin: "02:30"
         1h:
-          rule: "1H"
-          label: "left"
-          closed: "left"
-          source: "30m"
           origin: "02:30"
         4h:
-          rule: "4H"
-          label: "left"
-          closed: "left"
-          source: "1h"
           origin: "02:30"
     after-hours:
       ranges:
@@ -81,34 +70,14 @@ SGD.IDX-SGD:
           to: "05:15"
       timeframes:
         5m:
-          rule: "5T"
-          label: "left"
-          closed: "left"
-          source: "1m"
           origin: "15:51"
         15m:
-          rule: "15T"
-          label: "left"
-          closed: "left"
-          source: "5m"
           origin: "15:51"
         30m:
-          rule: "30T"
-          label: "left"
-          closed: "left"
-          source: "15m"
           origin: "15:51"
         1h:
-          rule: "1H"
-          label: "left"
-          closed: "left"
-          source: "30m"
           origin: "15:51"
         4h:
-          rule: "4H"
-          label: "left"
-          closed: "left"
-          source: "1h"
           origin: "15:51"
     catch-old:
       ranges: 

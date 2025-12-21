@@ -28,7 +28,7 @@ from io import StringIO
 from typing import Tuple, IO, Optional
 from tqdm import tqdm
 
-from config.app_config import AppConfig, ResampleSymbol, resample_get_symbol_config, load_app_config
+from config.app_config import AppConfig, ResampleSymbol, resample_get_symbol_config, load_app_config, ResampleTimeframeProcessingStep
 from helper import ResampleTracker
 
 from dataclasses import asdict
@@ -154,6 +154,34 @@ class ResampleEngine:
         self.output_path = output_path
         self.index_path = index_path
         self.is_root = False
+
+    def _apply_post_processing(self, df: pd.DataFrame, step: ResampleTimeframeProcessingStep) -> pd.DataFrame:
+        if step.action != "merge":
+            raise ValueError(f"Unsupported post-processing action {step.action}")
+        
+        # TODO: implement from_date and to_date
+        #       generate a mask where from_date <= date <= to_date
+        #       then use mask as primary filter and endswith as secondary filter
+        #       gives a positions array, continue regular logic 
+        
+        offset = step.offset
+        for ends_with in step.ends_with:
+            positions = np.where(df.index.str.endswith(ends_with))[0]
+
+            for pos in positions:
+                # Ensure there is a row before the selects to merge into
+                if pos > 0:
+                    select_idx = df.index[pos]
+                    anchor_idx = df.index[pos + offset]
+                    df.at[anchor_idx, 'high'] = max(df.at[anchor_idx, 'high'], df.at[select_idx, 'high'])
+                    df.at[anchor_idx, 'low'] = min(df.at[anchor_idx, 'low'], df.at[select_idx, 'low'])
+                    df.at[anchor_idx, 'close'] = df.at[select_idx, 'close']
+                    df.at[anchor_idx, 'volume'] += df.at[select_idx, 'volume']
+
+            # drop all select sources
+            df = df[~df.index.str.endswith(ends_with)]
+
+        return df
 
     def read_index(self) -> Tuple[int, int]:
         """
@@ -343,24 +371,10 @@ class ResampleEngine:
             "%Y-%m-%d %H:%M:%S"
         )
 
-        # testing
-        if self.ident == "4h":
-            ghost_positions = np.where(full_resampled.index.str.endswith("11:51:00"))[0]
-
-            print(ghost_positions)
-            for pos in ghost_positions:
-                # Ensure there is a row before the ghost to merge into
-                if pos > 0:
-                    ghost_idx = full_resampled.index[pos]
-                    anchor_idx = full_resampled.index[pos - 1]
-                    full_resampled.at[anchor_idx, 'high'] = max(full_resampled.at[anchor_idx, 'high'], full_resampled.at[ghost_idx, 'high'])
-                    full_resampled.at[anchor_idx, 'low'] = min(full_resampled.at[anchor_idx, 'low'], full_resampled.at[ghost_idx, 'low'])
-                    full_resampled.at[anchor_idx, 'close'] = full_resampled.at[ghost_idx, 'close']
-                    full_resampled.at[anchor_idx, 'volume'] += full_resampled.at[ghost_idx, 'volume']
-
-            # drop all ghosts
-            full_resampled = full_resampled[~full_resampled.index.str.endswith("11:51:00")]
-
+        # Apply post-processing (currently ugly, improve in future)
+        if tf_cfg.post:
+            for tf_step in tf_cfg.post.values():
+                full_resampled = self._apply_post_processing(full_resampled, tf_step)
 
         # Determine the resume position from the last completed bar
         next_input_pos = int(full_resampled.iloc[-1]["offset"])
@@ -370,8 +384,6 @@ class ResampleEngine:
             full_resampled.drop(columns=["offset"])
             .round(self.config.round_decimals)
         )
-
-
 
         return full_resampled, next_input_pos
 
@@ -509,10 +521,18 @@ def fork_resample(args) -> bool:
 
 if __name__ == "__main__":
     # Load YAML config (currently only resample support)
-    config = load_app_config()
+    app_config = load_app_config('config.user.yaml')
+
+    # CONFIG IS FUN!!
+    symbol_config = resample_get_symbol_config("SGD.IDX-SGD", app_config)
+
+    session = next(iter(symbol_config.sessions.values()))
+    tf_cfg = session.timeframes["4h"]
 
     print(yaml.safe_dump(
-        asdict(config)
+        asdict(symbol_config),
+        default_flow_style=False,
+        sort_keys=False,
     ))
 
     os.exit

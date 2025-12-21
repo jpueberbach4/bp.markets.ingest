@@ -43,56 +43,28 @@ CHI.IDX-USD:
           to: "23:59"
       timeframes:
         4h:
-          rule: "4H"
-          label: "left"
-          closed: "left"
-          source: "1h"
           origin: "03:00"
 USA30.IDX-USD:
   timeframes:
     4h:                     
-      rule: "4H"
-      label: "left"
-      closed: "left"
-      source: "1h"
       origin: "01:00"
 USA500.IDX-USD:
   timeframes:
     4h:                     
-      rule: "4H"
-      label: "left"
-      closed: "left"
-      source: "1h"
       origin: "01:00"
 USATECH.IDX-USD:
   timeframes:
     4h:                     
-      rule: "4H"
-      label: "left"
-      closed: "left"
-      source: "1h"
       origin: "01:00"
 USSC2000.IDX-USD:
   timeframes:
     4h:                     
-      rule: "4H"
-      label: "left"
-      closed: "left"
-      source: "1h"
       origin: "01:00"
 DOLLAR.IDX-USD:
   timeframes:
     4h:                     
-      rule: "4H"
-      label: "left"
-      closed: "left"
-      source: "1h"
       origin: "03:00"
 VOL.IDX-USD:
   timeframes:
     4h:                     
-      rule: "4H"
-      label: "left"
-      closed: "left"
-      source: "1h"
       origin: "01:00"

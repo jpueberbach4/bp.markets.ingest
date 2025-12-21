@@ -59,9 +59,9 @@ class ResampleTimeframeProcessingStep(ResampleDateRange):
     """
     Configuration for a pre/post processing step
     """
-    # DROP/MERGE
     action: str = field(default=None,metadata={'yaml_key': 'action'}) 
-    # TODO: add support for selection criteria
+    ends_with: Optional[str] = field(default=None, metadata={'yaml_key': 'ends_with'}) 
+    offset: int = field(default=-1, metadata={'yaml_key': 'offset'})
 
 @dataclass
 class ResampleTimeframe:
@@ -71,8 +71,8 @@ class ResampleTimeframe:
     closed: Optional[str] = None
     origin: str = "epoch"
     source: str = ""
-    pre: Dict[str, ResampleTimeframeProcessingStep] = field(default_factory=dict)
-    post: Dict[str, ResampleTimeframeProcessingStep] = field(default_factory=dict)
+    pre: Optional[Dict[str, ResampleTimeframeProcessingStep]] = field(default=None)
+    post: Optional[Dict[str, ResampleTimeframeProcessingStep]] = field(default=None)
 
 
 @dataclass
@@ -370,43 +370,29 @@ def resolve_yaml_includes_to_string(config_file_path: str) -> str:
 
 
 def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleSymbol:
+    """Build and resolve the final resampling configuration for a symbol.
+
+    This function merges global resampling defaults with symbol-level overrides,
+    resolves session-specific configurations, normalizes timeframe processing
+    steps, and applies final skip rules.
+
+    Args:
+        symbol: Trading symbol identifier (e.g., "BTCUSDT").
+        app_config: Global application configuration containing resample settings.
+
+    Returns:
+        A fully resolved ResampleSymbol configuration for the given symbol.
     """
-    Resolve and normalize the resample configuration for a single symbol.
-
-    This function produces a fully expanded `ResampleSymbol` configuration by:
-    - Starting from the global resample configuration
-    - Applying symbol-level overrides and defaults
-    - Normalizing timeframe definitions into dataclass instances
-    - Resolving trading sessions (including creating a default 24h session)
-    - Applying skip-timeframe rules with absolute priority
-
-    The resulting object is safe to consume by the resampling engine and
-    contains no shared references to the original application configuration.
-
-    Parameters
-    ----------
-    symbol : str
-        Trading symbol to resolve (e.g. "AUS.IDX-AUD").
-    app_config : AppConfig
-        Root application configuration containing global and symbol-specific
-        resample settings.
-
-    Returns
-    -------
-    ResampleSymbol
-        Fully resolved and normalized resample configuration for the symbol.
-    """
-    # Create a deep copy of the global resample config to avoid mutating originals
+    # Work on a deep copy to avoid mutating the global application config
     merged_config: ResampleConfig = copy.deepcopy(app_config.resample)
 
-    # Ensure the symbol exists in the configuration, initialize if missing
+    # Ensure the symbol exists in the config map
     if symbol not in merged_config.symbols:
         merged_config.symbols[symbol] = ResampleSymbol()
 
-    # Work on the symbol-specific override object
     symbol_override = merged_config.symbols[symbol]
 
-    # Apply global defaults to primitive fields if symbol values are unset
+    # Inherit scalar defaults from the global config when not explicitly set
     symbol_override.round_decimals = (
         symbol_override.round_decimals or merged_config.round_decimals
     )
@@ -414,20 +400,77 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleSy
         symbol_override.batch_size or merged_config.batch_size
     )
 
-    # Build the symbol base timeframes by merging global and symbol definitions
-    base_tfs = copy.deepcopy(merged_config.timeframes)
-    for tf_name, tf_val in symbol_override.timeframes.items():
-        # Normalize raw dicts into ResampleTimeframe dataclass instances
-        if isinstance(tf_val, dict):
-            tf_val = ResampleTimeframe(**tf_val)
-        base_tfs[tf_name] = tf_val
+    def normalize_tf(tf: ResampleTimeframe) -> ResampleTimeframe:
+        """Normalize timeframe pre/post processing steps.
 
-    # Store the resolved base timeframes on the symbol
+        Converts raw dictionary-based processing step definitions into
+        ResampleTimeframeProcessingStep dataclass instances.
+
+        Args:
+            tf: Timeframe configuration to normalize.
+
+        Returns:
+            The normalized ResampleTimeframe instance.
+        """
+        for attr in ["pre", "post"]:
+            val = getattr(tf, attr)
+            if val is not None and isinstance(val, dict):
+                normalized_steps = {}
+                for step_name, step_data in val.items():
+                    # Convert step definitions into dataclass instances if needed
+                    if isinstance(step_data, dict):
+                        normalized_steps[step_name] = (
+                            ResampleTimeframeProcessingStep(**step_data)
+                        )
+                    else:
+                        normalized_steps[step_name] = step_data
+                setattr(tf, attr, normalized_steps)
+        return tf
+
+    def merge_timeframes(
+        base_map: Dict[str, ResampleTimeframe],
+        override_map: Dict[str, Any],
+    ):
+        """Merge timeframe overrides into a base timeframe map.
+
+        Only non-None fields from the override are applied. Empty pre/post
+        dictionaries are ignored to prevent wiping populated configurations.
+
+        Args:
+            base_map: Base timeframe configurations to be modified in place.
+            override_map: Override timeframe definitions.
+        """
+        for tf_name, tf_val in override_map.items():
+            # Convert raw dict overrides into ResampleTimeframe objects
+            if isinstance(tf_val, dict):
+                tf_val = ResampleTimeframe(**tf_val)
+
+            # Normalize pre/post processing steps
+            tf_val = normalize_tf(tf_val)
+
+            if tf_name in base_map:
+                target_tf = base_map[tf_name]
+
+                # Selectively override only non-None fields
+                for f in fields(ResampleTimeframe):
+                    new_val = getattr(tf_val, f.name)
+                    if new_val is not None:
+                        # Prevent empty pre/post dicts from erasing populated ones
+                        if f.name in ["pre", "post"] and not new_val:
+                            continue
+                        setattr(target_tf, f.name, new_val)
+            else:
+                # New timeframe definition
+                base_map[tf_name] = tf_val
+
+    # Merge symbol-level timeframe overrides into global defaults
+    base_tfs = copy.deepcopy(merged_config.timeframes)
+    merge_timeframes(base_tfs, symbol_override.timeframes)
     symbol_override.timeframes = base_tfs
 
     # Resolve trading sessions
     if not symbol_override.sessions:
-        # No sessions defined: create a default 24-hour trading session
+        # Create a default 24h session if none are defined
         default_range = ResampleTimeRange(
             from_time="00:00:00",
             to_time="23:59:59",
@@ -439,25 +482,20 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleSy
             )
         }
     else:
-        # Sessions exist: merge symbol base timeframes with session-specific overrides
+        # Merge session-specific timeframe overrides
         for sess_name, session in symbol_override.sessions.items():
             s_tfs = copy.deepcopy(symbol_override.timeframes)
-            for tf_name, tf_val in session.timeframes.items():
-                # Normalize raw dicts into ResampleTimeframe dataclass instances
-                if isinstance(tf_val, dict):
-                    tf_val = ResampleTimeframe(**tf_val)
-                s_tfs[tf_name] = tf_val
-
-            # Store the fully resolved timeframes back into the session
+            merge_timeframes(s_tfs, session.timeframes)
             session.timeframes = s_tfs
 
-    # Apply skip_timeframes with absolute priority across symbol and sessions
+    # Apply final skip logic to remove unwanted timeframes
     for ident in symbol_override.skip_timeframes:
         for session in symbol_override.sessions.values():
             session.timeframes.pop(ident, None)
         symbol_override.timeframes.pop(ident, None)
 
     return symbol_override
+
 
 
 
