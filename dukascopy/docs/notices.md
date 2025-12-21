@@ -1,6 +1,6 @@
 ## Status per 21 December 2025
 
-Starting to get very pleased with the results of this effort.
+Starting to get very pleased with the results of this effort. I have now seen about everything what MT4 does and doesnt. Quite a learning experience with some interesting conclusions derived from it. Especially the SGD index has opened my eyes. 
 
 !!! BUG !!!
 
