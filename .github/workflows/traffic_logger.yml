@@ -25,29 +25,8 @@ jobs:
       - name: Merge and Move Stats
         run: |
           mkdir -p .github/traffic
-          python3 -c "
-import csv
-import os
-def merge(name):
-    new_p = f'traffic/{name}.csv'
-    old_p = f'.github/traffic/{name}.csv'
-    if not os.path.exists(new_p): return
-    data = {}
-    if os.path.exists(old_p):
-        with open(old_p, 'r', newline='') as f:
-            reader = csv.DictReader(f)
-            for row in reader: data[row['date']] = row
-    with open(new_p, 'r', newline='') as f:
-        reader = csv.DictReader(f)
-        for row in reader: data[row['date']] = row
-    sorted_d = sorted(data.keys())
-    with open(old_p, 'w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=reader.fieldnames)
-        writer.writeheader()
-        for d in sorted_d: writer.writerow(data[d])
-merge('clones')
-merge('views')
-"
+          python3 -c "import csv, os; def m(n): np=f'traffic/{n}.csv'; op=f'.github/traffic/{n}.csv'; (not os.path.exists(np) and None) or (d:={}) or (os.path.exists(op) and [d.update({r['date']:r}) for r in csv.DictReader(open(op))]) or [d.update({r['date']:r}) for r in csv.DictReader(open(np)) or []]; sd=sorted(d.keys()); f=open(op,'w',newline=''); w=csv.DictWriter(f,fieldnames=['date','count','uniques']); w.writeheader(); [w.writerow(d[x]) for x in sd]; f.close()
+          m('clones'); m('views')"
           sudo rm -rf traffic
 
       - name: Commit and Push
