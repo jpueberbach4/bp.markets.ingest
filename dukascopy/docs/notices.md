@@ -4,6 +4,8 @@
 
 >**To update: ```git checkout main && git pull origin main```**
 
+After update: ```./rebuild-resample.sh``` (only if you have SGD.IDX/AUS.IDX/HKG.IDX)
+
 **Note:** SGD issue has been fixed. Weird behavior in MT4. Typical MetaQuirk. See comments in [SGD-indices.yaml](../config/dukascopy/timeframes/indices/SGD-indices.yaml).
 
 **Note:** The data part is not finished yet. Still bugs/features to resolve:
