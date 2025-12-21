@@ -1,6 +1,6 @@
 ## Limitations
 
-While the tool is becoming pretty excellent, it is worth noting that there are (still) some important limitations which makes 100% support for all sources, currently, not possible.
+While the tool is becoming pretty excellent, it is worth noting that there are (still) some limitations. Not many AFAICS.
 
 ### Session from-to support - **Solved, merge support is in for SGD, available in main** 
 
