@@ -77,6 +77,10 @@ jobs:
           merge_csv('views')
           EOF
           python3 merge_stats.py
+          if [ -d "traffic" ]; then
+            cp traffic/*.png .github/traffic/ 2>/dev/null || true
+          fi
+          
           sudo rm -rf traffic merge_stats.py
       - name: Commit and Push
         uses: Endbug/add-and-commit@v9
