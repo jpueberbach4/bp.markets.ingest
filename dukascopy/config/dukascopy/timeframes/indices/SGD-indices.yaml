@@ -33,9 +33,11 @@
 # This is a metatrader-quirk
 #
 # Summer-time (Europe):
-# - MT4 Shows a 11:30 4H candle AND a 12:51 4H candle
+# - MT4 Shows a 11:30 4H candle AND a 12:51 4H candle, DOES have 16:51 4H candle
 # Winter-time (Europe)
-# - MT4 Shows a 10:30 4H candle AND NO! 11:51 4H candle
+# - MT4 Shows a 10:30 4H candle AND NO! 11:51 4H candle, DOES have 15:51 candle
+#
+# (a full span of a 4H candle in summer is not the reason, same is on winter)
 #
 # I don't understand the behavior of this quirk, i mean, why leave it intact
 # in summer and merge it in winter?
