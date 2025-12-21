@@ -22,7 +22,7 @@ jobs:
         env:
           TRAFFIC_ACTION_TOKEN: ${{ secrets.TRAFFIC_ACTION_TOKEN }}
 
-        - name: Merge and Move Stats to .github Folder
+      - name: Merge and Move Stats to .github Folder
         run: |
             mkdir -p .github/traffic
             
