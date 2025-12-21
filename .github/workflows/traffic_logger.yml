@@ -24,48 +24,41 @@ jobs:
 
       - name: Merge and Move Stats to .github Folder
         run: |
-                mkdir -p .github/traffic
-                python3 -c "
-                    import csv
-                    import os
+          mkdir -p .github/traffic
+          python3 -c "
+import csv
+import os
 
-                    def merge_csv(name):
-                        new_path = f'traffic/{name}.csv'
-                        old_path = f'.github/traffic/{name}.csv'
-                        
-                        if not os.path.exists(new_path): return
-                        
-                        data = {}
-                        # Read existing data if it exists
-                        if os.path.exists(old_path):
-                            with open(old_path, 'r', newline='') as f:
-                                reader = csv.DictReader(f)
-                                for row in reader:
-                                    data[row['date']] = row
+def merge_csv(name):
+    new_path = f'traffic/{name}.csv'
+    old_path = f'.github/traffic/{name}.csv'
+    if not os.path.exists(new_path): return
+    data = {}
+    if os.path.exists(old_path):
+        with open(old_path, 'r', newline='') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                data[row['date']] = row
+    with open(new_path, 'r', newline='') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            data[row['date']] = row
+    sorted_dates = sorted(data.keys())
+    with open(old_path, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=reader.fieldnames)
+        writer.writeheader()
+        for d in sorted_dates:
+            writer.writerow(data[d])
 
-                        # Overwrite/Add with new data (keep_last logic)
-                        with open(new_path, 'r', newline='') as f:
-                            reader = csv.DictReader(f)
-                            for row in reader:
-                                data[row['date']] = row
-
-                        # Sort by date and write back
-                        sorted_dates = sorted(data.keys())
-                        with open(old_path, 'w', newline='') as f:
-                            writer = csv.DictWriter(f, fieldnames=reader.fieldnames)
-                            writer.writeheader()
-                            for d in sorted_dates:
-                                writer.writerow(data[d])
-
-                    merge_csv('clones')
-                    merge_csv('views')
-                "
-                sudo rm -rf traffic
+merge_csv('clones')
+merge_csv('views')
+"
+          sudo rm -rf traffic
 
       - name: Commit and Push Stats
         uses: Endbug/add-and-commit@v9
         with:
           author_name: "GitHub Action"
           author_email: "action@github.com"
-          message: "Update daily"
+          message: "Update daily stats [skip ci]"
           add: ".github/traffic/*"
