@@ -39,6 +39,10 @@
 
 ## Notice
 
+!!! BUG !!!
+
+**There was/is a bug in the get_active_session. The bug was not visible because exceptions got swallowed silently because of the large OOP refactor. Now that i made them visible, this became clear. A quickfix is in. You will need to copy-over the configs using ```./setup-dukascopy.sh```. For now, a quick-fix is in. This also fixes the SOYBEAN 1Y issue.**
+
 If your pipeline has broken after a ```git pull``` or receive the warning "Notice, there were breaking config changes! See README for more information!", perform (if using default configuration, except for symbols.user.txt):
 
 ```sh

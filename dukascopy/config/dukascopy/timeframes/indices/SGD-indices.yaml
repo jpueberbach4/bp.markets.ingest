@@ -110,3 +110,11 @@ SGD.IDX-SGD:
           origin: "02:30"
         4h:
           origin: "02:30"
+    # This is to prevent OUT_OF_MARKET errors for W1
+    # We could drop the above ancient one, but we leave it in for clearness
+    # In the future we will need to check for a better approach
+    catch-all:
+      ranges: 
+        24h:
+          from: "00:00"
+          to: "23:59"

@@ -285,8 +285,8 @@ class DownloadWorker:
 
             return True
 
-        except Exception:
-            return False
+        except Exception as e:
+            raise e
 
 
 def fork_download(args: tuple) -> bool:
@@ -299,6 +299,11 @@ def fork_download(args: tuple) -> bool:
     Returns:
         True if download completed successfully.
     """
-    symbol, dt, app_config = args
-    worker = DownloadWorker(app_config)
-    return worker.run(symbol, dt)
+    try:
+        symbol, dt, app_config = args
+        worker = DownloadWorker(app_config)
+        return worker.run(symbol, dt)
+    except Exception as e:
+        # Explicitly propagate
+        raise e
+

@@ -128,6 +128,9 @@ class ResampleTracker:
                 if current_mins >= s_min or current_mins <= e_min:
                     return s["name"]
 
+        if "catch-all" in self.config.sessions:
+            return "catch-all"
+
         raise ValueError(f"Line {line} is out_of_market.")
 
 

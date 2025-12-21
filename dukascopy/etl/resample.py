@@ -33,6 +33,7 @@ from helper import ResampleTracker
 
 from dataclasses import asdict
 import yaml
+import traceback
 
 # Enable verbose logging via environment variable
 VERBOSE = os.getenv("VERBOSE", "0").lower() in ("1", "true", "yes", "on")
@@ -141,9 +142,7 @@ class ResampleEngine:
 
         # Validate that upstream data exists
         if not input_path.exists():
-            if VERBOSE:
-                tqdm.write(f"  No base {self.ident} data for {self.symbol} → skipping")
-            raise ValueError(f"No base data for {self.symbol} at {self.ident}")
+            raise IOError(f"No base data for {self.symbol} at {self.ident}. {input_path} does not exist.")
 
         # Ensure output directory and file exist
         if not output_path.exists():
@@ -194,19 +193,23 @@ class ResampleEngine:
                 - input_pos: Byte offset in the input file.
                 - output_pos: Byte offset in the output file.
         """
-        # Initialize index if missing
-        if not self.index_path or not self.index_path.exists():
-            self.write_index(0, 0)
-            return 0, 0
+        try:
+            # Initialize index if missing
+            if not self.index_path or not self.index_path.exists():
+                self.write_index(0, 0)
+                return 0, 0
 
-        # Read the first two lines (input_pos, output_pos)
-        with open(self.index_path, "r") as f:
-            lines = f.readlines()[:2]
+            # Read the first two lines (input_pos, output_pos)
+            with open(self.index_path, "r") as f:
+                lines = f.readlines()[:2]
 
-        if len(lines) == 2:
-            return int(lines[0].strip()), int(lines[1].strip())
+            if len(lines) == 2:
+                return int(lines[0].strip()), int(lines[1].strip())
 
-        # Fallback if index file is malformed
+            # Fallback if index file is malformed
+        except Exception as e:
+            # Explicitly propagate
+            raise e
         return 0, 0
 
     def write_index(self, input_pos: int, output_pos: int) -> None:
@@ -219,17 +222,21 @@ class ResampleEngine:
             input_pos (int): Byte offset in the input file.
             output_pos (int): Byte offset in the output file.
         """
-        # Ensure index directory exists
-        self.index_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            # Ensure index directory exists
+            self.index_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Write offsets to a temporary file
-        temp_path = self.index_path.with_suffix(".tmp")
-        with open(temp_path, "w") as f:
-            f.write(f"{input_pos}\n{output_pos}")
-            f.flush()
+            # Write offsets to a temporary file
+            temp_path = self.index_path.with_suffix(".tmp")
+            with open(temp_path, "w") as f:
+                f.write(f"{input_pos}\n{output_pos}")
+                f.flush()
 
-        # Atomic replace
-        os.replace(temp_path, self.index_path)
+            # Atomic replace
+            os.replace(temp_path, self.index_path)
+        except Exception as e:
+            # Explicitly propagate
+            raise e
 
     def prepare_batch(self, f_input: IO, header: str) -> Tuple[StringIO, bool]:
         """
@@ -250,59 +257,62 @@ class ResampleEngine:
         """
         # Initialize in-memory buffer for the output batch
         sio = StringIO()
+        try:
 
-        # Write CSV header with appended metadata columns
-        sio.write(f"{header.strip()},origin,offset\n")
+            # Write CSV header with appended metadata columns
+            sio.write(f"{header.strip()},origin,offset\n")
 
-        # Track end-of-file state and last processed session/day key
-        eof = False
-        last_key = None
+            # Track end-of-file state and last processed session/day key
+            eof = False
+            last_key = None
 
-        # Check whether the tracker is running in single-session mode
-        is_default = self.tracker.is_default_session()
+            # Check whether the tracker is running in single-session mode
+            is_default = self.tracker.is_default_session()
 
-        # Precompute origin for the single-session (default) case
-        primary_session = next(iter(self.config.sessions.values()))
-        default_origin = primary_session.timeframes[self.ident].origin
+            # Precompute origin for the single-session (default) case
+            primary_session = next(iter(self.config.sessions.values()))
+            default_origin = primary_session.timeframes[self.ident].origin
 
-        # Read up to batch_size rows from the input file
-        for _ in range(self.config.batch_size):
-            # Capture byte offset before reading the row
-            offset_before = f_input.tell()
-            line = f_input.readline()
+            # Read up to batch_size rows from the input file
+            for _ in range(self.config.batch_size):
+                # Capture byte offset before reading the row
+                offset_before = f_input.tell()
+                line = f_input.readline()
 
-            # Stop processing if end-of-file is reached
-            if not line:
-                eof = True
-                break
+                # Stop processing if end-of-file is reached
+                if not line:
+                    eof = True
+                    break
 
-            # Resolve origin dynamically when multiple sessions are configured
-            if not is_default:
-                try:
-                    # Determine the active session for the current row
-                    session = self.tracker.get_active_session(line)
-                    current_key = f"{session}/{line[:10]}"  # session + date prefix
+                # Resolve origin dynamically when multiple sessions are configured
+                if not is_default:
+                    try:
+                        # Determine the active session for the current row
+                        session = self.tracker.get_active_session(line)
+                        current_key = f"{session}/{line[:10]}"  # session + date prefix
 
-                    # Recompute origin only when session or day changes
-                    if current_key != last_key:
-                        origin = self.tracker.get_active_origin(
-                            line, self.ident, session
-                        )
-                        last_key = current_key
-                except Exception as e:
-                    # Propagate errors encountered during session/origin resolution
-                    raise e
-            else:
-                # Use precomputed origin for single-session mode
-                origin = default_origin
+                        # Recompute origin only when session or day changes
+                        if current_key != last_key:
+                            origin = self.tracker.get_active_origin(
+                                line, self.ident, session
+                            )
+                            last_key = current_key
+                    except Exception as e:
+                        # Explicitly propagate
+                        raise e
+                else:
+                    # Use precomputed origin for single-session mode
+                    origin = default_origin
 
-            # Write the enriched CSV row to the output buffer
-            sio.write(f"{line.strip()},{origin},{offset_before}\n")
+                # Write the enriched CSV row to the output buffer
+                sio.write(f"{line.strip()},{origin},{offset_before}\n")
 
-        # Reset buffer cursor for downstream consumers
-        sio.seek(0)
-        return sio, eof
-
+            # Reset buffer cursor for downstream consumers
+            sio.seek(0)
+            return sio, eof
+        except Exception as e:
+            # Explicitly propagate
+            raise RuntimeError(f"Critical failure on {self.symbol} at timeframe {self.ident}: {e}") from e
 
     def process_resample(self, sio: StringIO) -> Tuple[pd.DataFrame, int]:
         """
@@ -322,70 +332,73 @@ class ResampleEngine:
         Raises:
             ValueError: If the batch contains no data.
         """
-        # Load the prepared CSV batch into a DataFrame indexed by timestamp
-        df = pd.read_csv(
-            sio,
-            parse_dates=["time"],
-            index_col="time",
-            date_format="%Y-%m-%d %H:%M:%S",
-        )
-
-        # Guard against empty batches
-        if df.empty:
-            raise ValueError("Empty batch read from StringIO")
-
-        # Accumulate per-origin resampled DataFrames
-        resampled_list = []
-
-        # Retrieve timeframe configuration from the primary session
-        session = next(iter(self.config.sessions.values()))
-        tf_cfg = session.timeframes[self.ident]
-
-        # Resample each origin independently to preserve session boundaries
-        for origin, origin_df in df.groupby("origin"):
-            res = origin_df.resample(
-                tf_cfg.rule,              # Resampling rule (e.g., '5T', '1H')
-                label=tf_cfg.label,       # Label alignment for resampled bars
-                closed=tf_cfg.closed,     # Interval closure (left/right)
-                origin=origin,            # Session-aware origin timestamp
-            ).agg(
-                {
-                    "open": "first",      # First price in the interval
-                    "high": "max",        # Highest price in the interval
-                    "low": "min",         # Lowest price in the interval
-                    "close": "last",      # Last price in the interval
-                    "volume": "sum",      # Total traded volume
-                    "offset": "first",    # Byte offset for resume tracking
-                }
+        try:
+            # Load the prepared CSV batch into a DataFrame indexed by timestamp
+            df = pd.read_csv(
+                sio,
+                parse_dates=["time"],
+                index_col="time",
+                date_format="%Y-%m-%d %H:%M:%S",
             )
 
-            # Drop empty or invalid bars (e.g., no volume)
-            res = res[res["volume"].gt(0) & res["volume"].notna()]
-            resampled_list.append(res)
+            # Guard against empty batches
+            if df.empty:
+                raise ValueError("Empty batch read from StringIO")
 
-        # Combine all resampled origins into a single, time-sorted DataFrame
-        full_resampled = pd.concat(resampled_list).sort_index()
+            # Accumulate per-origin resampled DataFrames
+            resampled_list = []
 
-        # Normalize index formatting for downstream consumers
-        full_resampled.index = full_resampled.index.strftime(
-            "%Y-%m-%d %H:%M:%S"
-        )
+            # Retrieve timeframe configuration from the primary session
+            session = next(iter(self.config.sessions.values()))
+            tf_cfg = session.timeframes[self.ident]
 
-        # Apply post-processing (currently ugly, improve in future)
-        if tf_cfg.post:
-            for tf_step in tf_cfg.post.values():
-                full_resampled = self._apply_post_processing(full_resampled, tf_step)
+            # Resample each origin independently to preserve session boundaries
+            for origin, origin_df in df.groupby("origin"):
+                res = origin_df.resample(
+                    tf_cfg.rule,              # Resampling rule (e.g., '5T', '1H')
+                    label=tf_cfg.label,       # Label alignment for resampled bars
+                    closed=tf_cfg.closed,     # Interval closure (left/right)
+                    origin=origin,            # Session-aware origin timestamp
+                ).agg(
+                    {
+                        "open": "first",      # First price in the interval
+                        "high": "max",        # Highest price in the interval
+                        "low": "min",         # Lowest price in the interval
+                        "close": "last",      # Last price in the interval
+                        "volume": "sum",      # Total traded volume
+                        "offset": "first",    # Byte offset for resume tracking
+                    }
+                )
 
-        # Determine the resume position from the last completed bar
-        next_input_pos = int(full_resampled.iloc[-1]["offset"])
+                # Drop empty or invalid bars (e.g., no volume)
+                res = res[res["volume"].gt(0) & res["volume"].notna()]
+                resampled_list.append(res)
 
-        # Remove internal metadata and apply final rounding
-        full_resampled = (
-            full_resampled.drop(columns=["offset"])
-            .round(self.config.round_decimals)
-        )
+            # Combine all resampled origins into a single, time-sorted DataFrame
+            full_resampled = pd.concat(resampled_list).sort_index()
 
-        return full_resampled, next_input_pos
+            # Normalize index formatting for downstream consumers
+            full_resampled.index = full_resampled.index.strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
+
+            # Apply post-processing (currently ugly, improve in future)
+            if tf_cfg.post:
+                for tf_step in tf_cfg.post.values():
+                    full_resampled = self._apply_post_processing(full_resampled, tf_step)
+
+            # Determine the resume position from the last completed bar
+            next_input_pos = int(full_resampled.iloc[-1]["offset"])
+
+            # Remove internal metadata and apply final rounding
+            full_resampled = (
+                full_resampled.drop(columns=["offset"])
+                .round(self.config.round_decimals)
+            )
+
+            return full_resampled, next_input_pos
+        except Exception as e:
+            raise RuntimeError(f"Critical failure on {self.symbol} at offset {next_input_pos}") from e
 
 
 class ResampleWorker:
@@ -417,8 +430,8 @@ class ResampleWorker:
         Cascading dependencies are respected: if a lower timeframe fails,
         higher derived timeframes are skipped.
         """
-        for ident in self.config.timeframes:
-            try:
+        try:
+            for ident in self.config.timeframes:
                 # 1. Initialize engine (path resolution happens here)
                 engine = ResampleEngine(self.symbol, ident, self.config, self.data_path)
 
@@ -429,11 +442,11 @@ class ResampleWorker:
                 # 3. Execute incremental resampling
                 self._execute_engine(engine)
 
-            except (ValueError, IOError) as e:
-                if VERBOSE:
-                    tqdm.write(f"  ! Skipping {ident} for {self.symbol}: {e}")
-                # Break cascade: higher TFs depend on this one
-                break
+        except Exception as e:
+            # Explicitly propagate
+            raise e
+                
+                
 
     def _execute_engine(self, engine: ResampleEngine) -> None:
         """
@@ -448,55 +461,62 @@ class ResampleWorker:
         Args:
             engine (ResampleEngine): Initialized resampling engine.
         """
-        # Restore last known read/write positions from index files
-        input_pos, output_pos = engine.read_index()
+        try:
+            # Restore last known read/write positions from index files
+            input_pos, output_pos = engine.read_index()
 
-        # Open input CSV for reading and output CSV for read/write updates
-        with open(engine.input_path, "r") as f_in, open(engine.output_path, "r+") as f_out:
-            # Read and cache the input CSV header
-            header = f_in.readline()
+            # Open input CSV for reading and output CSV for read/write updates
+            with open(engine.input_path, "r") as f_in, open(engine.output_path, "r+") as f_out:
+                # Read and cache the input CSV header
+                header = f_in.readline()
 
-            # Resume input reading from the last processed byte offset
-            if input_pos > 0:
-                f_in.seek(input_pos)
+                # Resume input reading from the last processed byte offset
+                if input_pos > 0:
+                    f_in.seek(input_pos)
 
-            # If starting from a fresh output file, write the CSV header
-            if output_pos == 0:
-                f_out.write(header)
-                output_pos = f_out.tell()
+                # If starting from a fresh output file, write the CSV header
+                if output_pos == 0:
+                    f_out.write(header)
+                    output_pos = f_out.tell()
 
-            # Process input data incrementally until EOF is reached
-            while True:
-                # Read the next batch and enrich it with metadata
-                sio, eof = engine.prepare_batch(f_in, header)
-                try:
-                    # Resample the batch and compute the next input position
-                    resampled, next_in_pos = engine.process_resample(sio)
-                finally:
-                    # Ensure the in-memory buffer is always released
-                    sio.close()
+                # Process input data incrementally until EOF is reached
+                while True:
+                    # Read the next batch and enrich it with metadata
+                    sio, eof = engine.prepare_batch(f_in, header)
+                    try:
+                        # Resample the batch and compute the next input position
+                        resampled, next_in_pos = engine.process_resample(sio)
+                    except Exception as e:
+                        # Explicitly propagate
+                        raise e
+                    finally:
+                        # Ensure the in-memory buffer is always released
+                        sio.close()
 
-                # Roll back output file to the last confirmed safe position
-                f_out.seek(output_pos)
-                f_out.truncate(output_pos)
+                    # Roll back output file to the last confirmed safe position
+                    f_out.seek(output_pos)
+                    f_out.truncate(output_pos)
 
-                # Write all fully completed bars (exclude trailing partial bar)
-                f_out.write(resampled.iloc[:-1].to_csv(index=True, header=False))
-                f_out.flush()
+                    # Write all fully completed bars (exclude trailing partial bar)
+                    f_out.write(resampled.iloc[:-1].to_csv(index=True, header=False))
+                    f_out.flush()
 
-                # Persist progress after writing confirmed bars
-                output_pos = f_out.tell()
-                engine.write_index(next_in_pos, output_pos)
+                    # Persist progress after writing confirmed bars
+                    output_pos = f_out.tell()
+                    engine.write_index(next_in_pos, output_pos)
 
-                # Write the trailing bar, which may be updated in the next batch
-                f_out.write(resampled.tail(1).to_csv(index=True, header=False))
+                    # Write the trailing bar, which may be updated in the next batch
+                    f_out.write(resampled.tail(1).to_csv(index=True, header=False))
 
-                # Exit the loop once the input file has been fully consumed
-                if eof:
-                    break
+                    # Exit the loop once the input file has been fully consumed
+                    if eof:
+                        break
 
-                # Resume reading input from the computed byte offset
-                f_in.seek(next_in_pos)
+                    # Resume reading input from the computed byte offset
+                    f_in.seek(next_in_pos)
+        except Exception as e:
+            # Explicitly propagate
+            raise e
 
 
 
@@ -512,7 +532,11 @@ def fork_resample(args) -> bool:
     Returns:
         bool: True if resampling completed successfully.
     """
-    symbol, config = args
-    worker = ResampleWorker(symbol, config)
-    worker.run()
+    try:
+        symbol, config = args
+        worker = ResampleWorker(symbol, config)
+        worker.run()
+    except Exception as e:
+        # Explicitly propagate
+        raise e
     return True

@@ -69,8 +69,16 @@ AUS.IDX-AUD:
     # Switch on candles happens on Friday, Feb 7, 1:00 AM (01:00) (Australia/Sydney)
     # Use default epoch time, causes H4 candles to align to 00:00, 04:00,...
     ancient:
-      to_date: "2020-02-07 00:59:00"
+      to_date: "2020-02-07 01:00:00"
       ranges:
+        24h:
+          from: "00:00"
+          to: "23:59"
+    # This is to prevent OUT_OF_MARKET errors for W1
+    # We could drop the above ancient one, but we leave it in for clearness
+    # In the future we will need to check for a better approach
+    catch-all:
+      ranges: 
         24h:
           from: "00:00"
           to: "23:59"
