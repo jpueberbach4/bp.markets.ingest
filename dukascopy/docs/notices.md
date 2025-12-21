@@ -6,52 +6,16 @@ Starting to get very pleased with the results of this effort.
 
 **There was/is a bug in the get_active_session. The bug was not visible because exceptions got swallowed silently because of the large OOP refactor. Now that i made them visible, this became clear. A quickfix is in. You will need to copy-over the configs using ```./setup-dukascopy.sh```. This also fixes the SOYBEAN 1Y issue.**
 
-**Note:** Volumes
-
-| Time | Tool Volume | MT4 Volume | Ratio (MT4 / Tool) |
-| :--- | :--- | :--- | :--- |
-| **15:51** | 3,778,831 | 4,534 | 0.0012 |
-| **19:51** | 1,459,212 | 1,751 | 0.0012 |
-| **02:30** | 1,448,412 | 1,738 | 0.0012 |
-
-I am seeing if this accounts for all assets. Perhaps a configurable multiplication factor, per asset?
-
-**Note:** Information on hardware wear and tear. I didn't have this exact information before, but also NVMe and SSD drives have a maximum lifetime. This is measured in TBW (TeraByte Writes). Most 1TB NVMe drives have a TBW of about 600. So if you write each day a TB, your drive will last for 600 days. 2TB NVMe drives have a TBW of 1200. This software is, regarding the data processing part, now nearing it's completion. The main focus is now on resampling, not the download or the very-TBW intensive aggregation (260MB/s for 30 seconds long on 40 symbols) step. Reads are not affecting TBW. It's only about the writes.
-
->**Note:** Since the morning of 2025-12-21 10:00 Europe/Amsterdam time, a fix for the Singapore index is in. I took the liberty to eliminate some of the config bloat as well. Timeframe attributes are now inherited from the defaults if not explicitly specified. ```config``` directory has changed quite a bit. If you are still using default config (except for symbols.user.txt), do a ```./setup-dukascopy.sh```. It will copy the new, simplified config files, to your ```config.user``` directory. Do not do this if you have your own config.
+Various bug-fixes and updates:
 
 >**To update: ```git checkout main && git pull origin main```**
 
 After update: ```./rebuild-resample.sh``` (only if you have SGD.IDX/AUS.IDX/HKG.IDX)
 
-**Note:** SGD issue has been fixed. Typical MetaQuirk. See comments in [SGD-indices.yaml](../config/dukascopy/timeframes/indices/SGD-indices.yaml).
+**Note:** SGD issue has been fixed - [SGD-indices.yaml](../config/dukascopy/timeframes/indices/SGD-indices.yaml).
 
-**Note:** The data part is not finished yet. Still bugs/features to resolve:
+Still open: Sessions are currently mapped, fixed, to America/New_York. Make it based on the symbol's timezone setting in transform.timezone. This is a cosmetic issue since the '*' select is present on the timezone America/New_York in ```config/dukascopy/timezones/america-new_york.yaml```. The fix is needed to support users who wish to use advanced session settings on eg ```Etc/UTC```.
 
-- ~~Soybean 1Y timeframe throws out_of_market error 1Y timeframe disabled on that asset Happens because of timezone America/Chicago and start of month being on a Sunday. Who trades it anyways, but will get fixed.~~
-- Sessions are currently mapped, fixed, to America/New_York. Make it based on the symbol's timezone setting in transform.timezone. This is a cosmetic issue since the '*' select is present on the timezone America/New_York in ```config/dukascopy/timezones/america-new_york.yaml```. The fix is needed to support users who wish to use advanced session settings on eg ```Etc/UTC```.
-- ~~**New Item:** more important one. Because of the refactor and the quirks stuff, i here and there silently swallow exceptions. That does not match the fail-fast design anymore. Fix it. This is a high-prio one. Today.~~
-
-## Status per 20 December 2025
-
-**Note:** The data part is not finished yet. Still bugs/features to resolve:
-
-- Soybean 1Y timeframe throws out_of_market error 1Y timeframe disabled on that asset Happens because of timezone America/Chicago and start of month being on a Sunday. Who trades it anyways, but will get fixed.
-- ~~Compatibility for "alignment policy changes" in MT4 eg for AUS.IDX-AUD \
-  Adding valid_from, valid_to attributes on sessions to allow for different session allocation for specific dateranges.~~
-- ~~Support for drop/merge of candles"
-  Strange quirk with the SGD.IDX. H4 1m data is present, outside of 4H timeframes, creating a candle we dont see in MT4. What to do with it? AUS.IDX has shown us that MT4 merges candles into either a left or right higher TF candle.~~
-- Sessions are currently mapped, fixed, to America/New_York. \
-  Make it based on the symbol's timezone setting in transform.timezones.
-- Perhaps other things.... 
-
-It's a limited list. Looks actually pretty good.
-
-This is "reverse engineering" of the MT4 platform.
-
-**Note:** The ETL part of this project has been converted to OOP. Making it slightly less readable but better maintainable and testable.
-
-**Note:** This system is more and more getting tailored to Dukascopy. I dont have time to test this with other brokers like FXCM or IGMarkets. Chances are, that these brokers have different rules regarding to the assets they "broker for". Different alignment policies, etc. The system can be used with other brokers since the 1m base data should be near equal at any broker. Prices are factual, market-wide. If differences: you will have to tailor it to these brokers yourself. It's a tedious job but the reward is there if you succeed.
 
 ## Notice
 

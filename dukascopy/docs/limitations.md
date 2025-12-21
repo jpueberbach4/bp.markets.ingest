@@ -6,46 +6,22 @@ While the tool is becoming pretty excellent, it is worth noting that there are (
 
 Looking into volumes, if there is consistency with the 0.0012 factor across assets. Worst case scenario we need to give a case-example on how to set a good multiplier for an asset. Best case scenario if it's a fixed factor across assets.
 
+| Time | Tool Volume | MT4 Volume | Ratio (MT4 / Tool) |
+| :--- | :--- | :--- | :--- |
+| **15:51** | 3,778,831 | 4,534 | 0.0012 |
+| **19:51** | 1,459,212 | 1,751 | 0.0012 |
+| **02:30** | 1,448,412 | 1,738 | 0.0012 |
+
 Update will be available soon. Likely tomorrow.
 
 ### Session from-to support - **Solved, merge support is in for SGD, available in main** 
 
 We have implemented the from_date, to_date for sessions. Using these date-times you can determine between
-what timestamps a session is valid/active. Works like a charm. BUT. Ofcourse something happens when the 
-switches happen. Let's take (again) AUD.IDX-AUD as an example. See configuration for this asset in ```config/dukascopy/timeframes/indices/AUD-indices.yaml```. This is what happens when the day-session and after-hours actually becomes active:
+what timestamps a session is valid/active. 
 
-```sh
-2020-02-06 00:00:00,7036.09,7042.08,7011.16,7018.79,1.218572
-2020-02-06 04:00:00,7018.79,7051.07,7018.77,7044.08,2.033202
-2020-02-06 08:00:00,7046.27,7054.63,7031.2,7040.72,0.466506       << CANDLE correct OHLC values with MT4
-2020-02-06 12:00:00,7040.65,7056.41,7031.21,7053.07,0.260305      << CANDLE correct OHLC values with MT4
-                                                                     EXCEPT close. In MT4 close is 7049.02.
-2020-02-06 12:10:00,7052.95,7053.41,7039.0,7049.02,0.313945       << WHOOPS. EXTRA CANDLE. DOESNT EXIST IN Mt4
-                                                                     CLOSE of this candle is merged with previous candle.
-2020-02-06 16:10:00,7049.58,7060.14,7032.04,7051.57,0.96395       << CANDLE correct OHLC values with MT4
-2020-02-06 20:10:00,7051.51,7057.51,7045.13,7051.1,0.13875
-```
+**Fix details:** Small postprocesssing step when ```timeframe.post``` is defined. See SGD config file for the "bugs-bunny" example.
 
-Now, conclusion of this is, that during the switch MT4 has filtered out 1m data between 16:00 and 16:10 and merged it in the previous candle. Because we don't merge atm, it creates a "ghost candle" since the data between 16:00 and 16:10 falls within the 12:10 candle (which becomes active during the switch). We will build the merge support as well.
-
-If you want the config change for AUS.IDX-AUD.. copy over the AUD-indices.yaml to your config.user directory. If you choose to do so, you will need to ```./rebuild-resample.sh```. Takes about 3 minutes on 40 symbols (Ryzen 7, NVMe 3).
-
-**Note:** This is a matter of "taste" as well. Some would like to prefer to keep the real day-session and after-hours sessions active, also before FEB 2020, because it's a better "truth". You decide yourself. I am here to align everything 100 pct to MT4.
-
-**Fix details:** Fix. Small postprocesssing step when ```timeframe.post``` is defined. See SGD config file for that "bugs-bunny" example.
-
-**Notes on the "special" indices:**
-
-- **SGD.IDX**
-  The worst one became the best one of the set. This is because a candle aligment policy change happened over-weekend. No ghosts to haunt us. This one is now considered excellent.
-- **AUS.IDX**
-  Nitpicking. During candle alignment policy change, we get one tiny ghost candle. See above.
-- **HKG.IDX**
-  Nitpicking. During candle alignment policy changes, 2 H4 candles are off (slightly).
-- **CHI.IDX** is excellent
-
-I will remove those slight candle-issues on candle-aligment policy rollover from the list. It's too much work for too little gain. Stays on the list as a todo-item (when i have nothing else to do on this project, i will have a go at it).
-
+There are still small candles issues on "candle policy change rollover". Very minor. Moved to longer term todo list.
 
 ### Session windows - indices, forex with breaks - **solved, implemented, available in main**
 
@@ -57,57 +33,12 @@ Example: AUS.IDX-AUD (index). The Aussie index has 2 trading sessions (for futur
 
 In MT4 we will see the candles aligning to HH:50 for the first (day) session and to HH:10 for the after-hours (overnight) session.
 
-We will need (and are going to) support these kind of "custom" trading windows. 
-
-Implementation will happen in resample.py, configurable via YAML.
-
-**Implementation details:** 
-
-In resample.resample_batch(sio): 
-
-- read custom origin conditional rules with time-boundaries
-- if defined, prefilter for each rule based on time-boundary of rule, determine origin, filter data
-- push filtered data + data-specific origin to df.resample
-- any remaining data left? prefilter again with alternative rules, repeat
-- any remaining data but filters comeup empty? fallback to default
-
-(ofcourse, this needs to be timezone-aware)
-
-Until this fix has been implemented, the AUS.IDX-AUD is not really usable.
+We have now support for these kind of "custom" trading windows. 
 
 ### YAML configuration is becoming huge - **solved, implemented, available in main**
 
 Given the number of “abnormalities” we need to support, the YAML file is at risk of becoming very large. I plan to add support for an include pattern so the configuration can be split into separate files by section, override, and similar concerns.
 
-Example:
-
-```yaml
-transform:
-  time_shift_ms: 7200000              # How many milliseconds should we shift (0=UTC, 7200000=GMT+2 (eg MT4 Dukascopy) )
-  round_decimals: 8                   # Number of decimals to round OHLCV to
-  paths:
-    data: data/transform/1m           # Output directory for transform
-    historic: cache                   # Historical downloads
-    live: data/temp                   # Live downloads
-  timezones:
-    includes:
-    - config/timezones/America-New_York.yaml
-...
-resample:
-  round_decimals: 8                   # Number of decimals to round OHLCV to
-  batch_size: 250000                  # Maximum number of lines to read per batch
-  paths:
-    data: data/resample               # Output directory for resampled timeframes
-  timeframes:
-    includes:
-    - config/resample/default.rules.yaml
-  # Support per symbol overrides
-  symbols:
-    includes:
-    - config/resample/symbols/BUND.TR-EUR.yaml
-    - config/resample/symbols/BRENT.CMD-USD.yaml
-    - config/resample/symbols/*-USD.yaml
-
-```
+We have now support for an  ```includes``` subkey. Any glob file-patterns listed within this key are now included.   
 
 This will help organize the configuration a lot better.
