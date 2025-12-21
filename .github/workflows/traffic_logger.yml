@@ -6,7 +6,7 @@ on:
   workflow_dispatch:   # Allows manual trigger
 
 permissions:
-  contents: write      # Explicitly grant write access to the workflow
+  contents: write
 
 jobs:
   update-stats:
@@ -15,18 +15,25 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          # This line is the key: it uses your PAT for the push later
           token: ${{ secrets.TRAFFIC_ACTION_TOKEN }}
 
-      - name: Fetch and Store Traffic Data
+      - name: Fetch Traffic Data
         uses: sangonzal/repository-traffic-action@v.0.1.6
         env:
           TRAFFIC_ACTION_TOKEN: ${{ secrets.TRAFFIC_ACTION_TOKEN }}
+
+      # NEW STEP: Move the folder to .github/
+      - name: Move Stats to .github Folder
+        run: |
+          mkdir -p .github/traffic
+          mv -f traffic/* .github/traffic/
+          rm -rf traffic
 
       - name: Commit and Push Stats
         uses: Endbug/add-and-commit@v9
         with:
           author_name: "GitHub Action"
           author_email: "action@github.com"
-          message: "Autoated commit"
+          message: "Update daily traffic stats [skip ci]"
+          # FIXED: Now adding from the new location
           add: ".github/traffic/*"
