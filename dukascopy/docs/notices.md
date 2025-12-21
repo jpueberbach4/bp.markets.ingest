@@ -6,14 +6,12 @@
 
 After update: ```./rebuild-resample.sh``` (only if you have SGD.IDX/AUS.IDX/HKG.IDX)
 
-**Note:** SGD issue has been fixed. Weird behavior in MT4. Typical MetaQuirk. See comments in [SGD-indices.yaml](../config/dukascopy/timeframes/indices/SGD-indices.yaml).
+**Note:** SGD issue has been fixed. Typical MetaQuirk. See comments in [SGD-indices.yaml](../config/dukascopy/timeframes/indices/SGD-indices.yaml).
 
 **Note:** The data part is not finished yet. Still bugs/features to resolve:
 
 - Soybean 1Y timeframe throws out_of_market error 1Y timeframe disabled on that asset Happens because of timezone America/Chicago and start of month being on a Sunday. Who trades it anyways, but will get fixed.
 - Sessions are currently mapped, fixed, to America/New_York. Make it based on the symbol's timezone setting in transform.timezone.
-- There is one candle at 2025-02-06 in AUS.IDX-AUD that needs merging. From_date, to_date support for postprocessing steps not yet done.
-
 
 ## Status per 20 December 2025
 

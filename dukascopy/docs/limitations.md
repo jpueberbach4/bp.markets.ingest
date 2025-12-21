@@ -2,7 +2,7 @@
 
 While the tool is becoming pretty excellent, it is worth noting that there are (still) some important limitations which makes 100% support for all sources, currently, not possible.
 
-### Session from-to support - Nitpicking BUT "drop/merge support" can also be useful
+### Session from-to support - **Solved, merge support is in for SGD, available in main** 
 
 We have implemented the from_date, to_date for sessions. Using these date-times you can determine between
 what timestamps a session is valid/active. Works like a charm. BUT. Ofcourse something happens when the 
@@ -26,9 +26,20 @@ If you want the config change for AUS.IDX-AUD.. copy over the AUD-indices.yaml t
 
 **Note:** This is a matter of "taste" as well. Some would like to prefer to keep the real day-session and after-hours sessions active, also before FEB 2020, because it's a better "truth". You decide yourself. I am here to align everything 100 pct to MT4.
 
-**Decision:** Fix. Small postprocesssing step when merge is defined. Merging the 2025-12-19 11:51:00 ghost candle into the 2025-12-19 10:30:00 candle.
+**Fix details:** Fix. Small postprocesssing step when ```timeframe.post``` is defined. See SGD config file for that "bugs-bunny" example.
 
-SGD fix implemented. Still need to check it for "aligmment policy changes". AUD-IDX single candle merge is pending. Need to add from_date-to_date support to the post-processing definition and code.
+**Notes on the "special" indices:**
+
+- **SGD.IDX**
+  The worst one became the best one of the set. This is because a candle aligment policy change happened over-weekend. No ghosts to haunt us. This one is now considered excellent.
+- **AUS.IDX**
+  Nitpicking. During candle alignment policy change, we get one tiny ghost candle. See above.
+- **HKG.IDX**
+  Nitpicking. During candle alignment policy changes, 2 H4 candles are off (slightly).
+- **CHI.IDX** is excellent
+
+I will remove those slight candle-issues on candle-aligment policy rollover from the list. It's too much work for too little gain. Stays on the list as a todo-item (when i have nothing else to do on this project, i will have a go at it).
+
 
 ### Session windows - indices, forex with breaks - **solved, implemented, available in main**
 
