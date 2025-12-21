@@ -56,7 +56,7 @@ America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 
   # --- Soft Commodities ---
   - COTTON.CMD-USX                # OK
   - OJUICE.CMD-USX                # OK
-  - SOYBEAN.CMD-USX               # NOK (1Y timeframe throws a OUT_OF_MARKET? rest is OK.)
+  - SOYBEAN.CMD-USX               # OK
 
   # --- Currencies ---
   - DOLLAR.IDX-USD                # OK - US Dollar Index
@@ -95,7 +95,7 @@ America/New_York:                 # The MT4 Server switches between GMT+2/GMT+3 
   - JPN.IDX-JPY                   # OK - Japanese Index (Nikkei)
   - NLD.IDX-EUR                   # OK - Netherlands Index (AEX)
   - PLN.IDX-PLN                   # OK - Polish Index (WIG20)
-  - SGD.IDX-SGD                   # NOK - Singapore Index (STI) (EDGE CASE ON H4)
+  - SGD.IDX-SGD                   # OK - Singapore Index (STI)
   - SOA.IDX-ZAR                   # OK - South Africa Index (JSE/ALSI)
 
   # --- Bonds/Rates ---
