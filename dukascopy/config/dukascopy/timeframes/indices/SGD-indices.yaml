@@ -47,10 +47,11 @@ SGD.IDX-SGD:
   timeframes:
     4h:
       post:
+        # a bugs-bunny
         merge-step:
           action: merge
           ends_with:
-          - "11:51:00" 
+          - "11:51:00"
           offset: -1
   sessions:
     morning:

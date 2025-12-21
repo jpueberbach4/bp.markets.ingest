@@ -1,14 +1,23 @@
+## Status per 21 December 2025
+
+**Note:** SGD issue has been fixed. Weird behavior in MT4. Typical MetaQuirk. See comments in [SGD-indices.yaml](../config/dukascopy/timeframes/indices/SGD-indices.yaml). Still need to check it for "alignment policy changes". If you want the fix. Re-pull and copy over the configuration file to your ```config.user``` directory. It's a best practice to create a ```config.user``` directory if you don't have one yet.
+
+**Note:** The data part is not finished yet. Still bugs/features to resolve:
+
+- Soybean 1Y timeframe throws out_of_market error 1Y timeframe disabled on that asset Happens because of timezone America/Chicago and start of month being on a Sunday. Who trades it anyways, but will get fixed.
+- Sessions are currently mapped, fixed, to America/New_York. Make it based on the symbol's timezone setting in transform.timezone.
+- There is one candle at 2025-02-06 in AUS.IDX-AUD that needs merging. From_date, to_date support for postprocessing steps not yet done.
+
+
 ## Status per 20 December 2025
 
 **Note:** The data part is not finished yet. Still bugs/features to resolve:
 
-- Soybean 1Y timeframe throws out_of_market error 1Y timeframe disabled on that asset Happens because of timezone America/Chicago and start of month being on a Sunday. \
-  Who trades it anyways, but will get fixed.
+- Soybean 1Y timeframe throws out_of_market error 1Y timeframe disabled on that asset Happens because of timezone America/Chicago and start of month being on a Sunday. Who trades it anyways, but will get fixed.
 - ~~Compatibility for "alignment policy changes" in MT4 eg for AUS.IDX-AUD \
   Adding valid_from, valid_to attributes on sessions to allow for different session allocation for specific dateranges.~~
 - ~~Support for drop/merge of candles"
   Strange quirk with the SGD.IDX. H4 1m data is present, outside of 4H timeframes, creating a candle we dont see in MT4. What to do with it? AUS.IDX has shown us that MT4 merges candles into either a left or right higher TF candle.~~
-  Almost there. Tomorrow morning this is done. Evening off.
 - Sessions are currently mapped, fixed, to America/New_York. \
   Make it based on the symbol's timezone setting in transform.timezones.
 - Perhaps other things.... 
