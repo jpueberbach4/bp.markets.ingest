@@ -32,37 +32,52 @@ jobs:
           def merge_csv(name):
               new_path = f'traffic/{name}.csv'
               old_path = f'.github/traffic/{name}.csv'
-              if not os.path.exists(new_path):
-                  return
+              if not os.path.exists(new_path): return
               
               data = {}
+              fieldnames = []
+
+              # Helper to get the first column name (e.g., _date or date)
+              def get_id_col(reader):
+                  return reader.fieldnames[0] if reader.fieldnames else None
+
               # Load old data
-              if os.path.exists(old_path):
+              if os.path.exists(old_path) and os.path.getsize(old_path) > 0:
                   with open(old_path, 'r', newline='') as f:
-                      for row in csv.DictReader(f):
-                          data[row['date']] = row
+                      reader = csv.DictReader(f)
+                      id_col = get_id_col(reader)
+                      if id_col:
+                          fieldnames = reader.fieldnames
+                          for row in reader:
+                              if row.get(id_col):
+                                  data[row[id_col]] = row
               
-              # Load new data (overwrites old data for same dates)
+              # Load new data
               with open(new_path, 'r', newline='') as f:
                   reader = csv.DictReader(f)
-                  fieldnames = reader.fieldnames
-                  for row in reader:
-                      data[row['date']] = row
+                  id_col = get_id_col(reader)
+                  if id_col:
+                      fieldnames = reader.fieldnames # Prefer new fieldnames if they changed
+                      for row in reader:
+                          if row.get(id_col):
+                              data[row[id_col]] = row
               
-              # Write back combined data
-              sorted_dates = sorted(data.keys())
+              if not data or not fieldnames: return
+
+              # Write combined results
+              id_col = fieldnames[0]
+              sorted_keys = sorted(data.keys())
               with open(old_path, 'w', newline='') as f:
                   writer = csv.DictWriter(f, fieldnames=fieldnames)
                   writer.writeheader()
-                  for date in sorted_dates:
-                      writer.writerow(data[date])
+                  for k in sorted_keys:
+                      writer.writerow(data[k])
 
           merge_csv('clones')
           merge_csv('views')
           EOF
           python3 merge_stats.py
           sudo rm -rf traffic merge_stats.py
-
       - name: Commit and Push
         uses: Endbug/add-and-commit@v9
         with:
