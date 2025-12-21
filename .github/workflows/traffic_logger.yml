@@ -22,18 +22,18 @@ jobs:
         env:
           TRAFFIC_ACTION_TOKEN: ${{ secrets.TRAFFIC_ACTION_TOKEN }}
 
-      # NEW STEP: Move the folder to .github/
       - name: Move Stats to .github Folder
         run: |
           mkdir -p .github/traffic
-          mv -f traffic/* .github/traffic/
-          rm -rf traffic
+          # Use sudo to ensure we have permission to move the action-generated files
+          sudo mv -f traffic/* .github/traffic/
+          # Clean up the old directory
+          sudo rm -rf traffic
 
       - name: Commit and Push Stats
         uses: Endbug/add-and-commit@v9
         with:
           author_name: "GitHub Action"
           author_email: "action@github.com"
-          message: "Update daily traffic stats [skip ci]"
-          # FIXED: Now adding from the new location
+          message: "Update daily"
           add: ".github/traffic/*"
