@@ -39,20 +39,6 @@
 
 ## Notice
 
-!!! BUG !!!
-
-**There was/is a bug in the get_active_session. The bug was not visible because exceptions got swallowed silently because of the large OOP refactor. Now that i made them visible, this became clear. A quickfix is in. You will need to copy-over the configs using ```./setup-dukascopy.sh```. This also fixes the SOYBEAN 1Y issue.**
-
-If your pipeline has broken after a ```git pull``` or receive the warning "Notice, there were breaking config changes! See README for more information!", perform (if using default configuration, except for symbols.user.txt):
-
-```sh
-./setup-dukascopy.sh
-```
-
-This will prevent breaking-change issues on configuration in the future.
-
->Do not run this when you have custom configuration. If you have custom configuration, create a ```config.user``` directory, copy your current config in there and adjust the "includes" paths in config.user.yaml to point to their new locations. Advice is to merge your own configuration with the configuration provided by the system.
-
 - [General notices, latest updates, caveats, etc](docs/notices.md) **(updated 21 DEC)**
 - [Limitations](docs/limitations.md) (updated 21 DEC)
 
