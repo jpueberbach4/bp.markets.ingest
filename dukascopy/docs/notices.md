@@ -2,6 +2,8 @@
 
 Starting to get very pleased with the results of this effort :)
 
+(And i am not the only one, i think. Please consider the data-source. Take it easy on it. Respect rate-limits.)
+
 !!! BUG !!!
 
 **There was/is a bug in the get_active_session. The bug was not visible because exceptions got swallowed silently because of the large OOP refactor. Now that i made them visible, this became clear. A quickfix is in. You will need to copy-over the configs using ```./setup-dukascopy.sh```. This also fixes the SOYBEAN 1Y issue.**
