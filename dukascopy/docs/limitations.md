@@ -4,7 +4,7 @@ While the tool is becoming pretty excellent, it is worth noting that there are (
 
 ### Volumes - **Unresolved**
 
-Looking into volumes, if there is consitency with the 0.0012 factor across assets. Worst case scenario we need to give a case-example on how to set a good multiplier for an asset. Best case scenario if it's a fixed factor across assets.
+Looking into volumes, if there is consistency with the 0.0012 factor across assets. Worst case scenario we need to give a case-example on how to set a good multiplier for an asset. Best case scenario if it's a fixed factor across assets.
 
 Update will be available soon. Likely tomorrow.
 
