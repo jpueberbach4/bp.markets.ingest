@@ -25,6 +25,7 @@ jobs:
 
       - name: Merge Stats
         run: |
+          git fetch origin main 
           git reset --hard origin/main
           git clean -fd
 
@@ -94,6 +95,5 @@ jobs:
           author_email: "action@github.com"
           message: "Update stats [skip ci]"
           add: ".github/traffic/*"
-          # We use 'true' instead of a complex pull strategy 
-          # because we manually cleaned the state in the previous step
+          pull: '--rebase --autostash -X theirs'
           push: true
