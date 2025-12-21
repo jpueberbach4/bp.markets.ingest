@@ -41,6 +41,11 @@
 # in summer and merge it in winter?
 # 
 # Anyhow. We support that behavior (see post step)
+#
+# Furthermore. There is a alignment policy change happening in the weekend of 2022-08-07
+# From HH:30 4H candles to session-based 4H candles, see below.
+# Because it's happing during a weekend rollover, no ghostcandles to be solved.
+#  
 SGD.IDX-SGD:
   timezone: Asia/Singapore
   skip_timeframes: []
@@ -55,6 +60,7 @@ SGD.IDX-SGD:
           offset: -1
   sessions:
     morning:
+      from_date: "2022-08-07 00:00:00" # In Asia/Singapore time
       ranges:
         open:
           from: "08:30"
@@ -71,6 +77,7 @@ SGD.IDX-SGD:
         4h:
           origin: "02:30"
     after-hours:
+      from_date: "2022-08-07 00:00:00" # In Asia/Singapore time
       ranges:
         evening:
           from: "17:50"
@@ -89,8 +96,15 @@ SGD.IDX-SGD:
           origin: "15:51"
         4h:
           origin: "15:51"
-    catch-old:
-      ranges: 
+    ancient:
+      # different candle
+      to_date: "2022-08-06 23:59:59" # In Asia/Singapore time
+      ranges:
         day:
           from: "00:00"
           to: "23:59"
+      timeframes:
+        1h:
+          origin: "02:30"
+        4h:
+          origin: "02:30"
