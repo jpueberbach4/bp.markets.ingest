@@ -11,7 +11,7 @@ After update: ```./rebuild-resample.sh``` (only if you have SGD.IDX/AUS.IDX/HKG.
 **Note:** The data part is not finished yet. Still bugs/features to resolve:
 
 - Soybean 1Y timeframe throws out_of_market error 1Y timeframe disabled on that asset Happens because of timezone America/Chicago and start of month being on a Sunday. Who trades it anyways, but will get fixed.
-- Sessions are currently mapped, fixed, to America/New_York. Make it based on the symbol's timezone setting in transform.timezone.
+- Sessions are currently mapped, fixed, to America/New_York. Make it based on the symbol's timezone setting in transform.timezone. This is a cosmetic issue since the '*' select is present on the timezone America/New_York in ```config/dukascopy/timezones/america-new_york.yaml```. The fix is needed to support users who wish to use advanced session settings on eg ```Etc/UTC```.
 
 ## Status per 20 December 2025
 
