@@ -1,5 +1,7 @@
 ## Status per 21 December 2025
 
+Information on hardware wear and tear. I didn't have this exact information before, but also NVMe and SSD drives have a maximum lifetime. This is measured in TBW (TeraByte Writes). Most 1TB NVMe drives have a TBW of about 600. So if you write each day a TB, your drive will last for 600 days. 2TB NVMe drives have a TBW of 1200. This software is, regarding the data processing part, now nearing it's completion. The main focus is now on resampling, not the download or the very-TBW intensive aggregation (260MB/s for 30 seconds long on 40 symbols) step. Reads are not affecting TBW. It's only about the writes.
+
 >**Note:** Since the morning of 2025-12-21 10:00 Europe/Amsterdam time (i am Dutch) a fix for the Singapore index is in. I took the liberty to eliminate some of the config bloat as well. Timeframe attributes are now inherited from the defaults if not explicitly specified. ```config``` directory has changed quite a bit. If you are still using default config (except for symbols.user.txt), do a ```./setup-dukascopy.sh```. It will copy the new, simplified config files, to your ```config.user``` directory. Do not do this if you have your own config.
 
 >**To update: ```git checkout main && git pull origin main```**
