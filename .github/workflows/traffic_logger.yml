@@ -22,12 +22,46 @@ jobs:
         env:
           TRAFFIC_ACTION_TOKEN: ${{ secrets.TRAFFIC_ACTION_TOKEN }}
 
-      - name: Merge and Move Stats
+      - name: Merge Stats
         run: |
           mkdir -p .github/traffic
-          python3 -c "import csv, os; def m(n): np=f'traffic/{n}.csv'; op=f'.github/traffic/{n}.csv'; (not os.path.exists(np) and None) or (d:={}) or (os.path.exists(op) and [d.update({r['date']:r}) for r in csv.DictReader(open(op))]) or [d.update({r['date']:r}) for r in csv.DictReader(open(np)) or []]; sd=sorted(d.keys()); f=open(op,'w',newline=''); w=csv.DictWriter(f,fieldnames=['date','count','uniques']); w.writeheader(); [w.writerow(d[x]) for x in sd]; f.close()
-          m('clones'); m('views')"
-          sudo rm -rf traffic
+          cat << 'EOF' > merge_stats.py
+          import csv
+          import os
+
+          def merge_csv(name):
+              new_path = f'traffic/{name}.csv'
+              old_path = f'.github/traffic/{name}.csv'
+              if not os.path.exists(new_path):
+                  return
+              
+              data = {}
+              # Load old data
+              if os.path.exists(old_path):
+                  with open(old_path, 'r', newline='') as f:
+                      for row in csv.DictReader(f):
+                          data[row['date']] = row
+              
+              # Load new data (overwrites old data for same dates)
+              with open(new_path, 'r', newline='') as f:
+                  reader = csv.DictReader(f)
+                  fieldnames = reader.fieldnames
+                  for row in reader:
+                      data[row['date']] = row
+              
+              # Write back combined data
+              sorted_dates = sorted(data.keys())
+              with open(old_path, 'w', newline='') as f:
+                  writer = csv.DictWriter(f, fieldnames=fieldnames)
+                  writer.writeheader()
+                  for date in sorted_dates:
+                      writer.writerow(data[date])
+
+          merge_csv('clones')
+          merge_csv('views')
+          EOF
+          python3 merge_stats.py
+          sudo rm -rf traffic merge_stats.py
 
       - name: Commit and Push
         uses: Endbug/add-and-commit@v9
