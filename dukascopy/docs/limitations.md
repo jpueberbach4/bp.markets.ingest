@@ -2,6 +2,12 @@
 
 While the tool is becoming pretty excellent, it is worth noting that there are (still) some limitations. Not many AFAICS.
 
+### Volumes - **Unresolved**
+
+Looking into volumes, if there is consitency with the 0.0012 factor across assets. Worst case scenario we need to give a case-example on how to set a good multiplier for an asset. Best case scenario if it's a fixed factor across assets.
+
+Update will be available soon. Likely tomorrow.
+
 ### Session from-to support - **Solved, merge support is in for SGD, available in main** 
 
 We have implemented the from_date, to_date for sessions. Using these date-times you can determine between
