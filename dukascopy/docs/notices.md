@@ -2,7 +2,7 @@
 
 Starting to get very pleased with the results of this effort :)
 
-(And i am not the only one, i think. Please consider the data-source. Take it easy on it. Respect rate-limits.)
+(And i am not the only one, i think. Please consider the data-source. Respect rate-limits.)
 
 !!! BUG !!!
 
