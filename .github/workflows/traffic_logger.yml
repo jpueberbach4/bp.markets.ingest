@@ -85,3 +85,4 @@ jobs:
           author_email: "action@github.com"
           message: "Update stats [skip ci]"
           add: ".github/traffic/*"
+          pull: '--rebase --autostash'
