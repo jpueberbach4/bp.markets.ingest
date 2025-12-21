@@ -91,4 +91,6 @@ jobs:
           author_email: "action@github.com"
           message: "Update stats and plots [skip ci]"
           add: ".github/traffic/*"
-          pull: '--rebase --autostash -X ours'
+          # Use -X theirs during rebase to force your local data updates
+          # over any changes found on the remote branch.
+          pull: '--rebase --autostash -X theirs'
