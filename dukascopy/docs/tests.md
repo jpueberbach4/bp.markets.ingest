@@ -1,5 +1,7 @@
 ## Tests
 
+**Method:** Manual H4 and H1 checks. Various random dates. Summer and Winter. 
+
 - Major Forex. Excellent.
 - Major Crosses. Good.
 - Dollar index, Volatility index. Good.
