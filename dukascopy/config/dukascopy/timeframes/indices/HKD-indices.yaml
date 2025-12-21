@@ -33,6 +33,7 @@ HKG.IDX-HKD:
   skip_timeframes: []
   sessions:
     morning:
+      from_date: "2020-02-06 21:15:00" # In Asia/Hong_Kong time
       ranges:
         open:
           from: "09:15"
@@ -47,6 +48,7 @@ HKG.IDX-HKD:
         4h:
           origin: "03:15"
     afternoon:
+      from_date: "2020-02-06 21:15:00" # In Asia/Hong_Kong time
       ranges:
         reopen:
           from: "13:00"
@@ -61,6 +63,7 @@ HKG.IDX-HKD:
         4h:
           origin: "07:00"
     after-hours:
+      from_date: "2020-02-06 21:15:00" # In Asia/Hong_Kong time
       ranges:
         evening:
           from: "17:15"
@@ -77,9 +80,20 @@ HKG.IDX-HKD:
           origin: "11:15"
         4h:
           origin: "11:15"
-    # to catch any "OLD ERA" behavior of Dukascopy (prevent out_of_market errors)
-    catch-old:
+    # candle alignment policy change
+    # before that, just normal epoch origins
+    ancient:
+      to_date: "2020-02-06 21:14:59" # In Asia/Hong_Kong time
       ranges: 
-        day:
+        24h:
           from: "00:00"
           to: "23:59"
+    # This is to prevent OUT_OF_MARKET errors for W1
+    # We could drop the above ancient one, but we leave it in for clearness
+    # In the future we will need to check for a better approach
+    catch-all:
+      ranges: 
+        24h:
+          from: "00:00"
+          to: "23:59"
+
