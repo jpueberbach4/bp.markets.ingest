@@ -54,7 +54,9 @@ This will prevent breaking-change issues on configuration in the future.
 
 Don't forget to check the [Tools](docs/tools.md) section. It will ease things even more.
 
->**Note:** Since the morning of 2025-12-21 10:00 Europe/Amsterdam time (i am Dutch) a fix for the Singapore index is in. I took the liberty to eliminate some of the config bloat as well. Timeframe attributes are now inherited from the defaults if not explicitely specified. ```config``` directory has changed quite a bit. If you are still using default config (except for symbols.user.txt), do a ```./setup-dukascopy.sh```. It will copy the new, simplified config files, to your ```config.user``` directory. Do not do this if you have your own config. Make sure you ```git pull origin main``` first, otherwise it will end-up in trouble.
+>**Note:** Since the morning of 2025-12-21 10:00 Europe/Amsterdam time (i am Dutch) a fix for the Singapore index is in. I took the liberty to eliminate some of the config bloat as well. Timeframe attributes are now inherited from the defaults if not explicitly specified. ```config``` directory has changed quite a bit. If you are still using default config (except for symbols.user.txt), do a ```./setup-dukascopy.sh```. It will copy the new, simplified config files, to your ```config.user``` directory. Do not do this if you have your own config.
+
+>**To update: ```git checkout main && git pull origin main```**
 
 **From Portfolio Project to Platform**
 
