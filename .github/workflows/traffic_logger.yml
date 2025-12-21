@@ -22,13 +22,31 @@ jobs:
         env:
           TRAFFIC_ACTION_TOKEN: ${{ secrets.TRAFFIC_ACTION_TOKEN }}
 
-      - name: Move Stats to .github Folder
+        - name: Merge and Move Stats to .github Folder
         run: |
-          mkdir -p .github/traffic
-          # Use sudo to ensure we have permission to move the action-generated files
-          sudo mv -f traffic/* .github/traffic/
-          # Clean up the old directory
-          sudo rm -rf traffic
+            mkdir -p .github/traffic
+            
+            # Use Python to merge the new clones.csv with the old one (if it exists)
+            python3 -c "
+            import pandas as pd
+            import os
+            
+            def merge_csv(name):
+                new_path = f'traffic/{name}.csv'
+                old_path = f'.github/traffic/{name}.csv'
+                if os.path.exists(old_path):
+                    old_df = pd.read_csv(old_path)
+                    new_df = pd.read_csv(new_path)
+                    # Combine, drop duplicates based on the 'date' column, and sort
+                    combined = pd.concat([old_df, new_df]).drop_duplicates(subset=['date'], keep='last')
+                    combined.sort_values('date').to_csv(old_path, index=False)
+                else:
+                    os.rename(new_path, old_path)
+
+            if os.path.exists('traffic/clones.csv'): merge_csv('clones')
+            if os.path.exists('traffic/views.csv'): merge_csv('views')
+            "
+            sudo rm -rf traffic
 
       - name: Commit and Push Stats
         uses: Endbug/add-and-commit@v9
