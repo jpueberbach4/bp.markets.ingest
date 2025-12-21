@@ -2,8 +2,8 @@ name: "Daily Traffic Logger"
 
 on:
   schedule:
-    - cron: '0 0 * * *' # Runs at midnight UTC
-  workflow_dispatch:   # Allows manual trigger
+    - cron: '0 0 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -22,43 +22,38 @@ jobs:
         env:
           TRAFFIC_ACTION_TOKEN: ${{ secrets.TRAFFIC_ACTION_TOKEN }}
 
-      - name: Merge and Move Stats to .github Folder
+      - name: Merge and Move Stats
         run: |
           mkdir -p .github/traffic
           python3 -c "
 import csv
 import os
-
-def merge_csv(name):
-    new_path = f'traffic/{name}.csv'
-    old_path = f'.github/traffic/{name}.csv'
-    if not os.path.exists(new_path): return
+def merge(name):
+    new_p = f'traffic/{name}.csv'
+    old_p = f'.github/traffic/{name}.csv'
+    if not os.path.exists(new_p): return
     data = {}
-    if os.path.exists(old_path):
-        with open(old_path, 'r', newline='') as f:
+    if os.path.exists(old_p):
+        with open(old_p, 'r', newline='') as f:
             reader = csv.DictReader(f)
-            for row in reader:
-                data[row['date']] = row
-    with open(new_path, 'r', newline='') as f:
+            for row in reader: data[row['date']] = row
+    with open(new_p, 'r', newline='') as f:
         reader = csv.DictReader(f)
-        for row in reader:
-            data[row['date']] = row
-    sorted_dates = sorted(data.keys())
-    with open(old_path, 'w', newline='') as f:
+        for row in reader: data[row['date']] = row
+    sorted_d = sorted(data.keys())
+    with open(old_p, 'w', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=reader.fieldnames)
         writer.writeheader()
-        for d in sorted_dates:
-            writer.writerow(data[d])
-
-merge_csv('clones')
-merge_csv('views')
+        for d in sorted_d: writer.writerow(data[d])
+merge('clones')
+merge('views')
 "
           sudo rm -rf traffic
 
-      - name: Commit and Push Stats
+      - name: Commit and Push
         uses: Endbug/add-and-commit@v9
         with:
           author_name: "GitHub Action"
           author_email: "action@github.com"
-          message: "Update daily stats [skip ci]"
+          message: "Update stats [skip ci]"
           add: ".github/traffic/*"
