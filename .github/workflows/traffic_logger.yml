@@ -28,5 +28,5 @@ jobs:
         with:
           author_name: "GitHub Action"
           author_email: "action@github.com"
-          message: "Update daily traffic stats [skip ci]"
+          message: "Autoated commit"
           add: ".github/traffic/*"
