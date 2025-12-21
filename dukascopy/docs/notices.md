@@ -6,8 +6,9 @@
   Who trades it anyways, but will get fixed.
 - ~~Compatibility for "alignment policy changes" in MT4 eg for AUS.IDX-AUD \
   Adding valid_from, valid_to attributes on sessions to allow for different session allocation for specific dateranges.~~
-- Support for drop/merge of candles"
-  Strange quirk with the SGD.IDX. H4 1m data is present, outside of 4H timeframes, creating a candle we dont see in MT4. What to do with it? AUS.IDX has shown us that MT4 merges candles into either a left or right higher TF candle. 
+- ~~Support for drop/merge of candles"
+  Strange quirk with the SGD.IDX. H4 1m data is present, outside of 4H timeframes, creating a candle we dont see in MT4. What to do with it? AUS.IDX has shown us that MT4 merges candles into either a left or right higher TF candle.~~
+  Almost there. Tomorrow morning this is done. Evening off.
 - Sessions are currently mapped, fixed, to America/New_York. \
   Make it based on the symbol's timezone setting in transform.timezones.
 - Perhaps other things.... 
