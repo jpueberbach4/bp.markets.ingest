@@ -87,6 +87,6 @@ jobs:
         with:
           author_name: "GitHub Action"
           author_email: "action@github.com"
-          message: "Update stats [skip ci]"
+          message: "Update stats and plots [skip ci]"
           add: ".github/traffic/*"
-          pull: '--rebase --autostash'
+          pull: '--rebase --autostash -X ours'
