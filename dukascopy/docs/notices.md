@@ -1,8 +1,6 @@
 ## Status per 21 December 2025
 
-Starting to get very pleased with the results of this effort :)
-
-(And i am not the only one, i think. Please consider the data-source. Respect rate-limits.)
+Starting to get very pleased with the results of this effort.
 
 !!! BUG !!!
 
