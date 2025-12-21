@@ -28,7 +28,7 @@ If you want the config change for AUS.IDX-AUD.. copy over the AUD-indices.yaml t
 
 **Decision:** Fix. Small postprocesssing step when merge is defined. Merging the 2025-12-19 11:51:00 ghost candle into the 2025-12-19 10:30:00 candle.
 
-More info soon.
+SGD fix implemented. Still need to check it for "aligmment policy changes". AUD-IDX single candle merge is pending. Need to add from_date-to_date support to the post-processing definition and code.
 
 ### Session windows - indices, forex with breaks - **solved, implemented, available in main**
 
