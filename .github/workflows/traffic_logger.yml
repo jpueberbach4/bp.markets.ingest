@@ -25,9 +25,8 @@ jobs:
 
       - name: Merge Stats
         run: |
-          git config user.name "GitHub Action"
-          git config user.email "action@github.com"
-          git pull origin main --rebase --autostash
+          git reset --hard origin/main
+          git clean -fd
 
           mkdir -p .github/traffic
           cat << 'EOF' > merge_stats.py
@@ -93,7 +92,8 @@ jobs:
         with:
           author_name: "GitHub Action"
           author_email: "action@github.com"
-          message: "Update stats and plots [skip ci]"
+          message: "Update stats [skip ci]"
           add: ".github/traffic/*"
-          # We remove the pull/rebase from here because we handled it above
+          # We use 'true' instead of a complex pull strategy 
+          # because we manually cleaned the state in the previous step
           push: true
