@@ -1,6 +1,12 @@
 ## Status per 21 December 2025
 
-Starting to get very pleased with the results of this effort. I have now seen about everything what MT4 does and doesnt. Quite a learning experience with some interesting conclusions derived from it. Especially the SGD index has opened my eyes. 
+Starting to get very pleased with the results of this effort. I have now seen about everything what MT4 does and doesnt. Quite a learning experience with some interesting conclusions derived from it. Especially the SGD index has opened my eyes. As far as i can see, we are nearing 100 percent correctness (we are very close). If anything, i may have missed, or overlooked, or anything else,.. dump a message in the discussions.
+
+I don't think there is anything that can't be solved regarding to alignment. This project was able to solve it in little more than 800 lines where a large part of it, is preparing the configuration structure (the overrides, the defaulting etc).
+
+If you want to see how many clones this project has. See the workflow directory. This project is really a problem solver for a lot of people.
+
+Fixing the volume (what factor, is it per symbol, or "system-wide"?) is now the only high priority item left and that will be done tomorrow.
 
 !!! BUG !!!
 
