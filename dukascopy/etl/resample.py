@@ -67,7 +67,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from io import StringIO
-from typing import Tuple, IO
+from typing import Tuple, IO, Optional
 
 from config.app_config import AppConfig, ResampleSymbol, resample_get_symbol_config, ResampleTimeframeProcessingStep
 from helper import ResampleTracker
@@ -503,7 +503,7 @@ class ResampleEngine:
             return sio, eof
 
         except (SessionResolutionError) as e:
-            raise BatchError(f"Batch preparationm failed for {self.symbol}: {e}") from e
+            raise BatchError(f"Batch preparation failed for {self.symbol}: {e}") from e
         except Exception as e:
             raise RuntimeError(f"Unexpected system failure during batching: {e}") from e
 
