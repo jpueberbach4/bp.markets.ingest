@@ -14,7 +14,7 @@ Approach:
 
 >PS: Deepseek is best for this kind of work. You will need to do a ```rebuild-full.sh``` if you change the transform step since it touches the base 1m data. 
 
-**General advice**: leave the volume column as how it is.
+**General advice**: leave the volume column as how it is. The C++ version handles ticks.
 
 ## Status per 21 December 2025
 
