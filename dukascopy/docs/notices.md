@@ -1,8 +1,8 @@
 ## Status per 22 December 2025
 
-Volumes will be left as how they are. It's very meaningfull data as how it is.
+Volumes will be left as how they are. It's very meaningful data as how it is.
 
-There is multiplication support built but don't use it. I will leave the software in place for later, optional, pre- and post-processing steps.
+There is multiplication support built but don't use it. I will leave the software in place for later, eg. optional, pre- and post-processing steps.
 
 ## Status per 21 December 2025
 

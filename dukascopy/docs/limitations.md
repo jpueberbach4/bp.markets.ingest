@@ -2,11 +2,11 @@
 
 While the tool is becoming pretty excellent, it is worth noting that there are (still) some limitations. Not many AFAICS.
 
-### Volumes - **Partly resolved (for (a very few) indices it (seems to) works)**
+### Volumes - **Will be left as how they are**
 
 **Dukascopy is providing the raw contract value, whereas MT4 is providing a count of price updates.**
 
-Conclusion: **will not fix**
+Conclusion: **will not fix. its fine.**
 
 ### Session from-to support - **Solved, merge support is in for SGD, available in main** 
 
