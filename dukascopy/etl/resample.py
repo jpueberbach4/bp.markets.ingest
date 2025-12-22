@@ -774,18 +774,16 @@ class ResampleWorker:
                             f_out.seek(output_pos)
                             f_out.truncate(output_pos)
 
-                            # Write confirmed bars
-                            if len(resampled) > 1:
-                                # Write all fully completed bars (exclude trailing partial bar)
-                                f_out.write(resampled.iloc[:-1].to_csv(index=True, header=False))
-                                # Flush to OS
-                                f_out.flush()
-                                # Force persist to disk
-                                os.fsync(f_out.fileno())
-                                # Read the position in output file
-                                output_pos = f_out.tell()
-                                # Persist progress after writing confirmed bars
-                                engine.write_index(next_in_pos, output_pos)
+                            # Write all fully completed bars (exclude trailing partial bar)
+                            f_out.write(resampled.iloc[:-1].to_csv(index=True, header=False))
+                            # Flush to OS
+                            f_out.flush()
+                            # Force persist to disk
+                            os.fsync(f_out.fileno())
+                            # Read the position in output file
+                            output_pos = f_out.tell()
+                            # Persist progress after writing confirmed bars
+                            engine.write_index(next_in_pos, output_pos)
 
                             # Write the trailing bar, which may be updated in the next batch
                             f_out.write(resampled.tail(1).to_csv(index=True, header=False))
