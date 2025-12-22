@@ -30,9 +30,11 @@ jobs:
 
       - name: Merge Stats
         run: |
+          mv traffic /tmp/traffic_new
           git fetch origin main 
           git reset --hard origin/main
           git clean -fd
+          mv /tmp/traffic_new traffic
 
           mkdir -p .github/traffic
           cat << 'EOF' > merge_stats.py
