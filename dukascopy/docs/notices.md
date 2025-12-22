@@ -1,20 +1,8 @@
 ## Status per 22 December 2025
 
-Basic volume modification support through a multiply-factor is in. For indices this is very accurate. For others, you will need to determine a median value. Use AI for that. 
+Volumes will be left as how they are. It's very meaningfull data as how it is.
 
-Approach:
-
-- Export some 4H bars from history center in MT4 for your asset
-- Export some 4H bars using build-csv.sh (see tools section) for your asset
-- Take 20 rows from each file (do not use any open candle)
-- Make sure timestamps match between files
-- Paste both snippets with a header (MT4:file, Tool: file) in a single message 
-  to AI and say: "calculate mean and median ratio on volume differences (last column)". It will give 
-  you the mean and median, apply that in ```processing.yaml``` for the asset. Examples are there.
-
->PS: Deepseek is best for this kind of work. You will need to do a ```rebuild-full.sh``` if you change the transform step since it touches the base 1m data. 
-
-**General advice**: leave the volume column as how it is. The C++ version handles ticks.
+There is multiplication support built but don't use it. I will leave the software in place for later, optional, pre- and post-processing steps.
 
 ## Status per 21 December 2025
 
