@@ -293,13 +293,4 @@ def fork_transform(args: tuple) -> bool:
     return worker.run(symbol, dt)
 
 
-
-if __name__ == "__main__":
-    config = load_app_config('config.user.yaml')
-
-    yaml_str = yaml.safe_dump(
-        asdict(config)
-
-    )
-    print(yaml_str)
     
