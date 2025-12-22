@@ -772,31 +772,23 @@ class ResampleWorker:
                         # Resample the batch and compute the next input position
                         resampled, next_in_pos = engine.process_resample(sio)
                         
-                        # Only perform the 'Atomic Commit' if we have new bars
-                        if not resampled.empty:
-                            # Roll back output file to the last confirmed safe position
-                            f_out.seek(output_pos)
-                            f_out.truncate(output_pos)
+                        # Roll back output file to the last confirmed safe position
+                        f_out.seek(output_pos)
+                        f_out.truncate(output_pos)
 
-                            # Write all fully completed bars (exclude trailing partial bar)
-                            f_out.write(resampled.iloc[:-1].to_csv(index=True, header=False))
-                            # Flush to OS
-                            f_out.flush()
-                            # Force persist to disk
-                            os.fsync(f_out.fileno())
-                            # Read the position in output file
-                            output_pos = f_out.tell()
-                            # Persist progress after writing confirmed bars
-                            engine.write_index(next_in_pos, output_pos)
+                        # Write all fully completed bars (exclude trailing partial bar)
+                        f_out.write(resampled.iloc[:-1].to_csv(index=True, header=False))
+                        # Flush to OS
+                        f_out.flush()
+                        # Force persist to disk
+                        os.fsync(f_out.fileno())
+                        # Read the position in output file
+                        output_pos = f_out.tell()
+                        # Persist progress after writing confirmed bars
+                        engine.write_index(next_in_pos, output_pos)
 
-                            # Write the trailing bar, which may be updated in the next batch
-                            f_out.write(resampled.tail(1).to_csv(index=True, header=False))
-                        else:
-                            # Perhaps future code will hold a filtering option that leads to all rows filtered
-                            # To prevent reprocessing, we update the index eff. preventing a stuck loop
-                            # Currently, an empty dataframe will cause a ResampleLogicError iloc[-1]
-                            # in engine.process_resample. So this will atm, never happen.
-                            engine.write_index(next_in_pos, output_pos)
+                        # Write the trailing bar, which may be updated in the next batch
+                        f_out.write(resampled.tail(1).to_csv(index=True, header=False))
 
                     finally:
                         # Clear memory allocated by StringIO
