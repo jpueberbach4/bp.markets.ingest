@@ -298,7 +298,7 @@ class ResampleEngine:
                         df.at[anchor_idx, 'volume'] += df.at[select_idx, 'volume']
                     else:
                         # Error in offset definition, fail!
-                        raise PostProcessingError(f"Post-processing error for {self.symbol} at timeframe {self.ident}") from e
+                        raise PostProcessingError(f"Post-processing error for {self.symbol} at timeframe {self.ident}")
 
 
             # Drop all selected source columns
