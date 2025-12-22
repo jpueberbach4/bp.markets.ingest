@@ -2,13 +2,15 @@
 
 While the tool is becoming pretty excellent, it is worth noting that there are (still) some limitations. Not many AFAICS.
 
-### Volumes - **Partly resolved (for indices it works) - cannot solve for others, without using a "median ratio"**
+### Volumes - **Partly resolved (for (a very few) indices it (seems to) works)**
 
-In MT4, volume on forex charts usually shows tick volume (number of price changes), not actual traded shares/contracts, whereas Dukascopy JSON data for 1m bars (often called delta files) provides a more direct, real volume count (or tick count tied to actual transactions), often reflecting executed trades or ticks per period, giving better market depth insights than generic MT4's simple tick count, but both differ from stock market true volume.
+**Dukascopy is providing the raw contract value, whereas MT4 is providing a count of price updates.**
 
-I am testing with a fixed multiply factor for indices though. Here the factor seems to be constant.
+Conclusion: **cannot fix**
 
-Oke. For A50 (CHI.IDX) - the multiplier support is good enough.
+However, i am testing with a fixed multiply factor for indices though. Here the factor seems to be constant.
+
+Oke. For A50 (CHI.IDX) - the multiplier support seems/is good enough.
 
 ```yaml
 # config/dukascopy/processing.yaml
