@@ -383,8 +383,12 @@ class ResampleEngine:
             temp_path = self.index_path.with_suffix(".tmp")
 
             with open(temp_path, "w") as f:
+                # Write positions
                 f.write(f"{input_pos}\n{output_pos}")
+                # Flush to OS
                 f.flush()
+                # Force persist to disk
+                os.fsync(f.fileno())
 
             # Atomic replace
             os.replace(temp_path, self.index_path)
