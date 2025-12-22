@@ -2,11 +2,49 @@
 
 While the tool is becoming pretty excellent, it is worth noting that there are (still) some limitations. Not many AFAICS.
 
-### Volumes - **Unresolved - will not solve at this time (cannot)**
+### Volumes - **Partly resolved (for indices it works) - cannot solve for others, without using a "median ratio"**
 
 In MT4, volume on forex charts usually shows tick volume (number of price changes), not actual traded shares/contracts, whereas Dukascopy JSON data for 1m bars (often called delta files) provides a more direct, real volume count (or tick count tied to actual transactions), often reflecting executed trades or ticks per period, giving better market depth insights than generic MT4's simple tick count, but both differ from stock market true volume.
 
 I am testing with a fixed multiply factor for indices though. Here the factor seems to be constant.
+
+Oke. For A50 (CHI.IDX) - the multiplier support is good enough.
+
+```yaml
+# config/dukascopy/processing.yaml
+CHI.IDX-USD:
+  post:
+    volume-adjust:
+      action: multiply
+      column: volume
+      value: 34484
+```
+
+| Time   | Tool Volume      | MT4 Volume | Difference | Ratio (Tool/MT4) |
+|--------|------------------|------------|------------|------------------|
+| 11:00  | 1,644.059184     | 1,642      | +2.059     | 1.001254         |
+| 15:00  | 8,780.316080     | 8,780      | +0.316     | 1.000036         |
+| 19:00  | 3,551.127836     | 3,551      | +0.128     | 1.000036         |
+| 03:00  | 20,412.734832    | 20,411     | +1.735     | 1.000085         |
+| 07:00  | 16,747.602892    | 16,746     | +1.603     | 1.000096         |
+| 11:00  | 1,185.042660     | 1,185      | +0.043     | 1.000036         |
+| 15:00  | 5,842.210312     | 5,841      | +1.210     | 1.000207         |
+| 19:00  | 3,805.136980     | 3,805      | +0.137     | 1.000036         |
+| 03:00  | 23,158.833688    | 23,155     | +3.834     | 1.000166         |
+| 07:00  | 13,756.495216    | 13,755     | +1.495     | 1.000109         |
+| 11:00  | 1,755.063180     | 1,755      | +0.063     | 1.000036         |
+| 15:00  | 4,377.157572     | 4,377      | +0.158     | 1.000036         |
+| 19:00  | 1,286.046296     | 1,290      | -3.954     | 0.996935         |
+| 03:00  | 19,102.687672    | 19,106     | -3.312     | 0.999827         |
+| 07:00  | 12,377.445572    | 12,372     | +5.446     | 1.000440         |
+
+- **Average Ratio**: 1.000146 (tool is 0.0146% higher on average)
+- **Median Ratio**: 1.000096
+- **Range**: 0.996935 to 1.000440
+- **Standard Deviation**: 0.000860
+- **Mean Absolute Difference**: 1.744 units
+
+This is merged to main. See ```config/dukascopy/processing.yam``` and ```config.dukascopy-mt4.yaml```. If you still using the default config:  after update, ```./setup-dukascopy.sh```. You see if you apply it also for other instruments. For indices this is helpful.
 
 ### Session from-to support - **Solved, merge support is in for SGD, available in main** 
 
