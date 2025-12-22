@@ -8,8 +8,8 @@ Approach:
 - Export some 4H bars using build-csv.sh (see tools section) for your asset
 - Take 20 rows from each file (do not use any open candle)
 - Make sure timestamps match between files
-- Paste both snippers with a header (MT4:file, Tool: file) in a single message 
-  to AI and say: "calculate mean and median deviation". It will give you the median,
+- Paste both snippets with a header (MT4:file, Tool: file) in a single message 
+  to AI and say: "calculate mean and median ratio". It will give you the mean and median,
   apply that in ```processing.yaml``` for the asset. Examples are there.
 
 PS: deepseek is best for this kind of work. You will need to do a ```rebuild-full.sh``` if you change the transform step since it touches the base 1m data. 
