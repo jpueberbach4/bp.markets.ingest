@@ -74,7 +74,9 @@ class TransformEngine:
             # Ensure the target column exists before modifying it
             if step.column in df.columns:
                 # Convert column to float and multiply by the provided value
-                df[step.column] = df[step.column].astype(float) * step.value
+                df[step.column] = df[step.column].astype(np.float64) * step.value
+                # Round to stay compliant with settings
+                df[step.column] = np.round(df[step.column], self.config.round_decimals)
             else:
                 # Raise an error if the column is missing
                 raise KeyError(
