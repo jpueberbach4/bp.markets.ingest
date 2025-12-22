@@ -44,7 +44,9 @@ CHI.IDX-USD:
 - **Standard Deviation**: 0.000860
 - **Mean Absolute Difference**: 1.744 units
 
-This is merged to main. See ```config/dukascopy/processing.yam``` and ```config.dukascopy-mt4.yaml```. If you are still using the default config:  after update, ```./setup-dukascopy.sh```. You see if you apply it also for other instruments. For indices this is helpful.
+This is merged to main. See ```config/dukascopy/processing.yam``` and ```config.dukascopy-mt4.yaml```. If you are still using the default config:  after update, ```./setup-dukascopy.sh```. You see if you apply it also for other instruments. For (only a few) indices this is helpful.
+
+**General advice:** leave the volume column untouched (me? i wont use it).
 
 ### Session from-to support - **Solved, merge support is in for SGD, available in main** 
 
