@@ -2,6 +2,15 @@ MT4 is decoded
 
 I’m currently finishing up the ETL/data work, which will be completed before Christmas. Once that’s done, the main branch will become stable, and new features will be developed through regular feature branches. The code is now used by many people, so stability is crucial. That said, daily repository statistics are still being merged into main, and there’s a specific reason for this approach.
 
+What is happening
+
+- Production hardening of the code through granular exception handling (resample is done)
+- Handling all the weird cases that normally should not happen, but anyhow protect for it
+- The open-issue closing, see below
+- Configuration documentation
+- Cleanup of bloated text
+- Then one more validation pass... and lock it.
+
 ## Status per 22 December 2025
 
 Volumes will be left as how they are. It's very meaningful data as how it is.
