@@ -344,9 +344,9 @@ class ResampleEngine:
             return int(lines[0].strip()), int(lines[1].strip())
 
         except (ValueError, IndexError) as e:
+            
             raise IndexCorruptionError(f"Corrupt index at {self.index_path}. Check for partial writes.") from e
-        
-        return 0, 0
+
 
     def write_index(self, input_pos: int, output_pos: int) -> None:
         """Persist input and output byte offsets to the index file atomically.
