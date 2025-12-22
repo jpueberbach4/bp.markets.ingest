@@ -33,8 +33,6 @@ CHI.IDX:
 
 EUR-USD:
 
-## Volume Comparison Analysis (Forex Instrument)
-
 | Time   | Tool Volume | MT4 Volume | Ratio (MT4/Tool) |
 |--------|-------------|------------|------------------|
 | 04:00  | 7,642.01    | 4,234      | 0.5541           |
