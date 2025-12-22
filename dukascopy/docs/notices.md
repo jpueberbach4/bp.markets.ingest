@@ -1,3 +1,5 @@
+MT4 is decoded
+
 ## Status per 22 December 2025
 
 Volumes will be left as how they are. It's very meaningful data as how it is.
