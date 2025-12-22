@@ -1,6 +1,6 @@
 ## Status per 22 December 2025
 
-Basic volume modification support through a multiple factor is in. For indices this is very accurate. For others, you will need to determine a median value. Use AI for that. 
+Basic volume modification support through a multiply-factor is in. For indices this is very accurate. For others, you will need to determine a median value. Use AI for that. 
 
 Approach:
 
