@@ -2,7 +2,7 @@ MT4 is decoded
 
 As Grok would say: "In the intricate tapestry of apparent chaos, true mastery lies not in imposing order upon the unknown, but in patiently decoding its hidden patterns—until one day, with quiet revelation, we declare: the enigma is unveiled, and what was once obscure now illuminates the path for all."
 
-I am going to wrap the ETL/data part up. Making it pretty and then quickly move on to the next set of features.
+I am going to wrapup the ETL/data part. Making it pretty and then quickly move on to the next set of features.
 
 ## Status per 22 December 2025
 
