@@ -2,7 +2,8 @@ name: "Daily Traffic Logger"
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    # Changed to 23:00 UTC to ensure 'today's' data is processed by GitHub API
+    - cron: '0 23 * * *'
   workflow_dispatch:
 
 permissions:
@@ -30,6 +31,11 @@ jobs:
 
       - name: Merge Stats
         run: |
+          # 1. Debug: Show what the API actually returned for today
+          echo "Checking new traffic data..."
+          [ -f traffic/views.csv ] && tail -n 5 traffic/views.csv || echo "No views.csv found"
+          
+          # 2. Sync Repo State
           mv traffic /tmp/traffic_new
           git fetch origin main 
           git reset --hard origin/main
@@ -49,11 +55,9 @@ jobs:
               data = {}
               fieldnames = []
 
-              # Helper to get the first column name (e.g., _date or date)
               def get_id_col(reader):
                   return reader.fieldnames[0] if reader.fieldnames else None
 
-              # Load old data
               if os.path.exists(old_path) and os.path.getsize(old_path) > 0:
                   with open(old_path, 'r', newline='') as f:
                       reader = csv.DictReader(f)
@@ -64,20 +68,21 @@ jobs:
                               if row.get(id_col):
                                   data[row[id_col]] = row
               
-              # Load new data
               with open(new_path, 'r', newline='') as f:
                   reader = csv.DictReader(f)
                   id_col = get_id_col(reader)
                   if id_col:
-                      fieldnames = reader.fieldnames # Prefer new fieldnames if they changed
+                      # Update fieldnames in case GitHub adds columns
+                      fieldnames = reader.fieldnames 
                       for row in reader:
                           if row.get(id_col):
+                              # This ensures today's data overwrites or appends correctly
                               data[row[id_col]] = row
               
               if not data or not fieldnames: return
 
-              # Write combined results
               id_col = fieldnames[0]
+              # Sort ensures chronological order
               sorted_keys = sorted(data.keys())
               with open(old_path, 'w', newline='') as f:
                   writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -88,13 +93,15 @@ jobs:
           merge_csv('clones')
           merge_csv('views')
           EOF
+          
           python3 merge_stats.py
 
+          # 3. Handle Plots and Cleanup
           cp -f traffic/*.png .github/traffic/ 2>/dev/null || true
-
-          git add .github/traffic/plots.png
           
+          # Removed manual 'git add' to let the 'add-and-commit' action handle it safely
           sudo rm -rf traffic merge_stats.py
+
       - name: Commit and Push
         uses: Endbug/add-and-commit@v9
         with:
