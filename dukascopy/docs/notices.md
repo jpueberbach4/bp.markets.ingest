@@ -1,3 +1,17 @@
+## Status per 22 December 2025
+
+Basic volume modification support through a multiple factor is in. For indices this is very accurate. For others, you will need to determine a median value. Use AI for that. 
+
+Approach:
+
+- Export some 4H bars from history center in MT4 for your asset
+- Export some 4H bars using build-csv.sh (see tools section) for your asset
+- Take 20 rows from each file (do not use any open candle)
+- Make sure timestamps match between files
+- Paste both snippers with a header (MT4:file, Tool: file) in a single message 
+  to AI and say: "calculate mean and median deviation". It will give you the median,
+  apply that in ```processing.yaml``` for the asset. Examples are there.
+
 ## Status per 21 December 2025
 
 Starting to get very pleased with the results of this effort. I have now seen about everything what MT4 does and doesnt. Quite a learning experience with some interesting conclusions derived from it. Especially the SGD index has opened my eyes. As far as i can see, we are nearing 100 percent correctness (we are very close). If anything, i may have missed, or overlooked, or anything else,.. dump a message in the discussions.
