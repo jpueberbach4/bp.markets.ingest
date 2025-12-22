@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Tuple
 
 from dst import get_symbol_time_shift_ms
-from config.app_config import AppConfig, TransformConfig, load_app_config
+from config.app_config import AppConfig, TransformConfig, TransformSymbolProcessingStep, load_app_config
 from dataclasses import asdict
 import yaml
 
@@ -49,16 +49,41 @@ class TransformEngine:
         self.config = config
 
     def _apply_post_processing(self, df: pd.DataFrame, step: TransformSymbolProcessingStep) -> pd.DataFrame:
-        if not step.action in ["multiply"]:
+        """Apply post-processing transformations to a DataFrame column.
+
+        Currently supports multiplying a specified column by a scalar value.
+
+        Args:
+            df (pd.DataFrame): Input DataFrame to be transformed.
+            step (TransformSymbolProcessingStep): Transformation step defining
+                the action to apply, the target column, and the value to use.
+
+        Returns:
+            pd.DataFrame: The transformed DataFrame.
+
+        Raises:
+            ValueError: If the transformation action is not supported.
+            KeyError: If the specified column does not exist in the DataFrame.
+        """
+        # Validate that the requested action is supported
+        if step.action not in ["multiply"]:
             raise ValueError(f"Step action {step.action} for transform unsupported")
 
+        # Apply multiplication transformation
         if step.action == "multiply":
+            # Ensure the target column exists before modifying it
             if step.column in df.columns:
+                # Convert column to float and multiply by the provided value
                 df[step.column] = df[step.column].astype(float) * step.value
             else:
-                raise KeyError(f"Step action {step.action} for transform, column '{step.column}' not found in DataFrame")
+                # Raise an error if the column is missing
+                raise KeyError(
+                    f"Step action {step.action} for transform, column '{step.column}' not found in DataFrame"
+                )
 
+        # Return the modified DataFrame
         return df
+
 
     def process_json(self, data: dict, dt: date, symbol: str) -> pd.DataFrame:
         """
@@ -77,66 +102,76 @@ class TransformEngine:
             pandas.DataFrame: Normalized OHLCV data with columns:
                 ['time', 'open', 'high', 'low', 'close', 'volume'].
         """
-        # Resolve symbol- and date-specific timestamp shift (e.g. DST handling)
-        time_shift_ms = get_symbol_time_shift_ms(dt, symbol, self.config)
+        try:
+            # Resolve symbol- and date-specific timestamp shift (e.g. DST handling)
+            time_shift_ms = get_symbol_time_shift_ms(dt, symbol, self.config)
 
-        # Reconstruct timestamps using cumulative deltas
-        times = (
-            np.cumsum(np.array(data["times"], dtype=np.int64) * data["shift"])
-            + (data["timestamp"] + time_shift_ms)
-        )
+            # Reconstruct timestamps using cumulative deltas
+            times = (
+                np.cumsum(np.array(data["times"], dtype=np.int64) * data["shift"])
+                + (data["timestamp"] + time_shift_ms)
+            )
 
-        # Reconstruct OHLC values using cumulative delta math
-        opens = data["open"] + np.cumsum(
-            np.array(data["opens"], dtype=np.float64) * data["multiplier"]
-        )
-        highs = data["high"] + np.cumsum(
-            np.array(data["highs"], dtype=np.float64) * data["multiplier"]
-        )
-        lows = data["low"] + np.cumsum(
-            np.array(data["lows"], dtype=np.float64) * data["multiplier"]
-        )
-        closes = data["close"] + np.cumsum(
-            np.array(data["closes"], dtype=np.float64) * data["multiplier"]
-        )
+            # Reconstruct OHLC values using cumulative delta math
+            opens = data["open"] + np.cumsum(
+                np.array(data["opens"], dtype=np.float64) * data["multiplier"]
+            )
+            highs = data["high"] + np.cumsum(
+                np.array(data["highs"], dtype=np.float64) * data["multiplier"]
+            )
+            lows = data["low"] + np.cumsum(
+                np.array(data["lows"], dtype=np.float64) * data["multiplier"]
+            )
+            closes = data["close"] + np.cumsum(
+                np.array(data["closes"], dtype=np.float64) * data["multiplier"]
+            )
 
-        # Volume is absolute, not delta-based
-        volumes = np.array(data["volumes"], dtype=np.float64)
+            # Volume is absolute, not delta-based
+            volumes = np.array(data["volumes"], dtype=np.float64)
 
-        # Filter out zero-volume candles (gaps / non-trading periods)
-        mask = volumes != 0.0
+            # Filter out zero-volume candles (gaps / non-trading periods)
+            mask = volumes != 0.0
 
-        # Apply mask consistently across all arrays
-        t_f, o_f, h_f, l_f, c_f, v_f = [
-            arr[mask] for arr in [times, opens, highs, lows, closes, volumes]
-        ]
+            # Apply mask consistently across all arrays
+            t_f, o_f, h_f, l_f, c_f, v_f = [
+                arr[mask] for arr in [times, opens, highs, lows, closes, volumes]
+            ]
 
-        # Convert UNIX milliseconds to ISO datetime strings in batch
-        time_strings = [
-            str(t).replace("T", " ")[:19]
-            for t in np.array(t_f * 1_000_000, dtype="datetime64[ns]")
-        ]
+            # Convert UNIX milliseconds to ISO datetime strings in batch
+            time_strings = [
+                str(t).replace("T", " ")[:19]
+                for t in np.array(t_f * 1_000_000, dtype="datetime64[ns]")
+            ]
 
-        # Assemble final DataFrame and apply price rounding
-        full_transformed = pd.DataFrame(
-            {
-                "time": time_strings,
-                "open": np.round(o_f, self.config.round_decimals),
-                "high": np.round(h_f, self.config.round_decimals),
-                "low": np.round(l_f, self.config.round_decimals),
-                "close": np.round(c_f, self.config.round_decimals),
-                "volume": v_f,
-            }
-        )
+            # Assemble final DataFrame and apply price rounding
+            full_transformed = pd.DataFrame(
+                {
+                    "time": time_strings,
+                    "open": np.round(o_f, self.config.round_decimals),
+                    "high": np.round(h_f, self.config.round_decimals),
+                    "low": np.round(l_f, self.config.round_decimals),
+                    "close": np.round(c_f, self.config.round_decimals),
+                    "volume": v_f,
+                }
+            )
 
-        # Apply post-processing
-        if self.config.symbols:
-            sym_cfg = self.config.symbols.get(symbol)
-            if sym_cfg.post:
-                for sym_step in sym_cfg.post.values():
-                    full_transformed = self._apply_post_processing(full_transformed, sym_step)
+            # Apply post-processing
+            if self.config.symbols:
+                sym_cfg = self.config.symbols.get(symbol)
+                if sym_cfg.post:
+                    for sym_step in sym_cfg.post.values():
+                        # This is dirty. YAML config loading to correct dataclasses is an utterly hell in python
+                        if isinstance(sym_step, dict):
+                            sym_step = TransformSymbolProcessingStep(**sym_step)
 
-        return full_transformed
+                        full_transformed = self._apply_post_processing(full_transformed, sym_step)
+
+            # Return dataframe
+            return full_transformed
+
+        except Exception as e:
+            # Explicitly propagate
+            raise e
 
 
 class TransformWorker:
@@ -239,7 +274,8 @@ class TransformWorker:
             return True
 
         except Exception:
-            return False
+            # Explicitly propagate
+            raise e
 
 
 def fork_transform(args: tuple) -> bool:
