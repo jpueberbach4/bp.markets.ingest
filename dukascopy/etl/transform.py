@@ -161,6 +161,8 @@ class TransformEngine:
                 if sym_cfg and sym_cfg.post:
                     for sym_step in sym_cfg.post.values():
                         # This is dirty. YAML config loading to correct dataclasses is an utterly hell in python
+                        # Todo: check if there is a default project which simplifies this to dataclass loading
+                        #       otherwise, perhaps second project?
                         if isinstance(sym_step, dict):
                             sym_step = TransformSymbolProcessingStep(**sym_step)
 
