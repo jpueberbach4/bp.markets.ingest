@@ -1,3 +1,5 @@
+# This file describes the post-processing steps for transform
+# The examples below multiplies the volume column by its specified value
 SGD.IDX-SGD:
   post:
     volume-adjust:
