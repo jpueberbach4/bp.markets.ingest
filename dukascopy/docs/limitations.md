@@ -115,7 +115,7 @@ Conclusions:
 
 We cannot get it 100% exact for forex and commodities. Indices, we are near exact (note: limited sampling results). Multiplication factor per symbol needs to get supported. This will become feature-014. Needs to get implemented in the transform stage (the base 1m aggregate needs to change. so rebuild-full will be needed when this is done). I am debating if i am letting the transform-step look into the resample-symbols configuration. Seperation of concerns i would like to retain. Need to brain on it.
 
-Revisited: the MT4 concept of volume is actually the number of ticks in the bar. I am not sure if i am going to change this. 
+Revisited: the MT4 concept of volume is actually the number of ticks in the bar. More research needed first. 
 
 ### Session from-to support - **Solved, merge support is in for SGD, available in main** 
 
