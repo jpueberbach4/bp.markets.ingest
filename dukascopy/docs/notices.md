@@ -12,7 +12,7 @@ Approach:
   to AI and say: "calculate mean and median deviation". It will give you the median,
   apply that in ```processing.yaml``` for the asset. Examples are there.
 
-PS: deepseek is best for this kind of work. You will need to do a ```full-rebuild.sh``` if you change the transform step since it touches the base 1m data. 
+PS: deepseek is best for this kind of work. You will need to do a ```rebuild-full.sh``` if you change the transform step since it touches the base 1m data. 
 
 ## Status per 21 December 2025
 
