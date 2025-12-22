@@ -4,6 +4,10 @@ Volumes will be left as how they are. It's very meaningful data as how it is.
 
 There is multiplication support built but don't use it. I will leave the software in place for later, eg. optional, pre- and post-processing steps.
 
+Still open: Sessions are currently mapped, fixed, to America/New_York. Make it based on the symbol's timezone setting in transform.timezone. This is a cosmetic issue since the '*' select is present on the timezone America/New_York in ```config/dukascopy/timezones/america-new_york.yaml```. The fix is needed to support users who wish to use advanced session settings on eg ```Etc/UTC```.
+
+New item: more granular exception handling using custom exceptions
+
 ## Status per 21 December 2025
 
 Starting to get very pleased with the results of this effort. I have now seen about everything what MT4 does and doesnt. Quite a learning experience with some interesting conclusions derived from it. Especially the SGD index has opened my eyes. As far as i can see, we are nearing 100 percent correctness (we are very close). If anything, i may have missed, or overlooked, or anything else,.. dump a message in the discussions.
