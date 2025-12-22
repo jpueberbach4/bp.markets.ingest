@@ -14,6 +14,8 @@ Approach:
 
 >PS: Deepseek is best for this kind of work. You will need to do a ```rebuild-full.sh``` if you change the transform step since it touches the base 1m data. 
 
+**General advice**: leave the volume column as how it is.
+
 ## Status per 21 December 2025
 
 Starting to get very pleased with the results of this effort. I have now seen about everything what MT4 does and doesnt. Quite a learning experience with some interesting conclusions derived from it. Especially the SGD index has opened my eyes. As far as i can see, we are nearing 100 percent correctness (we are very close). If anything, i may have missed, or overlooked, or anything else,.. dump a message in the discussions.
