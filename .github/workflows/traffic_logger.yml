@@ -23,6 +23,11 @@ jobs:
         env:
           TRAFFIC_ACTION_TOKEN: ${{ secrets.TRAFFIC_ACTION_TOKEN }}
 
+      - name: Fix Permissions
+        run: |
+          sudo chown -R $USER:$USER .
+          sudo chmod -R 777 traffic/ || true
+
       - name: Merge Stats
         run: |
           git fetch origin main 
