@@ -158,7 +158,7 @@ class TransformEngine:
             # Apply post-processing
             if self.config.symbols:
                 sym_cfg = self.config.symbols.get(symbol)
-                if sym_cfg.post:
+                if sym_cfg and sym_cfg.post:
                     for sym_step in sym_cfg.post.values():
                         # This is dirty. YAML config loading to correct dataclasses is an utterly hell in python
                         if isinstance(sym_step, dict):
