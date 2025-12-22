@@ -74,9 +74,6 @@ from helper import ResampleTracker
 from exceptions import *
 import traceback
 
-# Enable verbose logging via environment variable
-VERBOSE = os.getenv("VERBOSE", "0").lower() in ("1", "true", "yes", "on")
-
 class ResampleEngine:
     """
     Incremental OHLCV resampling engine for a single symbol and timeframe.
