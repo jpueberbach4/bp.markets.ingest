@@ -28,7 +28,9 @@ from pathlib import Path
 from typing import Tuple
 
 from dst import get_symbol_time_shift_ms
-from config.app_config import AppConfig, TransformConfig
+from config.app_config import AppConfig, TransformConfig, load_app_config
+from dataclasses import asdict
+import yaml
 
 
 class TransformEngine:
@@ -45,6 +47,18 @@ class TransformEngine:
             config (TransformConfig): Transform-related configuration values.
         """
         self.config = config
+
+    def _apply_post_processing(self, df: pd.DataFrame, step: TransformSymbolProcessingStep) -> pd.DataFrame:
+        if not step.action in ["multiply"]:
+            raise ValueError(f"Step action {step.action} for transform unsupported")
+
+        if step.action == "multiply":
+            if step.column in df.columns:
+                df[step.column] = df[step.column].astype(float) * step.value
+            else:
+                raise KeyError(f"Step action {step.action} for transform, column '{step.column}' not found in DataFrame")
+
+        return df
 
     def process_json(self, data: dict, dt: date, symbol: str) -> pd.DataFrame:
         """
@@ -104,7 +118,7 @@ class TransformEngine:
         ]
 
         # Assemble final DataFrame and apply price rounding
-        return pd.DataFrame(
+        full_transformed = pd.DataFrame(
             {
                 "time": time_strings,
                 "open": np.round(o_f, self.config.round_decimals),
@@ -114,6 +128,15 @@ class TransformEngine:
                 "volume": v_f,
             }
         )
+
+        # Apply post-processing
+        if self.config.symbols:
+            sym_cfg = self.config.symbols.get(symbol)
+            if sym_cfg.post:
+                for sym_step in sym_cfg.post.values():
+                    full_transformed = self._apply_post_processing(full_transformed, sym_step)
+
+        return full_transformed
 
 
 class TransformWorker:
@@ -232,3 +255,15 @@ def fork_transform(args: tuple) -> bool:
     symbol, dt, app_config = args
     worker = TransformWorker(app_config)
     return worker.run(symbol, dt)
+
+
+
+if __name__ == "__main__":
+    config = load_app_config('config.user.yaml')
+
+    yaml_str = yaml.safe_dump(
+        asdict(config)
+
+    )
+    print(yaml_str)
+    

@@ -134,6 +134,20 @@ class DownloadConfig:
 
 
 @dataclass
+class TransformSymbolProcessingStep:
+    """
+    Configuration for a pre/post processing step
+    """
+    action: str = field(default=None,metadata={'yaml_key': 'action'}) 
+    column: str = field(default=None,metadata={'yaml_key': 'column'}) 
+    value: int = field(default=None, metadata={'yaml_key': 'value'})
+
+@dataclass
+class TransformSymbol:
+    """Per-symbol overrides for resampling behavior."""
+    post: Optional[Dict[str, TransformSymbolProcessingStep]] = field(default=None)
+
+@dataclass
 class TransformTimezone:
     """Timezone-specific MT4 shift configuration."""
     offset_to_shift_map: Dict[int, int] = field(default_factory=dict)
@@ -155,6 +169,7 @@ class TransformConfig:
     round_decimals: int = 10
     paths: TransformPaths = field(default_factory=TransformPaths)
     timezones: Dict[str, TransformTimezone] = field(default_factory=dict)
+    symbols: Dict[str, TransformSymbol] = field(default_factory=dict)
 
 
 @dataclass

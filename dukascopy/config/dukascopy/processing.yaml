@@ -1,0 +1,12 @@
+SGD.IDX-SGD:
+  post:
+    volume-adjust:
+      action: multiply
+      column: volume
+      value: 1200
+CHI.IDX-USD:
+  post:
+    volume-adjust:
+      action: multiply
+      column: volume
+      value: 34484

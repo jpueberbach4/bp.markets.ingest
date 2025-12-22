@@ -55,6 +55,9 @@ transform:
   timezones:
     includes:
     - config/dukascopy/timezones/*.yaml
+  symbols:
+    includes:
+    - config/dukascopy/processing.yaml
 
 # Below you will find the configuration for the resample.py script. 
 resample:
