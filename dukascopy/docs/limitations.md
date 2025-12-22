@@ -4,7 +4,9 @@ While the tool is becoming pretty excellent, it is worth noting that there are (
 
 ### Volumes - **Unresolved - will not solve at this time (cannot)**
 
-In MT4, volume on forex charts usually shows tick volume (number of price changes), not actual traded shares/contracts, whereas Dukascopy JSON data for 1m bars (often called delta files) provides a more direct, real volume count (or tick count tied to actual transactions), often reflecting executed trades or ticks per period, giving better market depth insights than generic MT4's simple tick count, but both differ from stock market true volume. 
+In MT4, volume on forex charts usually shows tick volume (number of price changes), not actual traded shares/contracts, whereas Dukascopy JSON data for 1m bars (often called delta files) provides a more direct, real volume count (or tick count tied to actual transactions), often reflecting executed trades or ticks per period, giving better market depth insights than generic MT4's simple tick count, but both differ from stock market true volume.
+
+I am testing with a fixed multiply factor for indices though. Here the factor seems to be constant.
 
 ### Session from-to support - **Solved, merge support is in for SGD, available in main** 
 
