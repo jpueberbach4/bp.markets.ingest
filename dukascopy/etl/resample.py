@@ -154,15 +154,51 @@ class ResampleEngine:
         self.index_path = index_path
         self.is_root = False
 
-    def _apply_post_processing(self, df: pd.DataFrame, step: ResampleTimeframeProcessingStep) -> pd.DataFrame:
+    def _apply_post_processing(
+        self,
+        df: pd.DataFrame,
+        step: ResampleTimeframeProcessingStep
+    ) -> pd.DataFrame:
+        """Apply post-processing logic to a resampled DataFrame.
+
+        Currently, this method supports a single post-processing action: ``merge``.
+        For each suffix specified in ``step.ends_with``, rows whose index ends with
+        that suffix are merged into another row determined by ``step.offset``.
+        The selected rows are then removed from the DataFrame.
+
+        The merge operation updates the anchor row as follows:
+        - ``high``: maximum of anchor and selected row
+        - ``low``: minimum of anchor and selected row
+        - ``close``: close value of the selected row
+        - ``volume``: sum of anchor and selected row volumes
+
+        Notes:
+            - Only the ``merge`` action is currently supported.
+            - Date-range filtering via ``from_date`` and ``to_date`` is not yet
+            implemented (see TODO in code).
+            - The DataFrame index is expected to be string-like and support
+            ``str.endswith``.
+
+        Args:
+            df: A pandas DataFrame containing OHLCV data. The index is expected
+                to be string-based and represent time buckets.
+            step: A ``ResampleTimeframeProcessingStep`` describing the post-processing
+                action, suffixes to match, and offset used to determine merge targets.
+
+        Returns:
+            A pandas DataFrame with the specified rows merged and removed.
+
+        Raises:
+            ValueError: If ``step.action`` is not supported.
+        """
         if step.action != "merge":
             raise ValueError(f"Unsupported post-processing action {step.action}")
-        
+            
         # TODO: implement from_date and to_date
         #       generate a mask where from_date <= date <= to_date
         #       then use mask as primary filter and endswith as secondary filter
         #       gives a positions array, continue regular logic 
-        
+            
         offset = step.offset
         for ends_with in step.ends_with:
             positions = np.where(df.index.str.endswith(ends_with))[0]
@@ -172,8 +208,14 @@ class ResampleEngine:
                 if pos > 0:
                     select_idx = df.index[pos]
                     anchor_idx = df.index[pos + offset]
-                    df.at[anchor_idx, 'high'] = max(df.at[anchor_idx, 'high'], df.at[select_idx, 'high'])
-                    df.at[anchor_idx, 'low'] = min(df.at[anchor_idx, 'low'], df.at[select_idx, 'low'])
+                    df.at[anchor_idx, 'high'] = max(
+                        df.at[anchor_idx, 'high'],
+                        df.at[select_idx, 'high'],
+                    )
+                    df.at[anchor_idx, 'low'] = min(
+                        df.at[anchor_idx, 'low'],
+                        df.at[select_idx, 'low'],
+                    )
                     df.at[anchor_idx, 'close'] = df.at[select_idx, 'close']
                     df.at[anchor_idx, 'volume'] += df.at[select_idx, 'volume']
 
@@ -181,6 +223,7 @@ class ResampleEngine:
             df = df[~df.index.str.endswith(ends_with)]
 
         return df
+
 
     def read_index(self) -> Tuple[int, int]:
         """
