@@ -1,15 +1,15 @@
 # This file describes the post-processing steps for transform
 # The examples below multiplies the volume column by its specified value
 # It will work for only a very few!
-SGD.IDX-SGD:
-  post:
-    volume-adjust:
-      action: multiply
-      column: volume
-      value: 1200
-CHI.IDX-USD:
-  post:
-    volume-adjust:
-      action: multiply
-      column: volume
-      value: 34484
+#SGD.IDX-SGD:
+#  post:
+#    volume-adjust:
+#      action: multiply
+#      column: volume
+#      value: 1200
+#CHI.IDX-USD:
+#  post:
+#    volume-adjust:
+#      action: multiply
+#      column: volume
+#      value: 34484
