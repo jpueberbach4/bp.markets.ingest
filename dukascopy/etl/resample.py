@@ -249,10 +249,10 @@ class ResampleEngine:
             if len(lines) == 2:
                 return int(lines[0].strip()), int(lines[1].strip())
 
-            # Fallback if index file is malformed
         except Exception as e:
-            # Explicitly propagate
-            raise e
+
+            raise RuntimeError(f"Error on resample.read_index {self.index_path}") from e
+        
         return 0, 0
 
     def write_index(self, input_pos: int, output_pos: int) -> None:
@@ -277,9 +277,10 @@ class ResampleEngine:
 
             # Atomic replace
             os.replace(temp_path, self.index_path)
+        
         except Exception as e:
-            # Explicitly propagate
-            raise e
+
+            raise RuntimeError(f"Error on resample.write_index {self.index_path}") from e
 
     def prepare_batch(self, f_input: IO, header: str) -> Tuple[StringIO, bool]:
         """
@@ -353,8 +354,9 @@ class ResampleEngine:
             # Reset buffer cursor for downstream consumers
             sio.seek(0)
             return sio, eof
+
         except Exception as e:
-            # Explicitly propagate
+
             raise RuntimeError(f"Critical failure on {self.symbol} at timeframe {self.ident}: {e}") from e
 
     def process_resample(self, sio: StringIO) -> Tuple[pd.DataFrame, int]:
@@ -440,7 +442,9 @@ class ResampleEngine:
             )
 
             return full_resampled, next_input_pos
+        
         except Exception as e:
+
             raise RuntimeError(f"Critical failure on {self.symbol} at offset {next_input_pos}") from e
 
 
@@ -486,8 +490,8 @@ class ResampleWorker:
                 self._execute_engine(engine)
 
         except Exception as e:
-            # Explicitly propagate
-            raise e
+            
+            raise RuntimeError(f"Error on resample.worker.run {self.symbol}") from e
                 
                 
 
@@ -558,8 +562,9 @@ class ResampleWorker:
                     # Resume reading input from the computed byte offset
                     f_in.seek(next_in_pos)
         except Exception as e:
-            # Explicitly propagate
-            raise e
+
+            raise RuntimeError(f"Error on resample.worker._execute_engine {self.symbol}") from e
+
 
 
 
@@ -580,6 +585,7 @@ def fork_resample(args) -> bool:
         worker = ResampleWorker(symbol, config)
         worker.run()
     except Exception as e:
-        # Explicitly propagate
-        raise e
+        
+        raise RuntimeError(f"Error on fork_resample {symbol}") from e
+        
     return True
