@@ -1,6 +1,6 @@
 ## Table of Contents
 
-- [Notice (Important)](#notice)
+- [Notice](#notice)
 - [What Is This Tool Used For?](#what-is-this-tool-used-for)
 - [Target audience](#target-audience)
 - [Server Kindness](#server-kindness)
@@ -39,16 +39,14 @@
 
 ## Notice
 
-- [General notices, latest updates, caveats, etc](docs/notices.md) **(updated 23 DEC)**
-- [Limitations](docs/limitations.md) (updated 22 DEC)
+- [General notices, latest updates, caveats, etc](docs/notices.md)
+- [Limitations](docs/limitations.md)
 
 Don't forget to check the [Tools](docs/tools.md) section. It will ease things even more.
 
 **From Portfolio Project to Platform**
 
 What started as a personal project (private use-case) to tackle the intricate problem of temporal alignment in financial data has evolved into a robust, crash-resilient OHLCV resampling system. It now handles global trading sessions, multiple DST transitions, and aligns with real-world platforms like Metatrader.
-
-For a niche project, this repository is hugely popular with clones spiking upwards of 300 per day. It seems to solve a real pain. I feel that pain too. That's why i decided to start solving this once and for all and even to "go beyond" (the replay functionality).
 
 ---
 
