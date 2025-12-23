@@ -39,7 +39,7 @@
 
 ## Notice
 
-- [General notices, latest updates, caveats, etc](docs/notices.md) **(updated 22 DEC)**
+- [General notices, latest updates, caveats, etc](docs/notices.md) **(updated 23 DEC)**
 - [Limitations](docs/limitations.md) (updated 22 DEC)
 
 Don't forget to check the [Tools](docs/tools.md) section. It will ease things even more.
