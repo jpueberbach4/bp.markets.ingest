@@ -33,13 +33,16 @@ class AggregateEngine:
     Handles the low-level incremental aggregation of CSV data for a symbol.
     """
 
-    def __init__(self, symbol: str, config: AggregateConfig):
-        """
-        Initialize the aggregation engine.
+def __init__(self, symbol: str, config: AggregateConfig):
+        """Initialize the aggregation engine for a specific trading symbol.
+
+        This constructor sets up symbol-specific configuration, as well as
+        paths for index tracking and the master output CSV file.
 
         Args:
-            symbol: Trading symbol to aggregate.
-            app_config: Global application configuration.
+            symbol (str): Trading symbol to aggregate.
+            config (AggregateConfig): Global aggregation configuration, including
+                paths and other settings.
         """
         # Set properties
         self.symbol = symbol
@@ -50,20 +53,29 @@ class AggregateEngine:
         self.output_path = Path(self.config.paths.data) / f"{self.symbol}.csv"
 
     def read_index(self) -> Tuple[date, int, int]:
-        """
-        Read the last processed date and file positions from the index file.
+        """Read the last processed date and file positions from the index file.
+
+        If the index file does not exist, it is initialized with a default date
+        (Unix epoch) and zeroed positions.
 
         Returns:
-            Tuple containing:
-            - Last processed date
-            - Input file position
-            - Output file position
+            Tuple[date, int, int]: A tuple containing:
+                - Last processed date (`date`)
+                - Input file position (`int`)
+                - Output file position (`int`)
+
+        Raises:
+            IndexCorruptionError: If the index file exists but cannot be parsed
+                correctly due to missing lines, invalid formatting, or corrupt data.
         """
         try:
+            # Check if idx file exists
             if not self.index_path.exists():
+                # Create idx file
                 self.write_index(datetime.utcfromtimestamp(0).date(), 0, 0)
                 return datetime.utcfromtimestamp(0).date(), 0, 0
             
+            # Read idx file
             with open(self.index_path, 'r') as f_idx:
                 lines = f_idx.readlines()[:3]
                 date_str, in_pos, out_pos = [line.strip() for line in lines]
@@ -73,18 +85,26 @@ class AggregateEngine:
             raise IndexCorruptionError(f"Corrupt index at {self.index_path}. Check for partial writes.") from e
 
     def write_index(self, dt: date, input_pos: int, output_pos: int):
-        """
-        Atomically write the last processed date and file positions to the index file.
+        """Atomically write the last processed date and file positions to the index file.
+
+        This method ensures that the index is written safely using a temporary file
+        and atomic replacement. Optionally, it can force the data to disk if
+        `fsync` is enabled in the configuration.
 
         Args:
-            dt: Last processed date.
-            input_position: Input file position after reading.
-            output_position: Output file position after writing.
+            dt (date): Last processed date to record.
+            input_pos (int): Input file position after reading.
+            output_pos (int): Output file position after writing.
+
+        Raises:
+            IndexValidationError: If `input_pos` or `output_pos` are negative.
+            OSError: If writing to disk or atomic replacement fails.
         """
         if input_pos < 0 or output_pos < 0:
             raise IndexValidationError(
                 f"Invalid offsets for {self.symbol}: IN={input_pos}, OUT={output_pos}"
             )
+            
         self.index_path.parent.mkdir(parents=True, exist_ok=True)
         temp_path = Path(f"{self.index_path}.tmp")
         
@@ -101,29 +121,50 @@ class AggregateEngine:
         os.replace(temp_path, self.index_path)
 
     def _resolve_input_path(self, dt: date) -> Path:
-        """
-        Determine the path to the daily CSV file for a given date.
+        """Resolve the input CSV file path for a given date.
+
+        This method first checks for a historical CSV file in the configured
+        historical path. If the file does not exist, it falls back to the live
+        data path.
 
         Args:
-            dt: Date to resolve.
+            dt (date): The trading date for which to resolve the CSV path.
 
         Returns:
-            Path to the CSV file.
+            Path: The resolved path to the CSV file, either historical or live.
+
+        Notes:
+            The method does not raise an exception if the file does not exist;
+            it only constructs and returns the expected path.
         """
         path = Path(self.config.paths.historic) / f"{dt.year}/{dt.month:02}/{self.symbol}_{dt:%Y%m%d}.csv"
         if not path.exists():
             path = Path(self.config.paths.live) / f"{self.symbol}_{dt:%Y%m%d}.csv"
+        
         return path
 
     def process_date(self, dt: date) -> bool:
-        """
-        Aggregate a single day of data into the master CSV file.
+        """Aggregate a single day of CSV data into the master output file.
+
+        This method reads the daily CSV file for the given date, appends its
+        contents to the master CSV while maintaining crash safety, updates
+        the index file, and optionally forces data to disk using `fsync`.
+
+        The method handles partial reads by resuming from the last recorded
+        input and output positions, and writes the header if the master file
+        is newly created.
 
         Args:
-            dt: Date to process.
+            dt (date): The trading date to process.
 
         Returns:
-            True if processing was successful, False otherwise.
+            bool: True if data for the date was successfully aggregated;
+                False if the input file does not exist, is empty, or the
+                date was already processed.
+
+        Raises:
+            TransactionError: If a disk I/O error occurs during reading, writing,
+                or flushing to disk.
         """
         input_path = self._resolve_input_path(dt)
         if not input_path.exists():
@@ -190,13 +231,17 @@ class AggregateWorker:
     """
 
     def __init__(self, symbol: str, dates: List[date], app_config: AppConfig):
-        """
-        Initialize the aggregation worker.
+        """Initialize an aggregation worker for a given symbol and date range.
+
+        This constructor sets up the worker with a list of dates to process,
+        the global application configuration, and initializes the aggregation
+        engine for the specified trading symbol.
 
         Args:
-            symbol: Trading symbol.
-            dates: List of dates to process.
-            app_config: Global application configuration.
+            symbol (str): Trading symbol to aggregate.
+            dates (List[date]): List of trading dates to process.
+            app_config (AppConfig): Global application configuration containing
+                aggregation settings and paths.
         """
         # Set properties
         self.app_config = app_config
@@ -207,12 +252,15 @@ class AggregateWorker:
         self.engine = AggregateEngine(symbol, self.config)
 
     def run(self) -> bool:
-        """
-        Sequentially process all assigned dates.
+        """Process all assigned trading dates sequentially using the aggregation engine.
+
+        This method iterates over the worker's list of dates and aggregates
+        each day's CSV data into the master output file.
 
         Returns:
-            True if all dates processed successfully.
+            bool: True if all assigned dates were processed successfully.
         """
+
         # For each date
         for dt in self.dates:
             # Process date using engine
@@ -222,17 +270,28 @@ class AggregateWorker:
 
 
 def fork_aggregate(args: Tuple[str, List[date], AppConfig]) -> bool:
-    """
-    Multiprocessing-friendly entry point.
+    """Multiprocessing-safe entry point for running an aggregation job.
+
+    Designed for use with multiprocessing pools, this function initializes
+    an `AggregateWorker` for a specific trading symbol and list of dates
+    using the provided application configuration, then executes the
+    aggregation pipeline.
 
     Args:
-        args: Tuple containing (symbol, list of dates, app_config).
+        args (Tuple[str, List[date], AppConfig]): A tuple containing:
+            - symbol (str): Trading symbol to aggregate.
+            - dates (List[date]): List of trading dates to process.
+            - app_config (AppConfig): Global application configuration.
 
     Returns:
-        True if aggregation completed successfully.
+        bool: True if the aggregation pipeline completes successfully.
+
+    Raises:
+        ForkProcessError: If any exception occurs during worker initialization
+            or execution within the forked process.
     """
     try:
-        
+
         symbol, dates, app_config = args
         # Initialize worker
         worker = AggregateWorker(symbol, dates, app_config)
