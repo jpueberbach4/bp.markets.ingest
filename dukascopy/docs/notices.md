@@ -1,7 +1,5 @@
 MT4 is decoded. 
 
-"In the intricate tapestry of apparent chaos, true mastery lies not in imposing order upon the unknown, but in patiently decoding its hidden patterns—until one day, with quiet revelation, we declare: the enigma is unveiled, and what was once obscure now illuminates the path for all."
-
 **The data part is now complete. Only documentation remains.**
 
 ## Notice
