@@ -2,7 +2,6 @@ name: "Daily Traffic Logger"
 
 on:
   schedule:
-    # Changed to 23:00 UTC to ensure 'today's' data is processed by GitHub API
     - cron: '0 23 * * *'
   workflow_dispatch:
 
@@ -29,19 +28,11 @@ jobs:
           sudo chown -R $USER:$USER .
           sudo chmod -R 777 traffic/ || true
 
-      - name: Merge Stats
+      - name: Sync and Merge Stats
         run: |
-          # 1. Debug: Show what the API actually returned for today
-          echo "Checking new traffic data..."
-          [ -f traffic/views.csv ] && tail -n 5 traffic/views.csv || echo "No views.csv found"
+          git fetch origin stats
+          git checkout stats || git checkout -b stats origin/stats
           
-          # 2. Sync Repo State
-          mv traffic /tmp/traffic_new
-          git fetch origin main 
-          git reset --hard origin/main
-          git clean -fd
-          mv /tmp/traffic_new traffic
-
           mkdir -p .github/traffic
           cat << 'EOF' > merge_stats.py
           import csv
@@ -72,17 +63,14 @@ jobs:
                   reader = csv.DictReader(f)
                   id_col = get_id_col(reader)
                   if id_col:
-                      # Update fieldnames in case GitHub adds columns
                       fieldnames = reader.fieldnames 
                       for row in reader:
                           if row.get(id_col):
-                              # This ensures today's data overwrites or appends correctly
                               data[row[id_col]] = row
               
               if not data or not fieldnames: return
 
               id_col = fieldnames[0]
-              # Sort ensures chronological order
               sorted_keys = sorted(data.keys())
               with open(old_path, 'w', newline='') as f:
                   writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -95,19 +83,15 @@ jobs:
           EOF
           
           python3 merge_stats.py
-
-          # 3. Handle Plots and Cleanup
-          cp -f traffic/*.png .github/traffic/ 2>/dev/null || true
-          
-          # Removed manual 'git add' to let the 'add-and-commit' action handle it safely
           sudo rm -rf traffic merge_stats.py
 
-      - name: Commit and Push
+      - name: Commit and Push to Stats Branch
         uses: Endbug/add-and-commit@v9
         with:
           author_name: "GitHub Action"
           author_email: "action@github.com"
           message: "Update stats [skip ci]"
           add: ".github/traffic/*"
+          branch: stats
           pull: '--rebase --autostash -X theirs'
           push: true
