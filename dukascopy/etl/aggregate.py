@@ -24,7 +24,8 @@ from pathlib import Path
 from datetime import date, datetime
 from typing import Tuple, List
 
-from config.app_config import AppConfig
+from config.app_config import AppConfig, AggregateConfig
+from exceptions import *
 
 
 class AggregateEngine:
@@ -32,7 +33,7 @@ class AggregateEngine:
     Handles the low-level incremental aggregation of CSV data for a symbol.
     """
 
-    def __init__(self, symbol: str, app_config: AppConfig):
+    def __init__(self, symbol: str, config: AggregateConfig):
         """
         Initialize the aggregation engine.
 
@@ -40,9 +41,9 @@ class AggregateEngine:
             symbol: Trading symbol to aggregate.
             app_config: Global application configuration.
         """
+        # Set properties
         self.symbol = symbol
-        self.app_config = app_config
-        self.config = app_config.aggregate
+        self.config = config
         
         # Paths for index tracking and master output file
         self.index_path = Path(self.config.paths.data) / f"index/{self.symbol}.idx"
@@ -58,19 +59,20 @@ class AggregateEngine:
             - Input file position
             - Output file position
         """
-        if not self.index_path.exists():
-            self.write_index(datetime.utcfromtimestamp(0).date(), 0, 0)
-            return datetime.utcfromtimestamp(0).date(), 0, 0
-        
-        with open(self.index_path, 'r') as f_idx:
-            lines = f_idx.readlines()[:3]
-            if len(lines) != 3:
-                raise IOError(f"Index file {self.index_path} corrupted.")
+        try:
+            if not self.index_path.exists():
+                self.write_index(datetime.utcfromtimestamp(0).date(), 0, 0)
+                return datetime.utcfromtimestamp(0).date(), 0, 0
             
-            date_str, in_pos, out_pos = [line.strip() for line in lines]
-            return datetime.strptime(date_str, "%Y-%m-%d").date(), int(in_pos), int(out_pos)
+            with open(self.index_path, 'r') as f_idx:
+                lines = f_idx.readlines()[:3]
+                date_str, in_pos, out_pos = [line.strip() for line in lines]
+                return datetime.strptime(date_str, "%Y-%m-%d").date(), int(in_pos), int(out_pos)
 
-    def write_index(self, dt: date, input_position: int, output_position: int):
+        except (ValueError, IndexError) as e:
+            raise IndexCorruptionError(f"Corrupt index at {self.index_path}. Check for partial writes.") from e
+
+    def write_index(self, dt: date, input_pos: int, output_pos: int):
         """
         Atomically write the last processed date and file positions to the index file.
 
@@ -79,13 +81,23 @@ class AggregateEngine:
             input_position: Input file position after reading.
             output_position: Output file position after writing.
         """
+        if input_pos < 0 or output_pos < 0:
+            raise IndexValidationError(
+                f"Invalid offsets for {self.symbol}: IN={input_pos}, OUT={output_pos}"
+            )
         self.index_path.parent.mkdir(parents=True, exist_ok=True)
         temp_path = Path(f"{self.index_path}.tmp")
         
+        # Write state to idx file
         with open(temp_path, "w") as f:
-            f.write(f"{dt:%Y-%m-%d}\n{input_position}\n{output_position}")
+            f.write(f"{dt:%Y-%m-%d}\n{input_pos}\n{output_pos}")
+            # Flush to OS
             f.flush()
+            # Force persist to disk
+            if self.config.fsync:
+                os.fsync(f.fileno())
         
+        # Atomic replace
         os.replace(temp_path, self.index_path)
 
     def _resolve_input_path(self, dt: date) -> Path:
@@ -117,42 +129,57 @@ class AggregateEngine:
         if not input_path.exists():
             return False
 
+        # Read Index
         date_from, input_position, output_position = self.read_index()
 
-        # Skip already processed dates or reset input position for new dates
         if dt < date_from:
+            # Already processed date, return
             return False
+
         if dt > date_from:
+            # New date, start reading from beginning
             input_position = 0
 
-        if not self.output_path.exists():
-            self.output_path.parent.mkdir(parents=True, exist_ok=True)
-            self.output_path.touch()
+        try:
+            if not self.output_path.exists():
+                self.output_path.parent.mkdir(parents=True, exist_ok=True)
+                self.output_path.touch()
 
-        with open(self.output_path, "r+", encoding="utf-8") as f_out, \
-             open(input_path, "r", encoding="utf-8") as f_in:
+            with open(self.output_path, "r+", encoding="utf-8") as f_out, \
+                open(input_path, "r", encoding="utf-8") as f_in:
 
-            header = f_in.readline()
+                # Read header
+                header = f_in.readline()
 
-            if input_position > 0:
-                f_in.seek(input_position)
+                # We processed this file before, continue from last know position
+                if input_position > 0:
+                    f_in.seek(input_position)
 
-            # Rewind output file to last committed position
-            f_out.truncate(output_position)
-            f_out.seek(output_position)
+                # Crash-safety: rewind output file to last committed position
+                f_out.truncate(output_position)
+                f_out.seek(output_position)
 
-            if output_position == 0:
-                f_out.write(header)
-            
-            data = f_in.read()
-            if not data:
-                return False
+                # Write header when output is new file
+                if output_position == 0:
+                    f_out.write(header)
+                
+                # Slurp file contents
+                data = f_in.read()
+                if not data:
+                    return False
 
-            f_out.write(data)
-            f_out.flush()
-            
-            # Update index after writing
-            self.write_index(dt, f_in.tell(), f_out.tell())
+                # Write the data
+                f_out.write(data)
+                # Flush to OS
+                f_out.flush()
+                # Force persist to disk
+                if self.config.fsync:
+                    os.fsync(f_out.fileno())
+                
+                # Update index after writing
+                self.write_index(dt, f_in.tell(), f_out.tell())
+        except OSError as e:
+                raise TransactionError(f"I/O failure during aggregation of {self.symbol} for {dt}: {e}")
 
         return True
 
@@ -171,8 +198,13 @@ class AggregateWorker:
             dates: List of dates to process.
             app_config: Global application configuration.
         """
-        self.engine = AggregateEngine(symbol, app_config)
+        # Set properties
+        self.app_config = app_config
+        self.config = app_config.aggregate
         self.dates = dates
+
+        # Initialize engine
+        self.engine = AggregateEngine(symbol, self.config)
 
     def run(self) -> bool:
         """
@@ -181,8 +213,11 @@ class AggregateWorker:
         Returns:
             True if all dates processed successfully.
         """
+        # For each date
         for dt in self.dates:
+            # Process date using engine
             self.engine.process_date(dt)
+
         return True
 
 
@@ -196,6 +231,14 @@ def fork_aggregate(args: Tuple[str, List[date], AppConfig]) -> bool:
     Returns:
         True if aggregation completed successfully.
     """
-    symbol, dates, app_config = args
-    worker = AggregateWorker(symbol, dates, app_config)
-    return worker.run()
+    try:
+        
+        symbol, dates, app_config = args
+        # Initialize worker
+        worker = AggregateWorker(symbol, dates, app_config)
+        # Execute worker
+        return worker.run()
+
+    except Exception as e:
+        # Raise
+        raise ForkProcessError(f"Error on aggregate fork for {symbol}") from e

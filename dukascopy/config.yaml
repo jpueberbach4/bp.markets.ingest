@@ -8,6 +8,7 @@
 # 2. download: Retry/backoff settings, timeouts, rate limits, and paths for historical/live downloads.
 # 3. transform: Time-shifting, rounding, input/output paths, and preparation for aggregation/resampling.
 # 4. resample: Batch size, rounding precision, multi-timeframe resampling rules, and per-symbol overrides.
+# 5. builder: Path configuration for CSV/Parquet builder tool
 #
 # Purpose:
 # - Automate crash-resilient ETL pipelines for financial market data.
@@ -21,9 +22,12 @@
 # Note:
 # - Under development; features/settings may change.
 # - Paths are relative to project root unless specified otherwise.
+# - Fsync is more integrity but impacts performance quite a bit
+#   Advice: during initial full run, disable, enable in incremental mode.
 
 # Below you will find the configuration for the aggregate.py script. 
 aggregate:
+  fsync: false                        # Force flush to disk after each aggregation
   paths:
     data: data/aggregate/1m           # Output path for aggregate
     source: data/transform/1m         # Input path for aggregate

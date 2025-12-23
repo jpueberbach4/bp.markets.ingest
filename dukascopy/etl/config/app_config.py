@@ -115,6 +115,7 @@ class AggregatePaths:
 @dataclass
 class AggregateConfig:
     """Root configuration for the aggregation stage."""
+    fsync: bool = False
     paths: AggregatePaths = field(default_factory=AggregatePaths)
 
 
