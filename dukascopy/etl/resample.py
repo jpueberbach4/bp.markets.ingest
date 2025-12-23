@@ -832,3 +832,4 @@ def fork_resample(args) -> bool:
         raise ForkProcessError(f"Error on resample fork for {symbol}") from e
 
     return True
+

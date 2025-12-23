@@ -90,6 +90,7 @@ class ResampleSymbol:
     skip_timeframes: List[str] = field(default_factory=list)
     timeframes: Dict[str, ResampleTimeframe] = field(default_factory=dict)
     timezone: str = ""
+    server_timezone: str = ""
     sessions: Dict[str, ResampleSymbolTradingSession] = field(default_factory=dict, metadata={'yaml_key': 'sessions'})
 
 
@@ -516,6 +517,15 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleSy
         for session in symbol_override.sessions.values():
             session.timeframes.pop(ident, None)
         symbol_override.timeframes.pop(ident, None)
+
+    # Find the symbols server-timezone
+    # Bit hacky, but we need to check transform config for this
+    # Seperation of concerns broken
+    for name, timezone in app_config.transform.timezones.items():
+        # Check whether the symbol or the wildcard '*' belongs to this timezone group
+        if symbol in timezone.symbols or '*' in timezone.symbols:
+            symbol_override.server_timezone = name
+            break
 
     return symbol_override
 

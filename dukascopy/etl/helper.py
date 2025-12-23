@@ -288,16 +288,22 @@ class ResampleTracker:
             A ZoneInfo instance representing the MT4 server timezone
             (Etc/GMT-3 during DST, Etc/GMT-2 otherwise).
         """
-        # Use New York timezone as the reference for determining DST state
-        nyc_tz = zoneinfo.ZoneInfo("America/New_York")
+        # User has defined UTC timezone for the symbol, keep everything in UTC
+        if self.config.server_timezone.upper() in ["UTC", "ETC/UTC", "ETC/GMT"]:
+            return zoneinfo.ZoneInfo("UTC")
+
+        any_tz = zoneinfo.ZoneInfo(self.config.server_timezone)
 
         # Evaluate DST at 17:00 New York time, which corresponds to the MT4 rollover
-        nyc_dt = datetime.combine(dt, time(17, 0)).replace(tzinfo=nyc_tz)
+        any_dt = datetime.combine(dt, time(17, 0)).replace(tzinfo=any_tz)
 
-        # Select the MT4 GMT offset based on whether DST is active in New York
-        offset = 3 if nyc_dt.dst() != timedelta(0) else 2
+        # dst() returns a non-zero timedelta if DST is active
+        is_dst = any_dt.dst() != timedelta(0)
 
-        # Return the fixed GMT timezone used by the MT4 server
-        return zoneinfo.ZoneInfo(f"Etc/GMT-{offset}")
+        # Etc/GMT sign is inverted in Posix (GMT-3 is +3 hours)
+        # We only support a MT4 server that switches between GMT+2 and GMT+3
+        # If users want to support other timezones for the MT4 server, they can file
+        # a request through discussions.
+        return zoneinfo.ZoneInfo("Etc/GMT-3" if is_dst else "Etc/GMT-2")
 
 
