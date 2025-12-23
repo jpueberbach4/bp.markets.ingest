@@ -6,7 +6,7 @@ I’m currently finishing up the ETL/data work, which will be completed before C
 
 also...
 
-I am strengthening the setup and this also includes an OHLCV validation check. You can enable this check using the ```transform.validate``` flag in config.user.yaml (not yet available in main, it's coming). Currently it only prints if it finds anything "out of the ordinary". During testing, i ran the validation step, here is what i found:
+I am strengthening the setup and this also includes an OHLCV validation check. You can enable this check using the ```transform.validate``` flag in config.user.yaml. Currently it only prints if it finds anything "out of the ordinary". During testing, i ran the validation step, here is what i found:
 
 **Data Validation Error Count**
 
@@ -76,6 +76,8 @@ Context:
 Time to process: 5 minutes 42 seconds
 
 >Currently it only logs if the flag is set to true. In a later version skip, log (true fallback), break and correct (or combinations) will be supported.
+
+Additionally, custom exceptions and fsync flag are introduced. Fsync increases data durability at the expense of performance. Use wisely. I don't use it, since a full rebuild just takes little time, on my setup. But if you are running many symbols, after initial run, you might want to set fsync to true on all stages.
 
 ## Status per 22 December 2025
 

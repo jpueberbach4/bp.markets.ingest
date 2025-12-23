@@ -5,7 +5,11 @@
  File:        aggregate.py
  Author:      JP Ueberbach
  Created:     2025-12-19
- Description: Conversion to OOP - Incremental OHLCV aggregation engine.
+ Updated:     2025-12-23
+              Strengthening of code
+              - Optional fsync
+              - Custom exceptions for better traceability
+ Description: Incremental OHLCV aggregation engine.
 
               This module provides:
               - AggregateEngine: Handles incremental appending of daily CSVs 
