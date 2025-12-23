@@ -6,7 +6,7 @@ MT4 is decoded.
 
 ## Notice
 
-The repository at https://github.com/Shadowp2522/bp.markets.ingest is a clone. The jpueberbach4 version is the official project, and I cannot vouch for the safety of the clone.
+The repository at https://github.com/Shadowp2522/bp.markets.ingest is a clone with a weird 1.3 MB zipfile in there. The jpueberbach4 version is the official project, and I cannot vouch for the safety of the clone.
 
 ## Notice
 
