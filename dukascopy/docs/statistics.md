@@ -1,20 +1,21 @@
 ## Project Statistics (Logical SLOC)
 
-As per 20 december 2025
+As per 23 december 2025
 
 ### Project Statistics (Logical SLOC) - ETL
 
 | File Name | Code Lines | Core Responsibility |
 | :--- | :---: | :--- |
-| `app_config.py` | 172 | Recursive YAML resolving and dataclass mapping. |
-| `resample.py` | 156 | Pointer-based resampling state machine & "Bugs-Bunnies" logic. |
-| `helper.py` | 118 | MT4 server time math, session tracking, and path resolution. |
-| `download.py` | 104 | HTTP management, rate limiting, and JSON delta merging. |
-| `run.py` | 92 | Multiprocessing orchestration and pipeline sequencing. |
-| `transform.py` | 68 | Vectorized JSON-to-OHLC conversion using NumPy/Pandas. |
-| `aggregate.py` | 64 | Incremental CSV appending with crash-safe index tracking. |
-| `dst.py` | 34 | DST offset lookups and symbol-to-timezone mapping. |
-| **Total Project** | **808** | **Logical Source Lines of Code** |
+| `resample.py` | 198 | Pointer-based resampling state machine & "Bugs-Bunnies" logic. |
+| `transform.py` | 115 | Vectorized JSON-to-OHLC conversion using NumPy/Pandas. |
+| `app_config.py` | 112 | Recursive YAML resolving and dataclass mapping. |
+| `run.py` | 104 | Multiprocessing orchestration and pipeline sequencing. |
+| `helper.py` | 85 | MT4 server time math, session tracking, and path resolution. |
+| `download.py` | 81 | HTTP management, rate limiting, and JSON delta merging. |
+| `aggregate.py` | 67 | Incremental CSV appending with crash-safe index tracking. |
+| `dst.py` | 18 | DST offset lookups and symbol-to-timezone mapping. |
+| `exceptions.py` | 14 | Custom exception hierarchy for ETL traceability. |
+| **Total Project** | **794** | **Logical Source Lines of Code** |
 
 ### Project Statistics (Logical SLOC) - Batch Extraction Utility
 
@@ -29,3 +30,11 @@ As per 20 december 2025
 | `merge.py` | 42 | High-speed DuckDB consolidation of partitioned temp files. |
 | `tos.py` | 24 | Interactive Terms of Service enforcement and cache-file marking. |
 | **Total Project** | **504** | **Logical Source Lines of Code** |
+
+### Project Statistics (Logical SLOC) - HTTP-service
+
+Under development
+
+### Project Statistics (Logical SLOC) - Replay
+
+Under development
