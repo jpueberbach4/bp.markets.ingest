@@ -28,10 +28,8 @@ from pathlib import Path
 from typing import Tuple
 
 from dst import get_symbol_time_shift_ms
-from config.app_config import AppConfig, TransformConfig, TransformSymbolProcessingStep, load_app_config
-from dataclasses import asdict
-import yaml
-
+from config.app_config import AppConfig, TransformConfig, TransformSymbolProcessingStep
+from exceptions import *
 
 class TransformEngine:
     """
@@ -46,28 +44,31 @@ class TransformEngine:
         Args:
             config (TransformConfig): Transform-related configuration values.
         """
+        # Set properties
         self.config = config
 
     def _apply_post_processing(self, df: pd.DataFrame, step: TransformSymbolProcessingStep) -> pd.DataFrame:
-        """Apply post-processing transformations to a DataFrame column.
+        """Apply a post-processing transformation to a DataFrame column.
 
-        Currently supports multiplying a specified column by a scalar value.
+        Currently, this method supports multiplying a specified column by a scalar
+        value and rounding the result according to the configured precision.
 
         Args:
-            df (pd.DataFrame): Input DataFrame to be transformed.
-            step (TransformSymbolProcessingStep): Transformation step defining
-                the action to apply, the target column, and the value to use.
+            df (pd.DataFrame): The input DataFrame to post-process.
+            step (TransformSymbolProcessingStep): Definition of the transformation
+                to apply, including the action, target column, and scalar value.
 
         Returns:
-            pd.DataFrame: The transformed DataFrame.
+            pd.DataFrame: The DataFrame after the post-processing transformation
+            has been applied.
 
         Raises:
-            ValueError: If the transformation action is not supported.
-            KeyError: If the specified column does not exist in the DataFrame.
+            TransformLogicError: If the specified transformation action is not supported.
+            ProcessingError: If the target column does not exist in the DataFrame.
         """
         # Validate that the requested action is supported
-        if step.action not in ["multiply"]:
-            raise ValueError(f"Step action {step.action} for transform unsupported")
+        if step.action not in ["multiply", "validate"]:
+            raise TransformLogicError(f"Unsupported transform action: {step.action}")
 
         # Apply multiplication transformation
         if step.action == "multiply":
@@ -79,57 +80,86 @@ class TransformEngine:
                 df[step.column] = np.round(df[step.column], self.config.round_decimals)
             else:
                 # Raise an error if the column is missing
-                raise KeyError(
-                    f"Step action {step.action} for transform, column '{step.column}' not found in DataFrame"
+                raise ProcessingError(
+                    f"Column '{step.column}' not found during {step.action} step"
                 )
+
+        if step.action == "validate":
+            # Logical checks for OHLC integrity
+            errors = []
+            if not (df['high'] >= df['low']).all():
+                errors.append("High price below Low price")
+            if not (df['high'] >= df[['open', 'close']].max(axis=1)).all():
+                errors.append("High price below Open or Close")
+            if not (df['low'] <= df[['open', 'close']].min(axis=1)).all():
+                errors.append("Low price above Open or Close")
+            if (df[['open', 'high', 'low', 'close']] < 0).any().any():
+                errors.append("Negative prices detected")
+
+            if errors:
+                # Raise your custom exception with details
+                raise DataValidationError(f"OHLC Integrity Failure: {', '.join(errors)}")
 
         # Return the modified DataFrame
         return df
 
 
     def process_json(self, data: dict, dt: date, symbol: str) -> pd.DataFrame:
-        """
-        Converts a Dukascopy JSON delta payload into a normalized OHLCV DataFrame.
+        """Convert a Dukascopy delta-encoded JSON payload into an OHLCV DataFrame.
 
-        This method reconstructs OHLC values using cumulative delta math,
-        applies symbol-specific time shifts, filters invalid candles, and
-        formats timestamps in a vectorized manner for performance.
+        This method reconstructs timestamps and OHLC prices using cumulative
+        delta calculations, applies symbol- and date-specific time shifts
+        (e.g., DST handling), filters out non-trading candles, rounds prices
+        according to configuration, and applies optional symbol-specific
+        post-processing steps.
+
+        All operations are vectorized for performance.
 
         Args:
-            data (dict): Parsed JSON payload containing delta-encoded market data.
-            dt (date): Trading date associated with the data.
-            symbol (str): Trading symbol being processed.
+            data (dict): Parsed Dukascopy JSON payload containing delta-encoded
+                market data fields (e.g., times, opens, highs, lows, closes, volumes).
+            dt (date): Trading date associated with the payload, used for resolving
+                symbol-specific time shifts.
+            symbol (str): Trading symbol for which the data is being processed.
 
         Returns:
-            pandas.DataFrame: Normalized OHLCV data with columns:
+            pd.DataFrame: A normalized OHLCV DataFrame with the following columns:
                 ['time', 'open', 'high', 'low', 'close', 'volume'].
+
+        Raises:
+            ProcessingError: If the JSON schema is malformed, required fields are
+                missing, or any step of the vectorized transformation or
+                post-processing fails.
         """
         try:
             # Resolve symbol- and date-specific timestamp shift (e.g. DST handling)
             time_shift_ms = get_symbol_time_shift_ms(dt, symbol, self.config)
+            try:
+                # Reconstruct timestamps using cumulative deltas
+                times = (
+                    np.cumsum(np.array(data["times"], dtype=np.int64) * data["shift"])
+                    + (data["timestamp"] + time_shift_ms)
+                )
 
-            # Reconstruct timestamps using cumulative deltas
-            times = (
-                np.cumsum(np.array(data["times"], dtype=np.int64) * data["shift"])
-                + (data["timestamp"] + time_shift_ms)
-            )
+                # Reconstruct OHLC values using cumulative delta math
+                opens = data["open"] + np.cumsum(
+                    np.array(data["opens"], dtype=np.float64) * data["multiplier"]
+                )
+                highs = data["high"] + np.cumsum(
+                    np.array(data["highs"], dtype=np.float64) * data["multiplier"]
+                )
+                lows = data["low"] + np.cumsum(
+                    np.array(data["lows"], dtype=np.float64) * data["multiplier"]
+                )
+                closes = data["close"] + np.cumsum(
+                    np.array(data["closes"], dtype=np.float64) * data["multiplier"]
+                )
 
-            # Reconstruct OHLC values using cumulative delta math
-            opens = data["open"] + np.cumsum(
-                np.array(data["opens"], dtype=np.float64) * data["multiplier"]
-            )
-            highs = data["high"] + np.cumsum(
-                np.array(data["highs"], dtype=np.float64) * data["multiplier"]
-            )
-            lows = data["low"] + np.cumsum(
-                np.array(data["lows"], dtype=np.float64) * data["multiplier"]
-            )
-            closes = data["close"] + np.cumsum(
-                np.array(data["closes"], dtype=np.float64) * data["multiplier"]
-            )
-
-            # Volume is absolute, not delta-based
-            volumes = np.array(data["volumes"], dtype=np.float64)
+                # Volume is absolute, not delta-based
+                volumes = np.array(data["volumes"], dtype=np.float64)
+            
+            except KeyError as e:
+                raise ProcessingError(f"Malformed JSON schema for {symbol}: missing key {e}")
 
             # Filter out zero-volume candles (gaps / non-trading periods)
             mask = volumes != 0.0
@@ -157,25 +187,33 @@ class TransformEngine:
                 }
             )
 
-            # Apply post-processing
-            if self.config.symbols:
-                sym_cfg = self.config.symbols.get(symbol)
-                if sym_cfg and sym_cfg.post:
-                    for sym_step in sym_cfg.post.values():
-                        # This is dirty. YAML config loading to correct dataclasses is an utterly hell in python
-                        # Todo: check if there is a default project which simplifies this to dataclass loading
-                        #       otherwise, perhaps second project?
-                        if isinstance(sym_step, dict):
-                            sym_step = TransformSymbolProcessingStep(**sym_step)
 
-                        full_transformed = self._apply_post_processing(full_transformed, sym_step)
+            sym_cfg = self.config.symbols.get(symbol) if self.config.symbols else None
+            
+            # Determine post-processing steps
+            steps = []
+            if sym_cfg and sym_cfg.post:
+                # Convert dicts to Dataclasses if they aren't already
+                steps = [
+                    TransformSymbolProcessingStep(**s) if isinstance(s, dict) else s 
+                    for s in sym_cfg.post.values()
+                ]
+
+            # Inject the validation step dynamically if the flag is enabled
+            if self.config.validate:
+                steps.append(TransformSymbolProcessingStep(action="validate"))
+
+            # Apply post-processing
+            for step in steps:
+                full_transformed = self._apply_post_processing(full_transformed, step)
 
             # Return dataframe
             return full_transformed
-
+        except (DataValidationError, ProcessingError, TransformLogicError):
+            raise
         except Exception as e:
-            # Explicitly propagate
-            raise e
+            
+            raise ProcessingError(f"Vectorized transformation failed for {symbol}: {e}") from e
 
 
 class TransformWorker:
@@ -191,26 +229,31 @@ class TransformWorker:
         Args:
             app_config (AppConfig): Global application configuration.
         """
+        # Set properties
         self.app_config = app_config
         self.config = app_config.transform
         self.engine = TransformEngine(self.config)
 
     def resolve_paths(self, symbol: str, dt: date) -> Tuple[Path, Path]:
-        """
-        Resolves source JSON and target CSV paths for a symbol and date.
+        """Resolve source JSON and target CSV paths for a symbol and trading date.
 
-        Prefers historical data when available and automatically removes
-        redundant live files once historical data arrives.
+        This method prefers historical data when available. If a historical JSON
+        file exists, any corresponding live JSON and CSV files are removed to
+        prevent duplicate or stale data usage. If historical data is not present,
+        the method falls back to live data paths.
 
         Args:
-            symbol (str): Trading symbol.
-            dt (date): Trading date.
+            symbol (str): Trading symbol for which paths are being resolved.
+            dt (date): Trading date used to construct date-partitioned paths.
 
         Returns:
-            Tuple[Path, Path]: Source JSON path and target CSV path.
+            Tuple[Path, Path]: A tuple containing:
+                - Path to the source JSON file.
+                - Path to the target CSV file.
 
         Raises:
-            FileNotFoundError: If no JSON source file exists.
+            DataNotFoundError: If neither a historical nor a live JSON source file
+                exists for the given symbol and date.
         """
         # Historical cache and output paths
         hist_cache = (
@@ -243,18 +286,29 @@ class TransformWorker:
             return live_cache, live_data
 
         # No source data available
-        raise FileNotFoundError(f"No JSON source found for {symbol} on {dt}")
+        raise DataNotFoundError(f"No JSON source found for {symbol} on {dt}")
 
     def run(self, symbol: str, dt: date) -> bool:
-        """
-        Executes the full transformation pipeline for a single symbol and date.
+        """Run the end-to-end transformation pipeline for a symbol and date.
+
+        This method resolves input and output paths, loads the source JSON payload,
+        transforms delta-encoded market data into normalized OHLCV format, and
+        writes the result to disk using an atomic file replacement strategy.
 
         Args:
-            symbol (str): Trading symbol.
-            dt (date): Trading date.
+            symbol (str): Trading symbol to process.
+            dt (date): Trading date associated with the transformation.
 
         Returns:
-            bool: True if transformation succeeded, False otherwise.
+            bool: True if the transformation and write completed successfully.
+
+        Raises:
+            DataNotFoundError: If no source JSON file is available for the given
+                symbol and date.
+            ProcessingError: If the JSON payload cannot be transformed into
+                normalized OHLCV data.
+            TransactionError: If a disk I/O error occurs during output writing or
+                if an unexpected runtime error is encountered.
         """
         try:
             # Resolve source JSON and target CSV paths
@@ -272,29 +326,65 @@ class TransformWorker:
 
             # Atomic write: write to temp file, then replace
             temp_path = target_path.with_suffix(".tmp")
-            df.to_csv(temp_path, index=False, header=True, sep=",")
+
+            with open(temp_path, "w", encoding="utf-8", newline="") as f:
+                # Write the dataframe to the file handle
+                df.to_csv(f, index=False, header=True, sep=",")
+                # Flush to OS
+                f.flush()
+                # Force flush to disk
+                if self.config.fsync:
+                    os.fsync(f.fileno())
+
             os.replace(temp_path, target_path)
 
             return True
 
-        except Exception:
-            # Explicitly propagate
-            raise e
+        except (DataNotFoundError, ProcessingError):
+            raise
+        except OSError as e:
+            raise TransactionError(f"Disk I/O failure writing {symbol}: {e}")
+        except Exception as e:
+            raise TransactionError(f"Unexpected worker failure for {symbol}: {e}")
 
 
 def fork_transform(args: tuple) -> bool:
-    """
-    Multiprocessing-friendly entry point for running transformations.
+    """Multiprocessing-safe entry point for executing a single transformation job.
+
+    This function is designed to be used with multiprocessing pools. It
+    initializes a transformation worker from the provided application
+    configuration and executes the transformation pipeline for a single
+    symbol and trading date.
 
     Args:
-        args (tuple): Tuple of (symbol, date, app_config).
+        args (tuple): Tuple containing:
+            - symbol (str): Trading symbol to process.
+            - dt (date): Trading date associated with the job.
+            - app_config: Application configuration used to initialize the worker.
 
     Returns:
-        bool: True if processing succeeded, False otherwise.
+        bool: True if the transformation completed successfully.
+
+    Raises:
+        ForkProcessError: If any exception occurs during worker initialization
+            or execution within the forked process.
     """
-    symbol, dt, app_config = args
-    worker = TransformWorker(app_config)
-    return worker.run(symbol, dt)
+    try:
+        symbol, dt, app_config = args
+        # Initialize the worker
+        worker = TransformWorker(app_config)
+        
+        # Execute the worker
+        return worker.run(symbol, dt)
+    
+    except DataValidationError as e:
+        # Todo
+        print(f"Data validation error on {symbol} at date {dt}: {e}")
+        return False 
+    except Exception as e:   
+        import traceback
+        traceback.print_exc()
+        raise ForkProcessError(f"Error on transform fork for {symbol}: {e}") from e
 
 
     

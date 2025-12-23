@@ -167,6 +167,8 @@ class TransformConfig:
     """Root configuration for the transform stage."""
     time_shift_ms: int = 0
     round_decimals: int = 10
+    fsync: bool = False
+    validate: bool = False
     paths: TransformPaths = field(default_factory=TransformPaths)
     timezones: Dict[str, TransformTimezone] = field(default_factory=dict)
     symbols: Dict[str, TransformSymbol] = field(default_factory=dict)

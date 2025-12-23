@@ -48,6 +48,8 @@ download:
 transform:
   time_shift_ms: 7200000              # How many milliseconds should we shift (0=UTC, 7200000=GMT+2 (eg MT4 Dukascopy) )
   round_decimals: 8                   # Number of decimals to round OHLCV to
+  fsync: false                        # Force flush to disk after each transformation
+  validate: false                     # Force validation of OHLCV values
   paths:
     data: data/transform/1m           # Output directory for transform
     historic: cache                   # Historical downloads
