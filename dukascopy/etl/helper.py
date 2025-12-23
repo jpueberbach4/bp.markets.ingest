@@ -289,9 +289,17 @@ class ResampleTracker:
             (Etc/GMT-3 during DST, Etc/GMT-2 otherwise).
         """
         # User has defined UTC timezone for the symbol, keep everything in UTC
-        # If symbol has timezone, then UTC will be used as base timezone to calc against
+        # You can now define different origins based on sessions defined in UTC
         # I practically cannot think of a usecase for this, maybe for forex or crypto
+        #
         # But the rest: no
+        # 
+        # I asked AI if it could think of something for this usecase. It came up with 
+        # the following:
+        #
+        # - Intraday Session Alignment for "Broken" Timeframes. (HUH!)
+        #
+        # Anyhow, supported. Good luck!
         if self.config.server_timezone.upper() in ["UTC", "ETC/UTC", "ETC/GMT"]:
             return zoneinfo.ZoneInfo("UTC")
 
