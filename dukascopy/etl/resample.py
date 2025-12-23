@@ -4,7 +4,11 @@
 ===============================================================================
  File:        resample.py
  Author:      JP Ueberbach
- Created:     2025-12-22
+ Created:     2025-12-19
+ Updated:     2025-12-23
+              Strengthening of code
+              - Optional fsync
+              - Custom exceptions for better traceability
 
  Description:
      Incremental, crash-safe OHLCV resampling engine with session awareness.
@@ -261,12 +265,7 @@ class ResampleEngine:
 
         if step.action != "merge":
             raise ValueError(f"Unsupported post-processing action {step.action}")
-            
-        # TODO: implement from_date and to_date
-        #       generate a mask where from_date <= date <= to_date
-        #       then use mask as primary filter and endswith as secondary filter
-        #       gives a positions array, continue regular logic 
-            
+
         offset = step.offset
         for ends_with in step.ends_with:
             positions = np.where(df.index.str.endswith(ends_with))[0]
