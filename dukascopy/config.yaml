@@ -63,6 +63,7 @@ transform:
 resample:
   round_decimals: 8                   # Number of decimals to round OHLCV to
   batch_size: 250000                  # Maximum number of lines to read per batch
+  fsync: false                        # Force flush to disk after each batch
   paths:
     data: data/resample               # Output directory for resampled timeframes
   timeframes:

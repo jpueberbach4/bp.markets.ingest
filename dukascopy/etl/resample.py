@@ -388,7 +388,8 @@ class ResampleEngine:
                 # Flush to OS
                 f.flush()
                 # Force persist to disk
-                os.fsync(f.fileno())
+                if self.config.fsync:
+                    os.fsync(f.fileno())
 
             # Atomic replace
             os.replace(temp_path, self.index_path)
@@ -781,7 +782,8 @@ class ResampleWorker:
                         # Flush to OS
                         f_out.flush()
                         # Force persist to disk
-                        os.fsync(f_out.fileno())
+                        if self.config.fsync:
+                            os.fsync(f_out.fileno())
                         # Read the position in output file
                         output_pos = f_out.tell()
                         # Persist progress after writing confirmed bars

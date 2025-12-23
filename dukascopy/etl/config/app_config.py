@@ -86,6 +86,7 @@ class ResampleSymbol:
     """Per-symbol overrides for resampling behavior."""
     round_decimals: Optional[int] = None
     batch_size: Optional[int] = None
+    fsync: Optional[bool] = None
     skip_timeframes: List[str] = field(default_factory=list)
     timeframes: Dict[str, ResampleTimeframe] = field(default_factory=dict)
     timezone: str = ""
@@ -97,6 +98,7 @@ class ResampleConfig:
     """Root configuration for the resampling stage."""
     round_decimals: int = 8
     batch_size: int = 250_000
+    fsync: bool = False
     paths: ResamplePaths = field(default_factory=ResamplePaths)
     timeframes: Dict[str, ResampleTimeframe] = field(default_factory=dict)
     symbols: Dict[str, ResampleSymbol] = field(default_factory=dict)
@@ -414,6 +416,9 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleSy
     symbol_override.batch_size = (
         symbol_override.batch_size or merged_config.batch_size
     )
+    # Optional fsync safety feature (forces flushing to disk)
+    if symbol_override.fsync is None:
+        symbol_override.fsync = merged_config.fsync
 
     def normalize_tf(tf: ResampleTimeframe) -> ResampleTimeframe:
         """Normalize timeframe pre/post processing steps.
