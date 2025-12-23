@@ -104,20 +104,27 @@ class AggregateEngine:
                 f"Invalid offsets for {self.symbol}: IN={input_pos}, OUT={output_pos}"
             )
             
-        self.index_path.parent.mkdir(parents=True, exist_ok=True)
-        temp_path = Path(f"{self.index_path}.tmp")
+        try:
+            self.index_path.parent.mkdir(parents=True, exist_ok=True)
+            temp_path = Path(f"{self.index_path}.tmp")
+            
+            # Write state to idx file
+            with open(temp_path, "w") as f:
+                f.write(f"{dt:%Y-%m-%d}\n{input_pos}\n{output_pos}")
+                # Flush to OS
+                f.flush()
+                # Force persist to disk
+                if self.config.fsync:
+                    os.fsync(f.fileno())
+            
+            # Atomic replace
+            os.replace(temp_path, self.index_path)
         
-        # Write state to idx file
-        with open(temp_path, "w") as f:
-            f.write(f"{dt:%Y-%m-%d}\n{input_pos}\n{output_pos}")
-            # Flush to OS
-            f.flush()
-            # Force persist to disk
-            if self.config.fsync:
-                os.fsync(f.fileno())
-        
-        # Atomic replace
-        os.replace(temp_path, self.index_path)
+        except OSError as e:
+            # Disk full, Permission denied, etc.
+            raise IndexWriteError(
+                f"Failed to persist index for {self.symbol}: {e}"
+            ) from e
 
     def _resolve_input_path(self, dt: date) -> Path:
         """Resolve the input CSV file path for a given date.
@@ -260,10 +267,14 @@ class AggregateWorker:
             bool: True if all assigned dates were processed successfully.
         """
 
-        # For each date
-        for dt in self.dates:
-            # Process date using engine
-            self.engine.process_date(dt)
+        try:
+            # For each date
+            for dt in self.dates:
+                # Process date using engine
+                self.engine.process_date(dt)
+
+        except (IndexCorruptionError, TransactionError, Exception) as e:
+            raise
 
         return True
 

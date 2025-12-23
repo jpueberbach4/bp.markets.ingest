@@ -707,8 +707,7 @@ class ResampleWorker:
                 self._execute_engine(engine)
 
         except (DataNotFoundError, IndexCorruptionError, ProcessingError, Exception) as e:
-            # Extreme hard fail and big fat message
-            print(f"CRITICAL SYSTEM ERROR for {self.symbol}: {e}")
+            # Hard fail
             raise
                 
                 

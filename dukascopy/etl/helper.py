@@ -239,7 +239,6 @@ class ResampleTracker:
 
                 # Calculate when from_date and to_date is set on a session
                 # Question: when is session active in config.timezone datetime
-                # I didnt say it was easy....
                 from_dt_local = None
                 to_dt_local = None
 
