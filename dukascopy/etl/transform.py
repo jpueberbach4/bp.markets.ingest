@@ -10,7 +10,7 @@
               - Optional OHLCV validation
               - Optional fsync
               - Custom exceptions for better traceability
-              
+
  Description: Transform Dukascopy Historical JSON delta
               format into normalized OHLC CSV files. Supports vectorized
               computation, multiprocessing, and progress tracking.
@@ -245,7 +245,6 @@ class TransformWorker:
     """
 
     def __init__(self, dt: date, symbol: str, app_config: AppConfig):
-def __init__(self, dt: date, symbol: str, app_config: AppConfig):
         """Initialize a transform worker for a specific symbol and trading date.
 
         This constructor binds the worker to a single trading date and symbol,
