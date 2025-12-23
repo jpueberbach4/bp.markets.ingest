@@ -313,7 +313,7 @@ class TransformWorker:
             return live_cache, live_data
 
         # No source data available
-        raise DataNotFoundError(f"No JSON source found for {symbol} on {dt}")
+        raise DataNotFoundError(f"No JSON source found for {self.symbol} on {self.dt}")
 
     def run(self) -> bool:
         """Execute the end-to-end transformation pipeline for the worker's symbol and date.
