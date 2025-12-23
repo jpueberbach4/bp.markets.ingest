@@ -24,7 +24,19 @@
 # - Paths are relative to project root unless specified otherwise.
 # - Fsync is more integrity but impacts performance quite a bit
 #   Advice: during initial full run, disable, enable in incremental mode.
-
+#
+# fsync: Force physical disk synchronization after every file write (Gemini).
+# 
+# Set to 'true' for:
+#   - Live trading environments where every candle is critical.
+#   - Environments prone to power failure or OS crashes.
+#   - Shared network drives (NAS/NFS) where data persistence is managed remotely.
+# 
+# Set to 'false' (Default) for:
+#   - Bulk historical rebuilds (massive performance gain).
+#   - Local SSDs where data can be easily regenerated if a crash occurs.
+#   - Minimizing wear on consumer-grade SSDs.
+#
 # Below you will find the configuration for the aggregate.py script. 
 aggregate:
   fsync: false                        # Force flush to disk after each aggregation
