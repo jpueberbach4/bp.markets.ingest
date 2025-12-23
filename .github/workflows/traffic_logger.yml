@@ -11,6 +11,8 @@ permissions:
 jobs:
   update-stats:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -28,12 +30,18 @@ jobs:
           sudo chown -R $USER:$USER .
           sudo chmod -R 777 traffic/ || true
 
-      - name: Sync and Merge Stats
+      - name: Pivot to Stats Branch and Merge
         run: |
+          mkdir -p /tmp/traffic_payload
+          cp -r traffic/* /tmp/traffic_payload/
+          
           git fetch origin stats
           git checkout stats || git checkout -b stats origin/stats
           
+          mkdir -p traffic
+          cp -r /tmp/traffic_payload/* traffic/
           mkdir -p .github/traffic
+          
           cat << 'EOF' > merge_stats.py
           import csv
           import os
@@ -45,7 +53,6 @@ jobs:
               
               data = {}
               fieldnames = []
-
               def get_id_col(reader):
                   return reader.fieldnames[0] if reader.fieldnames else None
 
@@ -69,7 +76,6 @@ jobs:
                               data[row[id_col]] = row
               
               if not data or not fieldnames: return
-
               id_col = fieldnames[0]
               sorted_keys = sorted(data.keys())
               with open(old_path, 'w', newline='') as f:
@@ -82,15 +88,19 @@ jobs:
           merge_csv('views')
           EOF
           
+          # 5. Execute Merge and Move Plots
           python3 merge_stats.py
-          sudo rm -rf traffic merge_stats.py
+          cp -f traffic/*.png .github/traffic/ 2>/dev/null || true
+          
+          # 6. Final Cleanup before commit
+          rm -rf traffic merge_stats.py
 
       - name: Commit and Push to Stats Branch
         uses: Endbug/add-and-commit@v9
         with:
           author_name: "GitHub Action"
           author_email: "action@github.com"
-          message: "Update stats [skip ci]"
+          message: "Update stats and plots [skip ci]"
           add: |
             .github/traffic/*.csv
             .github/traffic/*.png
