@@ -88,11 +88,9 @@ jobs:
           merge_csv('views')
           EOF
           
-          # 5. Execute Merge and Move Plots
           python3 merge_stats.py
           cp -f traffic/*.png .github/traffic/ 2>/dev/null || true
           
-          # 6. Final Cleanup before commit
           rm -rf traffic merge_stats.py
 
       - name: Commit and Push to Stats Branch
