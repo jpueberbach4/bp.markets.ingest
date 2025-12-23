@@ -4,6 +4,8 @@ MT4 is decoded.
 
 I am very pleased with the results of this effort.
 
+> One more open issue. The Etc/GMT session support, one more QA validation pass and then i am locking main. I will see what i can do about that automatic statistics merge (eg create a dedicated branch for it). 
+
 ## Status per 23 December 2025
 
 I’m currently finishing up the ETL/data work, which will be completed before Christmas. Once that’s done, the main branch will become stable, and new features will be developed through regular feature branches. The code is now used by many people, so stability is crucial. That said, daily repository statistics are still being merged into main, and there’s a specific reason for this approach.
