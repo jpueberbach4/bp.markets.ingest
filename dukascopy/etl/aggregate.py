@@ -19,7 +19,6 @@
 ===============================================================================
 """
 import os
-import pandas as pd
 from pathlib import Path
 from datetime import date, datetime
 from typing import Tuple, List
@@ -33,7 +32,7 @@ class AggregateEngine:
     Handles the low-level incremental aggregation of CSV data for a symbol.
     """
 
-def __init__(self, symbol: str, config: AggregateConfig):
+    def __init__(self, symbol: str, config: AggregateConfig):
         """Initialize the aggregation engine for a specific trading symbol.
 
         This constructor sets up symbol-specific configuration, as well as
