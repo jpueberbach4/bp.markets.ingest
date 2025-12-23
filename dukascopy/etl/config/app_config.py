@@ -179,10 +179,25 @@ class TransformConfig:
 
 
 @dataclass
+class OrchestratorPaths:
+    """Filesystem paths used by the transform pipeline."""
+    downloads: str = "cache"
+    transforms: str = "data/transform/1m"
+    locks: str = "data/locks"
+
+@dataclass
+class OrchestratorConfig:
+    """Root configuration for the orchestrator."""
+    num_processes: Optional[int] = None
+    paths: OrchestratorPaths = field(default_factory=OrchestratorPaths)
+
+
+@dataclass
 class AppConfig:
     """Top-level application configuration."""
     aggregate: AggregateConfig = field(default_factory=AggregateConfig)
     download: DownloadConfig = field(default_factory=DownloadConfig)
+    orchestrator: OrchestratorConfig = field(default_factory=OrchestratorConfig)
     resample: ResampleConfig = field(default_factory=ResampleConfig)
     transform: TransformConfig = field(default_factory=TransformConfig)
 

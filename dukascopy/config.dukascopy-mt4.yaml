@@ -60,6 +60,14 @@ download:
     historic: cache                   # Historical downloads
     live: data/temp                   # Live downloads
 
+## Below you will find the configuration for the orchestrator script
+orchestrator:
+  # num_processes: 8                  # Override maximum number of cores to use
+  paths:
+    downloads: cache                  # Output path for downloads
+    locks: data/locks                 # Lock files are stored here
+    transforms: data/transform/1m     # Output path for transform
+
 # Below you will find the configuration for the transform.py script. 
 transform:
   time_shift_ms: 7200000              # How many milliseconds should we shift (0=UTC, 7200000=GMT+2 (eg MT4 Dukascopy) )

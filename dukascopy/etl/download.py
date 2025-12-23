@@ -32,6 +32,7 @@ from pathlib import Path
 from typing import Tuple, Optional
 
 from config.app_config import AppConfig, DownloadConfig
+from exceptions import *
 
 class DownloadEngine:
     """
@@ -136,7 +137,7 @@ class DownloadEngine:
                     time.sleep(wait_time)
                     continue
 
-                raise e
+                raise
 
         return ""
 
@@ -286,7 +287,7 @@ class DownloadWorker:
             return True
 
         except Exception as e:
-            raise e
+            raise
 
 
 def fork_download(args: tuple) -> bool:
@@ -304,6 +305,6 @@ def fork_download(args: tuple) -> bool:
         worker = DownloadWorker(app_config)
         return worker.run(symbol, dt)
     except Exception as e:
-        # Explicitly propagate
-        raise e
+        # Raise
+        raise ForkProcessError(f"Error on download fork for {symbol}") from e
 

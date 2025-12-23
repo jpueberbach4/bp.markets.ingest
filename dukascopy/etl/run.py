@@ -47,11 +47,6 @@ import resample
 # Start date for ETL processing in "YYYY-MM-DD"
 START_DATE =  None
 
-# Paths for cached and transformed data
-CACHE_PATH = "cache"                # Cache of downloaded JSON HST files
-DATA_PATH = "data/transform/1m"     # Output path for transformed OHLC CSV files
-LOCK_PATH = "data/locks"                 # Where to store run.lock
-
 # Number of worker processes for parallel stages
 NUM_PROCESSES = os.cpu_count()
 
@@ -164,24 +159,35 @@ def main():
     2. Execute download, transform, and aggregate stages in parallel using a single pool
     3. Measure and report total runtime
     """
+    # TOS acceptance
     try:
         require_tos_acceptance()
     except KeyboardInterrupt:
         sys.exit(1)
-    start_time = time.time()  # Record wall-clock start time
-    print(f"Running Dukascopy ETL pipeline ({NUM_PROCESSES} processes)")
 
-    # run.lock
-    RUN_LOCK = Path(f"{LOCK_PATH}/run.lock")
+    # Record wall-clock start time
+    start_time = time.time()  
+    # Load YAML config (currently only resample support)
+    app_config = load_config()
+    # Get orchestrator configuration
+    config = app_config.orchestrator
 
+    # Determine num_processes
+    num_processes = os.cpu_count() if config.num_processes is None else config.num_processes
+
+    # Splash message
+    print(f"Running Dukascopy ETL pipeline ({num_processes} processes)")
+
+    # Allocate exclusive lock
+    RUN_LOCK = Path(f"{config.paths.locks}/run.lock")
     print(f"Using lockfile {RUN_LOCK}")
     RUN_LOCK.parent.mkdir(parents=True,exist_ok=True)
     lock = FileLock(RUN_LOCK)
-
     try:
         if not NOLOCK:
             lock.acquire(timeout=1)
     except Timeout:
+        # Error out if could not acquire lock (instance already running)
         print("Another instance is running. Exiting.")
         return
 
@@ -189,10 +195,8 @@ def main():
         # Load trading symbols from symbols.txt
         symbols = load_symbols()
 
-        # Load YAML config (currently only resample support)
-        config = load_config()
-
-        if not len(config.resample.timeframes):
+        # This is an older backward incompatability protection (can be removed eventually)
+        if not len(app_config.resample.timeframes):
             print("Notice, there were breaking config changes! See README for more information!")
             sys.exit(1)
 
@@ -203,29 +207,29 @@ def main():
 
         # Prepare download tasks for JSON files that are missing
         download_tasks = [
-            (sym, dt, config)
+            (sym, dt, app_config)
             for dt in dates
             for sym in symbols
-            if not Path(f"{CACHE_PATH}/{dt:%Y}/{dt:%m}/{sym}_{dt:%Y%m%d}.json").is_file()
+            if not Path(f"{config.paths.downloads}/{dt:%Y}/{dt:%m}/{sym}_{dt:%Y%m%d}.json").is_file()
         ]
 
         # Prepare transform tasks for CSV files that are missing
         transform_tasks = [
-            (sym, dt, config)
+            (sym, dt, app_config)
             for dt in dates
             for sym in symbols
-            if not Path(f"{DATA_PATH}/{dt:%Y}/{dt:%m}/{sym}_{dt:%Y%m%d}.csv").is_file()
+            if not Path(f"{config.paths.transforms}/{dt:%Y}/{dt:%m}/{sym}_{dt:%Y%m%d}.csv").is_file()
         ]
 
         # Prepare aggregate tasks (one per symbol, covering all dates)
-        aggregate_tasks = [(sym, dates, config) for sym in symbols]
+        aggregate_tasks = [(sym, dates, app_config) for sym in symbols]
 
         # Prepare resample tasks (one per symbol)
-        resample_tasks = [(symbol, config) for symbol in symbols]
+        resample_tasks = [(symbol, app_config) for symbol in symbols]
 
         # Create a single multiprocessing context to minimize process spawn overhead
         ctx = get_context("fork")
-        pool = ctx.Pool(processes=NUM_PROCESSES)
+        pool = ctx.Pool(processes=num_processes)
 
         # Define pipeline stages with associated task lists and chunk sizes
         stages = [
@@ -233,14 +237,14 @@ def main():
                 "Download",
                 download.fork_download,
                 download_tasks,
-                max(1, min(32, math.floor(math.sqrt(len(download_tasks)) / NUM_PROCESSES))),
+                max(1, min(32, math.floor(math.sqrt(len(download_tasks)) / num_processes))),
                 "downloads"
             ),
             (
                 "Transform",
                 transform.fork_transform,
                 transform_tasks,
-                max(1, min(128, int(math.sqrt(len(transform_tasks)) / NUM_PROCESSES) or 1)),
+                max(1, min(128, int(math.sqrt(len(transform_tasks)) / num_processes) or 1)),
                 "files"
             ),
             (
@@ -275,7 +279,6 @@ def main():
                     import traceback
                     traceback.print_exc()
                     break
-
 
         # Report total wall-clock runtime
         elapsed = time.time() - start_time
