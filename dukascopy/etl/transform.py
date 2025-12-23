@@ -5,7 +5,13 @@
  File:        transform.py
  Author:      JP Ueberbach
  Created:     2025-12-19
- Description: Conversion to OOP - Transform Dukascopy Historical JSON delta
+ Updated:     2025-12-23
+              Strengthening of code
+              - Optional OHLCV validation
+              - Optional fsync
+              - Custom exceptions for better traceability
+              
+ Description: Transform Dukascopy Historical JSON delta
               format into normalized OHLC CSV files. Supports vectorized
               computation, multiprocessing, and progress tracking.
 
@@ -38,10 +44,11 @@ class TransformEngine:
     """
 
     def __init__(self, dt: date, symbol: str, config: TransformConfig):
-        """
-        Initializes the transform engine.
+        """Initialize the transform engine with symbol-, date-, and config context.
 
         Args:
+            dt (date): Trading date associated with the transformation.
+            symbol (str): Trading symbol being processed.
             config (TransformConfig): Transform-related configuration values.
         """
         # Set properties
@@ -50,23 +57,29 @@ class TransformEngine:
         self.config = config
 
     def _apply_post_processing(self, df: pd.DataFrame, step: TransformSymbolProcessingStep) -> pd.DataFrame:
-        """Apply a post-processing transformation to a DataFrame column.
+        """Apply a symbol-specific post-processing step to an OHLCV DataFrame.
 
-        Currently, this method supports multiplying a specified column by a scalar
-        value and rounding the result according to the configured precision.
+        Supported actions include:
+        - ``multiply``: Multiply a target column by a scalar value and round the
+        result according to the configured precision.
+        - ``validate``: Perform logical integrity checks on OHLC price data
+        (e.g., high/low bounds and non-negative prices). Validation errors are
+        currently logged but do not interrupt processing.
 
         Args:
-            df (pd.DataFrame): The input DataFrame to post-process.
-            step (TransformSymbolProcessingStep): Definition of the transformation
-                to apply, including the action, target column, and scalar value.
+            df (pd.DataFrame): The OHLCV DataFrame to post-process.
+            step (TransformSymbolProcessingStep): Definition of the post-processing
+                step, including the action type, target column (if applicable),
+                and associated parameters.
 
         Returns:
-            pd.DataFrame: The DataFrame after the post-processing transformation
-            has been applied.
+            pd.DataFrame: The DataFrame after the post-processing step has been
+            applied. For validation steps, the input DataFrame is returned unchanged.
 
         Raises:
-            TransformLogicError: If the specified transformation action is not supported.
-            ProcessingError: If the target column does not exist in the DataFrame.
+            TransformLogicError: If the specified post-processing action is not supported.
+            ProcessingError: If a required target column is missing during a
+                column-based transformation.
         """
         # Validate that the requested action is supported
         if step.action not in ["multiply", "validate"]:
@@ -117,17 +130,16 @@ class TransformEngine:
         This method reconstructs timestamps and OHLC prices using cumulative
         delta calculations, applies symbol- and date-specific time shifts
         (e.g., DST handling), filters out non-trading candles, rounds prices
-        according to configuration, and applies optional symbol-specific
-        post-processing steps.
+        according to configuration, and applies symbol-specific post-processing
+        steps. If validation is enabled in the configuration, OHLC integrity
+        checks are injected dynamically into the post-processing pipeline.
 
         All operations are vectorized for performance.
 
         Args:
             data (dict): Parsed Dukascopy JSON payload containing delta-encoded
-                market data fields (e.g., times, opens, highs, lows, closes, volumes).
-            dt (date): Trading date associated with the payload, used for resolving
-                symbol-specific time shifts.
-            symbol (str): Trading symbol for which the data is being processed.
+                market data fields (e.g., times, opens, highs, lows, closes,
+                volumes, multipliers, and timestamps).
 
         Returns:
             pd.DataFrame: A normalized OHLCV DataFrame with the following columns:
@@ -135,8 +147,11 @@ class TransformEngine:
 
         Raises:
             ProcessingError: If the JSON schema is malformed, required fields are
-                missing, or any step of the vectorized transformation or
-                post-processing fails.
+                missing, or an unexpected error occurs during transformation.
+            TransformLogicError: If an unsupported post-processing action is
+                encountered.
+            DataValidationError: If OHLC validation fails and validation errors
+                are propagated by configuration.
         """
         try:
             # Resolve symbol- and date-specific timestamp shift (e.g. DST handling)
@@ -194,7 +209,7 @@ class TransformEngine:
                 }
             )
 
-
+            # Get symbol specific configuration
             sym_cfg = self.config.symbols.get(self.symbol) if self.config.symbols else None
             
             # Determine post-processing steps
@@ -220,7 +235,6 @@ class TransformEngine:
         except (DataValidationError, ProcessingError, TransformLogicError):
             raise
         except Exception as e:
-            
             raise ProcessingError(f"Vectorized transformation failed for {symbol}: {e}") from e
 
 
@@ -231,11 +245,18 @@ class TransformWorker:
     """
 
     def __init__(self, dt: date, symbol: str, app_config: AppConfig):
-        """
-        Initializes the transform worker.
+def __init__(self, dt: date, symbol: str, app_config: AppConfig):
+        """Initialize a transform worker for a specific symbol and trading date.
+
+        This constructor binds the worker to a single trading date and symbol,
+        extracts transform-related configuration, and initializes the underlying
+        transform engine used to process market data.
 
         Args:
-            app_config (AppConfig): Global application configuration.
+            dt (date): Trading date associated with this worker instance.
+            symbol (str): Trading symbol to be processed.
+            app_config (AppConfig): Global application configuration containing
+                transform and path settings.
         """
         # Set properties
         self.app_config = app_config
@@ -246,16 +267,12 @@ class TransformWorker:
         self.engine = TransformEngine(dt, symbol, self.config)
 
     def resolve_paths(self) -> Tuple[Path, Path]:
-        """Resolve source JSON and target CSV paths for a symbol and trading date.
+        """Resolve source JSON and target CSV paths for the worker's symbol and date.
 
         This method prefers historical data when available. If a historical JSON
         file exists, any corresponding live JSON and CSV files are removed to
-        prevent duplicate or stale data usage. If historical data is not present,
+        prevent duplicates or stale data. If historical data is not present,
         the method falls back to live data paths.
-
-        Args:
-            symbol (str): Trading symbol for which paths are being resolved.
-            dt (date): Trading date used to construct date-partitioned paths.
 
         Returns:
             Tuple[Path, Path]: A tuple containing:
@@ -263,8 +280,8 @@ class TransformWorker:
                 - Path to the target CSV file.
 
         Raises:
-            DataNotFoundError: If neither a historical nor a live JSON source file
-                exists for the given symbol and date.
+            DataNotFoundError: If neither a historical nor live JSON source file
+                exists for the worker's symbol and date.
         """
         # Historical cache and output paths
         hist_cache = (
@@ -300,26 +317,26 @@ class TransformWorker:
         raise DataNotFoundError(f"No JSON source found for {symbol} on {dt}")
 
     def run(self) -> bool:
-        """Run the end-to-end transformation pipeline for a symbol and date.
+        """Execute the end-to-end transformation pipeline for the worker's symbol and date.
 
-        This method resolves input and output paths, loads the source JSON payload,
-        transforms delta-encoded market data into normalized OHLCV format, and
-        writes the result to disk using an atomic file replacement strategy.
-
-        Args:
-            symbol (str): Trading symbol to process.
-            dt (date): Trading date associated with the transformation.
+        This method performs the following steps:
+        1. Resolves input JSON and target CSV paths (preferring historical data).
+        2. Loads the source JSON payload.
+        3. Transforms delta-encoded market data into normalized OHLCV format.
+        4. Applies symbol-specific post-processing and optional validation.
+        5. Writes the resulting DataFrame to disk using an atomic file replacement
+        strategy, optionally syncing to disk if configured.
 
         Returns:
             bool: True if the transformation and write completed successfully.
 
         Raises:
-            DataNotFoundError: If no source JSON file is available for the given
-                symbol and date.
+            DataNotFoundError: If no source JSON file exists for the worker's symbol
+                and date.
             ProcessingError: If the JSON payload cannot be transformed into
                 normalized OHLCV data.
-            TransactionError: If a disk I/O error occurs during output writing or
-                if an unexpected runtime error is encountered.
+            TransactionError: If a disk I/O error occurs during writing, or if an
+                unexpected runtime error occurs during processing.
         """
         try:
             # Resolve source JSON and target CSV paths
@@ -360,25 +377,27 @@ class TransformWorker:
 
 
 def fork_transform(args: tuple) -> bool:
-    """Multiprocessing-safe entry point for executing a single transformation job.
+    """Multiprocessing-safe entry point for running a transformation job.
 
-    This function is designed to be used with multiprocessing pools. It
-    initializes a transformation worker from the provided application
-    configuration and executes the transformation pipeline for a single
-    symbol and trading date.
+    Designed for use with multiprocessing pools, this function initializes
+    a `TransformWorker` for a specific symbol and trading date using the
+    provided application configuration, then executes the full transformation
+    pipeline.
 
     Args:
-        args (tuple): Tuple containing:
+        args (tuple): A tuple containing:
             - symbol (str): Trading symbol to process.
             - dt (date): Trading date associated with the job.
-            - app_config: Application configuration used to initialize the worker.
+            - app_config (AppConfig): Application configuration used to
+              initialize the worker.
 
     Returns:
-        bool: True if the transformation completed successfully.
+        bool: True if the transformation pipeline completes successfully.
 
     Raises:
         ForkProcessError: If any exception occurs during worker initialization
-            or execution within the forked process.
+            or execution within the forked process. The original traceback
+            is printed before raising this exception.
     """
     try:
         symbol, dt, app_config = args
@@ -389,8 +408,6 @@ def fork_transform(args: tuple) -> bool:
         return worker.run()
     
     except Exception as e:   
-        import traceback
-        traceback.print_exc()
         raise ForkProcessError(f"Error on transform fork for {symbol}: {e}") from e
 
 

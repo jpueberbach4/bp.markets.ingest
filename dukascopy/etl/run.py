@@ -272,6 +272,8 @@ def main():
                         pass
                 except Exception as e:
                     print(f"\nABORT! Critical error in {name}.\n{type(e).__name__}: {e}")
+                    import traceback
+                    traceback.print_exc()
                     break
 
 
