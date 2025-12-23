@@ -289,6 +289,9 @@ class ResampleTracker:
             (Etc/GMT-3 during DST, Etc/GMT-2 otherwise).
         """
         # User has defined UTC timezone for the symbol, keep everything in UTC
+        # If symbol has timezone, then UTC will be used as base timezone to calc against
+        # I practically cannot think of a usecase for this, maybe for forex or crypto
+        # But the rest: no
         if self.config.server_timezone.upper() in ["UTC", "ETC/UTC", "ETC/GMT"]:
             return zoneinfo.ZoneInfo("UTC")
 
