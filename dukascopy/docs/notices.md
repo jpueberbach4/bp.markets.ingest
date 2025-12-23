@@ -6,6 +6,10 @@ MT4 is decoded.
 
 ## Notice
 
+The repository at https://github.com/Shadowp2522/bp.markets.ingest is a clone. The jpueberbach4 version is the official project, and I cannot vouch for the safety of the clone.
+
+## Notice
+
 Backfilling is not currently supported, as our pipeline processes data strictly forward. Because of this, historical data—particularly for illiquid pairs and at the highest granularity—may be skewed. Backfilling has been identified as a must-have feature.
 
 We'll provide a script that should be executed once every seven days (run on saturdays). It will re-download the past week of data for all configured symbols and perform a full rebuild. This captures any backfills within that window, effectively addressing ~99.94-99.97% of all backfill issues.
