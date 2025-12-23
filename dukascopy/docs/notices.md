@@ -1,15 +1,82 @@
 MT4 is decoded
 
+## Status per 23 December 2025
+
 I’m currently finishing up the ETL/data work, which will be completed before Christmas. Once that’s done, the main branch will become stable, and new features will be developed through regular feature branches. The code is now used by many people, so stability is crucial. That said, daily repository statistics are still being merged into main, and there’s a specific reason for this approach.
 
-What is happening
+also...
 
-- Production hardening of the code through granular exception handling (resample is done)
-- Handling all the weird cases that normally should not happen, but anyhow protect for it
-- The open-issue closing, see below
-- Configuration documentation
-- Cleanup of bloated text
-- Then one more validation pass... and lock it.
+I am strengthening the setup and this also includes an OHLCV validation check. You can enable this check using the ```transform.validate``` flag in config.user.yaml (not yet available in main, it's coming). Currently it only prints if it finds anything "out of the ordinary". During testing, i ran the validation step, here is what i found:
+
+**Data Validation Error Count**
+
+Total Errors: 94
+
+Breakdown by Symbol:
+
+- AUD-USD: 57 errors \
+  Time period: 2008-09-18 to 2024-10-10 \
+  Primarily clustered in 2008-2009 (financial crisis period)
+  
+- LIGHT.CMD-USD: 32 errors \
+  Time period: 2013-10-03 to 2014-06-06 \
+  Heaviest concentration in Q1-Q2 2014
+
+- VOL.IDX-USD: 19 errors \
+  Time period: 2022-10-06 to 2025-12-22 \
+  Recent data (2022-2025)
+
+- SOA.IDX-ZAR: 8 errors \
+  Time period: 2022-10-06 to 2022-10-25 \
+  October 2022 specifically
+
+- COPPER.CMD-USD: 6 errors \
+  Time period: 2014-10-13 to 2014-11-27 \
+  Q4 2014
+
+- BRENT.CMD-USD: 1 error \
+  2014-08-01
+
+- BTC-USD: 1 error \
+  2017-09-04
+
+- COTTON.CMD-USX: 1 error \
+  2017-10-20
+
+- Other FX pairs on 2024-10-10: 6 errors \
+  EUR-USD: 1 \
+  USD-JPY: 1 \
+  GBP-USD: 1 \
+  USD-CHF: 1 \
+  NZD-USD: 1 \
+  EUR-NZD: 1
+
+Time Distribution:
+
+- 2008-2009: 57 errors (AUD-USD during financial crisis)
+- 2013-2014: 39 errors (commodities data issues)
+- 2017: 2 errors (crypto & cotton)
+- 2022-2023: 27 errors (indices)
+- 2024-2025: 7 errors (recent FX & indices)
+
+Error Type Analysis:
+
+All errors are "OHLC Integrity Failure" with variations:
+
+- High price below Low price (most common)
+- High price below Open or Close
+- Low price above Open or Close
+
+Context:
+
+- Total files processed: 321,804
+- Error rate: 94/321,804 = **0.029% (extremely low)**
+- Processing speed: ~940 files/second (validation slows a lot)
+
+Time to process: 5 minutes 42 seconds
+
+>Currently it only logs if the flag is set to true. In a later version skip, log (true fallback), break and correct (or combinations) will be supported.
+
 
 ## Status per 22 December 2025
 
