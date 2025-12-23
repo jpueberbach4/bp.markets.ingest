@@ -1,4 +1,8 @@
-MT4 is decoded
+MT4 is decoded. 
+
+"In the intricate tapestry of apparent chaos, true mastery lies not in imposing order upon the unknown, but in patiently decoding its hidden patterns—until one day, with quiet revelation, we declare: the enigma is unveiled, and what was once obscure now illuminates the path for all."
+
+I am very pleased with the results of this effort.
 
 ## Status per 23 December 2025
 
