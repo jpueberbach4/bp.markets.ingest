@@ -100,7 +100,7 @@ resample:
     includes:
     - config/dukascopy/timeframes/bonds.yaml
     - config/dukascopy/timeframes/commodities.yaml
-    - config.user/dukascopy/timeframes/stocks.yaml
+    - config/dukascopy/timeframes/stocks.yaml
     - config/dukascopy/timeframes/indices/*.yaml
     
 
