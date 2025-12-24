@@ -98,7 +98,7 @@ Perform a full rebuild using ```./rebuild-full.sh```
 
 **Note: This is the most complex asset-type to configure. Once you master the logic behind this instrument, the rest of the catalog becomes straightforward.**
 
-For the vast majority of assets, you will find that the origin alignment remains constant. This is typically because the asset strictly follows the US market calendar or because it does not observe DST shifts at all—as is the case with Forex. Because Forex is temporally static, you will notice it rarely requires custom symbol-scope configurations; these instruments simply inherit the system's global defaults.
+For the vast majority of assets, you will find that the origin alignment remains constant. This is typically because the asset strictly follows the US market calendar or because it does not observe shifts at all—as is the case with Forex. Because Forex is temporally static, you will notice it rarely requires custom symbol-scope configurations; these instruments simply inherit the system's global defaults.
 
 There are already extensive configuration examples available within the config/ directories. If you are using the Dukascopy MT4 server, you will likely find that most assets of interest are already pre-configured. 
 
