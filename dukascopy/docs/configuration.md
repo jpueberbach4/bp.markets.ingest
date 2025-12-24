@@ -70,7 +70,7 @@ An origin calibration is the process of synchronizing your aggregation grid with
 
 The final piece of the data puzzle is identifying the correct timezone identifier. This ensures the system interprets the exchange’s "08:30" as a specific point in global time, preventing your candles from shifting when market hours are processed.
 
-You can use Gemini to confirm this by asking: "What is the IANA timezone identifier for the Singapore Index?" It will confirm the correct string:
+You can use Gemini to confirm this by asking: "What is the IANA timezone identifier for the Singapore Index?" It will confirm the correct string: ```Asia/Singapore```
 
 **Fifth step:** Symbol Configuration
 

@@ -1,6 +1,6 @@
 MT4 is decoded. 
 
-**The data part is now complete. Only documentation remains.**
+**Notice:** The main branch is now locked. No further modifications will be made to the core codebase unless a critical bug is discovered, a significant feature is released, or an essential security announcement is required. New features are coming.
 
 ## Notice
 
