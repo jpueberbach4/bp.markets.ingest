@@ -32,6 +32,17 @@ Example image
 
 As illustrated in the Brent example above, the absence of native back-adjustment means that standard MetaTrader price history for these assets is fundamentally flawed, leading to distorted technical indicators and unreliable long-term backtesting results.
 
+Our data is currently EXACTLY as how it is in Metatrader.
+
+```sh
+2025-11-25 23:37:00,62.542,62.542,62.542,62.542,5.4e-05
+2025-11-25 23:38:00,62.537,62.542,62.537,62.542,0.000378
+2025-11-25 23:39:00,62.552,62.552,62.547,62.547,0.000144
+2025-11-26 03:00:00,61.907,61.93,61.83,61.88,0.003438       << GAP of 0.6-ish
+2025-11-26 03:01:00,61.89,61.93,61.84,61.855,0.00293
+2025-11-26 03:02:00,61.86,61.92,61.86,61.905,0.001904
+```
+
 ## Notice: Backfilling
 
 Backfilling is not currently supported, as our pipeline processes data strictly forward. Because of this, historical data—particularly for illiquid pairs and at the highest granularity—may be skewed. Backfilling has been identified as a must-have feature.
