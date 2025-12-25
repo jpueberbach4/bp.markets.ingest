@@ -2,6 +2,35 @@ MT4 is decoded.
 
 **Notice:** The main branch is now locked. No further modifications will be made to the core codebase unless a critical bug is discovered, a significant feature is released, or an essential security announcement is required. New features are coming.
 
+## Roll-over handling
+
+Since some prices are based on CFD contract values (e.g., BRENT, LIGHT, etc.), they may need to be back-adjusted during rollovers, typically at a specific time each month. This is not currently supported, but I am actively working on a solution.
+
+**The Synchronization Conflict: Adjusted vs. Broker Reality**
+
+The challenge is more complex than a simple "rebuild and adjust" operation because MetaTrader 4 (MT4) does not support native back-adjustment. If we apply mathematical adjustments to the resampled CSVs to eliminate rollover gaps, the resulting data will no longer align with the "Broker Reality" shown on the MetaTrader platform.
+
+So, likely, this will get implemented using a flag on the build commands, so you can optionally decide what version of output you want. The adjusted or the unadjusted one.
+
+Implementing a reliable rollover mechanism is a medium-high priority task slated for completion by the end of the year - i still have some time left for the data part. The primary technical challenge lies in determining whether to source rollover dates from external schedules or to derive them programmatically.
+
+A data-driven approach being considered involves monitoring volume trends: specifically, confirming a rollover after identifying two consecutive days of volume increase following a price/liquidity gap. This method would ensure the engine transitions when the bulk of market liquidity has shifted, rather than relying on arbitrary calendar dates.
+
+The assets primarily affected are those having ```CMD``` or ```TR``` suffixes - so this excludes Forex, Crypto, Equities and indices since they are Spot/Cash based.
+
+Affected are - examples:
+
+- BRENT.CMD-USD (Brent Crude Oil)
+- LIGHT.CMD-USD (WTI Light Crude Oil)
+- GAS.CMD-USD (Natural Gas)
+- DIESEL.CMD-USD (Gasoil/Diesel)
+- COPPER.CMD-USD (Copper)
+- COTTON.CMD-USX (Cotton)
+- OJUICE.CMD-USX (Orange Juice)
+- SOYBEAN.CMD-USX (Soybeans)
+- BUND.TR-EUR (German Bund Treasury Note)
+- USTBOND.TR-USD (US Treasury Bond)
+
 ## Notice
 
 Backfilling is not currently supported, as our pipeline processes data strictly forward. Because of this, historical data—particularly for illiquid pairs and at the highest granularity—may be skewed. Backfilling has been identified as a must-have feature.
@@ -33,3 +62,4 @@ This configuration triggers the rebuild script at 01:00 each Saturday. It will n
 >This is a universal challenge in market-data engineering. Even when working with top-tier, premium data vendors, the moment you download or extract data and begin using it, some portion of it may already be stale due to backfills. It’s an inherent property of financial datasets, not a limitation of this tool. There is no central log or official feed that reliably exposes all historical corrections, making automated detection non-trivial. As a result, every data pipeline—paid or free—must contend with this reality.
 
 The quality of this dataset is on par with what you would receive from commercial providers. The difference is simply that this one is free.
+
