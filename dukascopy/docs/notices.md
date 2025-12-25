@@ -27,7 +27,6 @@ Affected are - examples:
 - BUND.TR-EUR (German Bund Treasury Note)
 - USTBOND.TR-USD (US Treasury Bond)
 
-
 ## Notice: Backfilling
 
 Backfilling is not currently supported, as our pipeline processes data strictly forward. Because of this, historical data—particularly for illiquid pairs and at the highest granularity—may be skewed. Backfilling has been identified as a must-have feature.
