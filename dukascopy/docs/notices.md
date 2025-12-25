@@ -27,6 +27,11 @@ Affected are - examples:
 - BUND.TR-EUR (German Bund Treasury Note)
 - USTBOND.TR-USD (US Treasury Bond)
 
+Example image
+![rollover image brent](../images/examplerolloverbrentnovdec2025.png)
+
+As illustrated in the Brent example above, the absence of native back-adjustment means that standard MetaTrader price history for these assets is fundamentally flawed, leading to distorted technical indicators and unreliable long-term backtesting results.
+
 ## Notice: Backfilling
 
 Backfilling is not currently supported, as our pipeline processes data strictly forward. Because of this, historical data—particularly for illiquid pairs and at the highest granularity—may be skewed. Backfilling has been identified as a must-have feature.
