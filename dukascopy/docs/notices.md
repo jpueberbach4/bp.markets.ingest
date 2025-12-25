@@ -25,7 +25,7 @@ Implementing this via the ```build-(csv|parquet).sh``` command allows for a clea
 
 Because we are dealing with multiple timeframes, triggering an adjusted build will likely involve resampling the raw data into a temporary state to ensure the mathematical shift is applied consistently from the 1-minute level up to the Daily/Weekly timeframes. This will take a few seconds per asset—likely implemented via a modifier ```:adjusted``` following the symbol name.
 
-The assets primarily affected are those having ```CMD``` or ```TR``` suffixes - so this excludes Forex, Crypto, Equities and Indices since they are Spot/Cash based.
+The assets primarily affected are those having ```CMD``` or ```TR``` suffixes - so this excludes Forex, Crypto, Equities and possibly Indices - i am still checking them - since they are Spot/Cash based.
 
 Affected are - examples:
 
