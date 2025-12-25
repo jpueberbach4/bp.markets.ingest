@@ -2,13 +2,9 @@ MT4 is decoded.
 
 **Notice:** The main branch is now locked. No further modifications will be made to the core codebase unless a critical bug is discovered, a significant feature is released, or an essential security announcement is required. New features are coming.
 
-## Roll-over handling
+## Notice: Roll-over handling
 
 Since some prices are based on CFD contract values (e.g., BRENT, LIGHT, etc.), they may need to be back-adjusted during rollovers, typically at a specific time each month. This is not currently supported, but I am actively working on a solution.
-
-**The Synchronization Conflict: Adjusted vs. Broker Reality**
-
-The challenge is more complex than a simple "rebuild and adjust" operation because MetaTrader 4 (MT4) does not support native back-adjustment. If we apply mathematical adjustments to the resampled CSVs to eliminate rollover gaps, the resulting data will no longer align with the "Broker Reality" shown on the MetaTrader platform.
 
 So, likely, this will get implemented using a flag on the build commands, so you can optionally decide what version of output you want. The adjusted or the unadjusted one.
 
@@ -31,7 +27,8 @@ Affected are - examples:
 - BUND.TR-EUR (German Bund Treasury Note)
 - USTBOND.TR-USD (US Treasury Bond)
 
-## Notice
+
+## Notice: Backfilling
 
 Backfilling is not currently supported, as our pipeline processes data strictly forward. Because of this, historical data—particularly for illiquid pairs and at the highest granularity—may be skewed. Backfilling has been identified as a must-have feature.
 
