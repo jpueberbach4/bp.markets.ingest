@@ -12,7 +12,7 @@ Implementing a reliable rollover mechanism is a medium-high priority task slated
 
 A data-driven approach being considered involves monitoring volume trends: specifically, confirming a rollover after identifying two consecutive days of volume increase following a price/liquidity gap. This method would ensure the engine transitions when the bulk of market liquidity has shifted, rather than relying on arbitrary calendar dates.
 
-The assets primarily affected are those having ```CMD``` or ```TR``` suffixes - so this excludes Forex, Crypto, Equities and indices since they are Spot/Cash based.
+The assets primarily affected are those having ```CMD``` or ```TR``` suffixes - so this excludes Forex, Crypto, Equities and Indices since they are Spot/Cash based.
 
 Affected are - examples:
 
