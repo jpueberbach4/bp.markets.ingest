@@ -198,7 +198,7 @@ def main():
                 try:
                     print(f"Step: {name}...")
                     for _ in tqdm(
-                        pool.imap_unordered(func, tasks, chunksize=1),
+                        pool.imap(func, tasks, chunksize=1),
                         total=len(tasks),
                         unit=unit,
                         colour='white'
