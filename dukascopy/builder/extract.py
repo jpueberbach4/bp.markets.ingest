@@ -260,7 +260,7 @@ def prepare_symbol(
             app_config.resample.paths.data = str(tf_path.parent.parent)
             
             # CALL the fork_resample(symbol, app_config)
-            print(f"Warning: adjusted modifier set for {symbol}. Resampling... (may take a while, coffee?)")
+            print(f"Warning: adjusted modifier set for {symbol}. Resampling...")
             fork_resample([symbol, app_config])
             # Todo: exception handling and such
         

@@ -140,7 +140,16 @@ def main():
                 else:
                     print(f"Skipping MT4 export (dry-run)")
                 if not options['keep_temp']:
+                    # Unlink merged csv
                     Path(options['output']).unlink(missing_ok=True)
+
+        if not options['keep_temp']:
+            # this is data/temp/builder/csv/uuid/temp
+            # we need remove uuid directory
+            import shutil
+            print("Final cleanup of directory "+str(Path(options['output_dir']).parent))
+            shutil.rmtree(Path(options['output_dir']).parent)
+            
 
         # Report total runtime
         elapsed = time.time() - start_time
