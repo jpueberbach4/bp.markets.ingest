@@ -22,6 +22,7 @@
 ===============================================================================
 """
 import argparse
+import random
 import sys
 import re
 from pathlib import Path
@@ -163,6 +164,11 @@ def resolve_selections(
 
                 modifiers = list(dict.fromkeys(symbol_mods + tf_mods))
 
+                # Lame mood, remove later
+                if any("fuck" in mod.lower() for mod in modifiers):
+                    print("\n🖕 " + random.choice(NAUGHTY_RESPONSES) + "\n")
+                    sys.exit(1)
+
                 pair = (symbol, tf_base)
                 requested_pairs.add(pair)
 
@@ -193,3 +199,27 @@ def resolve_selections(
         parser.error(msg)
 
     return sorted(best_tasks.values()), resolved_pairs
+
+# Lame mood
+NAUGHTY_RESPONSES = [
+    "Your mama so fat, her rollover gap needs back-adjustment",
+    "Fuck you too, buddy 😘",
+    "Your sister called, she wants her modifier back",
+    "Nice try, script kiddie",
+    "That's not a modifier, that's a mood",
+    "Go touch grass... or at least a valid modifier",
+    "Error: Maturity level too low for :fuck",
+    "Try :adjusted instead of being a child",
+    "Your modifier has been rejected for excessive edge",
+    "Bro really thought :fuck would work 💀",
+    "This isn't 4chan, champ",
+    "Denied. Try :respectfultrading",
+    "Imagine typing :fuck in a data pipeline in 2025",
+    "The dev saw this coming and prepared a roast",
+    "Your commit message energy is showing",
+    "Sir, this is a professional Dukascopy pipeline",
+    "Error 69: Modifier not nice",
+    "You kiss your mother with that modifier?",
+    "Bold of you to assume :fuck is supported",
+    "The TOS says no swearing... oh wait, it doesn't. Still no.",
+]
