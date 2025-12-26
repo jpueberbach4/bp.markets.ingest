@@ -29,8 +29,13 @@
 """
 import duckdb
 import uuid
+import sys
 from pathlib import Path
+
 from typing import Tuple, Dict, Any
+
+# Since we (potentially) import from ETL folder, we need to app a syspath
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 # Dukascopy CSV schema: column names and types
 DUKASCOPY_CSV_SCHEMA = {
@@ -184,7 +189,7 @@ def extract_symbol(task: Tuple[str, str, str, str, str, str, Dict[str, Any]]) ->
 
 
 def prepare_symbol(
-    task: Tuple[str, str, str, str, str, str, Dict[str, Any]]
+    task: Tuple[str, str, str, str, str, str, Dict[str, Any], Any]
 ) -> Tuple[str, str, str, str, str, str, Dict[str, Any]]:
     """Prepare a symbol task for processing, optionally handling adjusted data.
 
@@ -213,25 +218,53 @@ def prepare_symbol(
     symbol, timeframe, input_filepath, after_str, until_str, modifiers, options = task
 
     if "adjusted" in modifiers:
-        print ("coffee")
-        # This will not be fast, but still faster than relying on an external provider for this
-        # And it's free
-        #
-        # Set a lock for this symbol, exclusive
-        #  If fail, we wait until lock released, error after 5m
-        #  Check if we already have a temporary adjusted TF file
-        #  If not:
-        #    Load the symbols configuration using resample_get_symbol_config
-        #    Check where the source 1m file is
-        #    Import adjust and call adjust symbol on 1m file, write to temporary file
-        #    Adjust all 1m timeframe sources for this symbol to point to temporary file
-        #    Adjust resample.paths.data to point to temporary directory
-        #    Import the resampler, call fork_resample with symbol and modified app_config
-        #    Will start resampling, wait
-        #    Adjust task input_filepath to point to desired adjusted timeframe file
-        # Lock release
-        # Return modified task
-        # Something like that
+
+        from filelock import FileLock, Timeout
+        from etl.config.app_config import load_app_config, resample_get_symbol_config
+        # get symbol configuration
+        config = resample_get_symbol_config(
+            symbol,
+            app_config := load_app_config('config.user.yaml') 
+        )
+        # 1m source path, first version just gets from root, nobody overrides 1m frame
+        raw_base_path, adjusted_base_path, lock_path, tf_path = [
+            Path(config.timeframes.get("1m").source) / f"{symbol}.csv",
+            Path(options.get('output_dir')) / f"adjust/1m/{symbol}.csv",
+            Path(options.get('output_dir')) / f"locks/{symbol}.lck",
+            Path(options.get('output_dir')) / f"adjust/{timeframe}/{symbol}.csv",
+        ]
+        # Create directories
+        adjusted_base_path.parent.mkdir(parents=True,exist_ok=True)
+        lock_path.parent.mkdir(parents=True,exist_ok=True)
+
+        # Acquire exclusive filelock, no simultaneous adjustment logic for same symbol
+        lock = FileLock(lock_path)
+        try:
+            lock.acquire(timeout=300)
+            # We acquired the lock, continue
+        except Timeout:
+            sys.exit(1)    
+        
+        # Check if we already have an adjusted file for this tf (adjust/tf/symbol.csv)
+        if not adjusted_base_path.exists():
+            # It was not already prepared in an other parallel process
+
+            # Now, prepare the adjusted 1m file and account for the rollover gaps, CALL adjust.adjust_symbol
+            # Adjust the 1m base timeframe source PATH(!), recursively in app_config (for symbol)
+
+            # Now, adjust resample.paths.data in app_config, set to tempdir/adjust (tf's directly below)
+            app_config.resample.paths.data = tf_path.parent.parent
+            # CALL the fork_resample(symbol, app_config)
+            # It will start resampling
+            # Todo: exception handling and such
+        
+        # We are done here, now set input_filepath to tf_path
+        input_filepath = tf_path
+
+        # And release the lock...
+        lock.release()
+
+        # Return the adjusted task
         task = (symbol, timeframe, input_filepath, after_str, until_str, modifiers, options)
 
     return task

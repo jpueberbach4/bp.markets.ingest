@@ -7,6 +7,8 @@ class BuilderPaths:
     """Directory paths used by the script."""
     # Input directory
     data: str = "data"
+    # Locks directory
+    locks: str = "data/locks"
     # Temporary directory
     temp: str = "data/temp/builder"
 
