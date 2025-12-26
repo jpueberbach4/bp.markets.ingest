@@ -2,61 +2,9 @@ MT4 is decoded.
 
 **Notice:** The main branch is now locked. No further modifications will be made to the core codebase unless a critical bug is discovered, a significant feature is released, or an essential security announcement is required. New features are coming.
 
-## Notice: Roll-over handling
+## Notice: Rollover
 
-Since some prices are based on CFD contract values (e.g., BRENT, LIGHT, etc.), they may need to be back-adjusted during rollovers, typically at a specific time each month. This is not currently supported, but I am actively working on a solution.
-
-**The Synchronization Conflict: Adjusted vs. Broker Reality**
-
-The challenge is more complex than a simple "rebuild and adjust" operation because MetaTrader 4 (MT4) does not support native back-adjustment. If we apply mathematical adjustments to the resampled CSVs to eliminate rollover gaps, the resulting data will no longer align with the "Broker Reality" shown on the MetaTrader platform.
-
-So, likely, this will get implemented using a flag on the build commands, so you can optionally decide what version of output you want. The adjusted or the unadjusted one.
-
-Implementing a reliable rollover mechanism is a medium-high priority task slated for completion by the end of the year - i still have some time left for the data part. The primary technical challenge lies in determining whether to source rollover dates from external schedules or to derive them programmatically.
-
-A data-driven approach being considered involves monitoring volume trends: specifically, confirming a rollover after identifying two consecutive days of volume increase following a price/liquidity gap. This method would ensure the engine transitions when the bulk of market liquidity has shifted, rather than relying on arbitrary calendar dates.
-
-**Technical Implementation**
-
-Implementing this via the ```build-(csv|parquet).sh``` command allows for a clean separation of concerns:
-
-- Source Data: Remains "Raw" (matches the broker). Majority first.
-- Output Data: Optionally "Adjusted" (mathematically corrected for indicators).
-
-Because we are dealing with multiple timeframes, triggering an adjusted build will likely involve resampling the raw data into a temporary state to ensure the mathematical shift is applied consistently from the 1-minute level up to the Daily/Weekly timeframes. This will take a few seconds per asset—likely implemented via a modifier ```:adjusted``` following the symbol name.
-
-The assets primarily affected are those having ```CMD``` or ```TR``` suffixes - so this excludes Forex, Crypto, Equities - equities are a different kind of animal dividend/splits - since they are Spot/Cash based. Indices (e.g., USA30, USA500, DEU.IDX) roll quarterly.
-
-Affected are - examples:
-
-- BRENT.CMD-USD (Brent Crude Oil)
-- LIGHT.CMD-USD (WTI Light Crude Oil)
-- GAS.CMD-USD (Natural Gas)
-- DIESEL.CMD-USD (Gasoil/Diesel)
-- COPPER.CMD-USD (Copper)
-- COTTON.CMD-USX (Cotton)
-- OJUICE.CMD-USX (Orange Juice)
-- SOYBEAN.CMD-USX (Soybeans)
-- BUND.TR-EUR (German Bund Treasury Note)
-- USTBOND.TR-USD (US Treasury Bond)
-
-Example image
-![rollover image brent](../images/examplerolloverbrentnovdec2025.png)
-
-As illustrated in the Brent example above, the absence of native back-adjustment means that standard MetaTrader price history for these assets is fundamentally flawed, leading to distorted technical indicators and unreliable long-term backtesting results.
-
-Our data currently matches Metatrader, to the bit.
-
-```sh
-2025-11-25 23:37:00,62.542,62.542,62.542,62.542,5.4e-05
-2025-11-25 23:38:00,62.537,62.542,62.537,62.542,0.000378
-2025-11-25 23:39:00,62.552,62.552,62.547,62.547,0.000144
-2025-11-26 03:00:00,61.907,61.93,61.83,61.88,0.003438       << GAP of 0.6-ish
-2025-11-26 03:01:00,61.89,61.93,61.84,61.855,0.00293
-2025-11-26 03:02:00,61.86,61.92,61.86,61.905,0.001904
-```
-
-Note: the workflow is clear. If the rollover dates can be reliably established: the implementation will be just a few dozen lines of code (20-40 est). 
+Rollover support is being implemented. Programmatic detection was too inaccurate. Different approach was needed.
 
 ## Notice: Backfilling
 
