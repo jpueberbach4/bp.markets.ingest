@@ -164,11 +164,6 @@ def resolve_selections(
 
                 modifiers = list(dict.fromkeys(symbol_mods + tf_mods))
 
-                # Lame mood, remove later
-                if any("fuck" in mod.lower() for mod in modifiers):
-                    print("\n🖕 " + random.choice(NAUGHTY_RESPONSES) + "\n")
-                    sys.exit(1)
-
                 pair = (symbol, tf_base)
                 requested_pairs.add(pair)
 
@@ -199,32 +194,3 @@ def resolve_selections(
         parser.error(msg)
 
     return sorted(best_tasks.values()), resolved_pairs
-
-# Lame mood
-NAUGHTY_RESPONSES = [
-    "Bruh, :fuck is not a valid modifier. Try :adjusted or go back to demo trading",
-    "Your mama's rollover gap is bigger than that modifier",
-    "Error: Modifier contains more salt than a losing trader's tears",
-    "Nice modifier. Did you learn that from your Discord pump group?",
-    "Denied. This pipeline has higher standards than your risk management",
-    "Imagine thinking :fuck would work in a professional data pipeline in 2025 💀",
-    "The dev anticipated this exact level of degeneracy and prepared a response",
-    "Your modifier has been sent to the shadow realm along with your open losses",
-    "Try :therapy instead. It's not supported either, but you clearly need it",
-    "Sir, this is a Dukascopy pipeline, not your group chat after a red day",
-    "Error 420: Modifier too based for this repo",
-    "You kiss your margin call with that mouth?",
-    "Bold assumption that :fuck would adjust anything besides my opinion of you",
-    "The only thing getting fucked here is your attempt at a valid command",
-    "Go touch some grass... preferably after closing your -47% drawdown",
-    "This isn't TradingView comments section, champ",
-    "Your modifier energy is giving 'all-in on 0DTE options'",
-    "Denied. Even the Panama adjustment has more dignity than this",
-    "The TOS prohibits fun, but mostly prohibits this level of creativity",
-    "Keep trying, one day you'll discover actual modifiers like :skiplast",
-    "Plot twist: :fuck actually works... on your account balance",
-    "The pipeline laughed, then silently judged you",
-    "Error: Maturity level lower than copper contango",
-    "You tried to sneak :fuck past a dev who decodes MT4 for fun. Respect the attempt.",
-    "This modifier has been reported to the SEC as suspicious activity",
-]
