@@ -183,6 +183,35 @@ def extract_symbol(task: Tuple[str, str, str, str, str, str, Dict[str, Any]]) ->
     return True
 
 
+def prepare_symbol(
+    task: Tuple[str, str, str, str, str, str, Dict[str, Any]]
+) -> Tuple[str, str, str, str, str, str, Dict[str, Any]]:
+
+    symbol, timeframe, input_filepath, after_str, until_str, modifiers, options = task
+
+    if "adjusted" in modifiers:
+        # This will not be fast, but still faster than relying on an external provider for this
+        # And it's free
+        #
+        # Set a lock for this symbol, exclusive
+        #  If fail, we wait until lock released, error after 5m
+        #  Check if we already have a temporary adjusted TF file
+        #  If not:
+        #    Load the symbols configuration using resample_get_symbol_config
+        #    Check where the source 1m file is
+        #    Import adjust and call adjust symbol on 1m file, write to temporary file
+        #    Adjust all 1m timeframe sources for this symbol to point to temporary file
+        #    Adjust resample.paths.data to point to temporary directory
+        #    Import the resampler, call fork_resample with symbol and modified app_config
+        #    Will start resampling, wait
+        #    Adjust task input_filepath to point to desired adjusted timeframe file
+        # Lock release
+        # Return modified task
+        # Something like that
+        pass
+
+    return task
+
 def fork_extract(task: Tuple[str, str, str, str, str, str, Dict[str, Any]]) -> bool:
     """
     Wrapper function for multiprocessing pool execution of extract_symbol.
@@ -197,4 +226,8 @@ def fork_extract(task: Tuple[str, str, str, str, str, str, Dict[str, Any]]) -> b
     bool
         Result of extract_symbol.
     """
+    # Prepares a symbol when certain modifiers are set
+    task = prepare_symbol(task)
+
+    # Now executes the regular extraction
     return extract_symbol(task)
