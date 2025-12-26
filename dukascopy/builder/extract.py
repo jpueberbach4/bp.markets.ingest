@@ -186,6 +186,29 @@ def extract_symbol(task: Tuple[str, str, str, str, str, str, Dict[str, Any]]) ->
 def prepare_symbol(
     task: Tuple[str, str, str, str, str, str, Dict[str, Any]]
 ) -> Tuple[str, str, str, str, str, str, Dict[str, Any]]:
+    """Prepare a symbol task for processing, optionally handling adjusted data.
+
+    This function unpacks a task tuple describing a symbol processing job.
+    If the task includes the `"adjusted"` modifier, the function is intended
+    to prepare adjusted timeframe data by generating or reusing temporary
+    adjusted files and updating task paths accordingly. If no adjustment is
+    required, the task is returned unchanged.
+
+    Args:
+        task: A tuple containing:
+            - symbol (str): Symbol identifier (e.g., ticker or instrument name).
+            - timeframe (str): Target timeframe (e.g., "1m", "5m", "1h").
+            - input_filepath (str): Path to the input data file.
+            - after_str (str): Start time constraint as a string.
+            - until_str (str): End time constraint as a string.
+            - modifiers (str): Modifier flags (e.g., includes "adjusted").
+            - options (Dict[str, Any]): Additional processing options.
+
+    Returns:
+        A task tuple with the same structure as the input. If adjustment logic
+        is applied, the returned tuple may contain modified file paths and/or
+        options reflecting the adjusted data preparation.
+    """
 
     symbol, timeframe, input_filepath, after_str, until_str, modifiers, options = task
 
