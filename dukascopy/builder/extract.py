@@ -241,6 +241,7 @@ def prepare_symbol(
         # Dry-run fix
         if options.get('dry_run'):
             print(f"DRY-RUN: Would have performed Panama adjustment for {symbol}...")
+            tf_path.touch()
             input_filepath = tf_path
             task = (symbol, timeframe, input_filepath, after_str, until_str, modifiers, options)
             return task
