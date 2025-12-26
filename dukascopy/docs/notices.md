@@ -2,12 +2,6 @@ MT4 is decoded.
 
 **Notice:** The main branch is now locked. No further modifications will be made to the core codebase unless a critical bug is discovered, a significant feature is released, or an essential security announcement is required. New features are coming.
 
-## Notice: Roll-over handling
-
-Since some prices are based on CFD contract values (e.g., BRENT, LIGHT, etc.), they may need to be back-adjusted during rollovers, typically at a specific time each month. This is not currently supported, but I am actively working on a solution.
-
-Going to pull in rollover contract times. The programmatic approach doesnt work. Correctness of programmatic approach is not good enough ~80%. Can't get it 100%.
-
 ## Notice: Backfilling
 
 Backfilling is not currently supported, as our pipeline processes data strictly forward. Because of this, historical data—particularly for illiquid pairs and at the highest granularity—may be skewed. Backfilling has been identified as a must-have feature.
