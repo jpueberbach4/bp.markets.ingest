@@ -238,6 +238,13 @@ def prepare_symbol(
         adjusted_base_path.parent.mkdir(parents=True,exist_ok=True)
         lock_path.parent.mkdir(parents=True,exist_ok=True)
 
+        # Dry-run fix
+        if options.get('dry_run'):
+            print(f"DRY-RUN: Would have performed Panama adjustment for {symbol}...")
+            input_filepath = tf_path
+            task = (symbol, timeframe, input_filepath, after_str, until_str, modifiers, options)
+            return task
+
         # Acquire exclusive filelock, no simultaneous adjustment logic for same symbol
         lock = FileLock(lock_path)
         try:
