@@ -219,10 +219,12 @@ def prepare_symbol(
 
     if "adjusted" in modifiers:
 
+        import shutil # cleanup later
         import yaml
         from dataclasses import asdict
         from filelock import FileLock, Timeout
-        from etl.config.app_config import load_app_config, resample_get_symbol_config
+        from etl.config.app_config import load_app_config, resample_get_symbol_config, ResampleConfig
+        from etl.resample import fork_resample
         # get symbol configuration
         config = resample_get_symbol_config(
             symbol,
@@ -231,9 +233,9 @@ def prepare_symbol(
         # 1m source path, first version just gets from root, nobody overrides 1m frame
         raw_base_path, adjusted_base_path, lock_path, tf_path = [
             Path(config.timeframes.get("1m").source) / f"{symbol}.csv",
-            Path(options.get('output_dir')) / f"adjust/1m/{symbol}.csv",
-            Path(options.get('output_dir')) / f"locks/{symbol}.lck",
-            Path(options.get('output_dir')) / f"adjust/{timeframe}/{symbol}.csv",
+            Path(options.get('output_dir')).parent / f"adjust/1m/{symbol}.csv",
+            Path(options.get('output_dir')).parent / f"locks/{symbol}.lck",
+            Path(options.get('output_dir')).parent / f"adjust/{timeframe}/{symbol}.csv",
         ]
         # Create directories
         adjusted_base_path.parent.mkdir(parents=True,exist_ok=True)
@@ -252,14 +254,15 @@ def prepare_symbol(
             # It was not already prepared in an other parallel process
 
             # Now, prepare the adjusted 1m file and account for the rollover gaps, CALL adjust.adjust_symbol
+            shutil.copyfile(raw_base_path, adjusted_base_path) # we simulate adjust for a moment
             
             # Adjust the 1m base timeframe source in root (defaults is enough for the moment)
             app_config.resample.timeframes.get("1m").source = str(adjusted_base_path.parent)
-
             # Now, adjust resample.paths.data in app_config, set to tempdir/adjust (tf's directly below)
             app_config.resample.paths.data = str(tf_path.parent.parent)
             # CALL the fork_resample(symbol, app_config)
-            # It will start resampling
+            print("Resampling...")
+            fork_resample([symbol, app_config])
             # Todo: exception handling and such
         
         # We are done here, now set input_filepath to tf_path

@@ -67,15 +67,18 @@
 ===============================================================================
 """
 import os
+import sys
 import pandas as pd
 import numpy as np
 from pathlib import Path
 from io import StringIO
 from typing import Tuple, IO, Optional
 
-from config.app_config import AppConfig, ResampleSymbol, resample_get_symbol_config, ResampleTimeframeProcessingStep
-from helper import ResampleTracker
-from exceptions import *
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
+from etl.config.app_config import AppConfig, ResampleSymbol, resample_get_symbol_config, ResampleTimeframeProcessingStep
+from etl.helper import ResampleTracker
+from etl.exceptions import *
 import traceback
 
 class ResampleEngine:

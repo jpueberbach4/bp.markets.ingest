@@ -269,7 +269,7 @@ def parse_args(config: BuilderConfig):
     # Generate temp directory if not partitioned
     if not args.partition:
         # Using config.paths.temp
-        args.output_dir = f"{config.paths.temp}/{args.output_type}/{uuid.uuid4()}"
+        args.output_dir = f"{config.paths.temp}/{args.output_type}/{uuid.uuid4()}/temp"
 
     # Return dictionary of validated options
     return {

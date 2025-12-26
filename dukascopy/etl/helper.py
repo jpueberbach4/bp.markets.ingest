@@ -24,11 +24,15 @@
 """
 import copy
 import yaml
+import sys
 from dataclasses import asdict
 from typing import Dict, Tuple, Optional
 from pathlib import Path
 from datetime import datetime, time, timedelta, date
-from config.app_config import AppConfig, ResampleConfig, ResampleSymbol, ResampleSymbolTradingSession, ResampleTimeframe
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
+from etl.config.app_config import AppConfig, ResampleConfig, ResampleSymbol, ResampleSymbolTradingSession, ResampleTimeframe
 
 try:
     import zoneinfo
