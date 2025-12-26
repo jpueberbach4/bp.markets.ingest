@@ -29,16 +29,52 @@
 import argparse
 import sys
 import uuid
+import textwrap
 from datetime import datetime
 from config.app_config import BuilderConfig 
 from helper import CustomArgumentParser, resolve_selections, get_available_data_from_fs
-# Assuming config is correctly imported
-# from config.app_config import BuilderConfig
 
 # Default date range for extraction
 DEFAULT_AFTER = "1970-01-01 00:00:00"
 DEFAULT_UNTIL = "3000-01-01 00:00:00"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+def generate_examples() -> str:
+    return textwrap.dedent("""
+    Supported modifiers (optional):
+
+      # Normalize gaps and Panama-adjust a symbol
+      SYMBOL:adjusted
+
+      # Skip last candle from a timeframe
+      TF:skiplast
+
+    Examples:
+
+      # List all available symbols
+      build-csv.sh --list
+
+      # Extract raw 1m and 1h data for BRENT as a single .csv file
+      build-csv.sh --select BRENT-CMD.USD/1m,1h --output brent_data.csv
+
+      # Extract Panama-adjusted 1m data for BRENT as a single .Parquet file
+      build-parquet.sh --select BRENT-CMD.USD:adjusted/1m --output adjusted_data.parquet
+
+      # Extract raw 1m, 1h and 4h data for BRENT and exclude the last candle of 1h and 4h to .csv file
+      build-csv.sh --select BRENT-CMD.USD/1m,1h:skiplast,4h:skiplast --output brent_data.csv
+
+      # Select multiple symbols and multiple timeframes to .Parquet hive
+      build-parquet.sh --select EUR-USD/1m,1h,4h --select DOLLAR.IDX-USD/1h --output_dir temp/export --partition
+
+      # Extract raw 1m data for BRENT and EUR-USD and export it to mt4 .csv format
+      build-csv.sh --select BRENT-CMD.USD/1m --select EUR-USD/1m --output brent_data.csv --mt4
+
+      # Extract raw 1m data for EUR-USD for the month of December 2025 to .csv file
+      build-csv.sh --select EUR-USD/1m --after "2025-12-01 00:00:00" --until "2026-01-01 00:00:00"  --output limit.csv
+
+      # Perform a dry-run to verify file discovery
+      build-csv.sh --select EUR-USD/1h --dry-run --output test.csv
+    """)
 
 def parse_args(config: BuilderConfig):
     """
@@ -58,6 +94,7 @@ def parse_args(config: BuilderConfig):
     parser = CustomArgumentParser(
         description="Batch extraction utility for symbol/timeframe datasets.",
         formatter_class=argparse.RawTextHelpFormatter,
+        epilog = generate_examples(),
     )
 
     # Mutually exclusive group: select datasets or list available
@@ -65,8 +102,8 @@ def parse_args(config: BuilderConfig):
     command_group.add_argument(
         "--select",
         action="append",
-        metavar="SYMBOL/TF1,TF2:modifier,...",
-        help="Defines how symbols and timeframes are selected for extraction.",
+        metavar="SYMBOL:modifier/TF1,TF2:modifier,...",
+        help="Defines how symbols and timeframes are selected for extraction.\n\n"
     )
     command_group.add_argument(
         "--list",
