@@ -56,6 +56,8 @@ Our data currently matches Metatrader, to the bit.
 2025-11-26 03:02:00,61.86,61.92,61.86,61.905,0.001904
 ```
 
+Note: the workflow is clear. If the rollover dates can be reliably established: the implementation will be just a few dozen lines of code (20-40 est). 
+
 ## Notice: Backfilling
 
 Backfilling is not currently supported, as our pipeline processes data strictly forward. Because of this, historical data—particularly for illiquid pairs and at the highest granularity—may be skewed. Backfilling has been identified as a must-have feature.
