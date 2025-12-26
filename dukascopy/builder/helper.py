@@ -160,7 +160,8 @@ def resolve_selections(
         for symbol in matched_symbols or [symbol_pattern]:
             for tf_spec in tf_specs:
                 tf_base, *tf_mods = tf_spec.split(":")
-                modifiers = symbol_mods + tf_mods
+
+                modifiers = list(dict.fromkeys(symbol_mods + tf_mods))
 
                 pair = (symbol, tf_base)
                 requested_pairs.add(pair)

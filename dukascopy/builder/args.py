@@ -72,6 +72,9 @@ def generate_examples() -> str:
       # Extract raw 1m data for EUR-USD for the month of December 2025 to .csv file
       build-csv.sh --select EUR-USD/1m --after "2025-12-01 00:00:00" --until "2026-01-01 00:00:00"  --output limit.csv
 
+      # Extract Panama-adjusted 1h and 4h for EUR-USD and skiplast on all timeframes
+      build-csv.sh --select EUR-USD:adjusted:skiplast/1h,4h --dry-run --output test.csv
+
       # Perform a dry-run to verify file discovery
       build-csv.sh --select EUR-USD/1h --dry-run --output test.csv
     """)
