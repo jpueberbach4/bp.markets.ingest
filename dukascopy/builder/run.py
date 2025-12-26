@@ -182,9 +182,6 @@ def main():
         # to efficiently utilize cores
         extract_tasks = optimize_pipeline_tasks(extract_tasks)
 
-        print(extract_tasks)
-        sys.exit(1)
-
         # Create a shared multiprocessing context with fork method
         ctx = get_context("fork")
         pool = ctx.Pool(processes=NUM_PROCESSES)
