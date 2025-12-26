@@ -55,19 +55,19 @@ def generate_examples() -> str:
       build-csv.sh --list
 
       # Extract raw 1m and 1h data for BRENT as a single .csv file
-      build-csv.sh --select BRENT-CMD.USD/1m,1h --output brent_data.csv
+      build-csv.sh --select BRENT.CMD.USD/1m,1h --output brent_data.csv
 
       # Extract Panama-adjusted 1m data for BRENT as a single .Parquet file
-      build-parquet.sh --select BRENT-CMD.USD:adjusted/1m --output adjusted_data.parquet
+      build-parquet.sh --select BRENT.CMD.USD:adjusted/1m --output adjusted_data.parquet
 
       # Extract raw 1m, 1h and 4h data for BRENT and exclude the last candle of 1h and 4h to .csv file
-      build-csv.sh --select BRENT-CMD.USD/1m,1h:skiplast,4h:skiplast --output brent_data.csv
+      build-csv.sh --select BRENT.CMD.USD/1m,1h:skiplast,4h:skiplast --output brent_data.csv
 
       # Select multiple symbols and multiple timeframes to .Parquet hive
       build-parquet.sh --select EUR-USD/1m,1h,4h --select DOLLAR.IDX-USD/1h --output_dir temp/export --partition
 
       # Extract raw 1m data for BRENT and EUR-USD and export it to mt4 .csv format
-      build-csv.sh --select BRENT-CMD.USD/1m --select EUR-USD/1m --output brent_data.csv --mt4
+      build-csv.sh --select BRENT.CMD-USD/1m --select EUR-USD/1m --output brent_data.csv --mt4
 
       # Extract raw 1m data for EUR-USD for the month of December 2025 to .csv file
       build-csv.sh --select EUR-USD/1m --after "2025-12-01 00:00:00" --until "2026-01-01 00:00:00"  --output limit.csv
@@ -196,8 +196,6 @@ def parse_args(config: BuilderConfig):
     # Parse CLI arguments
     args = parser.parse_args()
 
-    # ... (Validation logic remains unchanged) ...
-
     # Validate date format
     try:
         dt_after = datetime.strptime(args.after, DATE_FORMAT) if args.after else None
@@ -239,7 +237,6 @@ def parse_args(config: BuilderConfig):
         parser.error("--parquet incompatible with --mt4")
 
     # Discover available datasets from filesystem
-    # NOTE: Assuming get_available_data_from_fs is available in scope (e.g., imported from helper)
     all_available_data = get_available_data_from_fs(config)
 
     # List available symbols and timeframes
@@ -255,7 +252,6 @@ def parse_args(config: BuilderConfig):
         sys.exit(0)
 
     # Resolve selections to actual CSV files
-    # NOTE: Assuming resolve_selections is available in scope (e.g., imported from helper)
     final_selections, _ = resolve_selections(
         parser=parser,
         select_args=args.select,
@@ -269,7 +265,7 @@ def parse_args(config: BuilderConfig):
 
     # Generate temp directory if not partitioned
     if not args.partition:
-        # NOTE: Using config.paths.temp, adjust if necessary
+        # Using config.paths.temp
         args.output_dir = f"{config.paths.temp}/{args.output_type}/{uuid.uuid4()}"
 
     # Return dictionary of validated options
