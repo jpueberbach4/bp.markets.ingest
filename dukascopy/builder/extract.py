@@ -218,10 +218,7 @@ def prepare_symbol(
     symbol, timeframe, input_filepath, after_str, until_str, modifiers, options = task
 
     if "adjusted" in modifiers:
-
         import shutil # cleanup later
-        import yaml
-        from dataclasses import asdict
         from filelock import FileLock, Timeout
         from etl.config.app_config import load_app_config, resample_get_symbol_config, ResampleConfig
         from etl.resample import fork_resample
@@ -251,17 +248,19 @@ def prepare_symbol(
         
         # Check if we already have an adjusted file for this tf (adjust/tf/symbol.csv)
         if not adjusted_base_path.exists():
-            # It was not already prepared in an other parallel process
+            # It was not already prepared in another parallel process
 
             # Now, prepare the adjusted 1m file and account for the rollover gaps, CALL adjust.adjust_symbol
+            print(f"Warning: adjusted modifier set for {symbol}. Handling rollover gaps...")
             shutil.copyfile(raw_base_path, adjusted_base_path) # we simulate adjust for a moment
             
             # Adjust the 1m base timeframe source in root (defaults is enough for the moment)
             app_config.resample.timeframes.get("1m").source = str(adjusted_base_path.parent)
             # Now, adjust resample.paths.data in app_config, set to tempdir/adjust (tf's directly below)
             app_config.resample.paths.data = str(tf_path.parent.parent)
+            
             # CALL the fork_resample(symbol, app_config)
-            print("Resampling...")
+            print(f"Warning: adjusted modifier set for {symbol}. Resampling... (may take a while, coffee?)")
             fork_resample([symbol, app_config])
             # Todo: exception handling and such
         
@@ -270,16 +269,6 @@ def prepare_symbol(
 
         # And release the lock...
         lock.release()
-
-        # Debug
-        if True:
-            new_symbol_config = resample_get_symbol_config(
-                symbol, app_config
-            )
-            print(yaml.safe_dump(
-                asdict(new_symbol_config)
-            ))
-
 
         # Return the adjusted task
         task = (symbol, timeframe, input_filepath, after_str, until_str, modifiers, options)
