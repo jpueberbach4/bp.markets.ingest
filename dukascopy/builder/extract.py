@@ -213,6 +213,7 @@ def prepare_symbol(
     symbol, timeframe, input_filepath, after_str, until_str, modifiers, options = task
 
     if "adjusted" in modifiers:
+        print ("coffee")
         # This will not be fast, but still faster than relying on an external provider for this
         # And it's free
         #
@@ -231,7 +232,7 @@ def prepare_symbol(
         # Lock release
         # Return modified task
         # Something like that
-        pass
+        task = (symbol, timeframe, input_filepath, after_str, until_str, modifiers, options)
 
     return task
 
