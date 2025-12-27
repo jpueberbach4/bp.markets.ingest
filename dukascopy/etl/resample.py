@@ -461,16 +461,21 @@ class ResampleEngine:
             primary_session = next(iter(self.config.sessions.values()))
             default_origin = primary_session.timeframes[self.ident].origin
 
+            # Get the current position (we are changing the tell since it massively impacts performance)
+            offset_before = f_input.tell()
+
             # Read up to batch_size rows from the input file
             for _ in range(self.config.batch_size):
                 # Capture byte offset before reading the row
-                offset_before = f_input.tell()
-                line = f_input.readline()
+               
+                line_bytes = f_input.readline()
 
                 # Stop processing if end-of-file is reached
-                if not line:
+                if not line_bytes:
                     eof = True
                     break
+
+                line = line_bytes.decode('utf-8').strip()
 
                 # Resolve origin dynamically when multiple sessions are configured
                 if not is_default:
@@ -495,6 +500,9 @@ class ResampleEngine:
 
                 # Write the enriched CSV row to the output buffer
                 sio.write(f"{line.strip()},{origin},{offset_before}\n")
+
+                # Update offset_before
+                offset_before += len(line_bytes)
 
             # Reset buffer cursor for downstream consumers
             sio.seek(0)
@@ -750,9 +758,12 @@ class ResampleWorker:
             input_pos, output_pos = engine.read_index()
 
             # Open input CSV for reading and output CSV for read/write updates
-            with open(engine.input_path, "r") as f_in, open(engine.output_path, "r+") as f_out:
+            with open(engine.input_path, "rb") as f_in, open(engine.output_path, "r+") as f_out:
                 # Read and cache the input CSV header
-                header = f_in.readline()
+                header_bytes = f_in.readline()
+                
+                # We are now operating in bytes mode
+                header = header_bytes.decode('utf-8')
 
                 # Resume input reading from the last processed byte offset
                 if input_pos > 0:
@@ -807,6 +818,29 @@ class ResampleWorker:
 
 
 
+
+def fork_resample_profile(args):
+    import cProfile
+    import pstats
+    profiler = cProfile.Profile()
+    profiler.enable()
+    
+    try:
+        symbol, config = args
+        # Initialize the worker
+        worker = ResampleWorker(symbol, config)
+
+        # Execute the worker
+        worker.run()
+    finally:
+        profiler.disable()
+        
+        # Save profiling stats
+        stats = pstats.Stats(profiler)
+        stats.sort_stats('cumulative')
+        stats.print_stats(20)  # Top 20 bottlenecks
+
+
 def fork_resample(args) -> bool:
     """
     Multiprocessing-friendly entry point for symbol resampling.
@@ -819,6 +853,9 @@ def fork_resample(args) -> bool:
     Returns:
         bool: True if resampling completed successfully.
     """
+    # return fork_resample_profile(args)
+
+
     try:
         symbol, config = args
         # Initialize the worker
