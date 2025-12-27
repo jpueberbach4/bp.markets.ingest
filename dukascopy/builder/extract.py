@@ -33,6 +33,7 @@ import sys
 from pathlib import Path
 
 from typing import Tuple, Dict, Any
+from adjust import adjust_symbol
 
 # Since we (potentially) import from ETL folder, we need to app a syspath
 sys.path.append(str(Path(__file__).resolve().parent.parent))
@@ -259,6 +260,9 @@ def prepare_symbol(
 
             # Now, prepare the adjusted 1m file and account for the rollover gaps, CALL adjust.adjust_symbol
             print(f"Warning: adjusted modifier set for {symbol}. Handling rollover gaps...")
+
+            adjust_symbol(symbol)
+            os.exit
             shutil.copyfile(raw_base_path, adjusted_base_path) # we simulate adjust for a moment
             
             # Adjust the 1m base timeframe source in root (defaults is enough for the moment)
