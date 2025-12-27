@@ -261,7 +261,7 @@ def prepare_symbol(
             # Now, prepare the adjusted 1m file and account for the rollover gaps, CALL adjust.adjust_symbol
             print(f"Warning: adjusted modifier set for {symbol}. Handling rollover gaps...")
 
-            adjust_symbol(symbol)
+            adjust_symbol(symbol, raw_base_path, adjusted_base_path)
             os.exit
             shutil.copyfile(raw_base_path, adjusted_base_path) # we simulate adjust for a moment
             

@@ -3,6 +3,7 @@ from typing import Optional
 from datetime import datetime
 from pathlib import Path
 import requests
+import time
 import json
 import csv
 import io
@@ -11,6 +12,19 @@ import re
 
 CACHE_MAX_AGE = 86400
 CACHE_PATH = "data/rollover"
+
+# Dukascopy CSV schema: column names and types
+DUKASCOPY_CSV_SCHEMA = {
+    "time": "TIMESTAMP",
+    "open": "DOUBLE",
+    "high": "DOUBLE",
+    "low": "DOUBLE",
+    "close": "DOUBLE",
+    "volume": "DOUBLE",
+}
+
+# Standard CSV timestamp format for parsing
+CSV_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 def normalize_data(data:str, symbol:str) -> Optional[str]:
     # Strip trailing and leading spaces
@@ -53,14 +67,13 @@ def normalize_data(data:str, symbol:str) -> Optional[str]:
     # We didnt have any data we could compile
     return None
 
-def fetch_data(symbol) -> Optional[str]:
+def fetch_rollover_data_for_symbol(symbol) -> Optional[str]:
     # check cache first
     cache_path = Path(f"{CACHE_PATH}/{symbol}.csv")
-    if cache_path.exists() and (cache_path.stats().m_time+CACHE_MAX_AGE) < int(time.time()):
-        # return the cache
-        with open(cache_path, "r") as f_cache:
-            return f_cache.read()
-
+    if cache_path.exists() and (cache_path.stat().st_mtime+CACHE_MAX_AGE) > int(time.time()):
+        # return the cache_path (for direct loading in duckdb)
+        return cache_path
+        
     url = "https://freeserv.dukascopy.com/2.0/"
     try:
         # Perform HTTP request
@@ -84,7 +97,7 @@ def fetch_data(symbol) -> Optional[str]:
             params = {
                 "path": "cfd_monthly_adjustment/getData",
                 "start": "0000000000000",
-                "end": "1806745599999",
+                "end": "2006745599999",                     # very much in advance
                 "jp": "0",
                 "jsonp": "_callbacks____qmjn9av6ydd"
             },
@@ -101,8 +114,8 @@ def fetch_data(symbol) -> Optional[str]:
         with open(cache_path, "w") as f_cache:
             f_cache.write(normalized_data)
 
-        # Todo: return the cache_path instead
-        return normalized_data
+        # Return the cache_path (for direct loading to duckdb)
+        return cache_path
 
     except requests.exceptions.RequestException as e:
         status_code = getattr(e.response, "status_code", 0)
@@ -111,17 +124,52 @@ def fetch_data(symbol) -> Optional[str]:
     return None
 
 
-def adjust_symbol(symbol):
-    print(symbol)
-    data = fetch_data(symbol)
-    print(data)
-    # have a look into the cache
-    # do we have the file already?
-    # older than config.max_age? 
-    # repull from broker
-    # extract dates for instrument
-    # detect gap end of day, register
-    # back-apply difference
-    # something for tomorrow
-    pass
+def adjust_symbol(symbol, input_filepath, output_filepath):
+    # TODO: parameterize this and map it to configuration
+    rollover_filepath = fetch_rollover_data_for_symbol(symbol)
+    
+    adjust_sql = f"""
+        CREATE OR REPLACE TABLE adjustments AS
+        WITH roll_diffs AS (
+            SELECT 
+                (strptime(date, '%d-%b-%y')::DATE + INTERVAL '23 hours 59 minutes 59 seconds')::TIMESTAMP as roll_date,
+                (long::DOUBLE) * -1 as adj_value 
+            FROM read_csv('{rollover_filepath}', header=True)
+        ),
+        cumulative AS (
+            SELECT 
+                roll_date,
+                SUM(adj_value) OVER (ORDER BY roll_date DESC) as total_offset
+            FROM roll_diffs
+        )
+        SELECT * FROM cumulative;
+
+        COPY (
+            WITH raw_data AS (
+                SELECT 
+                    strptime(CAST(time AS VARCHAR), '{CSV_TIMESTAMP_FORMAT}') AS ts,
+                    open::DOUBLE as o,
+                    high::DOUBLE as h,
+                    low::DOUBLE as l,
+                    close::DOUBLE as c,
+                    volume::DOUBLE as v
+                FROM read_csv('{input_filepath}', header=True)
+            )
+            SELECT 
+                strftime(raw_data.ts, '{CSV_TIMESTAMP_FORMAT}') AS time,
+                round(o + COALESCE(adj.total_offset, 0), 6) as open,
+                round(h + COALESCE(adj.total_offset, 0), 6) as high,
+                round(l + COALESCE(adj.total_offset, 0), 6) as low,
+                round(c + COALESCE(adj.total_offset, 0), 6) as close,
+                v as volume
+            FROM raw_data
+            ASOF LEFT JOIN adjustments adj ON raw_data.ts <= adj.roll_date
+            ORDER BY raw_data.ts ASC
+        ) TO '{output_filepath}' (HEADER True, DELIMITER ',');
+    """
+    con = duckdb.connect(database=":memory:")
+    con.execute(adjust_sql)
+    con.close()
+    os.exit
+    return True
 
