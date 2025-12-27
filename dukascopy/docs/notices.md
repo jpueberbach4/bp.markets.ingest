@@ -2,6 +2,10 @@ MT4 is decoded.
 
 **Notice:** The main branch is now locked. No further modifications will be made to the core codebase unless a critical bug is discovered, a significant feature is released, or an essential security announcement is required. New features are coming.
 
+## Notice: Performance
+
+Now that the code is solid, it was time to profile its performance. Wow—simple fixes led to massive gains. A huge performance update is on the way.
+
 ## Notice: Rollover
 
 Rollover support is being implemented. Programmatic detection was too inaccurate. Different approach was needed.
