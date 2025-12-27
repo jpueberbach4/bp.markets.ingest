@@ -6,6 +6,36 @@ MT4 is decoded.
 
 Rollover support is being implemented. Programmatic detection was too inaccurate. Different approach was needed.
 
+I have a first version of back-adjustment (Panama) up and running. Severely checking this and parameterizing this before i release it. Initial results look (pretty) good:
+
+```sh
+RAW DATA:
+
+December
+2025-12-23 20:10:00,62.27,62.27,62.27,62.27,0.000202
+2025-12-24 03:00:00,61.922,61.96,61.875,61.88,0.00374
+GAP = -0.348
+
+November
+2025-11-25 23:39:00,62.552,62.552,62.547,62.547,0.000144
+2025-11-26 03:00:00,61.907,61.93,61.83,61.88,0.003438
+GAP = -0.64
+
+BACKADJUSTED DATA:
+
+December:
+2025-12-23 20:10:00,61.83,61.83,61.83,61.83,0.000202
+2025-12-24 03:00:00,61.922,61.96,61.875,61.88,0.00374
+GAP = +0.092
+
+November
+2025-11-25 23:39:00,61.502,61.502,61.497,61.497,0.000144
+2025-11-26 03:00:00,61.467,61.49,61.39,61.44,0.003438
+GAP = -0.03
+```
+
+By specifying ```SYMBOL:adjusted/TF``` you can optionally decide if you want the Panama-version or the "regular" (default) "broker-reality"-version. It will only support instruments for which a rollover calendar could be found. If it cannot find the calendar. It will die on you. 
+
 ## Notice: Backfilling
 
 Backfilling is not currently supported, as our pipeline processes data strictly forward. Because of this, historical data—particularly for illiquid pairs and at the highest granularity—may be skewed. Backfilling has been identified as a must-have feature.
