@@ -44,6 +44,18 @@ Once the 1-minute data is adjusted, all higher timeframes (5m, 1h, Daily) must b
 
 Ofcourse everything is fully automated. Just a flag is needed to trigger it. The system will be working about 30-40 seconds on 6 panama-adjusted symbols (this unoptimized. optimization steps still need to get performed).
 
+Examples:
+
+Before Panama
+
+![25 november BRENT before backadjust](../images/backadjust/20251125-brent-before-backadjust.png)
+
+After Panama
+
+![25 november BRENT after backadjust](../images/backadjust/20251125-brent-after-backadjust.png)
+
+Completely different perspective. As you can see.
+
 ## Notice: Backfilling
 
 Backfilling is not currently supported, as our pipeline processes data strictly forward. Because of this, historical data—particularly for illiquid pairs and at the highest granularity—may be skewed. Backfilling has been identified as a must-have feature.
