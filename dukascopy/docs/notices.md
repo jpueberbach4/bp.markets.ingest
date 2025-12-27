@@ -4,7 +4,7 @@ MT4 is decoded.
 
 ## Notice: Performance
 
-Now that the code is solid, it was time to profile its performance. Wow—simple fixes led to massive gains. A huge performance update is on the way.
+Now that the code is solid, it was time to profile its performance. Wow—simple fixes led to massive gains. A huge performance update is on the way. I am now resampling 42 symbols, from scratch, in little more than a minute and there is still room to optimize more.
 
 ## Notice: Rollover
 
