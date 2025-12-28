@@ -46,7 +46,9 @@ I’m wondering how far I should go in replicating MT4 behavior. Our data repres
 
 That said, forcing a 00:00 alignment when there is no actual market volume effectively creates “phantom” candles or signals, which I strongly dislike. However, as with most things, this should be configurable rather than impossible to support.
 
-**Decision:** screw it—let’s add the valid-on-weekdays configuration.
+**Decision:** screw it—let’s add the valid-on-weekdays configuration.'
+
+**Update:** This was a 10-minute change, and I already have a working version. I still need to verify it, though, since I modified the “first rule match, discard the rest” logic.
 
 ## Notice: Performance
 
