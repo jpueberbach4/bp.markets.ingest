@@ -59,6 +59,10 @@ def get_dst_transitions(start_dt, end_dt, config):
     """
     # The naming of config.server_timezone is not "completely correct"
     tz = pytz.timezone(config.server_timezone)
+    # Bugfix (timezone set to eg Etc/UTC)
+    if not hasattr(tz, '_utc_transition_times'):
+        return []
+
     s = pd.Timestamp(start_dt).to_pydatetime().replace(tzinfo=None)
     e = pd.Timestamp(end_dt).to_pydatetime().replace(tzinfo=None)
     return [t for t in tz._utc_transition_times if s <= t <= e]
