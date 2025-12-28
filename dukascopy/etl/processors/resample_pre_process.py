@@ -200,10 +200,7 @@ def resample_pre_process_origin(df: pd.DataFrame, ident, step, config) -> pd.Dat
             session_mask &= (df['tz_dt_sg'] <= pd.to_datetime(session.to_date))
 
         # Weekdays support
-
-        print(f"WEEKDAYS: {hasattr(session, 'weekdays')}")
         if hasattr(session, 'weekdays') and session.weekdays is not None:
-            print(f"WEEKDAYS: {session.weekdays}")
             session_mask &= sg_weekdays.isin(session.weekdays)
 
         # Resolve the base origin for this timeframe
@@ -237,10 +234,9 @@ def resample_pre_process_origin(df: pd.DataFrame, ident, step, config) -> pd.Dat
             )
             # set selected to 1
             df.loc[m, 'selected'] = 1
-            print("selected")
 
 
-    if True:
+    if False:
         # Debugging
         pd.set_option('display.max_columns', None)
         pd.set_option('display.expand_frame_repr', False)

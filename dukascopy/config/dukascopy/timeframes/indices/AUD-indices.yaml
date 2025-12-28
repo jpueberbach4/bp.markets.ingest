@@ -26,20 +26,40 @@
 # - Overnight (After-Hours) Session: 5:10 PM - 7:00 AM the next morning (AEST) **
 # - There is a short break between sessions (4:30 PM - 5:10 PM).
 #
+# This one has an "insane configruation". Don't expect it to be FULLY complete.
+# If you find issues, modify it to suit it better. For me it's impossible to check
+# every asset in FULL detail. I will do it someday, but for now, no.
+#
 AUS.IDX-AUD:
   timezone: Australia/Sydney
   skip_timeframes: []
   timeframes:
     4h:
       post:
-        # merge the leftover of the candle-policy-change
+        # a bugs-bunny
         merge-step:
           action: merge
           ends_with:
           - "2020-02-06 16:00:00"
           offset: -1
   sessions:
+    my-very-special-mt4-alignment-quirk:
+      # This is ANOTHER special handling for the AUS.IDX. 
+      # Before 2024-06-24 we have ONLY on monday EPOCH candles, during the DAY-session ONLY
+      # When this rule matches, the other rules won't overrule
+      weekdays: [0] # 0=monday, 1=tuesday, and so on..
+      to_date: "2024-06-22 01:00:00"  # In Australia/Sydney time
+      ranges:
+        day: 
+          from: "09:50"
+          to: "16:30"
+      timeframes:
+        4h:                     
+          origin: "epoch"           
     day-session:
+      # We have an alignment policy change happening on 2020-02-07
+      # We move from EPOCH based candles to DAY-session candles aligned at 00:50
+      # EXCEPT MONDAY, see above
       from_date: "2020-02-07 01:00:00"  # In Australia/Sydney time
       ranges: 
         day:
@@ -55,6 +75,9 @@ AUS.IDX-AUD:
         4h:                     
           origin: "00:50"     
     after-hours:
+      # We have an alignment policy change happening on 2020-02-07
+      # We move from EPOCH based candles to DAY-session candles aligned at 08:10
+      # EXCEPT MONDAY, see above
       from_date: "2020-02-07 01:00:00" # In Australia/Sydney time
       ranges: 
         day:
@@ -72,19 +95,17 @@ AUS.IDX-AUD:
           origin: "08:10"
         4h:                     
           origin: "08:10"
-    # Before 2020-02-06, different candle policy
-    # Switch on candles happens on Thursday, Feb 6, 4:00 PM (16:00) GMT+2 (MT4 server-time, winter)
-    # Switch on candles happens on Friday, Feb 7, 1:00 AM (01:00) (Australia/Sydney)
-    # Use default epoch time, causes H4 candles to align to 00:00, 04:00,...
     ancient:
+      # We have an alignment policy change happening on 2020-02-07
+      # This is before that period. We didnt specify any origins
+      # so the default alignment is inherited from the defaults
+      # Which is EPOCH
       to_date: "2020-02-07 01:00:00"
       ranges:
         24h:
           from: "00:00"
           to: "23:59"
     # This is to prevent OUT_OF_MARKET errors for W1
-    # We could drop the above ancient one, but we leave it in for clearness
-    # In the future we will need to check for a better approach
     catch-all:
       ranges: 
         24h:
