@@ -48,11 +48,11 @@ That said, forcing a 00:00 alignment when there is no actual market volume effec
 
 **Decision:** screw it—let’s add the valid-on-weekdays configuration.'
 
-**Update:** This is a hard change. Post-processing steps need to become "session"-aware. The problem here is that MT4 makes the 08:00 candle 6 hours and 9 minutes long. There is another gap from 12:00 to 14:09, with data, that creates a "ghost candle". Merging this ghost-candle into the 08:00 solves it, but I cannot do this globally, like with the SGD, because it only should happen on weekday Monday. I need to lay an egg on this one first. Or two.
+**Update:** This is a hard change. Post-processing steps need to become "session"-aware. The problem here is that MT4 makes the H4 08:00 candle 6 hours and 9 minutes long. There is another gap from 12:00 to 14:09, with data, that creates a "ghost candle". Merging this ghost-candle into the 08:00 solves it, but I cannot do this globally, like with the SGD, because it only should happen on weekday Monday. I need to lay an egg on this one first. Or two.
 
-If you want to see this for yourself, openup the AUS.IDX index, scroll to 2024-06-17 0800. Next candle you see is 14:10. Now go to hourly chart. See candle at 12:10 and 13:10. See close of 13:10 hourly candle, its also close of that H4 08:00 candle. 7691.221. 
+If you want to see this for yourself, openup the H4 AUS.IDX index, scroll to 2024-06-17 0800. Next H4 candle you see is 14:10. Now go to H1 chart. See candle at 12:10 and 13:10. See close of 13:10 hourly candle, its also close of that H4 08:00 candle. 7691.221. 
 
-I mean, imagine, what these kind of things mean for your backtests in MT4. Its completely fragile. I really didnt know that MT4 had this much "weirdness".
+I mean, imagine, what these kind of things mean for your backtests in MT4. Its completely fragile.
 
 ## Notice: Performance
 
