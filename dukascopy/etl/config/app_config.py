@@ -63,6 +63,7 @@ class ResampleTimeframeProcessingStep(ResampleDateRange):
     action: str = field(default=None,metadata={'yaml_key': 'action'}) 
     ends_with: Optional[str] = field(default=None, metadata={'yaml_key': 'ends_with'}) 
     offset: int = field(default=-1, metadata={'yaml_key': 'offset'})
+    weekdays: List[int] = field(default_factory=lambda: [0, 1, 2, 3, 4, 5, 6]) # default to all weekdays
 
 @dataclass
 class ResampleTimeframe:

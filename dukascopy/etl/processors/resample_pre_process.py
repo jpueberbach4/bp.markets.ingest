@@ -206,13 +206,6 @@ def resample_pre_process_origin(df: pd.DataFrame, ident, step, config) -> pd.Dat
         # Resolve the base origin for this timeframe
         base_origin_str = session.timeframes.get(ident).origin
 
-        if base_origin_str == "epoch":
-            df.loc[session_mask, 'tz_origin'] = "epoch"
-            df.loc[session_mask, 'selected'] = 1
-            continue
-
-        base_h, base_m = map(int, base_origin_str.split(':'))
-
         # Apply origin shifts for each configured session range
         for r in session.ranges.values():
             st_t = datetime.strptime(r.from_time, "%H:%M").time()
@@ -227,6 +220,12 @@ def resample_pre_process_origin(df: pd.DataFrame, ident, step, config) -> pd.Dat
             if not m.any():
                 continue
 
+            if base_origin_str == "epoch":
+                df.loc[m, 'tz_origin'] = "epoch"
+                df.loc[m, 'selected'] = 1
+                continue
+
+            base_h, base_m = map(int, base_origin_str.split(':'))
             # Adjust the origin hour using the computed DST shift
             adj_h = (base_h + df.loc[m, 'dst_shift'].astype(int)) % 24
             df.loc[m, 'tz_origin'] = (
