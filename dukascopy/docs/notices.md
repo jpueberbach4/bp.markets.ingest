@@ -42,7 +42,11 @@ Incoming 1m feed has:
 
 Rest of the week is normal.
 
-I’m wondering how far I should go in trying to replicate MT4 behavior. Our data represents the “ground truth” since we align with the exchange, whereas MT4 does not. From 2024-06-17 onward, MT4 does align the Monday candles correctly. I could add a “valid-on-days-of-the-week” setting to the session configuration, but that might be overengineering the solution. I’ll need to think this through. I’m very focused on accuracy and performance.
+I’m wondering how far I should go in replicating MT4 behavior. Our data represents the “ground truth” because it aligns with the exchange, whereas MT4 does not. From 2024-06-17 onward, MT4 does correctly align Monday candles. I could introduce a “valid-on-days-of-the-week” option in the session configuration, but that risks overengineering.
+
+That said, forcing a 00:00 alignment when there is no actual market volume effectively creates “phantom” candles or signals, which I strongly dislike. However, as with most things, this should be configurable rather than impossible to support.
+
+**Decision:** screw it—let’s add the valid-on-weekdays configuration.
 
 ## Notice: Performance
 
