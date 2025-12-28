@@ -10,9 +10,7 @@
 - Soft commodities: Orange Juice, Cotton, Soybeans. Good.
 - Indices: US indices. Excellent. DAX. Good. NL. Good. Nikkie. Excellent.
 - Special Indices
-  - AUS.IDX: OK \
-    **Note:** one tiny ghost H4 candle on "aligment policy rollover" at 2020-02-06 @ 12:10 remains \
-    **Status:** low prio (will be taken care of, eventually)
+  - AUS.IDX: OK
   - SGD.IDX: OK
   - CHI.IDX: OK
   - HKG.IDX: OK \
