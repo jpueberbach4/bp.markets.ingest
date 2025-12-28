@@ -50,6 +50,7 @@ class ResampleSymbolTradingSession(ResampleDateRange):
     """
     Configuration for a single named session (e.g., 'day-session').
     """
+    weekdays: List[int] = field(default_factory=lambda: [0, 1, 2, 3, 4, 5, 6]) # default to all weekdays
     ranges: Dict[str, ResampleTimeRange] = field(default_factory=dict)
     timeframes: Dict[str, 'ResampleTimeframe'] = field(default_factory=dict)
 

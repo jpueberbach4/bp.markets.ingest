@@ -134,6 +134,7 @@ def resample_pre_process_origin(df: pd.DataFrame, ident, step, config) -> pd.Dat
     df['tz_dt_sg'] = pd.NaT
     df['dst_shift'] = 0
     df['tz_origin'] = "epoch"
+    df['selected'] = 0
 
     # Process each window between DST boundaries
     for i in range(len(boundaries) - 1):
@@ -175,6 +176,8 @@ def resample_pre_process_origin(df: pd.DataFrame, ident, step, config) -> pd.Dat
             .tz_localize(None)
         )
 
+    # Extract local weekdays for session weekday matching
+    sg_weekdays = df['tz_dt_sg'].dt.weekday
     # Extract local times for session range matching
     sg_times = df['tz_dt_sg'].dt.time
 
@@ -185,16 +188,30 @@ def resample_pre_process_origin(df: pd.DataFrame, ident, step, config) -> pd.Dat
 
         # Build a mask for rows that belong to this session
         session_mask = pd.Series(True, index=df.index)
+
+        # Only apply new origins to items that were not earlier selected
+        # Support for first rule match is applied only
+        session_mask = (df['selected'] == 0)
+
+        # Now, apply the mask for from_date and to_date
         if session.from_date:
             session_mask &= (df['tz_dt_sg'] >= pd.to_datetime(session.from_date))
         if session.to_date:
             session_mask &= (df['tz_dt_sg'] <= pd.to_datetime(session.to_date))
+
+        # Weekdays support
+
+        print(f"WEEKDAYS: {hasattr(session, 'weekdays')}")
+        if hasattr(session, 'weekdays') and session.weekdays is not None:
+            print(f"WEEKDAYS: {session.weekdays}")
+            session_mask &= sg_weekdays.isin(session.weekdays)
 
         # Resolve the base origin for this timeframe
         base_origin_str = session.timeframes.get(ident).origin
 
         if base_origin_str == "epoch":
             df.loc[session_mask, 'tz_origin'] = "epoch"
+            df.loc[session_mask, 'selected'] = 1
             continue
 
         base_h, base_m = map(int, base_origin_str.split(':'))
@@ -218,16 +235,19 @@ def resample_pre_process_origin(df: pd.DataFrame, ident, step, config) -> pd.Dat
             df.loc[m, 'tz_origin'] = (
                 adj_h.astype(str).str.zfill(2) + f":{base_m:02d}"
             )
+            # set selected to 1
+            df.loc[m, 'selected'] = 1
+            print("selected")
 
 
-    if False:
+    if True:
         # Debugging
         pd.set_option('display.max_columns', None)
         pd.set_option('display.expand_frame_repr', False)
         # Optional: Ensure the columns don't get truncated if the text is long
         pd.set_option('display.max_colwidth', None)
-        pd.set_option('display.max_rows', 250000)
-        print(df.head(250000))
+        pd.set_option('display.max_rows', 250)
+        print(df.head(250))
         sys.exit(1)
 
 
@@ -237,6 +257,6 @@ def resample_pre_process_origin(df: pd.DataFrame, ident, step, config) -> pd.Dat
 
     # Persist the final origin and drop helper columns
     df['origin'] = df['tz_origin']
-    df.drop(columns=['tz_dt_sg', 'dst_shift', 'tz_origin'], inplace=True)
+    df.drop(columns=['tz_dt_sg', 'dst_shift', 'tz_origin', 'selected'], inplace=True)
 
     return df
