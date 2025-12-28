@@ -74,6 +74,7 @@ from io import StringIO
 from typing import Tuple, IO, Optional
 
 from config.app_config import AppConfig, ResampleSymbol, resample_get_symbol_config, ResampleTimeframeProcessingStep
+from processors.resample_pre_process import preprocess_origin
 from helper import ResampleTracker
 from exceptions import *
 import traceback
@@ -211,6 +212,14 @@ class ResampleEngine:
         self.output_path = output_path
         self.index_path = index_path
         self.is_root = False
+
+    def _apply_pre_processing(self, df: pd.DataFrame, step: ResampleTimeframeProcessingStep) -> pd.DataFrame:
+        if step.action == "origin":
+            # This is a very complicated routine being called
+            df = preprocess_origin(self.config.timezone, df, self.ident, self.config)
+
+        sys.exit(1)
+        return df
 
     def _apply_post_processing(
         self,
@@ -580,6 +589,14 @@ class ResampleEngine:
             # Retrieve timeframe configuration from the primary session
             session = next(iter(self.config.sessions.values()))
             tf_cfg = session.timeframes[self.ident]
+
+            # We inject the new origin marker here (it has now become a vectorized pre-processing step)
+            pre_processing_steps = [ResampleTimeframeProcessingStep(action="origin")] + \
+                                    (list(tf_cfg.pre.values()) if tf_cfg.pre else [])
+
+            # Apply pre-processing
+            for tf_step in pre_processing_steps:
+                df = self._apply_pre_processing(df, tf_step)
 
             # Resample each origin independently to preserve session boundaries
             for origin, origin_df in df.groupby("origin"):
