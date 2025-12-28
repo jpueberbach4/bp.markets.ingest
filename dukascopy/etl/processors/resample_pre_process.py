@@ -24,15 +24,21 @@ def preprocess_origin(tz:str, df: pd.DataFrame, ident, config) -> pd.DataFrame:
         return df
 
 
+    # Get the timezone for configured timezone on the symbol
     tz_sg = pytz.timezone(tz)
-    tz_ny = pytz.timezone('America/New_York')       # Change this
-    tz_server_std = pytz.timezone("Etc/GMT-2")      # Change this
+
+    # TODO: Change this, needs to pull for symbol from timezone settings
+    tz_ny = pytz.timezone('America/New_York')
+
+    # This one is important, we specify ORIGINS AS IF IT WERE WINTER. THATS GMT+2 for a MT4 server.
+    tz_server_std = pytz.timezone("Etc/GMT-2")
     
     ref_now = datetime.now(tz_sg)
     server_now_std = datetime.now(tz_server_std)
     ref_gap = (ref_now.utcoffset().total_seconds() - 
             server_now_std.utcoffset().total_seconds()) / 3600
 
+    # We are sorted on date, get the date-range for this timeframe
     first_dt = df.index[0]
     last_dt = df.index[-1]
 
@@ -42,6 +48,7 @@ def preprocess_origin(tz:str, df: pd.DataFrame, ident, config) -> pd.DataFrame:
     # Determine boundary windows for the DST switches
     boundaries = sorted(list(set([first_dt, last_dt] + transitions)))
     
+    # Initialize helper columns
     df['tz_dt_sg'] = pd.NaT
     df['dst_shift'] = 0
     df['tz_origin'] = "epoch"
@@ -61,14 +68,19 @@ def preprocess_origin(tz:str, df: pd.DataFrame, ident, config) -> pd.DataFrame:
         mid_p = pd.Timestamp(start_win + (end_win - start_win) / 2).to_pydatetime().replace(tzinfo=None)
         is_dst = bool(tz_ny.localize(mid_p).dst())
 
-        # Change this, should be based on offset_shift_map (if we want to support "exotic" metatrader servers)
+        # TODO: Change this, should be based on offset_shift_map (if we want to support "exotic" metatrader servers)
         server_tz_str = "Etc/GMT-3" if is_dst else "Etc/GMT-2"
-        tz_server_cur = pytz.timezone(server_tz_str)
-        server_now_cur = datetime.now(tz_server_cur) 
 
-        # Determine the current GAP
-        cur_gap = (ref_now.utcoffset().total_seconds() - 
-                server_now_cur.utcoffset().total_seconds()) / 3600
+        # Get offset for THIS specific window, not 'now'
+        window_tz_dt_sg = tz_sg.localize(mid_p)
+        
+        # Get Server offset for THIS specific window
+        tz_server_cur = pytz.timezone(server_tz_str)
+        window_tz_dt_server = tz_server_cur.localize(mid_p)
+
+        # Calculate gap based on the window's actual offsets
+        cur_gap = (window_tz_dt_sg.utcoffset().total_seconds() - 
+                   window_tz_dt_server.utcoffset().total_seconds()) / 3600
         
         # For this window, the shift is this amount in hours
         window_shift = int(ref_gap - cur_gap)
@@ -125,6 +137,7 @@ def preprocess_origin(tz:str, df: pd.DataFrame, ident, config) -> pd.DataFrame:
             if not m.any(): continue
 
             # AH! we have matches, now start applying the shift to the origin
+            #adj_h = (base_h + df.loc[m, 'dst_shift'].astype(int) + 1) % 24
             adj_h = (base_h + df.loc[m, 'dst_shift'].astype(int)) % 24
             
             # Apply the shift and store adjusted origin to tz_origin column
@@ -150,8 +163,7 @@ def preprocess_origin(tz:str, df: pd.DataFrame, ident, config) -> pd.DataFrame:
     # Drop the heavy lifting columns to save memory
     df.drop(columns=['tz_dt_sg', 'dst_shift', 'tz_origin'], inplace=True)
 
-    # Sodeju! Haha
-    # Jesus. What a routine. Sweating. OMG.
-    # Let's hope this effort brings joy
+    # This is a very heavy optimization step, only for those symbols that have sessions set
+    # It was almost not worth it. However, this is cleaner than the tracker approach
 
     return df
