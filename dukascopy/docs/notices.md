@@ -2,7 +2,7 @@ MT4 is decoded.
 
 **Notice:** The main branch is now locked. No further modifications will be made to the core codebase unless a critical bug is discovered, a significant feature is released, or an essential security announcement is required. New features are coming.
 
-**Note:** Note: I’m not trying to criticize MT4, but I’ve noticed some -very- unusual behavior while reviewing cases. For example, after the policy change on AUD.IDX, the new policy is applied as expected, but then, for a few hours on one particular day, the system seems to revert to the old behavior before resuming the new policy. It almost feels like an old branch was temporarily pushed, accidently, and then a few hours later, corrected. I do my best to replicate MT4 server behavior, but handling this kind of sudden, unpredictable changes is essentially impossible.
+**Note:** I’m not trying to criticize MT4, but I’ve noticed some -very- unusual behavior while reviewing cases. For example, after the policy change on AUD.IDX, the new policy is applied as expected, but then, for a few hours on one particular day, the system seems to revert to the old behavior before resuming the new policy. It almost feels like an old branch was temporarily pushed, accidently, and then a few hours later, corrected. I do my best to replicate MT4 server behavior, but handling this kind of sudden, unpredictable changes is essentially impossible.
 
 ## Notice: Performance
 
