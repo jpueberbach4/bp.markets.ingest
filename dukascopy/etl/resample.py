@@ -211,6 +211,23 @@ class ResampleEngine:
         self.is_root = False
 
     def _apply_pre_processing(self, df: pd.DataFrame, step: ResampleTimeframeProcessingStep) -> pd.DataFrame:
+        """Apply pre-processing actions to a DataFrame before resampling.
+
+        This method dispatches pre-processing logic based on the action defined
+        in the resampling step configuration. Pre-processing is typically used
+        to enrich the input data with additional metadata required for correct
+        resampling behavior, such as computing session origins in a
+        timezone- and DST-aware manner.
+
+        Args:
+            df (pd.DataFrame): Input OHLCV data to be pre-processed.
+            step (ResampleTimeframeProcessingStep): Processing step definition
+                specifying the pre-processing action and its parameters.
+
+        Returns:
+            pd.DataFrame: The pre-processed DataFrame.
+
+        """
         if step.action == "origin":
             # This is a very complicated routine being called
             df = resample_pre_process_origin(df, self.ident, step, self.config)
@@ -224,6 +241,21 @@ class ResampleEngine:
         df: pd.DataFrame,
         step: ResampleTimeframeProcessingStep
     ) -> pd.DataFrame:
+        """Apply post-processing actions to a resampled DataFrame.
+
+        This method dispatches post-processing logic based on the action defined
+        in the resampling step configuration. Currently, it supports merging
+        intermediate rows into anchor rows via the ``merge`` action.
+
+        Args:
+            df (pd.DataFrame): Resampled OHLCV data to be post-processed.
+            step (ResampleTimeframeProcessingStep): Processing step definition
+                specifying the post-processing action and its parameters.
+
+        Returns:
+            pd.DataFrame: The post-processed DataFrame.
+
+        """
         if step.action == "merge":
             df = resample_post_process_merge(df, self.ident, step, self.config)
         else:

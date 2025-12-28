@@ -40,7 +40,24 @@ except ImportError:
     from backports import zoneinfo
 
 def get_dst_transitions(start_dt, end_dt, config):
-    # TODO: Change this, needs to pull for symbol from timezone settings
+    """Retrieve daylight saving time (DST) transition points within a date range.
+
+    This function returns a list of UTC transition datetimes for the server's
+    timezone that fall between the specified start and end datetimes. These
+    transitions are used to adjust session origins and timestamps in resampled
+    OHLCV data.
+
+    Args:
+        start_dt (datetime or str): Start of the date range to check for DST transitions.
+        end_dt (datetime or str): End of the date range to check for DST transitions.
+        config: Configuration object containing the `server_timezone` attribute.
+
+    Returns:
+        List[datetime]: List of UTC datetimes representing DST transitions
+            that occur within the specified range.
+
+    """
+    # The naming of config.server_timezone is not "completely correct"
     tz = pytz.timezone(config.server_timezone)
     s = pd.Timestamp(start_dt).to_pydatetime().replace(tzinfo=None)
     e = pd.Timestamp(end_dt).to_pydatetime().replace(tzinfo=None)
