@@ -17,10 +17,6 @@ def get_dst_transitions(start_dt, end_dt):
 def preprocess_origin(tz:str, df: pd.DataFrame, ident, config) -> pd.DataFrame:
     # This is very heavy stuff. If you change this, make sure you know what you are doing
     # This is an attempt to eliminate the line-by-line session determination in resample_batch
-    # I made it myself VERY difficult by not keeping the original UTC times.
-    # Now i need to backconvert. Making this routine extremely complex.
-    # Commenting it line by line in order to not "lose grip"
-
     tz_sg = pytz.timezone(tz)
     tz_ny = pytz.timezone('America/New_York')       # Change this
     tz_server_std = pytz.timezone("Etc/GMT-2")      # Change this
@@ -83,7 +79,8 @@ def preprocess_origin(tz:str, df: pd.DataFrame, ident, config) -> pd.DataFrame:
     sg_times = df['tz_dt_sg'].dt.time
     
     for name, session in config.sessions.items():
-        if name == "catch-all": continue
+        if name == "catch-all":
+            continue
 
         # Get a fullmask
         session_mask = pd.Series(True, index=df.index)
