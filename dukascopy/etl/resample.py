@@ -9,63 +9,48 @@
               Strengthening of code
               - Optional fsync
               - Custom exceptions for better traceability
+              2025-12-28
+              Vectorization of session logic
+              - Normalized session logic to a pre-process step
+              - Normalized post- and pre-processing
 
- Description:
-     Incremental, crash-safe OHLCV resampling engine with session awareness.
+ Description: Object-oriented, crash-safe OHLCV resampling engine with session and DST awareness.
 
-     This module implements an object-oriented resampling pipeline designed
-     to transform high-frequency OHLCV CSV data into derived timeframes
-     (e.g. 1m → 5m → 1h) in a resumable, fault-tolerant manner.
+              This module implements an incremental resampling pipeline for
+              high-frequency OHLCV data, transforming it into derived
+              timeframes (e.g., 1m → 5m → 1h) while ensuring:
+                - Session-aware bar generation
+                - DST-aware origin handling
+                - Incremental, resumable batch processing
+                - Idempotent recovery after partial failures
+                - Explicit dependency ordering between timeframes
 
-     Core design goals:
-         - Incremental batch-based processing for large datasets
-         - Session-aware resampling with strict boundary isolation
-         - Crash-safe progress tracking via persisted byte offsets
-         - Idempotent recovery after partial failures
-         - Explicit dependency ordering between timeframes
+              Key classes:
+                - ResampleEngine: Handles resampling for a single symbol/timeframe.
+                - ResampleWorker: Orchestrates resampling across all configured
+                  timeframes for a symbol.
+              
+              Features:
+                - Vectorized pre-processing for session origins
+                - Post-processing for merging intermediate bars
+                - Crash-safe index persistence for input/output offsets
+                - Optional fsync to guarantee data durability
 
-     Main components:
+ Usage:
+     - Imported and executed by a resampling scheduler or forked per symbol.
+     - Can also be invoked in multiprocessing contexts.
 
-     - ResampleEngine
-         Handles resampling for a single symbol and timeframe.
-         Responsibilities include:
-             * Resolving and validating input/output/index paths
-             * Reading source data incrementally in fixed-size batches
-             * Enriching rows with session-aware origin metadata
-             * Performing pandas-based OHLCV resampling
-             * Applying optional post-processing rules
-             * Persisting progress using atomic index updates
+ Requirements:
+     - Python 3.8+
+     - pandas
+     - numpy
+     - pytz
 
-     - ResampleWorker
-         Orchestrates resampling across all configured timeframes for a symbol.
-         Responsibilities include:
-             * Enforcing cascading timeframe dependencies
-             * Skipping root (pass-through) timeframes
-             * Executing derived timeframe engines sequentially
-             * Failing fast on any unrecoverable error
-
-     Execution model:
-         - Input CSVs are read incrementally using byte offsets.
-         - Output CSVs are written using a two-phase commit strategy:
-             * Fully completed bars are fsync-committed and indexed.
-             * A trailing partial bar is written optimistically and may
-               be recomputed on restart.
-         - Index files store the last confirmed input/output positions and
-           guarantee safe resume after crashes or restarts.
-
-     Failure semantics:
-         - Any data corruption, logic error, or I/O failure causes
-           immediate termination.
-         - No downstream timeframes are processed after a failure.
-         - Partial output is safely rolled back and recomputed on restart.
-
-     Intended usage:
-         - Offline or scheduled batch resampling
-         - Deterministic, auditable market data pipelines
-         - Large CSV datasets that cannot be processed in-memory
-
+ License:
+     MIT License
 ===============================================================================
 """
+
 import os
 import pandas as pd
 import numpy as np
@@ -361,48 +346,43 @@ class ResampleEngine:
             ) from e
 
     def prepare_batch(self, f_input: IO, header: str) -> Tuple[StringIO, bool]:
-        """Read and enrich a batch of input CSV rows for resampling.
+        """Prepare and enrich a batch of CSV rows for resampling.
 
-        Reads up to ``config.batch_size`` rows from the input CSV file and writes
-        them into an in-memory CSV buffer, extending each row with resampling
-        metadata required for downstream processing.
+        Reads up to `config.batch_size` rows from the input CSV file and writes
+        them into an in-memory CSV buffer. Each row is augmented with resampling
+        metadata, including the byte offset in the input file, which is required
+        for incremental and resumable processing.
 
-        Each output row is augmented with:
-            - ``origin``: The session-aware resampling origin timestamp.
-            - ``offset``: The byte offset in the input file immediately before
-            the row was read.
+        The returned buffer includes:
+            - The original CSV header with an additional `offset` column.
+            - Each row enriched with the `offset` indicating the input file
+            position prior to reading the row.
 
-        Origin resolution behavior:
-            - If a single (default) session is configured, a precomputed origin
-            is reused for all rows.
-            - If multiple sessions are configured, the active session is resolved
-            per row and the origin is recomputed only when the session or
-            calendar day changes.
-
-        The returned buffer includes the original CSV header with the additional
-        metadata columns appended.
+        This method efficiently tracks the file read position to support large
+        CSVs without loading them entirely into memory.
 
         Args:
             f_input (IO):
-                Open input CSV file handle positioned at the next unread row.
+                Open CSV file handle positioned at the next unread row.
             header (str):
-                Original CSV header line, including the trailing newline.
+                CSV header line including the newline character.
 
         Returns:
             Tuple[StringIO, bool]:
-                A tuple ``(buffer, eof)`` where:
-                - ``buffer`` is a ``StringIO`` object containing the enriched CSV
-                batch, positioned at the beginning for reading.
-                - ``eof`` is ``True`` if end-of-file was reached during batch
-                preparation, otherwise ``False``.
+                A tuple containing:
+                - `buffer` (StringIO): In-memory CSV buffer containing the batch
+                with appended metadata, ready for processing.
+                - `eof` (bool): True if the end of the input file was reached
+                during this batch; False otherwise.
 
         Raises:
             SessionResolutionError:
                 If a row cannot be mapped to a valid trading session or origin.
             BatchError:
-                If batch preparation fails due to session resolution errors.
+                If batch preparation fails due to session resolution or related errors.
             RuntimeError:
-                If an unexpected system-level error occurs during batching.
+                If an unexpected system-level error occurs during batching, such
+                as I/O or decoding failures.
         """
         # Initialize in-memory buffer for the output batch
         sio = StringIO()
@@ -450,46 +430,46 @@ class ResampleEngine:
             raise RuntimeError(f"Unexpected system failure during batching: {e}") from e
 
     def process_resample(self, sio: StringIO) -> Tuple[pd.DataFrame, int]:
-        """Resample a prepared CSV batch into the configured target timeframe.
+        """Resample a batch of CSV rows into the configured target timeframe.
 
-        The input batch is parsed into a DataFrame indexed by timestamp and grouped
-        by ``origin``. Each origin group is resampled independently to preserve
-        session boundaries and avoid cross-session bar contamination.
+        This method parses an in-memory CSV batch produced by `prepare_batch`,
+        applies pre-processing steps (including session origin assignment),
+        and resamples the data into OHLCV bars according to the configured
+        timeframe rule. Each unique `origin` is processed independently to
+        preserve session boundaries and avoid cross-session contamination.
 
-        For each origin group, OHLCV bars are produced using the timeframe rule and
-        aggregation settings defined in the primary session configuration. Empty or
-        invalid bars (e.g. zero or NaN volume) are discarded.
+        Resampling:
+            - Aggregates 'open', 'high', 'low', 'close', 'volume', and retains
+            'offset' for incremental batch tracking.
+            - Discards bars with zero or NaN volume.
+            - Applies optional post-processing steps defined in the timeframe
+            configuration after combining all origin groups.
 
-        Post-processing steps defined on the timeframe (if any) are applied after
-        all origins are combined into a single, time-sorted DataFrame.
-
-        The resume offset for the next batch is derived from the ``offset`` value of
-        the final completed resampled bar.
+        The next input position is derived from the 'offset' of the last
+        completed bar, allowing resumable incremental processing.
 
         Args:
-            sio (StringIO):
-                In-memory CSV buffer produced by ``prepare_batch``, including the
-                appended ``origin`` and ``offset`` metadata columns.
+            sio (StringIO): In-memory CSV buffer including columns:
+                - time: timestamp
+                - OHLCV columns
+                - origin: session-aware origin timestamp
+                - offset: byte position in the input CSV before reading the row
 
         Returns:
             Tuple[pd.DataFrame, int]:
-                A tuple ``(df, next_input_pos)`` where:
-                - ``df`` is the resampled OHLCV DataFrame indexed by formatted
-                timestamp strings.
-                - ``next_input_pos`` is the byte offset in the input CSV from which
-                the next batch should resume.
+                - df: Resampled OHLCV DataFrame indexed by timestamp strings,
+                rounded according to configuration.
+                - next_input_pos: Byte offset in the input CSV to resume
+                processing the next batch.
 
         Raises:
-            ValueError:
-                If the prepared batch contains no rows.
-            EmptyBatchError:
-                If resampling produces zero valid bars across all origins.
-            ProcessingError:
-                If timestamp parsing fails, NaNs are produced, or an unexpected
-                processing error occurs.
-            ResampleLogicError:
-                If required metadata (e.g. ``offset``) is lost or post-processing
-                invalidates all bars.
+            ValueError: If the CSV batch contains no rows.
+            EmptyBatchError: If resampling produces zero valid bars across all
+                origin groups.
+            ProcessingError: If timestamp parsing fails, NaNs are introduced,
+                or an unexpected error occurs during processing.
+            ResampleLogicError: If required metadata (e.g., 'offset') is lost
+                or post-processing invalidates all bars.
         """
         try:
             # Load the prepared CSV batch into a DataFrame indexed by timestamp
