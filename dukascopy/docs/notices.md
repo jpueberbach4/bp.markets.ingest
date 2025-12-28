@@ -2,11 +2,9 @@ MT4 is decoded.
 
 **Notice:** The main branch is now locked. No further modifications will be made to the core codebase unless a critical bug is discovered, a significant feature is released, or an essential security announcement is required. New features are coming.
 
-**Note:** I am writing comparison software to auto-generate configuration for certain assets. We not only dealing with broker policy changes, but also with exchange opening-hours adjustments.
+**Note:** Another great example on "candle policies"
 
-Another great example on "candle policies"
-
-The policy before 2024-06-17 is to have, on monday, 00:00, 04:00 and 08:00 candles in MT4. 
+The policy AUS.IDX, before 2024-06-17 is to have, on monday, 00:00, 04:00 and 08:00 candles in MT4. 
 
 **Example*:*
 
@@ -41,6 +39,8 @@ Incoming 1m feed has:
 2024-06-17 02:52:00,7699.625,7702.593,7699.625,7702.593,0.00288
 2024-06-17 02:53:00,7703.689,7704.999,7702.561,7703.999,0.00336
 ```
+
+Rest of the week is normal.
 
 I’m wondering how far I should go in trying to replicate MT4 behavior. Our data represents the “ground truth” since we align with the exchange, whereas MT4 does not. From 2024-06-17 onward, MT4 does align the Monday candles correctly. I could add a “valid-on-days-of-the-week” setting to the session configuration, but that might be overengineering the solution. I’ll need to think this through. I’m very focused on accuracy and performance.
 
