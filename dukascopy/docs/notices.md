@@ -11,6 +11,8 @@ Two performance improvements have been implemented:
 
 At this stage, further performance gains in Python are minimal. Any additional optimization would require switching from CSV to a custom binary format. However, this would sacrifice the transparency and human-readability of CSVs, so it will not be pursued in the Python version. Such optimizations are reserved for the high-performance, tick-ready, C++ variant.
 
+For reference, resampling 42 symbols takes about 1 minute and 30 seconds in Python. A C++ implementation with binary format will reduce this to seconds.
+
 ## Notice: Rollover
 
 Rollover support is being implemented. Programmatic detection was too inaccurate. Different approach was needed.
