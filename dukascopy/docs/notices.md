@@ -2,7 +2,47 @@ MT4 is decoded.
 
 **Notice:** The main branch is now locked. No further modifications will be made to the core codebase unless a critical bug is discovered, a significant feature is released, or an essential security announcement is required. New features are coming.
 
-**Note:** I am writing comparison software to auto-generate configuration for certain assets. We not only dealing with broker policy changes, but also with exchange opening-hours adjustments. 
+**Note:** I am writing comparison software to auto-generate configuration for certain assets. We not only dealing with broker policy changes, but also with exchange opening-hours adjustments.
+
+Another great example on "candle policies"
+
+The policy before 2024-06-17 is to have, on monday, 00:00, 04:00 and 08:00 candles in MT4. 
+
+**Example*:*
+
+```sh
+MT4 has:
+
+2024.06.14,18:10,7677.627,7696.347,7674.167,7695.473,2097
+2024.06.14,22:10,7695.909,7708.981,7694.047,7706.637,513
+2024.06.17,00:00,7708.595,7730.457,7697.605,7728.755,1161 <<
+2024.06.17,04:00,7728.159,7728.159,7704.657,7713.469,2418 <<
+2024.06.17,08:00,7713.491,7717.197,7675.119,7691.221,3073 <<
+2024.06.17,14:10,7691.263,7699.703,7674.603,7698.713,1772
+
+We have:
+
+2024-06-14 18:10:00,7677.627,7696.347,7674.167,7695.473,0.2718
+2024-06-14 22:10:00,7695.909,7708.981,7694.047,7706.637,0.06638 
+2024-06-17 02:50:00,7708.595,7730.457,7697.605,7719.657,0.875705 <<
+2024-06-17 06:50:00,7718.657,7723.999,7696.599,7705.657,0.5765 <<
+2024-06-17 10:10:00,7709.815,7717.197,7675.119,7691.221,0.203699 <<
+2024-06-17 14:10:00,7691.263,7699.703,7674.603,7698.713,0.15754
+
+Incoming 1m feed has:
+
+2024-06-14 23:55:00,7705.031,7705.031,7705.031,7705.031,0.00013
+2024-06-14 23:56:00,7705.499,7705.999,7705.499,7705.999,0.00026
+2024-06-14 23:57:00,7706.531,7706.531,7706.531,7706.531,4e-05
+2024-06-14 23:58:00,7707.031,7707.031,7706.073,7706.073,0.00012
+2024-06-14 23:59:00,7706.509,7706.947,7704.541,7706.637,0.00062
+2024-06-17 02:50:00,7708.595,7708.999,7698.947,7699.605,0.006925  <<
+2024-06-17 02:51:00,7698.541,7700.625,7697.605,7700.625,0.00524
+2024-06-17 02:52:00,7699.625,7702.593,7699.625,7702.593,0.00288
+2024-06-17 02:53:00,7703.689,7704.999,7702.561,7703.999,0.00336
+```
+
+I’m wondering how far I should go in trying to replicate MT4 behavior. Our data represents the “ground truth” since we align with the exchange, whereas MT4 does not. From 2024-06-17 onward, MT4 does align the Monday candles correctly. I could add a “valid-on-days-of-the-week” setting to the session configuration, but that might be overengineering the solution. I’ll need to think this through. I’m very focused on accuracy and performance.
 
 ## Notice: Performance
 
