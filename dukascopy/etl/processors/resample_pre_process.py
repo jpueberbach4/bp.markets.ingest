@@ -14,7 +14,7 @@ def get_dst_transitions(start_dt, end_dt):
     e = pd.Timestamp(end_dt).to_pydatetime().replace(tzinfo=None)
     return [t for t in tz._utc_transition_times if s <= t <= e]
 
-def preprocess_origin(tz:str, df: pd.DataFrame, ident, config) -> pd.DataFrame:
+def resample_pre_process_origin(df: pd.DataFrame, ident, step, config) -> pd.DataFrame:
     # This is very heavy stuff. If you change this, make sure you know what you are doing
     # This is an attempt to eliminate the line-by-line session determination in resample_batch
 
@@ -25,7 +25,7 @@ def preprocess_origin(tz:str, df: pd.DataFrame, ident, config) -> pd.DataFrame:
 
 
     # Get the timezone for configured timezone on the symbol
-    tz_sg = pytz.timezone(tz)
+    tz_sg = pytz.timezone(config.timezone)
 
     # TODO: Change this, needs to pull for symbol from timezone settings
     tz_ny = pytz.timezone('America/New_York')
@@ -91,7 +91,7 @@ def preprocess_origin(tz:str, df: pd.DataFrame, ident, config) -> pd.DataFrame:
         # Convert the datetime column into a new column having the correctly shifted self.config.timezone date
         df.loc[mask, 'tz_dt_sg'] = (df.index[mask]
                                     .tz_localize(server_tz_str, ambiguous='infer')
-                                    .tz_convert(tz)
+                                    .tz_convert(config.timezone)
                                     .tz_localize(None))
 
     # Get the localized times

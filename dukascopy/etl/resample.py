@@ -74,7 +74,8 @@ from io import StringIO
 from typing import Tuple, IO, Optional
 
 from config.app_config import AppConfig, ResampleSymbol, resample_get_symbol_config, ResampleTimeframeProcessingStep
-from processors.resample_pre_process import preprocess_origin
+from processors.resample_pre_process import resample_pre_process_origin
+from processors.resample_post_process import resample_post_process_merge
 from exceptions import *
 import traceback
 
@@ -212,7 +213,9 @@ class ResampleEngine:
     def _apply_pre_processing(self, df: pd.DataFrame, step: ResampleTimeframeProcessingStep) -> pd.DataFrame:
         if step.action == "origin":
             # This is a very complicated routine being called
-            df = preprocess_origin(self.config.timezone, df, self.ident, self.config)
+            df = resample_pre_process_origin(df, self.ident, step, self.config)
+        else:
+            print(f"Warning: unknown pre-process step {step.action}")
 
         return df
 
@@ -221,88 +224,10 @@ class ResampleEngine:
         df: pd.DataFrame,
         step: ResampleTimeframeProcessingStep
     ) -> pd.DataFrame:
-        """Apply configured post-processing operations to a resampled DataFrame.
-
-        This method currently supports a single post-processing action: ``merge``.
-        The merge operation identifies rows whose index ends with one of the
-        suffixes defined in ``step.ends_with`` and merges each of those rows into
-        an anchor row determined by ``step.offset``.
-
-        For each matching row:
-            - The anchor row is selected using ``anchor_pos = pos + step.offset``.
-            - OHLCV fields are merged as follows:
-                * ``high``   → max(anchor.high, selected.high)
-                * ``low``    → min(anchor.low, selected.low)
-                * ``close``  → selected.close
-                * ``volume`` → anchor.volume + selected.volume
-            - The selected row is removed from the DataFrame after merging.
-
-        Processing is performed in positional index order and operates directly
-        on the provided DataFrame.
-
-        Important constraints:
-            - The DataFrame index **must** be string-based and support
-            ``str.endswith``.
-            - ``step.offset`` must resolve to a valid row position; otherwise
-            post-processing fails hard.
-            - Date-range filtering (``from_date`` / ``to_date``) is not implemented.
-
-        Args:
-            df (pd.DataFrame):
-                Resampled OHLCV data. The index is expected to contain string-form
-                timestamps representing resampled time buckets.
-            step (ResampleTimeframeProcessingStep):
-                Post-processing configuration defining the action type, suffixes
-                to match, and positional offset used to determine merge targets.
-
-        Returns:
-            pd.DataFrame:
-                A DataFrame with matched rows merged into their anchors and
-                removed from the result.
-
-        Raises:
-            ValueError:
-                If the configured post-processing action is not supported.
-            PostProcessingError:
-                If the merge offset resolves to an invalid anchor position.
-        """
-
-        if step.action != "merge":
-            raise ValueError(f"Unsupported post-processing action {step.action}")
-
-        offset = step.offset
-        for ends_with in step.ends_with:
-            positions = np.where(df.index.str.endswith(ends_with))[0]
-
-            for pos in positions:
-                # Ensure there is a row before the selects to merge into
-                if pos > 0:
-                    anchor_pos = pos + offset
-                    # Make sure the anchor_pos is actually existing
-                    if 0 <= anchor_pos < len(df):
-
-                        # Get index of select and the anchor
-                        select_idx = df.index[pos]
-                        anchor_idx = df.index[anchor_pos]
-
-                        # Perform the logic, determine high, low, close and sum volume
-                        df.at[anchor_idx, 'high'] = max(
-                            df.at[anchor_idx, 'high'],
-                            df.at[select_idx, 'high'],
-                        )
-                        df.at[anchor_idx, 'low'] = min(
-                            df.at[anchor_idx, 'low'],
-                            df.at[select_idx, 'low'],
-                        )
-                        df.at[anchor_idx, 'close'] = df.at[select_idx, 'close']
-                        df.at[anchor_idx, 'volume'] += df.at[select_idx, 'volume']
-                    else:
-                        # Error in offset definition, fail!
-                        raise PostProcessingError(f"Post-processing error for {self.symbol} at timeframe {self.ident}")
-
-
-            # Drop all selected source columns
-            df = df[~df.index.str.endswith(ends_with)]
+        if step.action == "merge":
+            df = resample_post_process_merge(df, self.ident, step, self.config)
+        else:
+            print(f"Warning: unknown post-process step {step.action}")
 
         return df
 
