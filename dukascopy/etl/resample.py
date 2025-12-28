@@ -467,7 +467,7 @@ class ResampleEngine:
 
             # Precompute origin for the single-session (default) case
             primary_session = next(iter(self.config.sessions.values()))
-            default_origin = primary_session.timeframes[self.ident].origin
+            origin = default_origin = primary_session.timeframes[self.ident].origin
 
             # Get the current position (we are changing the tell since it massively impacts performance)
             offset_before = f_input.tell()
@@ -486,7 +486,7 @@ class ResampleEngine:
                 line = line_bytes.decode('utf-8').strip()
 
                 # Resolve origin dynamically when multiple sessions are configured
-                if True:
+                if False:
                     # Disabled the line-by-line origin sets
                     if not is_default:
                         try:
@@ -835,6 +835,28 @@ class ResampleWorker:
             raise TransactionError(f"I/O failure for {self.symbol} at {engine.ident}: {e}") from e
 
 
+def fork_resample_profile(args):
+    import cProfile
+    import pstats
+    profiler = cProfile.Profile()
+    profiler.enable()
+    
+    try:
+        symbol, config = args
+        # Initialize the worker
+        worker = ResampleWorker(symbol, config)
+
+        # Execute the worker
+        worker.run()
+    finally:
+        profiler.disable()
+        
+        # Save profiling stats
+        stats = pstats.Stats(profiler)
+        stats.sort_stats('cumulative')
+        stats.print_stats(20)  # Top 20 bottlenecks
+
+
 def fork_resample(args) -> bool:
     """
     Multiprocessing-friendly entry point for symbol resampling.
@@ -848,6 +870,7 @@ def fork_resample(args) -> bool:
         bool: True if resampling completed successfully.
     """
     try:
+        return fork_resample_profile(args)
         symbol, config = args
         # Initialize the worker
         worker = ResampleWorker(symbol, config)
