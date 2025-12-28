@@ -1,5 +1,36 @@
  
  
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+===============================================================================
+ File:        rexample_post_process.py
+ Author:      JP Ueberbach
+ Created:     2025-12-28
+ Description: Pre- and post-processing utilities for resampled OHLCV data.
+
+              This module provides vectorized preprocessing logic used during
+              the resampling pipeline to determine session origins efficiently.
+              It replaces the former line-by-line tracker-based approach with
+              timezone- and DST-aware batch computations, significantly reducing
+              CPU overhead while preserving correctness and crash safety.
+
+              The primary responsibility of this module is to compute accurate
+              session origins for higher-timeframe bars, enabling fast generation
+              of Panama-adjusted views and other session-sensitive aggregates.
+
+ Usage:
+     Imported and invoked by the resampling pipeline.
+
+ Requirements:
+     - Python 3.8+
+     - pandas
+     - pytz
+
+ License:
+     MIT License
+===============================================================================
+"""
 import pytz
 import pandas as pd
 from datetime import datetime, timedelta
@@ -8,140 +39,161 @@ try:
 except ImportError:
     from backports import zoneinfo
 
-def get_dst_transitions(start_dt, end_dt):
-    tz = pytz.timezone('America/New_York')
+def get_dst_transitions(start_dt, end_dt, config):
+    # TODO: Change this, needs to pull for symbol from timezone settings
+    tz = pytz.timezone(config.server_timezone)
     s = pd.Timestamp(start_dt).to_pydatetime().replace(tzinfo=None)
     e = pd.Timestamp(end_dt).to_pydatetime().replace(tzinfo=None)
     return [t for t in tz._utc_transition_times if s <= t <= e]
 
 def resample_pre_process_origin(df: pd.DataFrame, ident, step, config) -> pd.DataFrame:
-    # This is very heavy stuff. If you change this, make sure you know what you are doing
-    # This is an attempt to eliminate the line-by-line session determination in resample_batch
+    """Pre-compute and assign session origins for resampled data using vectorized logic.
 
-    # Check if we only have a default session
+    This function determines the correct session origin for each row in a resampled
+    OHLCV DataFrame without relying on expensive line-by-line session tracking.
+    It accounts for daylight saving time transitions between the server timezone
+    and the configured symbol timezone, and applies session-specific origin
+    adjustments based on configured session ranges.
+
+    The resulting origin values are written to the ``origin`` column, and all
+    intermediate helper columns are removed before returning.
+
+    Args:
+        df (pd.DataFrame): Resampled OHLCV data indexed by datetimes.
+        ident: Timeframe identifier used to resolve timeframe-specific origins.
+        step: Resampling step configuration (currently unused by this function).
+        config: Symbol configuration containing timezone, session, and timeframe
+            definitions.
+
+    Returns:
+        pd.DataFrame: The input DataFrame with a populated ``origin`` column.
+
+    Note: This is a very heavy function. It is this complex because we already shifted
+          datetimes in the transform step. However, it's fast (vectorized)
+
+    TODO: Currently, the date is FIXED to America/Newyork, there should be a
+          server_timezone setting for the symbol
+
+    """
+    # Fast path: only a single default session is configured
     if config.sessions.get('default') and len(config.sessions) == 1:
-        df['origin'] =config.sessions.get('default').timeframes.get(ident).origin
+        df['origin'] = config.sessions.get('default').timeframes.get(ident).origin
         return df
 
-
-    # Get the timezone for configured timezone on the symbol
+    # Resolve relevant timezones
     tz_sg = pytz.timezone(config.timezone)
+    # Naming of "server_timezone" is not fully "correct". Since it only defines
+    # on what basis the DST shifts are happening.
+    tz_ny = pytz.timezone(config.server_timezone)
 
-    # TODO: Change this, needs to pull for symbol from timezone settings
-    tz_ny = pytz.timezone('America/New_York')
-
-    # This one is important, we specify ORIGINS AS IF IT WERE WINTER. THATS GMT+2 for a MT4 server.
+    # THIS is the actually timezone of the server IN WINTER!
     tz_server_std = pytz.timezone("Etc/GMT-2")
-    
+
+    # Compute the reference offset gap using current offsets
     ref_now = datetime.now(tz_sg)
     server_now_std = datetime.now(tz_server_std)
-    ref_gap = (ref_now.utcoffset().total_seconds() - 
-            server_now_std.utcoffset().total_seconds()) / 3600
+    ref_gap = (
+        ref_now.utcoffset().total_seconds() -
+        server_now_std.utcoffset().total_seconds()
+    ) / 3600
 
-    # We are sorted on date, get the date-range for this timeframe
+    # Determine the datetime span of the data
     first_dt = df.index[0]
     last_dt = df.index[-1]
 
-    # Get the DST transitions in UTC
-    transitions = get_dst_transitions(first_dt, last_dt)
-
-    # Determine boundary windows for the DST switches
+    # Collect DST transition boundaries within the data range
+    transitions = get_dst_transitions(first_dt, last_dt, config)
     boundaries = sorted(list(set([first_dt, last_dt] + transitions)))
-    
-    # Initialize helper columns
+
+    # Initialize helper columns used during processing
     df['tz_dt_sg'] = pd.NaT
     df['dst_shift'] = 0
     df['tz_origin'] = "epoch"
 
-    # For each of the DST transition windows
+    # Process each window between DST boundaries
     for i in range(len(boundaries) - 1):
-        # Get the start and end of the window
-        start_win, end_win = boundaries[i], boundaries[i+1]
+        start_win, end_win = boundaries[i], boundaries[i + 1]
 
-        # Get a mask that marks all dates with this window
+        # Select rows that fall into the current boundary window
         mask = (df.index >= start_win) & (df.index <= end_win)
+        if not mask.any():
+            continue
 
-        # If any date did not confirm the mask
-        if not mask.any(): continue
-        
-        # Get the middle of the window to determine the DST status for this window
-        mid_p = pd.Timestamp(start_win + (end_win - start_win) / 2).to_pydatetime().replace(tzinfo=None)
+        # Use the midpoint of the window to determine DST state
+        mid_p = pd.Timestamp(
+            start_win + (end_win - start_win) / 2
+        ).to_pydatetime().replace(tzinfo=None)
+
+        # Determine whether New York is in DST for this window
         is_dst = bool(tz_ny.localize(mid_p).dst())
-
-        # TODO: Change this, should be based on offset_shift_map (if we want to support "exotic" metatrader servers)
         server_tz_str = "Etc/GMT-3" if is_dst else "Etc/GMT-2"
 
-        # Get offset for THIS specific window, not 'now'
+        # Compute timezone offsets for this window
         window_tz_dt_sg = tz_sg.localize(mid_p)
-        
-        # Get Server offset for THIS specific window
         tz_server_cur = pytz.timezone(server_tz_str)
         window_tz_dt_server = tz_server_cur.localize(mid_p)
 
-        # Calculate gap based on the window's actual offsets
-        cur_gap = (window_tz_dt_sg.utcoffset().total_seconds() - 
-                   window_tz_dt_server.utcoffset().total_seconds()) / 3600
-        
-        # For this window, the shift is this amount in hours
+        cur_gap = (
+            window_tz_dt_sg.utcoffset().total_seconds() -
+            window_tz_dt_server.utcoffset().total_seconds()
+        ) / 3600
+
+        # Calculate the DST-induced hour shift for this window
         window_shift = int(ref_gap - cur_gap)
 
-        # Set the window_shift as a column (for debugging) for this boundary
+        # Store shift and localized datetimes for all rows in the window
         df.loc[mask, 'dst_shift'] = window_shift
+        df.loc[mask, 'tz_dt_sg'] = (
+            df.index[mask]
+            .tz_localize(server_tz_str, ambiguous='infer')
+            .tz_convert(config.timezone)
+            .tz_localize(None)
+        )
 
-        # Convert the datetime column into a new column having the correctly shifted self.config.timezone date
-        df.loc[mask, 'tz_dt_sg'] = (df.index[mask]
-                                    .tz_localize(server_tz_str, ambiguous='infer')
-                                    .tz_convert(config.timezone)
-                                    .tz_localize(None))
-
-    # Get the localized times
+    # Extract local times for session range matching
     sg_times = df['tz_dt_sg'].dt.time
-    
+
+    # Apply session-specific origin adjustments
     for name, session in config.sessions.items():
         if name == "catch-all":
             continue
 
-        # Get a fullmask
+        # Build a mask for rows that belong to this session
         session_mask = pd.Series(True, index=df.index)
         if session.from_date:
-            # And filter the mask to only have dates after from_date (inclusive)
             session_mask &= (df['tz_dt_sg'] >= pd.to_datetime(session.from_date))
         if session.to_date:
-            # And filter the mask to only have dates before to_date (inclusive)
             session_mask &= (df['tz_dt_sg'] <= pd.to_datetime(session.to_date))
 
-        # Now get the origin for the timeframe with the current ident
+        # Resolve the base origin for this timeframe
         base_origin_str = session.timeframes.get(ident).origin
 
-        # TODO: we should break here, but because of debugging we continue
         if base_origin_str == "epoch":
             df.loc[session_mask, 'tz_origin'] = "epoch"
             continue
-        
-        # Now get the base hour and base minute from the timeframe configured origin
+
         base_h, base_m = map(int, base_origin_str.split(':'))
 
+        # Apply origin shifts for each configured session range
         for r in session.ranges.values():
-            # Get time objects from the range
             st_t = datetime.strptime(r.from_time, "%H:%M").time()
             en_t = datetime.strptime(r.to_time, "%H:%M").time()
-            
-            # Get the mask for the range, locate matches in df
-            t_mask = (sg_times >= st_t) & (sg_times <= en_t) if st_t <= en_t \
-                    else (sg_times >= st_t) | (sg_times <= en_t)
-            
-            # Filter the session_mask with the range mask
+
+            if st_t <= en_t:
+                t_mask = (sg_times >= st_t) & (sg_times <= en_t)
+            else:
+                t_mask = (sg_times >= st_t) | (sg_times <= en_t)
+
             m = session_mask & t_mask
+            if not m.any():
+                continue
 
-            # If we did not have any mask matches, this session range does not apply, move on to the next one
-            if not m.any(): continue
-
-            # AH! we have matches, now start applying the shift to the origin
-            #adj_h = (base_h + df.loc[m, 'dst_shift'].astype(int) + 1) % 24
+            # Adjust the origin hour using the computed DST shift
             adj_h = (base_h + df.loc[m, 'dst_shift'].astype(int)) % 24
-            
-            # Apply the shift and store adjusted origin to tz_origin column
-            df.loc[m, 'tz_origin'] = (adj_h.astype(str).str.zfill(2) + f":{base_m:02d}") # Change this to origin column
+            df.loc[m, 'tz_origin'] = (
+                adj_h.astype(str).str.zfill(2) + f":{base_m:02d}"
+            )
+
 
     if False:
         # Debugging
@@ -153,17 +205,13 @@ def resample_pre_process_origin(df: pd.DataFrame, ident, step, config) -> pd.Dat
         print(df.head(250000))
         sys.exit(1)
 
-    # Looks actually pretty great. Move on to the cleanups
+
+    # Replace unresolved origins with the default timeframe origin
     default_origin = config.timeframes.get(ident).origin
     df['tz_origin'] = df['tz_origin'].replace("epoch", default_origin)
 
-    # Set the origin to tz_origin
+    # Persist the final origin and drop helper columns
     df['origin'] = df['tz_origin']
-    
-    # Drop the heavy lifting columns to save memory
     df.drop(columns=['tz_dt_sg', 'dst_shift', 'tz_origin'], inplace=True)
-
-    # This is a very heavy optimization step, only for those symbols that have sessions set
-    # It was almost not worth it. However, this is cleaner than the tracker approach
 
     return df
