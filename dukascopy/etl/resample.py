@@ -218,7 +218,6 @@ class ResampleEngine:
             # This is a very complicated routine being called
             df = preprocess_origin(self.config.timezone, df, self.ident, self.config)
 
-        sys.exit(1)
         return df
 
     def _apply_post_processing(
@@ -457,7 +456,7 @@ class ResampleEngine:
         try:
 
             # Write CSV header with appended metadata columns
-            sio.write(f"{header.strip()},origin,offset\n")
+            sio.write(f"{header.strip()},offset\n")
 
             # Track end-of-file state and last processed session/day key
             eof = False
@@ -487,28 +486,30 @@ class ResampleEngine:
                 line = line_bytes.decode('utf-8').strip()
 
                 # Resolve origin dynamically when multiple sessions are configured
-                if not is_default:
-                    try:
-                        # Determine the active session for the current row
-                        session = self.tracker.get_active_session(line)
-                        current_key = f"{session}/{line[:10]}"  # session + date prefix
+                if False:
+                    # Disabled the line-by-line origin sets
+                    if not is_default:
+                        try:
+                            # Determine the active session for the current row
+                            session = self.tracker.get_active_session(line)
+                            current_key = f"{session}/{line[:10]}"  # session + date prefix
 
-                        # Recompute origin only when session or day changes
-                        if current_key != last_key:
-                            origin = self.tracker.get_active_origin(
-                                line, self.ident, session
-                            )
-                            last_key = current_key
-                    except Exception as e:
-                        raise SessionResolutionError(
-                            f"Session mapping failed for {self.symbol} at line: {line.strip()}"
-                        ) from e
-                else:
-                    # Use precomputed origin for single-session mode
-                    origin = default_origin
+                            # Recompute origin only when session or day changes
+                            if current_key != last_key:
+                                origin = self.tracker.get_active_origin(
+                                    line, self.ident, session
+                                )
+                                last_key = current_key
+                        except Exception as e:
+                            raise SessionResolutionError(
+                                f"Session mapping failed for {self.symbol} at line: {line.strip()}"
+                            ) from e
+                    else:
+                        # Use precomputed origin for single-session mode
+                        origin = default_origin
 
                 # Write the enriched CSV row to the output buffer
-                sio.write(f"{line.strip()},{origin},{offset_before}\n")
+                sio.write(f"{line.strip()},{offset_before}\n")
 
                 # Update offset_before
                 offset_before += len(line_bytes)

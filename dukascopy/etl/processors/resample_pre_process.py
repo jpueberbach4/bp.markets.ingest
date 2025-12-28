@@ -126,17 +126,28 @@ def preprocess_origin(tz:str, df: pd.DataFrame, ident, config) -> pd.DataFrame:
             # Apply the shift and store adjusted origin to tz_origin column
             df.loc[m, 'tz_origin'] = (adj_h.astype(str).str.zfill(2) + f":{base_m:02d}") # Change this to origin column
 
+    if False:
+        # Debugging
+        pd.set_option('display.max_columns', None)
+        pd.set_option('display.expand_frame_repr', False)
+        # Optional: Ensure the columns don't get truncated if the text is long
+        pd.set_option('display.max_colwidth', None)
+        pd.set_option('display.max_rows', 250000)
+        print(df.head(250000))
+        sys.exit(1)
 
-    # Change: tz_origin is debug column, should become origin
-    # Change: drop tz_origin, dst_shift and tz_dt_sg columns from data frame
+    # Looks actually pretty great. Move on to the cleanups
+    default_origin = config.timeframes.get(ident).origin
+    df['tz_origin'] = df['tz_origin'].replace("epoch", default_origin)
+
+    # Set the origin to tz_origin
+    df['origin'] = df['tz_origin']
+    
+    # Drop the heavy lifting columns to save memory
+    df.drop(columns=['tz_dt_sg', 'dst_shift', 'tz_origin'], inplace=True)
+
+    # Sodeju! Haha
     # Jesus. What a routine. Sweating. OMG.
+    # Let's hope this effort brings joy
 
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.expand_frame_repr', False)
-    # Optional: Ensure the columns don't get truncated if the text is long
-    pd.set_option('display.max_colwidth', None)
-    pd.set_option('display.max_rows', 250000)
-    print(df.head(250000))
-
-    sys.exit(1)
     return df
