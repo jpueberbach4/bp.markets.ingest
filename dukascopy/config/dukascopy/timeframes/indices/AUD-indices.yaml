@@ -26,10 +26,18 @@
 # - Overnight (After-Hours) Session: 5:10 PM - 7:00 AM the next morning (AEST) **
 # - There is a short break between sessions (4:30 PM - 5:10 PM).
 #
-# >>This one is OK from 2020-03-01 to now<<
 AUS.IDX-AUD:
   timezone: Australia/Sydney
-  skip_timeframes: []  
+  skip_timeframes: []
+  timeframes:
+    4h:
+      post:
+        # merge the leftover of the candle-policy-change
+        merge-step:
+          action: merge
+          ends_with:
+          - "2020-02-06 16:00:00"
+          offset: -1
   sessions:
     day-session:
       from_date: "2020-02-07 01:00:00"  # In Australia/Sydney time
