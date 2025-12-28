@@ -6,6 +6,46 @@ MT4 is decoded.
 
 Performance update was applied. Eliminating IO.tell() and switching the input stream to binary mode, bypasssing the Python "Text-IO" translation layer. Quite a nice improvement.
 
+**Note:** Another major performance update is coming—this one’s a big deal.
+
+Previously, we determined a session’s origin by passing a datetime into a tracker object line by line, returning an adjusted origin for each entry. This approach is extremely CPU-intensive and slow. I’m now working to convert this logic to a vectorized approach, where the line-by-line path is only used for crash safety (specifically, byte-offset tracking). Gain: 23 seconds to 8.5 seconds.
+
+```s
+Old:
+   Ordered by: cumulative time
+   List reduced from 1364 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.010    0.010   23.317   23.317 /home/jpueberb/repos2/bp.markets.ingest/dukascopy/etl/resample.py:697(run)
+        9    0.018    0.002   23.302    2.589 /home/jpueberb/repos2/bp.markets.ingest/dukascopy/etl/resample.py:741(_execute_engine)
+       16    3.592    0.224   17.207    1.075 /home/jpueberb/repos2/bp.markets.ingest/dukascopy/etl/resample.py:410(prepare_batch)
+  2513044    4.618    0.000   11.667    0.000 /home/jpueberb/repos2/bp.markets.ingest/dukascopy/etl/helper.py:68(get_active_session) <!-- bottleneck
+       16    0.003    0.000    4.199    0.262 /home/jpueberb/repos2/bp.markets.ingest/dukascopy/etl/resample.py:528(process_resample)
+       16    0.000    0.000    2.762    0.173 /home/jpueberb/.local/lib/python3.8/site-packages/pandas/io/parsers/readers.py:814(read_csv)
+       16    0.046    0.003    2.761    0.173 /home/jpueberb/.local/lib/python3.8/site-packages/pandas/io/parsers/readers.py:540(_read)
+       16    0.000    0.000    2.147    0.134 /home/jpueberb/.local/lib/python3.8/site-packages/pandas/io/parsers/readers.py:1688(read)
+       16    0.000    0.000    2.103    0.131 /home/jpueberb/.local/lib/python3.8/site-packages/pandas/io/parsers/c_parser_wrapper.py:222(read)
+...
+
+New:
+   Ordered by: cumulative time
+   List reduced from 1364 to 20 due to restriction <20>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.008    0.008    8.696    8.696 /home/jpueberb/repos2/bp.markets.ingest/dukascopy/etl/resample.py:697(run)
+        9    0.011    0.001    8.683    0.965 /home/jpueberb/repos2/bp.markets.ingest/dukascopy/etl/resample.py:741(_execute_engine)
+       16    0.002    0.000    3.733    0.233 /home/jpueberb/repos2/bp.markets.ingest/dukascopy/etl/resample.py:528(process_resample) <!-- already optimized
+       16    1.901    0.119    3.025    0.189 /home/jpueberb/repos2/bp.markets.ingest/dukascopy/etl/resample.py:410(prepare_batch) <!-- already optimized
+       16    0.001    0.000    2.754    0.172 /home/jpueberb/.local/lib/python3.8/site-packages/pandas/io/parsers/readers.py:814(read_csv)
+       16    0.048    0.003    2.752    0.172 /home/jpueberb/.local/lib/python3.8/site-packages/pandas/io/parsers/readers.py:540(_read)
+       16    0.000    0.000    2.170    0.136 /home/jpueberb/.local/lib/python3.8/site-packages/pandas/io/parsers/readers.py:1688(read)
+       16    0.000    0.000    2.129    0.133 /home/jpueberb/.local/lib/python3.8/site-packages/pandas/io/parsers/c_parser_wrapper.py:222(read)
+```
+
+I’m optimizing the resampler so the Panama-adjusted view renders much faster. It used to take 30–40 seconds; now it’s down to about 12.
+
+There is not much more to gain -for the python version that is. So wrapping up.
+
 ## Notice: Rollover
 
 Rollover support is being implemented. Programmatic detection was too inaccurate. Different approach was needed.
