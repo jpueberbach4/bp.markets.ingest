@@ -13,6 +13,16 @@ At this stage, further performance gains in Python are minimal. Any additional o
 
 For reference, resampling 42 symbols takes about 1 minute and 30 seconds in Python. A C++ implementation with binary format will reduce this to seconds.
 
+Before:
+
+![Image before update](../images/performanceon41symbols.png)
+
+After: 
+
+![Image after update](../images/performanceon42symbols-after-perf-update.png)
+
+This optimization shaved a little over a minute off the resampling step, yielding roughly a 40% performance improvement.
+
 ## Notice: Rollover
 
 Rollover support is being implemented. Programmatic detection was too inaccurate. Different approach was needed.
