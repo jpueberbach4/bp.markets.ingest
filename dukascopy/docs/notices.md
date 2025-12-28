@@ -48,7 +48,9 @@ That said, forcing a 00:00 alignment when there is no actual market volume effec
 
 **Decision:** screw it—let’s add the valid-on-weekdays configuration.'
 
-**Update:** This was a 10-minute change, and I already have a working version. I still need to verify it, though, since I modified the “first rule match, discard the rest” logic.
+**Update:** This is a hard change. Post-processing steps need to become "session"-aware. The problem here is that MT4 makes the 08:00 candle 6 hours and 9 minutes long. There is another gap from 12:00 to 14:09, with data, that creates a "ghost candle". Merging this ghost-candle into the 08:00 solves it, but I cannot do this globally, like with the SGD, because it only should happen on weekday Monday. I need to lay an egg on this one first. Or two.
+
+If you want to see this for yourself, openup the AUS.IDX index, scroll to 2024-06-17 0800. Next candle you see is 14:10. Now go to hourly chart. See candle at 12:10 and 13:10. See close of 13:10 hourly candle, its also close of that H4 08:00 candle. 7691.221. 
 
 ## Notice: Performance
 
