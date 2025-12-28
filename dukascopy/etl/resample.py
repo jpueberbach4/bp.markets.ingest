@@ -740,29 +740,6 @@ class ResampleWorker:
             # Any OS Error
             raise TransactionError(f"I/O failure for {self.symbol} at {engine.ident}: {e}") from e
 
-
-def fork_resample_profile(args):
-    import cProfile
-    import pstats
-    profiler = cProfile.Profile()
-    profiler.enable()
-    
-    try:
-        symbol, config = args
-        # Initialize the worker
-        worker = ResampleWorker(symbol, config)
-
-        # Execute the worker
-        worker.run()
-    finally:
-        profiler.disable()
-        
-        # Save profiling stats
-        stats = pstats.Stats(profiler)
-        stats.sort_stats('cumulative')
-        stats.print_stats(20)  # Top 20 bottlenecks
-
-
 def fork_resample(args) -> bool:
     """
     Multiprocessing-friendly entry point for symbol resampling.
@@ -776,7 +753,6 @@ def fork_resample(args) -> bool:
         bool: True if resampling completed successfully.
     """
     try:
-        return fork_resample_profile(args)
         symbol, config = args
         # Initialize the worker
         worker = ResampleWorker(symbol, config)
