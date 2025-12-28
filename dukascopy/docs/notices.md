@@ -52,7 +52,7 @@ That said, forcing a 00:00 alignment when there is no actual market volume effec
 
 If you want to see this for yourself, openup the H4 AUS.IDX index, scroll to 2024-06-17 0800. Next H4 candle you see is 14:10. Now go to H1 chart. See candle at 12:10 and 13:10. See close of 13:10 hourly candle, its also close of that H4 08:00 candle. 7691.221. 
 
-I mean, imagine, what these kind of things mean for your backtests in MT4. Its completely fragile.
+**Note:** I will make it compatible but know what you are dealing with if you decide to configure for "these compatibilities",
 
 ## Notice: Performance
 
