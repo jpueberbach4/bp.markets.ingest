@@ -478,7 +478,8 @@ class ResampleEngine:
                 parse_dates=["time"],
                 index_col="time",
                 date_format="%Y-%m-%d %H:%M:%S",
-                low_memory=False
+                low_memory=False,
+                sep=',',
             )
 
             # If anything in the index is not a valid datetime
