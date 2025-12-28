@@ -10,8 +10,6 @@ Performance update was applied. Eliminating IO.tell() and switching the input st
 
 Previously, we determined a session’s origin by passing a datetime into a tracker object line by line, returning an adjusted origin for each entry. This approach is extremely CPU-intensive and slow. I’m now working to convert this logic to a vectorized approach, where the line-by-line path is only used for crash safety (specifically, byte-offset tracking).
 
-I already have a working implementation for the SGD index, and the performance gains are dramatic: execution time dropped from 40+ seconds to about 9 seconds. I’m currently tuning the resampler, since 30–40 seconds feels far too long to generate a Panama-adjusted view of a symbol. Nine seconds is a huge improvement, and it also lowers the barrier for users who need to perform a full rebuild.
-
 ## Notice: Rollover
 
 Rollover support is being implemented. Programmatic detection was too inaccurate. Different approach was needed.
