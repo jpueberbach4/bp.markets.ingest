@@ -775,7 +775,7 @@ def fork_resample(args) -> bool:
         bool: True if resampling completed successfully.
     """
     try:
-        #return fork_resample_profile(args)
+        return fork_resample_profile(args)
         symbol, config = args
         # Initialize the worker
         worker = ResampleWorker(symbol, config)

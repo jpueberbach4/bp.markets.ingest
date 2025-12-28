@@ -39,7 +39,7 @@ try:
 except ImportError:
     from backports import zoneinfo
 
-def get_dst_transitions(start_dt, end_dt, config):
+def get_dst_transitions(start_dt, end_dt, tz_name):
     """Retrieve daylight saving time (DST) transition points within a date range.
 
     This function returns a list of UTC transition datetimes for the server's
@@ -58,13 +58,13 @@ def get_dst_transitions(start_dt, end_dt, config):
 
     """
     # The naming of config.server_timezone is not "completely correct"
-    tz = pytz.timezone(config.server_timezone)
-    # Bugfix (timezone set to eg Etc/UTC)
+    tz = pytz.timezone(tz_name)
     if not hasattr(tz, '_utc_transition_times'):
         return []
 
     s = pd.Timestamp(start_dt).to_pydatetime().replace(tzinfo=None)
     e = pd.Timestamp(end_dt).to_pydatetime().replace(tzinfo=None)
+    # Return transitions that fall within our data range
     return [t for t in tz._utc_transition_times if s <= t <= e]
 
 def resample_pre_process_origin(df: pd.DataFrame, ident, step, config) -> pd.DataFrame:
@@ -103,6 +103,7 @@ def resample_pre_process_origin(df: pd.DataFrame, ident, step, config) -> pd.Dat
 
     # Resolve relevant timezones
     tz_sg = pytz.timezone(config.timezone)
+
     # Naming of "server_timezone" is not fully "correct". Since it only defines
     # on what basis the DST shifts are happening.
     tz_ny = pytz.timezone(config.server_timezone)
@@ -122,9 +123,12 @@ def resample_pre_process_origin(df: pd.DataFrame, ident, step, config) -> pd.Dat
     first_dt = df.index[0]
     last_dt = df.index[-1]
 
-    # Collect DST transition boundaries within the data range
-    transitions = get_dst_transitions(first_dt, last_dt, config)
-    boundaries = sorted(list(set([first_dt, last_dt] + transitions)))
+    # Collect DST transition boundaries for BOTH timezones
+    server_transitions = get_dst_transitions(first_dt, last_dt, config.server_timezone)
+    local_transitions = get_dst_transitions(first_dt, last_dt, config.timezone)
+    
+    # Merge and sort all unique boundaries
+    boundaries = sorted(list(set([first_dt, last_dt] + server_transitions + local_transitions)))
 
     # Initialize helper columns used during processing
     df['tz_dt_sg'] = pd.NaT
