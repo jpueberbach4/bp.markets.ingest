@@ -214,7 +214,7 @@ class ResampleEngine:
         self.is_root = False
 
     def _apply_pre_processing(self, df: pd.DataFrame, step: ResampleTimeframeProcessingStep) -> pd.DataFrame:
-        if step.action == "origin":
+        if step.action == "originxx":
             # This is a very complicated routine being called
             df = preprocess_origin(self.config.timezone, df, self.ident, self.config)
 
@@ -456,7 +456,7 @@ class ResampleEngine:
         try:
 
             # Write CSV header with appended metadata columns
-            sio.write(f"{header.strip()},offset\n")
+            sio.write(f"{header.strip()},origin,offset\n")
 
             # Track end-of-file state and last processed session/day key
             eof = False
@@ -486,7 +486,7 @@ class ResampleEngine:
                 line = line_bytes.decode('utf-8').strip()
 
                 # Resolve origin dynamically when multiple sessions are configured
-                if False:
+                if True:
                     # Disabled the line-by-line origin sets
                     if not is_default:
                         try:
@@ -509,7 +509,7 @@ class ResampleEngine:
                         origin = default_origin
 
                 # Write the enriched CSV row to the output buffer
-                sio.write(f"{line.strip()},{offset_before}\n")
+                sio.write(f"{line.strip()},{origin},{offset_before}\n")
 
                 # Update offset_before
                 offset_before += len(line_bytes)
