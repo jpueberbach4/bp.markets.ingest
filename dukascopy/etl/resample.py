@@ -75,7 +75,6 @@ from typing import Tuple, IO, Optional
 
 from config.app_config import AppConfig, ResampleSymbol, resample_get_symbol_config, ResampleTimeframeProcessingStep
 from processors.resample_pre_process import preprocess_origin
-from helper import ResampleTracker
 from exceptions import *
 import traceback
 
@@ -110,9 +109,6 @@ class ResampleEngine:
         self.symbol = symbol
         self.ident = ident
         self.config = config
-
-        # Tracker resolves active session and origin timestamps
-        self.tracker = ResampleTracker(config)
 
         # Root directory for resampled CSVs
         self.data_path = data_path
@@ -461,13 +457,6 @@ class ResampleEngine:
             # Track end-of-file state and last processed session/day key
             eof = False
             last_key = None
-
-            # Check whether the tracker is running in single-session mode
-            is_default = self.tracker.is_default_session()
-
-            # Precompute origin for the single-session (default) case
-            primary_session = next(iter(self.config.sessions.values()))
-            origin = default_origin = primary_session.timeframes[self.ident].origin
 
             # Get the current position (we are changing the tell since it massively impacts performance)
             offset_before = f_input.tell()

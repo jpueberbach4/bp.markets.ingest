@@ -17,6 +17,13 @@ def get_dst_transitions(start_dt, end_dt):
 def preprocess_origin(tz:str, df: pd.DataFrame, ident, config) -> pd.DataFrame:
     # This is very heavy stuff. If you change this, make sure you know what you are doing
     # This is an attempt to eliminate the line-by-line session determination in resample_batch
+
+    # Check if we only have a default session
+    if config.sessions.get('default') and len(config.sessions) == 1:
+        df['origin'] =config.sessions.get('default').timeframes.get(ident).origin
+        return df
+
+
     tz_sg = pytz.timezone(tz)
     tz_ny = pytz.timezone('America/New_York')       # Change this
     tz_server_std = pytz.timezone("Etc/GMT-2")      # Change this
