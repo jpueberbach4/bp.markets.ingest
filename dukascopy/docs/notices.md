@@ -42,6 +42,8 @@ The software is become more and more powerful to handle edge-cases and MT4-anoma
 
 **Note:** Some people might call me “obsessed” with this MT4 alignment topic, but there’s a philosophy behind it. If I can support all MT4 quirks, then there’s effectively nothing left that can’t be handled—regardless of the exchange, broker, or price behavior. This work is also part of my learning process for the C++ version.
 
+One more thing: if you define a post-processing rule at the Symbol level (the level above sessions), that rule is copied into each defined session. Make sure that any symbol-wide post-processing rules do not interfere with session-specific ones. Otherwise, this can lead to hard-to-debug behavior—especially if you’re not familiar with the codebase.
+
 ## Notice: Performance
 
 Two performance improvements have been implemented:

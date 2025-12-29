@@ -235,17 +235,6 @@ def resample_pre_process_origin(df: pd.DataFrame, ident, step, config) -> pd.Dat
             df.loc[m, 'selected'] = 1
 
 
-    if False:
-        # Debugging
-        pd.set_option('display.max_columns', None)
-        pd.set_option('display.expand_frame_repr', False)
-        # Optional: Ensure the columns don't get truncated if the text is long
-        pd.set_option('display.max_colwidth', None)
-        pd.set_option('display.max_rows', 250)
-        print(df.head(250))
-        sys.exit(1)
-
-
     # Replace unresolved origins with the default timeframe origin
     default_origin = config.timeframes.get(ident).origin
     df['tz_origin'] = df['tz_origin'].replace("epoch", default_origin)

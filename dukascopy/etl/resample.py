@@ -769,22 +769,3 @@ def fork_resample(args) -> bool:
         raise ForkProcessError(f"Error on resample fork for {symbol}") from e
 
     return True
-
-
-
-
-if __name__ == "__main__":
-    from config.app_config import *
-    from dataclasses import asdict
-    import yaml
-    app_config = load_app_config('config.user.yaml')
-
-    config = resample_get_symbol_config('AUS.IDX-AUD', app_config)
-    
-    yaml_str = yaml.safe_dump(
-        asdict(config),
-        default_flow_style=False,
-        sort_keys=False,
-    )
-
-    print(yaml_str)
