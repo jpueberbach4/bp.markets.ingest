@@ -48,11 +48,29 @@ That said, forcing a 00:00 alignment when there is no actual market volume effec
 
 **Decision:** screw it—let’s add the valid-on-weekdays configuration.'
 
-**Update:** This is a hard change. Post-processing steps need to become "session"-aware. The problem here is that MT4 makes the H4 08:00 candle 6 hours and 9 minutes long. There is another gap from 12:00 to 14:09, with data, that creates a "ghost candle". Merging this ghost-candle into the 08:00 solves it, but I cannot do this globally, like with the SGD, because it only should happen on weekday Monday. I need to lay an egg on this one first. Or two.
+**Update:** Post-processing steps need to become "session"-aware. The problem here is that MT4 makes the H4 08:00 candle 6 hours and 9 minutes long. There is another gap from 12:00 to 14:09, with data, that creates a "ghost candle". Merging this ghost-candle into the 08:00 solves it, but I cannot do this globally, like with the SGD, because it only should happen on weekday Monday. I need to lay an egg on this one first. Or two.
 
 If you want to see this for yourself, openup the H4 AUS.IDX index, scroll to 2024-06-17 0800. Next H4 candle you see is 14:10. Now go to H1 chart. See candle at 12:10 and 13:10. See close of 13:10 hourly candle, its also close of that H4 08:00 candle. 7691.221. 
 
-**Note:** I will make it compatible but know what you are dealing with if you decide to configure for "these compatibilities",
+**Note:** I will make it compatible but know what you are dealing with if you decide to configure for "these compatibilities".
+
+**Update:** I have it implemented in a test branch. Works like a charm.
+
+```sh
+2024-06-14 22:10:00,7695.909,7708.981,7694.047,7706.637,0.06638
+2024-06-17 00:00:00,7708.595,7730.457,7697.605,7728.159,0.348155
+2024-06-17 04:00:00,7728.561,7729.191,7704.657,7713.469,0.68636    <<
+2024-06-17 08:00:00,7713.491,7717.197,7675.119,7691.221,0.621389   << The 6h10 franken-candle, closing at 7691.221
+2024-06-17 14:10:00,7691.263,7699.703,7674.603,7698.713,0.15754    <<
+2024-06-17 18:10:00,7698.245,7740.457,7696.751,7738.507,0.18607
+2024-06-17 22:10:00,7738.633,7742.547,7731.097,7734.917,0.031819
+2024-06-18 02:50:00,7733.999,7777.485,7725.999,7771.539,0.758726
+2024-06-18 06:50:00,7771.625,7780.047,7762.593,7774.169,0.412321
+2024-06-18 10:10:00,7775.593,7776.797,7738.877,7748.457,0.122667
+```
+
+In a bit, you will be able to configure pre- and post-processing steps within sessions that are bound by the logical boundaries of that session (weekdays and date-ranges).
+
 
 ## Notice: Performance
 
