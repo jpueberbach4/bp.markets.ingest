@@ -1,21 +1,23 @@
 ## Project Statistics (Logical SLOC)
 
-As per 23 december 2025
+As per 29 december 2025
 
 ### Project Statistics (Logical SLOC) - ETL
 
 | File Name | Code Lines | Core Responsibility |
 | :--- | :---: | :--- |
-| `resample.py` | 198 | Pointer-based resampling state machine & "Bugs-Bunnies" logic. |
-| `transform.py` | 115 | Vectorized JSON-to-OHLC conversion using NumPy/Pandas. |
+| `resample.py` | 192 | Pointer-based resampling state machine & "Bugs-Bunnies" logic. |
 | `app_config.py` | 112 | Recursive YAML resolving and dataclass mapping. |
-| `run.py` | 104 | Multiprocessing orchestration and pipeline sequencing. |
-| `helper.py` | 85 | MT4 server time math, session tracking, and path resolution. |
-| `download.py` | 81 | HTTP management, rate limiting, and JSON delta merging. |
-| `aggregate.py` | 67 | Incremental CSV appending with crash-safe index tracking. |
-| `dst.py` | 18 | DST offset lookups and symbol-to-timezone mapping. |
-| `exceptions.py` | 14 | Custom exception hierarchy for ETL traceability. |
-| **Total Project** | **794** | **Logical Source Lines of Code** |
+| `transform.py` | 102 | Vectorized JSON-to-OHLC conversion using NumPy/Pandas. |
+| `run.py` | 91 | Multiprocessing orchestration and pipeline sequencing. |
+| `resample_pre_process.py` | 89 | Vectorized session origin and DST-aware batch computations. |
+| `download.py` | 84 | HTTP management, rate limiting, and JSON delta merging. |
+| `aggregate.py` | 74 | Incremental CSV appending with crash-safe index tracking. |
+| `resample_post_process.py` | 56 | Structural fixes and merging intermediate rows into anchor rows. |
+| `dst.py` | 33 | DST offset lookups and symbol-to-timezone mapping. |
+| `exceptions.py` | 31 | Custom exception hierarchy for ETL traceability. |
+| `helper.py` | 18 | MT4 server time math and timezone localization. |
+| **Total Project** | **882** | **Logical Source Lines of Code** |
 
 ### Project Statistics (Logical SLOC) - Batch Extraction Utility
 
