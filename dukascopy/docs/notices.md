@@ -40,6 +40,7 @@ AUS.IDX-AUD:
 
 The software is become more and more powerful to handle edge-cases and MT4-anomalies. This is a change for the better.
 
+**Note:** Some people might call me “obsessed” with this MT4 alignment topic, but there’s a philosophy behind it. If I can support all MT4 quirks, then there’s effectively nothing left that can’t be handled—regardless of the exchange, broker, or price behavior. This work is also part of my learning process for the C++ version.
 
 ## Notice: Performance
 
