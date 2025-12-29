@@ -30,7 +30,8 @@ import pandas as pd
 import numpy as np
 
 
-def resample_post_process_range_mask(df: pd.DataFrame, step) -> pd.Series:
+def resample_post_process_range_mask(df: pd.DataFrame, step, config) -> pd.Series:
+    # TODO: convert from_date, to_date from timezone into server time (with dst transition logic)
     # Setup the mask to contain everything
     mask = pd.Series(True, index=df.index)
     
@@ -71,7 +72,7 @@ def resample_post_process_merge(df: pd.DataFrame, ident: str, step, config) -> p
     """
 
     # Get the limiting mask for this step
-    mask = resample_post_process_range_mask(df, step)
+    mask = resample_post_process_range_mask(df, step, config)
 
     # Get the offset
     offset = step.offset

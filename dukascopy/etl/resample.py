@@ -497,21 +497,14 @@ class ResampleEngine:
             session = next(iter(self.config.sessions.values()))
             tf_cfg = session.timeframes[self.ident]
 
-            # We inject the new origin marker here (it has now become a vectorized pre-processing step)
-
-
             # Origin pre-processing always needs to occur, once per df
             df = self._apply_pre_processing(df, ResampleTimeframeProcessingStep(action="origin"))
 
-
-            pre_processing_steps = [ResampleTimeframeProcessingStep(action="origin")] + \
-                                    (list(tf_cfg.pre.values()) if tf_cfg.pre else [])
-
             # Apply pre-processing, limited by session boundaries (weekdays, date-range)
             for name, session in self.config.sessions.items():
-                tf_pre = session.timeframes.get(ident).post
+                tf_pre = session.timeframes.get(self.ident).pre
                 if tf_pre:
-                    for tf_step in tf_pre:
+                    for name, tf_step in tf_pre.items():
                         df = self._apply_post_processing(df, tf_step)
 
             # Resample each origin independently to preserve session boundaries
@@ -557,9 +550,9 @@ class ResampleEngine:
 
             # Apply post-processing, limited by its sessions boundaries (weekdays, date-range)
             for name, session in self.config.sessions.items():
-                tf_post = session.timeframes.get(ident).post
+                tf_post = session.timeframes.get(self.ident).post
                 if tf_post:
-                    for tf_step in tf_post:
+                    for name, tf_step in tf_post.items():
                         full_resampled = self._apply_post_processing(full_resampled, tf_step)
 
             # Determine the resume position from the last completed bar
