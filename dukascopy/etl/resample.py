@@ -505,7 +505,7 @@ class ResampleEngine:
                 tf_pre = session.timeframes.get(self.ident).pre
                 if tf_pre:
                     for name, tf_step in tf_pre.items():
-                        df = self._apply_post_processing(df, tf_step)
+                        df = self._apply_pre_processing(df, tf_step)
 
             # Resample each origin independently to preserve session boundaries
             for origin, origin_df in df.groupby("origin"):
