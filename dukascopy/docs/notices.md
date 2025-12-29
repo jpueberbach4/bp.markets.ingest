@@ -22,7 +22,9 @@ So, what has this code solved, so far:
 
 - **Session-Aware Aggregation:** Supports complex, symbol-specific trading sessions with unique origins, from-date/to-date ranges, and weekday filters applied during the resampling process.
 
-- **Truth:** Uncovers truth
+- **Builder:** Build mixed-asset, mixed-timeframe datasets for CSV and Parquet with optional MT4/5 compatible output. Including Panama adjustments (soon).
+
+- **Truth:** Uncovers truth.
 
 ## Notice: Pre- and Post Processing steps now "session-bound"
 
