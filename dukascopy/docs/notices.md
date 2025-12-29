@@ -71,6 +71,35 @@ If you want to see this for yourself, openup the H4 AUS.IDX index, scroll to 202
 
 Soon, you’ll be able to configure pre- and post-processing steps within sessions that are constrained by the session’s logical boundaries (weekdays and date ranges). This is a general code improvement that should have been done anyway, regardless of whether the issue above was the original motivation.
 
+Example config:
+
+```yaml
+AUS.IDX-AUD:
+  timezone: Australia/Sydney
+  skip_timeframes: []
+  sessions:
+    my-very-special-mt4-alignment-quirk:
+      # This is ANOTHER special handling for the AUS.IDX. 
+      # Before 2024-06-24 we have ONLY on monday EPOCH candles, during the DAY-session ONLY
+      # When this rule matches, the other rules won't overrule
+      weekdays: [0] # 0=monday, 1=tuesday, and so on..
+      to_date: "2024-06-22 01:00:00"  # In Australia/Sydney time
+      ranges:
+        day: 
+          from: "09:50"
+          to: "17:09"
+      timeframes:
+        4h:                     
+          origin: "epoch"
+          post:
+            # franken candle cleanup
+            merge-step:
+              action: merge
+              ends_with:
+              - "10:10:00"
+              offset: -1  
+```
+
 
 ## Notice: Performance
 
