@@ -51,6 +51,7 @@ AUS.IDX-AUD:
             merge-step:
               action: merge
               ends_with:
+              - "09:10:00"
               - "10:10:00"
               offset: -1    
     day-session:
