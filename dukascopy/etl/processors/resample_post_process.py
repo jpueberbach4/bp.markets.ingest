@@ -33,6 +33,30 @@ from processors.helper import convert_to_server_time_str
 
 
 def resample_post_process_range_mask(df: pd.DataFrame, step, config) -> pd.Series:
+    """Create a boolean mask for filtering a DataFrame index by date range and weekdays.
+
+    This function generates a boolean mask aligned with the input DataFrame's index.
+    The mask is computed based on optional start/end dates and allowed weekdays
+    defined in the `step` configuration. Date comparisons are performed after
+    converting timestamps to the server timezone.
+
+    Args:
+        df (pd.DataFrame): Input DataFrame whose index represents timestamps.
+        step: Configuration object containing filtering parameters.
+            Expected attributes:
+                - from_date: Optional start date for filtering.
+                - to_date: Optional end date for filtering.
+                - weekdays: Optional iterable of allowed weekdays
+                  (0=Monday, ..., 6=Sunday).
+        config: Configuration object providing timezone information.
+            Expected attributes:
+                - timezone: Source timezone.
+                - server_timezone: Target server timezone.
+
+    Returns:
+        pd.Series: A boolean Series indexed like `df`, where True indicates rows
+        that fall within the specified date range and weekday constraints.
+    """
     # Setup the mask to contain everything
     mask = pd.Series(True, index=df.index)
     
@@ -52,6 +76,7 @@ def resample_post_process_range_mask(df: pd.DataFrame, step, config) -> pd.Serie
 
     # And... return it
     return mask
+
 
 def resample_post_process_merge(df: pd.DataFrame, ident: str, step, config) -> pd.DataFrame:
     """Post-process a resampled DataFrame by merging selected rows into anchor rows.
