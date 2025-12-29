@@ -29,6 +29,24 @@
 import pandas as pd
 import numpy as np
 
+
+def resample_post_process_range_mask(df: pd.DataFrame, step) -> pd.Series:
+    # Setup the mask to contain everything
+    mask = pd.Series(True, index=df.index)
+    
+    # Convert index to datetime if it's currently strings for comparison
+    ts_index = pd.to_datetime(df.index)
+
+    if step.from_date:
+        mask &= (ts_index >= pd.to_datetime(step.from_date))
+    if step.to_date:
+        mask &= (ts_index <= pd.to_datetime(step.to_date))
+    if step.weekdays:
+        mask &= ts_index.dayofweek.isin(step.weekdays)
+
+    # And... return it
+    return mask
+
 def resample_post_process_merge(df: pd.DataFrame, ident: str, step, config) -> pd.DataFrame:
     """Post-process a resampled DataFrame by merging selected rows into anchor rows.
 
@@ -51,12 +69,24 @@ def resample_post_process_merge(df: pd.DataFrame, ident: str, step, config) -> p
     Raises:
         PostProcessingError: If the computed anchor position is out of bounds.
     """
+
+    # Get the limiting mask for this step
+    mask = resample_post_process_range_mask(df, step)
+
+    # Get the offset
     offset = step.offset
+
+    # Setup positions array of idx to get dropped
+    drop_positions = []
 
     # Iterate over each suffix that identifies rows to be merged
     for ends_with in step.ends_with:
-        # Find all index positions ending with the given suffix
-        positions = np.where(df.index.str.endswith(ends_with))[0]
+
+        # Select franken candles, combine with previous calculated mask
+        _mask = df.index.str.endswith(ends_with) & mask.values
+
+        # Get the positions where the mask is valid
+        positions = np.where(_mask)[0]
 
         # Merge each selected row into its corresponding anchor row
         for pos in positions:
@@ -79,13 +109,17 @@ def resample_post_process_merge(df: pd.DataFrame, ident: str, step, config) -> p
                     )
                     df.at[anchor_idx, 'close'] = df.at[select_idx, 'close']
                     df.at[anchor_idx, 'volume'] += df.at[select_idx, 'volume']
+
+                    drop_positions.append(select_idx)
                 else:
                     # Offset definition is invalid; abort post-processing
                     raise PostProcessingError(
-                        f"Post-processing error for {self.symbol} at timeframe {self.ident}"
+                        f"Post-processing error at timeframe {ident}"
                     )
 
-        # Remove all rows that were merged for this suffix
-        df = df[~df.index.str.endswith(ends_with)]
+    # Remove all rows that were merged for this suffix
+    if drop_positions:
+        # Drop selected rows
+        df = df.drop(index=list(set(drop_positions)))
 
     return df

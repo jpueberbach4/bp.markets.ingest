@@ -498,12 +498,21 @@ class ResampleEngine:
             tf_cfg = session.timeframes[self.ident]
 
             # We inject the new origin marker here (it has now become a vectorized pre-processing step)
+
+
+            # Origin pre-processing always needs to occur, once per df
+            df = self._apply_pre_processing(df, ResampleTimeframeProcessingStep(action="origin"))
+
+
             pre_processing_steps = [ResampleTimeframeProcessingStep(action="origin")] + \
                                     (list(tf_cfg.pre.values()) if tf_cfg.pre else [])
 
-            # Apply pre-processing
-            for tf_step in pre_processing_steps:
-                df = self._apply_pre_processing(df, tf_step)
+            # Apply pre-processing, limited by session boundaries (weekdays, date-range)
+            for name, session in self.config.sessions.items():
+                tf_pre = session.timeframes.get(ident).post
+                if tf_pre:
+                    for tf_step in tf_pre:
+                        df = self._apply_post_processing(df, tf_step)
 
             # Resample each origin independently to preserve session boundaries
             for origin, origin_df in df.groupby("origin"):
@@ -546,10 +555,12 @@ class ResampleEngine:
                 "%Y-%m-%d %H:%M:%S"
             )
 
-            # Apply post-processing (currently ugly, improve in future)
-            if tf_cfg.post:
-                for tf_step in tf_cfg.post.values():
-                    full_resampled = self._apply_post_processing(full_resampled, tf_step)
+            # Apply post-processing, limited by its sessions boundaries (weekdays, date-range)
+            for name, session in self.config.sessions.items():
+                tf_post = session.timeframes.get(ident).post
+                if tf_post:
+                    for tf_step in tf_post:
+                        full_resampled = self._apply_post_processing(full_resampled, tf_step)
 
             # Determine the resume position from the last completed bar
             try:
@@ -766,3 +777,21 @@ def fork_resample(args) -> bool:
 
     return True
 
+
+
+
+if __name__ == "__main__":
+    from config.app_config import *
+    from dataclasses import asdict
+    import yaml
+    app_config = load_app_config('config.user.yaml')
+
+    config = resample_get_symbol_config('AUS.IDX-AUD', app_config)
+    
+    yaml_str = yaml.safe_dump(
+        asdict(config),
+        default_flow_style=False,
+        sort_keys=False,
+    )
+
+    print(yaml_str)

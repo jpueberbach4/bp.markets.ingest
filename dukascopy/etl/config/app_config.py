@@ -41,6 +41,7 @@ class ResampleTimeRange:
 @dataclass
 class ResampleDateRange:
     """Defines the 'from' and 'to' dates for a single date range."""
+    weekdays: List[int] = field(default_factory=lambda: [0, 1, 2, 3, 4, 5, 6]) # default to all weekdays
     from_date: str = field(default=None,metadata={'yaml_key': 'from_date'}) 
     to_date: str = field(default=None,metadata={'yaml_key': 'to_date'})
 
@@ -50,7 +51,6 @@ class ResampleSymbolTradingSession(ResampleDateRange):
     """
     Configuration for a single named session (e.g., 'day-session').
     """
-    weekdays: List[int] = field(default_factory=lambda: [0, 1, 2, 3, 4, 5, 6]) # default to all weekdays
     ranges: Dict[str, ResampleTimeRange] = field(default_factory=dict)
     timeframes: Dict[str, 'ResampleTimeframe'] = field(default_factory=dict)
 
@@ -63,7 +63,7 @@ class ResampleTimeframeProcessingStep(ResampleDateRange):
     action: str = field(default=None,metadata={'yaml_key': 'action'}) 
     ends_with: Optional[str] = field(default=None, metadata={'yaml_key': 'ends_with'}) 
     offset: int = field(default=-1, metadata={'yaml_key': 'offset'})
-    weekdays: List[int] = field(default_factory=lambda: [0, 1, 2, 3, 4, 5, 6]) # default to all weekdays
+
 
 @dataclass
 class ResampleTimeframe:
@@ -528,6 +528,18 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleSy
             s_tfs = copy.deepcopy(symbol_override.timeframes)
             merge_timeframes(s_tfs, session.timeframes)
             session.timeframes = s_tfs
+            # make sure we copy the from_date, to_date and weekdays into the processing steps
+            # this makes sure that any processing steps defined on session level are 
+            # confined by the time-related boundaries of the session
+            for tf_name, timeframe in session.timeframes.items():
+                if timeframe.pre:
+                    for s_name, step in timeframe.pre.items():
+                        step.from_date, step.to_date, step.weekdays = \
+                            [session.from_date, session.to_date, session.weekdays] 
+                if timeframe.post:
+                    for s_name, step in timeframe.post.items():
+                        step.from_date, step.to_date, step.weekdays = \
+                            [session.from_date, session.to_date, session.weekdays] 
 
     # Apply final skip logic to remove unwanted timeframes
     for ident in symbol_override.skip_timeframes:
@@ -542,7 +554,7 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleSy
         # Check whether the symbol or the wildcard '*' belongs to this timezone group
         if symbol in timezone.symbols or '*' in timezone.symbols:
             symbol_override.server_timezone = name
-            break
+            break       
 
     return symbol_override
 
