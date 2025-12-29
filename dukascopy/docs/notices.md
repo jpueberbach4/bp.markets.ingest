@@ -69,7 +69,7 @@ If you want to see this for yourself, openup the H4 AUS.IDX index, scroll to 202
 2024-06-18 10:10:00,7775.593,7776.797,7738.877,7748.457,0.122667
 ```
 
-In a bit, you will be able to configure pre- and post-processing steps within sessions that are bound by the logical boundaries of that session (weekdays and date-ranges).
+Soon, you’ll be able to configure pre- and post-processing steps within sessions that are constrained by the session’s logical boundaries (weekdays and date ranges). This is a general code improvement that should have been done anyway, regardless of whether the issue above was the original motivation.
 
 
 ## Notice: Performance
