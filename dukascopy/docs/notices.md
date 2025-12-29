@@ -6,6 +6,24 @@ Sorry for any inconvenience or breakage. I didn’t catch this earlier because I
 
 >Many things are preconfigured, but I can’t guarantee at this point that all quirks have been fully uncovered, detected, and eliminated—through configuration. That said, the tool is capable of handling almost anything MT4 can throw at you; it’s mainly a matter of effort. I plan to reduce that effort by building a program that compares timestamps against MT4 exports and automatically adjusts the configuration to match the output. I only have a few days left to wrap up this data-related work. Panama also still needs to be finalized.
 
+So, what has this code solved, so far:
+
+- **"100%" Platform Alignment:** Achieves parity with MetaTrader 4/5 bar generation by implementing specific server-time logic (GMT+2 with US DST), eliminating the "Sunday candle" and 6-day week errors common in other tools.
+
+- **Vectorized DST Handling:** Uses high-performance windowed masking to handle biannual Daylight Savings Time transitions, ensuring session origins are dynamically adjusted without the overhead of row-by-row iteration.
+
+- **Crash-Safe Idempotency:** Employs an atomic persistence strategy using byte-offset index files and file truncation, allowing the engine to resume exactly where it left off after a crash without corrupting or duplicating data.
+
+- **Memory-Efficient Big Data Processing:** Utilizes a batch-oriented StringIO buffer system and file-handle seeking to process massive historical datasets that exceed system RAM.
+
+- **Multi-Stage Dependency Resampling:** Orchestrates a cascading pipeline (e.g., 1m → 5m → 1h) where higher timeframes are derived from lower ones in a verified, sequential order.
+
+- **Edge-Case Boundary Logic:** Solves subtle data gaps at DST transition points for sparse high-timeframe data (like 1h or Daily bars) using a robust boundary-buffering technique.
+
+- **Session-Aware Aggregation:** Supports complex, symbol-specific trading sessions with unique origins, from-date/to-date ranges, and weekday filters applied during the resampling process.
+
+- **Truth:** Uncovers truth
+
 ## Notice: Pre- and Post Processing steps now "session-bound"
 
 You’re now able to configure pre- and post-processing steps within sessions that are constrained by the session’s logical boundaries (weekdays and date ranges). This is a general code improvement that should have been done anyway, regardless of whether the AUS.IDX issue was the original motivation.
