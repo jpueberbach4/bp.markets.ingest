@@ -1,6 +1,8 @@
 MT4 is decoded. 
 
-**Notice:** The main branch is now locked. No further modifications will be made to the core codebase unless a critical bug is discovered, a significant feature is released, or an essential security announcement is required. New features are coming.
+**Notice:** For very recent cloners and pullers, there was a small bug where running run.sh could fail. The issue was related to using a from–to date range on the DataFrame for DST calculations. During incremental updates, it’s possible to have only a single candle, which means there is no valid range. In that case, I now explicitly simulate a range, which fixes the problem.
+
+Sorry for any inconvenience or breakage. I didn’t catch this earlier because I was only using ```./rebuild-resample.sh``` for verification, which almost never results in a single candle. If you cloned or pulled today, please pull again.
 
 ## Notice: Pre- and Post Processing steps now "session-bound"
 
