@@ -1,8 +1,10 @@
-MT4 is decoded. 
+MT4 is decoded.
 
 **Notice:** For very recent cloners and pullers, there was a small bug where running run.sh could fail. The issue was related to using a from–to date range on the DataFrame for DST calculations. During incremental updates, it’s possible to have only a single candle, which means there is no valid range. In that case, I now explicitly simulate a range, which fixes the problem.
 
 Sorry for any inconvenience or breakage. I didn’t catch this earlier because I was only using ```./rebuild-resample.sh``` for verification, which almost never results in a single candle. If you cloned or pulled today, please pull again.
+
+>Many things are preconfigured, but I can’t guarantee at this point that all quirks have been fully uncovered, detected, and eliminated—through configuration. That said, the tool is capable of handling almost anything MT4 can throw at you; it’s mainly a matter of effort. I plan to reduce that effort by building a program that compares timestamps against MT4 exports and automatically adjusts the configuration to match the output. I only have a few days left to wrap up this data-related work. Panama also still needs to be finalized.
 
 ## Notice: Pre- and Post Processing steps now "session-bound"
 
