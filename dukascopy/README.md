@@ -54,6 +54,10 @@ What started as a personal project (private use-case) to tackle the intricate pr
 
 >This tool builds a high-quality historical OHLCV dataset and maintains it automatically with efficient incremental updates. 
 
+Example 20 year chart of GBP-USD:
+
+![Example GBPUSD](images/examplegbpusd.png)
+
 Historical market data can be leveraged in multiple ways to enhance analysis, decision-making, and trading performance:
 
 - **Backtesting** → Evaluate and refine trading strategies by simulating them on past market conditions. This helps determine whether a strategy is robust, profitable, and resilient across different market environments.
