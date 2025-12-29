@@ -25,12 +25,12 @@ AUS.IDX-AUD:
         4h:                     
           origin: "epoch"
           post:
-            # **Franken candle cleanup**
-            # On mondays and up until 2024-06-24, we need to align candles to 00:00 (epoch)
-            # Because the 08:00 candle on these mondays are 6h10m long, instead of 4H, we need
-            # to merge the "ghost" H4 10:10 candle - which happens because there is data between 12:00 and 14:10
-            # into the previous candle. Which is the 08:00 H4 candle.
-            # Graphs are fragile in MT4, but at least we can make everything align exactly, if user choses to want so.
+            # On Mondays, and up to 2024-06-24, candles must be aligned to 00:00 (epoch).
+            # The 08:00 candle on these Mondays spans 6h10m instead of 4h, due to data
+            # existing between 12:00 and 14:10. This creates a “ghost” H4 candle at 10:10,
+            # which must be merged into the previous candle (the 08:00 H4 candle).
+            # MT4 charts are fragile, but this ensures exact alignment for users who
+            # choose to enable it.
             merge-step:
               action: merge
               ends_with:
