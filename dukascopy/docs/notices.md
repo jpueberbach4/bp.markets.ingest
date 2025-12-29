@@ -100,27 +100,6 @@ AUS.IDX-AUD:
 
 The software is become more and more powerful to handle edge-cases and MT4-anomalies. This is a change for the better.
 
-## Notice: Performance
-
-Two performance improvements have been implemented:
-
-- Streamlined I/O – Replaced IO.tell() in text mode by switching the input stream to binary mode, bypassing Python’s text-IO translation layer.
-- Vectorized session handling – Origins are now assigned using vectorized operations instead of line-by-line computation.
-
-At this stage, further performance gains in Python are minimal. Any additional optimization would require switching from CSV to a custom binary format. However, this would sacrifice the transparency and human-readability of CSVs, so it will not be pursued in the Python version. Such optimizations are reserved for the high-performance, tick-ready, C++ variant.
-
-For reference, resampling 42 symbols takes about 1 minute and 30 seconds in Python. A C++ implementation with binary format will reduce this to seconds.
-
-Before:
-
-![Image before update](../images/performanceon41symbols.png)
-
-After: 
-
-![Image after update](../images/performanceon42symbols-after-perf-update.png)
-
-This optimization shaved a little over a minute off the resampling step, yielding roughly a 40% performance improvement.
-
 ## Notice: Backfilling
 
 Backfilling is not currently supported, as our pipeline processes data strictly forward. Because of this, historical data—particularly for illiquid pairs and at the highest granularity—may be skewed. Backfilling has been identified as a must-have feature.
