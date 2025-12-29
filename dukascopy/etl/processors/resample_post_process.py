@@ -29,9 +29,10 @@
 import pandas as pd
 import numpy as np
 
+from processors.helper import convert_to_server_time_str
+
 
 def resample_post_process_range_mask(df: pd.DataFrame, step, config) -> pd.Series:
-    # TODO: convert from_date, to_date from timezone into server time (with dst transition logic)
     # Setup the mask to contain everything
     mask = pd.Series(True, index=df.index)
     
@@ -39,9 +40,13 @@ def resample_post_process_range_mask(df: pd.DataFrame, step, config) -> pd.Serie
     ts_index = pd.to_datetime(df.index)
 
     if step.from_date:
-        mask &= (ts_index >= pd.to_datetime(step.from_date))
+        mask &= (ts_index >= pd.to_datetime(
+            convert_to_server_time_str(step.from_date, config.timezone, config.server_timezone)
+        ))
     if step.to_date:
-        mask &= (ts_index <= pd.to_datetime(step.to_date))
+        mask &= (ts_index <= pd.to_datetime(
+            convert_to_server_time_str(step.to_date, config.timezone, config.server_timezone)
+        ))
     if step.weekdays:
         mask &= ts_index.dayofweek.isin(step.weekdays)
 
