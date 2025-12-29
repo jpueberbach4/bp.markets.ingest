@@ -32,10 +32,12 @@ AUS.IDX-AUD:
             # existing between 12:00 and 14:10. This creates a “ghost” H4 candle at 10:10,
             # which must be merged into the previous candle (the 08:00 H4 candle).
             # MT4 charts are fragile, but this ensures exact alignment for users who
-            # choose to enable it.
+            # choose to enable it. When DST has shifted, also a 09:10:00 candle needs to 
+            # get cleaned.
             merge-step:
               action: merge
               ends_with:
+              - "09:10:00"
               - "10:10:00"
               offset: -1  
 ```
