@@ -2,86 +2,19 @@ MT4 is decoded.
 
 **Notice:** The main branch is now locked. No further modifications will be made to the core codebase unless a critical bug is discovered, a significant feature is released, or an essential security announcement is required. New features are coming.
 
-**Note:** Another great example on "candle policies"
+## Notice: Pre- and Post Processing steps now "session-bound"
 
-The policy AUS.IDX, before 2024-06-17 is to have, on monday, 00:00, 04:00 and 08:00 candles in MT4. 
+You’re now able to configure pre- and post-processing steps within sessions that are constrained by the session’s logical boundaries (weekdays and date ranges). This is a general code improvement that should have been done anyway, regardless of whether the AUS.IDX issue was the original motivation.
 
-**Example*:*
-
-```sh
-MT4 has:
-
-2024.06.14,18:10,7677.627,7696.347,7674.167,7695.473,2097
-2024.06.14,22:10,7695.909,7708.981,7694.047,7706.637,513
-2024.06.17,00:00,7708.595,7730.457,7697.605,7728.755,1161 <<
-2024.06.17,04:00,7728.159,7728.159,7704.657,7713.469,2418 <<
-2024.06.17,08:00,7713.491,7717.197,7675.119,7691.221,3073 <<
-2024.06.17,14:10,7691.263,7699.703,7674.603,7698.713,1772
-
-We have:
-
-2024-06-14 18:10:00,7677.627,7696.347,7674.167,7695.473,0.2718
-2024-06-14 22:10:00,7695.909,7708.981,7694.047,7706.637,0.06638 
-2024-06-17 02:50:00,7708.595,7730.457,7697.605,7719.657,0.875705 <<
-2024-06-17 06:50:00,7718.657,7723.999,7696.599,7705.657,0.5765 <<
-2024-06-17 10:10:00,7709.815,7717.197,7675.119,7691.221,0.203699 <<
-2024-06-17 14:10:00,7691.263,7699.703,7674.603,7698.713,0.15754
-
-Incoming 1m feed has:
-
-2024-06-14 23:55:00,7705.031,7705.031,7705.031,7705.031,0.00013
-2024-06-14 23:56:00,7705.499,7705.999,7705.499,7705.999,0.00026
-2024-06-14 23:57:00,7706.531,7706.531,7706.531,7706.531,4e-05
-2024-06-14 23:58:00,7707.031,7707.031,7706.073,7706.073,0.00012
-2024-06-14 23:59:00,7706.509,7706.947,7704.541,7706.637,0.00062
-2024-06-17 02:50:00,7708.595,7708.999,7698.947,7699.605,0.006925  <<
-2024-06-17 02:51:00,7698.541,7700.625,7697.605,7700.625,0.00524
-2024-06-17 02:52:00,7699.625,7702.593,7699.625,7702.593,0.00288
-2024-06-17 02:53:00,7703.689,7704.999,7702.561,7703.999,0.00336
-```
-
-Rest of the week is normal.
-
-I’m wondering how far I should go in replicating MT4 behavior. Our data represents the “ground truth” because it aligns with the exchange, whereas MT4 does not. From 2024-06-17 onward, MT4 does correctly align Monday candles. I could introduce a “valid-on-days-of-the-week” option in the session configuration, but that risks overengineering.
-
-That said, forcing a 00:00 alignment when there is no actual market volume effectively creates “phantom” candles or signals, which I strongly dislike. However, as with most things, this should be configurable rather than impossible to support.
-
-**Decision:** screw it—let’s add the valid-on-weekdays configuration.'
-
-**Update:** Post-processing steps need to become "session"-aware. The problem here is that MT4 makes the H4 08:00 candle 6 hours and 9 minutes long. There is another gap from 12:00 to 14:09, with data, that creates a "ghost candle". Merging this ghost-candle into the 08:00 solves it, but I cannot do this globally, like with the SGD, because it only should happen on weekday Monday. I need to lay an egg on this one first. Or two.
-
-If you want to see this for yourself, openup the H4 AUS.IDX index, scroll to 2024-06-17 0800. Next H4 candle you see is 14:10. Now go to H1 chart. See candle at 12:10 and 13:10. See close of 13:10 hourly candle, its also close of that H4 08:00 candle. 7691.221. 
-
-**Note:** I will make it compatible but know what you are dealing with if you decide to configure for "these compatibilities".
-
-**Update:** I have it implemented in a test branch. Works like a charm.
-
-```sh
-2024-06-14 22:10:00,7695.909,7708.981,7694.047,7706.637,0.06638
-2024-06-17 00:00:00,7708.595,7730.457,7697.605,7728.159,0.348155
-2024-06-17 04:00:00,7728.561,7729.191,7704.657,7713.469,0.68636    <<
-2024-06-17 08:00:00,7713.491,7717.197,7675.119,7691.221,0.621389   << The 6h10 franken-candle, closing at 7691.221
-2024-06-17 14:10:00,7691.263,7699.703,7674.603,7698.713,0.15754    <<
-2024-06-17 18:10:00,7698.245,7740.457,7696.751,7738.507,0.18607
-2024-06-17 22:10:00,7738.633,7742.547,7731.097,7734.917,0.031819
-2024-06-18 02:50:00,7733.999,7777.485,7725.999,7771.539,0.758726
-2024-06-18 06:50:00,7771.625,7780.047,7762.593,7774.169,0.412321
-2024-06-18 10:10:00,7775.593,7776.797,7738.877,7748.457,0.122667
-```
-
-Soon, you’ll be able to configure pre- and post-processing steps within sessions that are constrained by the session’s logical boundaries (weekdays and date ranges). This is a general code improvement that should have been done anyway, regardless of whether the issue above was the original motivation.
-
-Example config:
+Config example:
 
 ```yaml
 AUS.IDX-AUD:
   timezone: Australia/Sydney
   skip_timeframes: []
   sessions:
-    my-very-special-mt4-alignment-quirk:
-      # This is ANOTHER special handling for the AUS.IDX. 
-      # Before 2024-06-24 we have ONLY on monday EPOCH candles, during the DAY-session ONLY
-      # When this rule matches, the other rules won't overrule
+    my-very-special-aussie-handler:
+      # This is a special candle-alignment handling for the AUS.IDX. 
       weekdays: [0] # 0=monday, 1=tuesday, and so on..
       to_date: "2024-06-22 01:00:00"  # In Australia/Sydney time
       ranges:
@@ -92,13 +25,20 @@ AUS.IDX-AUD:
         4h:                     
           origin: "epoch"
           post:
-            # franken candle cleanup
+            # **Franken candle cleanup**
+            # On mondays and up until 2024-06-24, we need to align candles to 00:00 (epoch)
+            # Because the 08:00 candle on these mondays are 6h10m long, instead of 4H, we need
+            # to merge the "ghost" H4 10:10 candle - which happens because there is data between 12:00 and 14:10
+            # into the previous candle. Which is the 08:00 H4 candle.
+            # Graphs are fragile in MT4, but at least we can make everything align exactly, if user choses to want so.
             merge-step:
               action: merge
               ends_with:
               - "10:10:00"
               offset: -1  
 ```
+
+The software is become more and more powerful to handle edge-cases and MT4-anomalies. This is a change for the better.
 
 
 ## Notice: Performance
