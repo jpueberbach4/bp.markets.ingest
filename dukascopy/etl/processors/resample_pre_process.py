@@ -128,7 +128,11 @@ def resample_pre_process_origin(df: pd.DataFrame, ident, step, config) -> pd.Dat
     local_transitions = get_dst_transitions(first_dt, last_dt, config.timezone)
     
     # Merge and sort all unique boundaries
-    boundaries = sorted(list(set([first_dt, last_dt] + server_transitions + local_transitions)))
+    if first_dt == last_dt:
+        # BUGFIX! in case there is only one candle, there is no range. emulate a range in that case
+        boundaries = [first_dt, last_dt + timedelta(seconds=1)]
+    else:
+        boundaries = sorted(list(set([first_dt, last_dt] + server_transitions + local_transitions)))
 
     # Initialize helper columns used during processing
     df['tz_dt_sg'] = pd.NaT
