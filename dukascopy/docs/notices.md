@@ -8,6 +8,51 @@ The data portion is now (fairly) complete. Naturally, some QA issues remain, par
 
 Of course, testing is an ongoing process. Markets are quiet at the moment, so I’ll continue next year. Happy New Year to everyone! 🎉
 
+
+## Notice: not really a bug but...
+
+Someone pointed this out. It’s not a bug, but it is a good catch. Once again, this shows that there isn’t a truly mathematically sound approach behind the so-called “MT4 DST/STD switch-logic”.
+
+2024:
+
+US:
+
+```sh
+2024-11-01 01:50:00,8106.657,8106.689,8059.593,8089.999,1.0904
+...
+2024-11-04 00:50:00,8141.561,8171.999,8129.561,8162.657,0.9448
+```
+
+MT4:
+
+```sh
+2024.11.08,01:50,8305.689,8319.999,8292.561,8300.625,1906
+...
+2024.11.11,00:50,8264.999,8279.999,8244.689,8255.593,1780
+```
+
+2023:
+
+US:
+
+```sh
+2023-11-03 01:50:00,6979.487,6989.477,6956.107,6977.867,2.003323
+...
+2023-11-07 00:50:00,6979.247,6988.569,6964.569,6969.487,1.595263
+```
+
+MT4:
+
+```sh
+2023.11.03,01:50,6980.537,6989.477,6956.107,6977.867,5523
+...
+2023.11.07,00:50,6978.347,6988.569,6964.569,6969.487,5056
+```
+
+**2023, correct. 2024 one week delay in MT4.**
+
+Let me assure you, I checked this thoroughly, side-by-side, and it does not happen every year. No one switches between DST and standard time between November 8 and November 11 in 2024. In the New Year I will build a configuration to eliminate this, one week being off, for this particular year, as well. Perhaps there is a logic to it since 2024 is a leap-year.
+
 ## Notice: Panama backadjustment "Public beta" live
 
 I’ve implemented an initial version of the Panama backadjustment logic. It’s now available for you to try, although I’m still rigorously testing it myself. At the moment, rollover adjustments are supported for *-USD commodities. I have tested it with:
