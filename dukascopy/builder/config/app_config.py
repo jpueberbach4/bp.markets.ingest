@@ -13,6 +13,7 @@ class BuilderPaths:
 @dataclass
 class BuilderConfig:
     """The root configuration for the builder.py script."""
+    num_processes: Optional[int] = None
     paths: BuilderPaths = field(default_factory=BuilderPaths)
 
 @dataclass

@@ -29,7 +29,7 @@
 import pandas as pd
 import numpy as np
 
-from processors.helper import convert_to_server_time_str
+from etl.processors.helper import convert_to_server_time_str
 
 
 def resample_post_process_range_mask(df: pd.DataFrame, step, config) -> pd.Series:

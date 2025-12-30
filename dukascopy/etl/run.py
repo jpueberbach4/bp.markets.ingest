@@ -47,9 +47,6 @@ import resample
 # Start date for ETL processing in "YYYY-MM-DD"
 START_DATE =  None
 
-# Number of worker processes for parallel stages
-NUM_PROCESSES = os.cpu_count()
-
 NOLOCK = os.getenv('NOLOCK', '0').lower() in ('1', 'true', 'yes', 'on')
 
 # No START_DATE set, set it to 7 days back (todo: scan for last cached json date?)

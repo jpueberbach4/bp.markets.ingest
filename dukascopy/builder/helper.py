@@ -22,6 +22,7 @@
 ===============================================================================
 """
 import argparse
+import random
 import sys
 import re
 from pathlib import Path
@@ -133,8 +134,17 @@ def resolve_selections(
     for selection in select_args:
         if "/" not in selection:
             parser.error(f"Invalid format: {selection} (expected SYMBOL/TF[:modifier])")
+        
+        symbol_part, tf_part = selection.split("/", 1)
+        
+        symbol_mods = []
+        if ":" in symbol_part:
+            parts = symbol_part.split(":")
+            symbol_pattern = parts[0]
+            symbol_mods = parts[1:]
+        else:
+            symbol_pattern = symbol_part
 
-        symbol_pattern, tf_part = selection.split("/", 1)
         tf_specs = [tf.strip() for tf in tf_part.split(",")]
 
         # Wildcards not yet implemented
@@ -150,10 +160,11 @@ def resolve_selections(
         # Fallback to original pattern if no match
         for symbol in matched_symbols or [symbol_pattern]:
             for tf_spec in tf_specs:
-                base_tf, *rest = tf_spec.split(":")
-                modifier = rest[0] if rest else None
+                tf_base, *tf_mods = tf_spec.split(":")
 
-                pair = (symbol, base_tf)
+                modifiers = list(dict.fromkeys(symbol_mods + tf_mods))
+
+                pair = (symbol, tf_base)
                 requested_pairs.add(pair)
 
                 if pair not in available_pairs:
@@ -161,10 +172,10 @@ def resolve_selections(
 
                 # Find source file path for this pair
                 source_path = next(
-                    path for s, tf, path in all_available_data if s == symbol and tf == base_tf
+                    path for s, tf, path in all_available_data if s == symbol and tf == tf_base
                 )
 
-                new_task = (symbol, base_tf, source_path, modifier)
+                new_task = (symbol, tf_base, source_path, modifiers)
                 current_modifier = best_tasks.get(pair, (None, None, None, None))[3]
 
                 # Prefer tasks with a defined modifier

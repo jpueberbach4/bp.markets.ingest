@@ -6,6 +6,7 @@ flock -x 200
 echo Deleting data/aggregate and data/resample*...
 rm -rf ./data/resample ./data/aggregate
 echo Rebuilding...
+export PYTHONPATH=$PYTHONPATH:$(pwd)
 START_DATE=2005-01-01 NOLOCK=1 ./run.sh
 echo Done.
 # Release lock

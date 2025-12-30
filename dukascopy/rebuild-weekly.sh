@@ -34,6 +34,7 @@ done
 echo Deleting data/*...
 rm -rf ./data/resample ./data/aggregate ./data/temp
 echo Rebuilding...
+export PYTHONPATH=$PYTHONPATH:$(pwd)
 START_DATE=2005-01-01 NOLOCK=1 ./run.sh
 echo Done.
 # Release lock
