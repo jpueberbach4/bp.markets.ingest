@@ -2,6 +2,8 @@ MT4 is decoded.
 
 ## Notice: Data
 
+**Note:** I can only adjust data that is actually “viewable”. For example, for AUS.IDX, I can see H4 candles from 2019-12-01 to the present. What happened before 2019-12-01 is essentially a black box. I simply assume that the first detected candle policy also applies to the data preceding the viewable period. This is logical but nevertheless worth mentioning.
+
 The data portion is now (fairly) complete. Naturally, some QA issues remain, particularly in the builder component, which will be addressed over time. Ensuring optimal QA for the ETL process takes priority over the extraction utility itself.
 
 Of course, testing is an ongoing process. Markets are quiet at the moment, so I’ll continue next year. Happy New Year to everyone! 🎉
