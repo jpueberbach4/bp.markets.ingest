@@ -36,8 +36,9 @@ Batch extraction utility for symbol/timeframe datasets.
 
 optional arguments:
   -h, --help            show this help message and exit
-  --select SYMBOL/TF1,TF2:modifier,...
+  --select SYMBOL:modifier/TF1,TF2:modifier,...
                         Defines how symbols and timeframes are selected for extraction.
+
   --list                Dump out all available symbol/timeframe pairs and exit.
   --after AFTER         Start date/time (inclusive). Format: YYYY-MM-DD HH:MM:SS (Default: 1970-01-01 00:00:00)
   --until UNTIL         End date/time (exclusive). Format: YYYY-MM-DD HH:MM:SS (Default: 3000-01-01 00:00:00)
@@ -55,6 +56,43 @@ Output Configuration (Required for Extraction Mode):
   --output FILE_PATH    Write a single merged output file.
   --output_dir DIR_PATH
                         Write a partitioned dataset.
+
+Supported modifiers (optional):
+
+  # Normalize gaps and Panama-backadjust a symbol
+  SYMBOL:panama
+
+  # Skip last candle from a timeframe
+  TF:skiplast
+
+Examples:
+
+  # List all available symbols
+  build-csv.sh --list
+
+  # Extract raw 1m and 1h data for BRENT as a single .csv file
+  build-csv.sh --select BRENT.CMD.USD/1m,1h --output brent_data.csv
+
+  # Extract Panama-adjusted 1m data for BRENT as a single .Parquet file
+  build-parquet.sh --select BRENT.CMD.USD:panama/1m --output panama_data.parquet
+
+  # Extract raw 1m, 1h and 4h data for BRENT and exclude the last candle of 1h and 4h to .csv file
+  build-csv.sh --select BRENT.CMD.USD/1m,1h:skiplast,4h:skiplast --output brent_data.csv
+
+  # Select multiple symbols and multiple timeframes to .Parquet hive
+  build-parquet.sh --select EUR-USD/1m,1h,4h --select DOLLAR.IDX-USD/1h --output_dir temp/export --partition
+
+  # Extract raw 1m data for BRENT and EUR-USD and export it to mt4 .csv format
+  build-csv.sh --select BRENT.CMD-USD/1m --select EUR-USD/1m --output brent_data.csv --mt4
+
+  # Extract raw 1m data for EUR-USD for the month of December 2025 to .csv file
+  build-csv.sh --select EUR-USD/1m --after "2025-12-01 00:00:00" --until "2026-01-01 00:00:00"  --output limit.csv
+
+  # Extract Panama-adjusted 1h and 4h for BRENT and skiplast on all timeframes
+  build-csv.sh --select BRENT.CMD-USD:panama:skiplast/1h,4h --dry-run --output panama_test.csv
+
+  # Perform a dry-run to verify file discovery
+  build-csv.sh --select EUR-USD/1h --dry-run --output test.csv
 
 ```
 
