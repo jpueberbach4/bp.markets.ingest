@@ -1,6 +1,6 @@
 ## Project Statistics (Logical SLOC)
 
-As per 29 december 2025
+As per 30 december 2025
 
 ### Project Statistics (Logical SLOC) - ETL
 
@@ -23,15 +23,16 @@ As per 29 december 2025
 
 | File Name | Code Lines | Core Responsibility |
 | :--- | :---: | :--- |
-| `args.py` | 114 | CLI parsing, selection validation, and UUID temp-dir generation. |
-| `helper.py` | 82 | Regex-based symbol discovery and dataset selection resolving. |
-| `run.py` | 74 | Pipeline orchestration, TOS enforcement, and merge/cleanup flow. |
-| `extract.py` | 68 | DuckDB SQL generation for time-windowed CSV-to-Parquet extraction. |
-| `mt4.py` | 52 | Exporting DuckDB views to MT4-compatible CSV formatting. |
+| `adjust.py` | 218 | Panama rollover calendar fetching, caching, and DuckDB price adjustment. |
+| `run.py` | 121 | Pipeline orchestration, TOS enforcement, and merge/cleanup flow. |
+| `helper.py` | 93 | Regex-based symbol discovery and dataset selection resolving. |
+| `extract.py` | 80 | DuckDB SQL generation for time-windowed CSV-to-Parquet extraction. |
 | `app_config.py` | 48 | Lightweight recursive dataclass mapping for the builder config. |
-| `merge.py` | 42 | High-speed DuckDB consolidation of partitioned temp files. |
-| `tos.py` | 24 | Interactive Terms of Service enforcement and cache-file marking. |
-| **Total Project** | **504** | **Logical Source Lines of Code** |
+| `args.py` | 34 | CLI parsing, selection validation, and UUID temp-dir generation. |
+| `merge.py` | 31 | High-speed DuckDB consolidation of partitioned temp files. |
+| `mt4.py` | 27 | Exporting DuckDB views to MT4-compatible CSV formatting. |
+| `tos.py` | 18 | Interactive Terms of Service enforcement and cache-file marking. |
+| **Total Project** | **670** | **Logical Source Lines of Code** |
 
 ### Project Statistics (Logical SLOC) - HTTP-service
 
@@ -40,3 +41,5 @@ Under development
 ### Project Statistics (Logical SLOC) - Replay
 
 Under development
+
+>Currently about 1500 lines of code.
