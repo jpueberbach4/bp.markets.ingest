@@ -106,3 +106,5 @@ CLEARLY MANUAL CORRECTIONS. 2x MIDWEEK SHIFTS.
 
 
 ```
+
+PS for us, its easy to "repair" the past. For MT4, they can't repair the past. Because of orders.

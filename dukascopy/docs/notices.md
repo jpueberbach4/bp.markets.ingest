@@ -55,6 +55,8 @@ Let me assure you, I checked this thoroughly, side-by-side, and it does not happ
 
 **Note:** This is actually beautiful to see—it shows the evolution of the MT4 platform. As with most software, issues eventually get corrected over time. I already know the solution to this "little" thing, so it will be fine. I am off for this year. No more coding.
 
+[Analysis](forensics/ASX.MD)
+
 ## Notice: Panama backadjustment "Public beta" live
 
 I’ve implemented an initial version of the Panama backadjustment logic. It’s now available for you to try, although I’m still rigorously testing it myself. At the moment, rollover adjustments are supported for *-USD commodities. I have tested it with:
