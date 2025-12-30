@@ -53,6 +53,8 @@ MT4:
 
 Let me assure you, I checked this thoroughly, side-by-side, and it does not happen every year. No one switches between DST and standard time between November 8 and November 11 in 2024. In the New Year I will build a configuration to eliminate this, one week being off, for this particular year, as well. Perhaps there is a logic to it since 2024 is a leap-year.
 
+**Note:** This is actually beautiful to see—it shows the evolution of the MT4 platform. As with most software, issues eventually get corrected over time. I already know the solution to this "little" thing, so it will be fine. I am off for this year. No more coding.
+
 ## Notice: Panama backadjustment "Public beta" live
 
 I’ve implemented an initial version of the Panama backadjustment logic. It’s now available for you to try, although I’m still rigorously testing it myself. At the moment, rollover adjustments are supported for *-USD commodities. I have tested it with:
