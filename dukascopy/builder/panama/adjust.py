@@ -138,7 +138,7 @@ def adjust_symbol(symbol, input_filepath, output_filepath):
         print(f"Warning: Couldn't find a rollover calendar for {symbol}. Skipping Panama-adjustment.")
         return False
 
-    print(f"Warning: panama modifier set for {symbol}. Handling rollover gaps...")
+    print(f"Warning: Panama modifier set for {symbol}. Handling rollover gaps...")
 
     adjust_sql = f"""
         CREATE OR REPLACE TABLE adjustments AS
@@ -261,7 +261,7 @@ def fork_panama(
             # Now, adjust resample.paths.data in app_config, set to tempdir/adjust (tf's directly below)
             app_config.resample.paths.data = str(tf_path.parent.parent)
             # CALL the fork_resample(symbol, app_config)
-            print(f"Warning: panama modifier set for {symbol}. Resampling...")
+            print(f"Warning: Panama modifier set for {symbol}. Resampling...")
             fork_resample([symbol, app_config])
             # Todo: exception handling and such
         
