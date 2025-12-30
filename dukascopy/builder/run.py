@@ -71,7 +71,7 @@ def get_task_category(task):
     modifiers = task[5]
 
     # Adjusted tasks require the most processing
-    if "adjusted" in modifiers:
+    if "panama" in modifiers:
         return 0
 
     # Tasks with other modifiers but not adjusted
