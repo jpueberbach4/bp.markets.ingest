@@ -1,50 +1,31 @@
 MT4 is decoded.
 
-Focus is now on futures.
+## Notice: Panama backadjustment "Public beta" live
 
-## Notice: Rollover
+I’ve implemented an initial version of the Panama backadjustment logic. It’s now available for you to try, although I’m still rigorously testing it myself. At the moment, rollover adjustments are supported for *-USD commodities. I have tested it with:
 
-Rollover support is being implemented. Programmatic detection was too inaccurate. Different approach was needed.
+- BRENT.CMD-USD
+- GAS.CMD-USD
+- LIGHT.CMD-USD
+- DIESEL.CMD-USD
 
-I have a first version of back-adjustment (Panama) up and running. Severely checking this and parameterizing this before i release it. Initial results look (pretty) good:
+For these symbols, the adjustment works beautifully. Since Dukascopy applies rollovers at the end of the day, implementing this solution turned out to be much simpler than expected.
 
-```sh
-RAW DATA:
+I cannot guarantee flawless performance for symbols outside of those tested, which is why the feature is currently in a “public beta” state.
 
-December
-2025-12-23 20:10:00,62.27,62.27,62.27,62.27,0.000202
-2025-12-24 03:00:00,61.922,61.96,61.875,61.88,0.00374
-GAP = -0.348
+Below is a general explanation of Panama backadjustment and why it is widely used by retail traders, generated with the help of AI:
 
-November
-2025-11-25 23:39:00,62.552,62.552,62.547,62.547,0.000144
-2025-11-26 03:00:00,61.907,61.93,61.83,61.88,0.003438
-GAP = -0.64
+Panama backadjustment is a method used mainly for futures contracts to create a continuous price series across contract rollovers. When one futures contract expires and trading moves to the next, there is often a price gap caused by differences in contract pricing, not real market movement. Panama backadjustment removes these artificial gaps by calculating the price difference at each rollover and applying cumulative offsets to historical prices.
 
-BACKADJUSTED DATA:
+This is important to traders because it produces clean, continuous charts that preserve true price action, trends, and technical indicator behavior. It is commonly used for technical analysis, backtesting trading strategies, risk modeling, and signal generation, where unadjusted rollover gaps would otherwise distort indicators, trigger false signals, or break historical comparisons.
 
-December:
-2025-12-23 20:10:00,61.83,61.83,61.83,61.83,0.000202
-2025-12-24 03:00:00,61.922,61.96,61.875,61.88,0.00374
-GAP = +0.092
-
-November
-2025-11-25 23:39:00,61.502,61.502,61.497,61.497,0.000144
-2025-11-26 03:00:00,61.467,61.49,61.39,61.44,0.003438
-GAP = -0.03
-```
-
-By specifying ```SYMBOL:adjusted/TF``` you can optionally decide if you want the Panama-version or the "regular" (default) "broker-reality"-version. It will only support instruments for which a rollover calendar could be found. If it cannot find the calendar, it will stop the builder with a message. 
-
-**Why?**
-
-Raw futures data contains artificial price "gaps" that occur whenever an old contract expires and a new one begins. Panama Adjustment removes these gaps by shifting historical prices to align with the current contract, creating a seamless, continuous price string. Without this adjustment, trading indicators like Moving Averages would be mathematically distorted by "phantom" price jumps that never actually happened in live trading.
-
-Once the 1-minute data is adjusted, all higher timeframes (5m, 1h, Daily) must be resampled from this version to maintain consistency. If you resample from raw data, your hourly or daily candles will contain "dirty" data points from both contracts, resulting in fake candle ranges and incorrect OHLC values. Using the Panama-adjusted 1m source ensures that your multi-timeframe analysis is accurate and that a signal on the 5m chart matches the price action on the 1h chart. Essentially, this process preserves the true "geometric shape" of the market across all intervals. This allows for reliable backtesting and strategy development over long periods.
-
-Ofcourse everything is fully automated. Just a flag is needed to trigger it. The system will be working about 30-40 seconds on 6 panama-adjusted symbols (this unoptimized. optimization steps still need to get performed).
+**Note:** Panama backadjustment modifies the 1-minute base data and resamples all higher timeframes to ensure they align with the adjusted base. The process takes some time, but for most symbols it typically completes in under 30 seconds, depending on your hardware.
 
 Examples:
+
+```sh
+./build-csv.sh --select BRENT.CMD-USD:panama/1m --output panama-test.csv
+```
 
 Before Panama
 
