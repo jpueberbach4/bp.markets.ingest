@@ -197,10 +197,7 @@ def fork_extract(task: Tuple[str, str, str, str, str, str, Dict[str, Any]]) -> b
     bool
         Result of extract_symbol.
     """
-
-    print("test")
     from panama.adjust import fork_panama
-    print("test2")
     task = fork_panama(task)
 
 

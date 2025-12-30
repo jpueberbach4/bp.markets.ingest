@@ -9,7 +9,6 @@ import csv
 import io
 import re
 
-
 CACHE_MAX_AGE = 86400
 CACHE_PATH = "data/rollover"
 
@@ -109,6 +108,9 @@ def fetch_rollover_data_for_symbol(symbol) -> Optional[str]:
         # Normalize the data
         normalized_data = normalize_data(response.text, symbol)
 
+        if not normalized_data:
+            return None
+
         # Write the cache
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         with open(cache_path, "w") as f_cache:
@@ -119,6 +121,10 @@ def fetch_rollover_data_for_symbol(symbol) -> Optional[str]:
 
     except requests.exceptions.RequestException as e:
         status_code = getattr(e.response, "status_code", 0)
+        if cache_path.exists():
+            print("Warning: Refresh of symbol rollover calendar failed. Using old version.")
+            return cache_path
+        # Else raise
         raise
 
     return None
@@ -127,7 +133,13 @@ def fetch_rollover_data_for_symbol(symbol) -> Optional[str]:
 def adjust_symbol(symbol, input_filepath, output_filepath):
     # TODO: parameterize this and map it to configuration
     rollover_filepath = fetch_rollover_data_for_symbol(symbol)
-    
+
+    if not rollover_filepath:
+        print(f"Warning: Couldn't find a rollover calendar for {symbol}. Skipping Panama-adjustment.")
+        return False
+
+    print(f"Warning: panama modifier set for {symbol}. Handling rollover gaps...")
+
     adjust_sql = f"""
         CREATE OR REPLACE TABLE adjustments AS
         WITH roll_diffs AS (
@@ -170,7 +182,6 @@ def adjust_symbol(symbol, input_filepath, output_filepath):
     con = duckdb.connect(database=":memory:")
     con.execute(adjust_sql)
     con.close()
-    os.exit
     return True
 
 
@@ -204,16 +215,15 @@ def fork_panama(
     symbol, timeframe, input_filepath, after_str, until_str, modifiers, options = task
 
     if "panama" in modifiers:
-        import shutil # cleanup later
         from filelock import FileLock, Timeout
         from etl.config.app_config import load_app_config, resample_get_symbol_config, ResampleConfig
         from etl.resample import fork_resample
-        # get symbol configuration
+        # Get symbol configuration for Resampler
         config = resample_get_symbol_config(
             symbol,
-            app_config := load_app_config('config.user.yaml') 
+            app_config := load_app_config(options['config_file']) 
         )
-        # 1m source path, first version just gets from root, nobody overrides 1m frame
+        # Nobody overrides root config frame, so get the source path directly (no complex logic)
         raw_base_path, adjusted_base_path, lock_path, tf_path = [
             Path(config.timeframes.get("1m").source) / f"{symbol}.csv",
             Path(options.get('output_dir')).parent / f"adjust/1m/{symbol}.csv",
@@ -224,7 +234,7 @@ def fork_panama(
         adjusted_base_path.parent.mkdir(parents=True,exist_ok=True)
         lock_path.parent.mkdir(parents=True,exist_ok=True)
 
-        # Dry-run fix
+        # Dry-run
         if options.get('dry_run'):
             print(f"DRY-RUN: Would have performed Panama adjustment for {symbol}...")
             input_filepath = tf_path
@@ -237,26 +247,21 @@ def fork_panama(
             lock.acquire(timeout=300)
             # We acquired the lock, continue
         except Timeout:
+            print(f"Something is wrong. We couldnt acquire a lockfile {lock_path}. Exiting.")
             sys.exit(1)    
         
         # Check if we already have an adjusted file for this tf (adjust/tf/symbol.csv)
         if not adjusted_base_path.exists():
             # It was not already prepared in another parallel process
-
             # Now, prepare the adjusted 1m file and account for the rollover gaps, CALL adjust.adjust_symbol
-            print(f"Warning: adjusted modifier set for {symbol}. Handling rollover gaps...")
-
-            adjust_symbol(symbol, raw_base_path, adjusted_base_path)
-            os.exit
-            shutil.copyfile(raw_base_path, adjusted_base_path) # we simulate adjust for a moment
-            
+            if not adjust_symbol(symbol, raw_base_path, adjusted_base_path):
+                return  task
             # Adjust the 1m base timeframe source in root (defaults is enough for the moment)
             app_config.resample.timeframes.get("1m").source = str(adjusted_base_path.parent)
             # Now, adjust resample.paths.data in app_config, set to tempdir/adjust (tf's directly below)
             app_config.resample.paths.data = str(tf_path.parent.parent)
-            
             # CALL the fork_resample(symbol, app_config)
-            print(f"Warning: adjusted modifier set for {symbol}. Resampling...")
+            print(f"Warning: panama modifier set for {symbol}. Resampling...")
             fork_resample([symbol, app_config])
             # Todo: exception handling and such
         
@@ -266,7 +271,7 @@ def fork_panama(
         # And release the lock...
         lock.release()
 
-        # Return the adjusted task
+        # Return the adjusted task so fork_extract can continue with regular process
         task = (symbol, timeframe, input_filepath, after_str, until_str, modifiers, options)
 
     return task

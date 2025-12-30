@@ -165,8 +165,10 @@ def main():
         # Load application configuration
         # User config overrides default
         if Path("config.user.yaml").exists():
+            config_filename = "config.user.yaml"
             app_config = load_app_config('config.user.yaml')
         else:
+            config_filename = "config.yaml"
             app_config = load_app_config('config.yaml')
         
         config = app_config.builder
@@ -176,6 +178,9 @@ def main():
 
         # Parse and validate command-line arguments
         options = parse_args(config)
+
+        # Store config filename in options
+        options['config_file'] = config_filename
 
         print(f"Running Dukascopy PARQUET/CSV exporter ({NUM_PROCESSES} processes)")
 
