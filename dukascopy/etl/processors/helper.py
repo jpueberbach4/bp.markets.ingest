@@ -79,3 +79,48 @@ def convert_to_server_time_str(dt: str, origin_tz: str, dst_tz: str) -> str:
 
     # Return as a string (will be back-converted in calling function)
     return server_ts.strftime('%Y-%m-%d %H:%M:%S')
+
+def resample_process_range_mask(df: pd.DataFrame, step, config) -> pd.Series:
+    """Create a boolean mask for filtering a DataFrame index by date range and weekdays.
+
+    This function generates a boolean mask aligned with the input DataFrame's index.
+    The mask is computed based on optional start/end dates and allowed weekdays
+    defined in the `step` configuration. Date comparisons are performed after
+    converting timestamps to the server timezone.
+
+    Args:
+        df (pd.DataFrame): Input DataFrame whose index represents timestamps.
+        step: Configuration object containing filtering parameters.
+            Expected attributes:
+                - from_date: Optional start date for filtering.
+                - to_date: Optional end date for filtering.
+                - weekdays: Optional iterable of allowed weekdays
+                  (0=Monday, ..., 6=Sunday).
+        config: Configuration object providing timezone information.
+            Expected attributes:
+                - timezone: Source timezone.
+                - server_timezone: Target server timezone.
+
+    Returns:
+        pd.Series: A boolean Series indexed like `df`, where True indicates rows
+        that fall within the specified date range and weekday constraints.
+    """
+    # Setup the mask to contain everything
+    mask = pd.Series(True, index=df.index)
+    
+    # Convert index to datetime if it's currently strings for comparison
+    ts_index = pd.to_datetime(df.index)
+
+    if step.from_date:
+        mask &= (ts_index >= pd.to_datetime(
+            convert_to_server_time_str(step.from_date, config.timezone, config.server_timezone)
+        ))
+    if step.to_date:
+        mask &= (ts_index <= pd.to_datetime(
+            convert_to_server_time_str(step.to_date, config.timezone, config.server_timezone)
+        ))
+    if step.weekdays:
+        mask &= ts_index.dayofweek.isin(step.weekdays)
+
+    # And... return it
+    return mask

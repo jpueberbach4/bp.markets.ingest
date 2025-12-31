@@ -60,7 +60,7 @@ from typing import Tuple, IO, Optional
 
 from etl.config.app_config import AppConfig, ResampleSymbol, resample_get_symbol_config, ResampleTimeframeProcessingStep
 from etl.processors.resample_pre_process import resample_pre_process_origin
-from etl.processors.resample_post_process import resample_post_process_merge
+from etl.processors.resample_post_process import resample_post_process_merge, resample_post_process_shift
 from etl.exceptions import *
 import traceback
 
@@ -243,6 +243,9 @@ class ResampleEngine:
         """
         if step.action == "merge":
             df = resample_post_process_merge(df, self.ident, step, self.config)
+
+        elif step.action == "shift":
+            df = resample_post_process_shift(df, self.ident, step, self.config)
         else:
             print(f"Warning: unknown post-process step {step.action}")
 
@@ -543,17 +546,17 @@ class ResampleEngine:
             if "offset" not in full_resampled.columns:
                 raise ResampleLogicError(f"Critical: 'offset' column lost during resampling for {self.symbol}.")
 
-            # Normalize index formatting for downstream consumers
-            full_resampled.index = full_resampled.index.strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
-
             # Apply post-processing, limited by its sessions boundaries (weekdays, date-range)
             for name, session in self.config.sessions.items():
                 tf_post = session.timeframes.get(self.ident).post
                 if tf_post:
                     for name, tf_step in tf_post.items():
                         full_resampled = self._apply_post_processing(full_resampled, tf_step)
+
+            # Normalize index formatting for downstream consumers
+            full_resampled.index = full_resampled.index.strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
 
             # Determine the resume position from the last completed bar
             try:

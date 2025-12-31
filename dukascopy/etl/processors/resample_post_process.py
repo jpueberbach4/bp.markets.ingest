@@ -29,54 +29,29 @@
 import pandas as pd
 import numpy as np
 
-from etl.processors.helper import convert_to_server_time_str
+from etl.processors.helper import resample_process_range_mask
 
 
-def resample_post_process_range_mask(df: pd.DataFrame, step, config) -> pd.Series:
-    """Create a boolean mask for filtering a DataFrame index by date range and weekdays.
-
-    This function generates a boolean mask aligned with the input DataFrame's index.
-    The mask is computed based on optional start/end dates and allowed weekdays
-    defined in the `step` configuration. Date comparisons are performed after
-    converting timestamps to the server timezone.
-
-    Args:
-        df (pd.DataFrame): Input DataFrame whose index represents timestamps.
-        step: Configuration object containing filtering parameters.
-            Expected attributes:
-                - from_date: Optional start date for filtering.
-                - to_date: Optional end date for filtering.
-                - weekdays: Optional iterable of allowed weekdays
-                  (0=Monday, ..., 6=Sunday).
-        config: Configuration object providing timezone information.
-            Expected attributes:
-                - timezone: Source timezone.
-                - server_timezone: Target server timezone.
-
-    Returns:
-        pd.Series: A boolean Series indexed like `df`, where True indicates rows
-        that fall within the specified date range and weekday constraints.
-    """
-    # Setup the mask to contain everything
-    mask = pd.Series(True, index=df.index)
+def resample_post_process_shift(df: pd.DataFrame, ident, step, config) -> pd.DataFrame:
+    # Function used to shift timestamps when they are within a specific boundary (weekdays, date-range)
     
-    # Convert index to datetime if it's currently strings for comparison
-    ts_index = pd.to_datetime(df.index)
+    # Get the limiting mask for this step
+    mask = resample_process_range_mask(df, step, config)
 
-    if step.from_date:
-        mask &= (ts_index >= pd.to_datetime(
-            convert_to_server_time_str(step.from_date, config.timezone, config.server_timezone)
-        ))
-    if step.to_date:
-        mask &= (ts_index <= pd.to_datetime(
-            convert_to_server_time_str(step.to_date, config.timezone, config.server_timezone)
-        ))
-    if step.weekdays:
-        mask &= ts_index.dayofweek.isin(step.weekdays)
+    if not mask.any():
+        return df
 
-    # And... return it
-    return mask
+    # We must cast the integer offset to 's' (seconds) 
+    shift_delta = np.timedelta64(int(step.offset), 's')
 
+    # Modify values directly
+    new_index = df.index.values.copy()
+    new_index[mask] = new_index[mask] + shift_delta
+
+    # Reassign
+    df.index = pd.DatetimeIndex(new_index)
+
+    return df
 
 def resample_post_process_merge(df: pd.DataFrame, ident: str, step, config) -> pd.DataFrame:
     """Post-process a resampled DataFrame by merging selected rows into anchor rows.
@@ -102,7 +77,7 @@ def resample_post_process_merge(df: pd.DataFrame, ident: str, step, config) -> p
     """
 
     # Get the limiting mask for this step
-    mask = resample_post_process_range_mask(df, step, config)
+    mask = resample_process_range_mask(df, step, config)
 
     # Get the offset
     offset = step.offset
@@ -110,11 +85,14 @@ def resample_post_process_merge(df: pd.DataFrame, ident: str, step, config) -> p
     # Setup positions array of idx to get dropped
     drop_positions = []
 
+    # Normalize index formatting for downstream consumers
+    index_str = df.index.strftime("%Y-%m-%d %H:%M:%S")
+
     # Iterate over each suffix that identifies rows to be merged
     for ends_with in step.ends_with:
 
         # Select franken candles, combine with previous calculated mask
-        _mask = df.index.str.endswith(ends_with) & mask.values
+        _mask = index_str.str.endswith(ends_with) & mask.values
 
         # Get the positions where the mask is valid
         positions = np.where(_mask)[0]
