@@ -8,6 +8,14 @@ The data portion is now (fairly) complete. Naturally, some QA issues remain, par
 
 Of course, testing is an ongoing process. Markets are quiet at the moment, so I’ll continue next year. Happy New Year to everyone! 🎉
 
+## Notice: extreme configuration example
+
+Since there are quite a bit of policy changes in history, for all assets, i composed one excessive and obsessed configuration file for the US-30. If you apply this one, you have 8 years of exact MT4 aligned data.
+
+[US30](forensics/US30.MD)
+
+This is also to show that you can get the data in order.
+
 ## Notice: 2020 MT4-side anomaly ASX
 
 I discovered that some manual patching was applied on the MT4 server side in 2020 for AUS.IDX (see [ASX "forensics"](forensics/ASX.MD)). I built a small test framework to evaluate the performance impact of replicating this “anomaly” via pre-processing during the resampling step.
