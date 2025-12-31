@@ -8,15 +8,6 @@ The data portion is now (fairly) complete. Naturally, some QA issues remain, par
 
 Of course, testing is an ongoing process. Markets are quiet at the moment, so I’ll continue next year. Happy New Year to everyone! 🎉
 
-
-## Notice: not really a bug but...
-
-Someone pointed this out. It’s not a bug, but it is a good catch. Once again, this shows that there isn’t a truly mathematically sound approach behind the so-called “MT4 DST/STD switch-logic”.
-
-[Analysis](forensics/ASX.MD)
-
-This behavior on the MT4 side was manually resolved/patched on 2020-11-05. Our system will now move from being able to replicate precise alignment and candle lengths to also being able to replicate this sort of things as well. Of course, this will be configurable—mirroring a target system’s "strange behavior" should never be the default practice.
-
 ## Notice: Panama backadjustment "Public beta" live
 
 I’ve implemented an initial version of the Panama backadjustment logic. It’s now available for you to try, although I’m still rigorously testing it myself. At the moment, rollover adjustments are supported for *-USD commodities. I have tested it with:
