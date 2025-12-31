@@ -10,7 +10,7 @@ Of course, testing is an ongoing process. Markets are quiet at the moment, so I�
 
 ## Notice: 2020 MT4-side anomaly ASX
 
-I discovered that some manual patching was applied on the MT4 server side in 2020 for AUS.IDX (see [ASX "forensics"](forensics/ASX.MD4)). I built a small test framework to evaluate the performance impact of replicating this “anomaly” via pre-processing during the resampling step.
+I discovered that some manual patching was applied on the MT4 server side in 2020 for AUS.IDX (see [ASX "forensics"](forensics/ASX.MD)). I built a small test framework to evaluate the performance impact of replicating this “anomaly” via pre-processing during the resampling step.
 
 I introduced a time-shift pre-processing step and was able to align the 1-minute data with the anomaly, but the performance impact was significant. As a result, a pre-process/resample-based solution is not viable.
 
