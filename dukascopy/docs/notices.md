@@ -16,7 +16,9 @@ I introduced a time-shift pre-processing step and was able to align the 1-minute
 
 (The performance impact stems from redefining the 1-minute data as a “raw” timeframe and then rebuilding a custom 1-minute timeframe via a resampling step with preprocessing rules. This effectively creates a shifted copy of the raw data via resampling, which is where the performance degradation occurs.)
 
-If I decide to replicate this behavior, it will get implemented in the transform step, which would require a full rebuild. It is still unclear whether this behavior was server-wide or limited to this asset only. This is something to revisit next year.
+If I decide to replicate this behavior, it will get implemented in the transform step, which would require a full rebuild
+
+**Confirmed:** The leap-year 1 week lag is confirmed on other indices as well. It's also confirmed the above-mentioned "anomaly" **only impacts ASX**, definately not server-wide. HKG index is perfect in 2020.
 
 ## Notice: Panama backadjustment "Public beta" live
 
