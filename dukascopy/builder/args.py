@@ -73,7 +73,7 @@ def generate_examples() -> str:
       build-csv.sh --select EUR-USD/1m --after "2025-12-01 00:00:00" --until "2026-01-01 00:00:00"  --output limit.csv
 
       # Extract Panama-adjusted 1h and 4h for BRENT and skiplast on all timeframes
-      build-csv.sh --select BRENT.CMD-USD:panama:skiplast/1h,4h --dry-run --output panama_test.csv
+      build-csv.sh --select BRENT.CMD-USD:panama:skiplast/1h,4h --output panama_test.csv
 
       # Perform a dry-run to verify file discovery
       build-csv.sh --select EUR-USD/1h --dry-run --output test.csv
