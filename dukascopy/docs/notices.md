@@ -10,7 +10,7 @@ Of course, testing is an ongoing process. Markets are quiet at the moment, so Iâ
 
 ## Notice: extreme configuration example
 
-Since there are quite a bit of policy changes in history, for all assets, i composed one excessive and obsessed configuration file for the US-30. If you apply this one, you have 8 years of exact MT4 aligned data.
+Since there are quite a bit of policy changes in history, for all assets, i composed one excessive configuration file for the US-30. If you apply this one, you have 8 years of exact MT4 aligned data.
 
 [US30](forensics/US30.MD)
 
