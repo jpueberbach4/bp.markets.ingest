@@ -14,6 +14,8 @@ I discovered that some manual patching was applied on the MT4 server side in 202
 
 I introduced a time-shift pre-processing step and was able to align the 1-minute data with the anomaly, but the performance impact was significant. As a result, a pre-process/resample-based solution is not viable.
 
+(The performance impact stems from redefining the 1-minute data as a “raw” timeframe and then rebuilding a custom 1-minute timeframe via a resampling step with preprocessing rules. This effectively creates a shifted copy of the raw data via resampling, which is where the performance degradation occurs.)
+
 If I decide to replicate this behavior, it will get implemented in the transform step, which would require a full rebuild. It is still unclear whether this behavior was server-wide or limited to this asset only. This is something to revisit next year.
 
 ## Notice: Panama backadjustment "Public beta" live
