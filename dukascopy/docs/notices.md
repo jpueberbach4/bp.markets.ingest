@@ -8,6 +8,14 @@ The data portion is now (fairly) complete. Naturally, some QA issues remain, par
 
 Of course, testing is an ongoing process. Markets are quiet at the moment, so I’ll continue next year. Happy New Year to everyone! 🎉
 
+## Notice: 2020 MT4-side anomaly ASX
+
+I discovered that some manual patching was applied on the MT4 server side in 2020 for AUS.IDX (see [ASX "forensics"](forensics/ASX.MD4)). I built a small test framework to evaluate the performance impact of replicating this “anomaly” via pre-processing during the resampling step.
+
+I introduced a time-shift pre-processing step and was able to align the 1-minute data with the anomaly, but the performance impact was significant. As a result, a pre-process/resample-based solution is not viable.
+
+If I decide to replicate this behavior, it will get implemented in the transform step, which would require a full rebuild. It is still unclear whether this behavior was server-wide or limited to this asset only. This is something to revisit next year.
+
 ## Notice: Panama backadjustment "Public beta" live
 
 I’ve implemented an initial version of the Panama backadjustment logic. It’s now available for you to try, although I’m still rigorously testing it myself. At the moment, rollover adjustments are supported for *-USD commodities. I have tested it with:
