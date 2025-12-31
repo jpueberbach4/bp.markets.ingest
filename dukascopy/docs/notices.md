@@ -15,7 +15,7 @@ Someone pointed this out. It’s not a bug, but it is a good catch. Once again, 
 
 [Analysis](forensics/ASX.MD)
 
-This is a very clear bug on the MT4 side that was manually resolved/patched on 2020-11-05. Our system will now move from being able to replicate precise alignment and candle lengths to also being able to replicate bugs. Of course, this will be configurable—mirroring a target system’s bugs should never be the default practice.
+This behavior on the MT4 side was manually resolved/patched on 2020-11-05. Our system will now move from being able to replicate precise alignment and candle lengths to also being able to replicate this sort of things as well. Of course, this will be configurable—mirroring a target system’s "strange behavior" should never be the default practice.
 
 ## Notice: Panama backadjustment "Public beta" live
 
