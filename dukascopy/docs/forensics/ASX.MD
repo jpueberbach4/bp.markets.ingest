@@ -150,4 +150,4 @@ CLEARLY MANUAL CORRECTIONS. 2x MIDWEEK SHIFTS.
 
 PS for us, its easy to "repair" the past. For MT4, they can't repair the past. Because of orders.
 
-PS MT4 may have something like "the first sunday after day N" as switch logic
+PS MT4 may have something like "the first sunday after day N" as switch logic. MT4 is not just a charting platform, it's also a "legal record of contract". Relying on an external IANA library, like we do, would potentially be a liability or risk to this "legal record of contract". That is, likely, the reason why there is custom switch logic.
