@@ -57,6 +57,8 @@ Let me assure you, I checked this thoroughly, side-by-side, and it does not happ
 
 [Analysis](forensics/ASX.MD)
 
+This is a very clear bug on the MT4 side that was manually resolved/patched on 2020-11-05. Our system will now move from being able to replicate precise alignment and candle lengths to also being able to replicate bugs. Of course, this will be configurable—mirroring a target system’s bugs should never be the default practice.
+
 ## Notice: Panama backadjustment "Public beta" live
 
 I’ve implemented an initial version of the Panama backadjustment logic. It’s now available for you to try, although I’m still rigorously testing it myself. At the moment, rollover adjustments are supported for *-USD commodities. I have tested it with:
