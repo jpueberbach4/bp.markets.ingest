@@ -34,9 +34,10 @@ AUS.IDX-AUD:
   timezone: Australia/Sydney
   skip_timeframes: []
   sessions:
-    special-case:
-      # This is a special handling for the AUS.IDX. 
-      # Before 2024-06-24 we have ONLY on MONDAY EPOCH candles, during the DAY-session ONLY
+    my-very-special-mt4-alignment-quirk:
+      # This is ANOTHER special handling for the AUS.IDX. 
+      # Before 2024-06-24 we have ONLY on monday EPOCH candles, during the DAY-session ONLY
+      # When this rule matches, the other rules won't overrule
       weekdays: [0] # 0=monday, 1=tuesday, and so on..
       to_date: "2024-06-22 01:00:00"  # In Australia/Sydney time
       ranges:
@@ -53,7 +54,7 @@ AUS.IDX-AUD:
               ends_with:
               - "09:10:00"
               - "10:10:00"
-              offset: -1    
+              offset: -1
     day-session:
       # We have an alignment policy change happening on 2020-02-07
       # We move from EPOCH based candles to DAY-session candles aligned at 00:50

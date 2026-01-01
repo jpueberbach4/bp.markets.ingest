@@ -21,27 +21,62 @@
 # ---
 #
 DEU.IDX-EUR:
-  timeframes:
-    4h:                     
-      origin: "01:00"
+  timezone: Europe/Berlin
+  sessions:
+    day:
+      ranges:
+        24h:
+          from: "00:00"
+          to: "23:59"
+      timeframes:
+        4h:                     
+          origin: "01:00"
 ESP.IDX-EUR:
-  timeframes:
-    4h:                     
-      origin: "09:00"
+  timezone: Europe/Madrid
+  sessions:
+    day:
+      ranges:
+        24h:
+          from: "00:00"
+          to: "23:59"
+      timeframes:
+        4h:                     
+          origin: "09:00"
 EUS.IDX-EUR:
   timeframes:
     4h:                     
       origin: "09:00"
 FRA.IDX-EUR:
-  timeframes:
-    4h:                     
-      origin: "09:00"
+  timezone: Europe/Paris
+  sessions:
+    day:
+      ranges:
+        24h:
+          from: "00:00"
+          to: "23:59"
+      timeframes:
+        4h:                     
+          origin: "09:00"
 ITA.IDX-EUR:
-  timeframes:
-    4h:                     
-      origin: "09:00" 
+  timezone: Europe/Rome
+  sessions:
+    day:
+      ranges:
+        24h:
+          from: "00:00"
+          to: "23:59"
+      timeframes:
+        4h:                     
+          origin: "09:00"
 NLD.IDX-EUR:
-  timeframes:
-    4h:                     
-      origin: "09:00"
+  timezone: Europe/Amsterdam
+  sessions:
+    day:
+      ranges:
+        24h:
+          from: "00:00"
+          to: "23:59"
+      timeframes:
+        4h:                     
+          origin: "09:00"
 

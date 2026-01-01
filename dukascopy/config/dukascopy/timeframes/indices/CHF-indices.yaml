@@ -25,6 +25,13 @@
 # - Day Session: 9:00 AM - 5:30 PM (CET).
 #
 CHE.IDX-CHF:
-  timeframes:
-    4h:                     
-      origin: "09:00"
+  timezone: Europe/Zurich
+  sessions:
+    day:
+      ranges:
+        24h:
+          from: "00:00"
+          to: "23:59"
+      timeframes:
+        4h:                     
+          origin: "09:00"
