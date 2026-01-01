@@ -133,6 +133,10 @@ This configuration triggers the rebuild script at 01:00 each Saturday. It will n
 
 The quality of this dataset is on par with what you would receive from commercial providers. The difference is simply that this one is free.
 
+## Notice: What about MT5?
+
+There will be some exploratory research in January. Low priority.
+
 ## Hall of Fame
 
 List of the most "interesting stuff" encountered, during development of this project
