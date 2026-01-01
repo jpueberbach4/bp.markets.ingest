@@ -21,14 +21,21 @@
 # ---
 #
 PLN.IDX-PLN:
-  timeframes:
-    5m:
-      origin: "09:45"
-    15m:
-      origin: "09:45"
-    30m:
-      origin: "09:45"
-    1h:
-      origin: "09:45"
-    4h:
-      origin: "09:45"
+  timezone: Europe/Warsaw
+  sessions:
+    day:
+      ranges:
+        24h:
+          from: "00:00"
+          to: "23:59"
+      timeframes:
+        5m:
+          origin: "09:45"
+        15m:
+          origin: "09:45"
+        30m:
+          origin: "09:45"
+        1h:
+          origin: "09:45"
+        4h:
+          origin: "09:45"

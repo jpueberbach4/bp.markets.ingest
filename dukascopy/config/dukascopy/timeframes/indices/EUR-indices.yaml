@@ -43,9 +43,16 @@ ESP.IDX-EUR:
         4h:                     
           origin: "09:00"
 EUS.IDX-EUR:
-  timeframes:
-    4h:                     
-      origin: "09:00"
+  timezone: Europe/Brussels
+  sessions:
+    day:
+      ranges:
+        24h:
+          from: "00:00"
+          to: "23:59"
+      timeframes:
+        4h:                     
+          origin: "09:00"
 FRA.IDX-EUR:
   timezone: Europe/Paris
   sessions:

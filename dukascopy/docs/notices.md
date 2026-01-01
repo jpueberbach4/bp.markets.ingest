@@ -1,26 +1,18 @@
-MT4 is decoded.
+<u>MT4 is decoded.</u>
 
 ## Notice: Data
 
-**Note:** I can only adjust data that is actually “viewable”. For example, for AUS.IDX, I can see H4 candles from 2019-12-01 to the present. What happened before 2019-12-01 is essentially a black box. I simply assume that the first detected candle policy also applies to the data preceding the viewable period. This is logical but nevertheless worth mentioning.
-
 The data portion is now (fairly) complete. Naturally, some QA issues remain, particularly in the builder component, which will be addressed over time. Ensuring optimal QA for the ETL process takes priority over the extraction utility itself.
 
-Of course, testing is an ongoing process. Markets are quiet at the moment, so I’ll continue next year. Happy New Year to everyone! 🎉
+## Notice: New Year Update
 
-## Notice: 2020 MT4-side anomaly ASX
+Happy New Year! 🎉
 
-I discovered that some manual patching was applied on the MT4 server side in 2020 for AUS.IDX (see [ASX "forensics"](forensics/ASX.MD)). I built a small test framework to evaluate the performance impact of replicating this “anomaly” via pre-processing during the resampling step.
+Data for all configured indices has now been compared using Beyond Compare.
 
-I introduced a time-shift pre-processing step and was able to align the 1-minute data with the anomaly, but the performance impact was significant. As a result, a pre-process/resample-based solution is not viable.
+Configuration files for indices have been updated—run ```./setup-dukascopy.sh``` to apply the changes - only if you dont have custom configuration. The fixes primarily focus on improvements to DST/STD switching.
 
-(The performance impact stems from redefining the 1-minute data as a “raw” timeframe and then rebuilding a custom 1-minute timeframe via a resampling step with preprocessing rules. This effectively creates a shifted copy of the raw data via resampling, which is where the performance degradation occurs.)
-
-If I decide to replicate this behavior, it will get implemented in the transform step, which would require a full rebuild
-
-**Confirmed:** The leap-year 1 week lag is confirmed on other indices as well. It's also confirmed the above-mentioned "anomaly" **only impacts ASX**, definately not server-wide. HKG index is perfect in 2020.
-
-We will need to make a change to transform step to handle the ASX and other legacy behavior.
+Aside from the ASX anomaly (see forensics/ASX.MD) and the one-week STD-switch delay on the MT4 side that occurs only in leap years, I’m <u>extremely</u> pleased with the results. The indices are looking really good now.
 
 ## Notice: Panama backadjustment "Public beta" live
 
