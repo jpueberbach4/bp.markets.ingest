@@ -10,7 +10,9 @@
 - Soft commodities: Orange Juice, Cotton, Soybeans. Good.
 - Indices: US indices. Excellent. DAX. Good. NL. Good. Nikkie. Excellent.
 - Special Indices
-  - AUS.IDX: OK
+  - AUS.IDX: NOT OK \
+    2020 is a mess. See here [why](forensics/ASX.MD) \
+    post-2020 : OK
   - SGD.IDX: OK
   - CHI.IDX: OK
   - HKG.IDX: OK \
