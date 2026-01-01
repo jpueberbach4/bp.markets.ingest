@@ -131,3 +131,30 @@ This configuration triggers the rebuild script at 01:00 each Saturday. It will n
 
 The quality of this dataset is on par with what you would receive from commercial providers. The difference is simply that this one is free.
 
+## Hall of Fame
+
+List of the most "interesting stuff" encountered, during development of this project
+
+**ASX is record holder**
+- Monday-specific EPOCH-based candles only during day-session - resolved
+- H4 candles spanning 6h10m - resolved
+- 2020 severe DST/STD switch issues MT4-side - unresolved (still debating if should solve)
+- Sub-hourly intraday candle offsets at HH:51 and HH:10 - resolved
+
+**SGD**
+- Only in winter merge of a 11:51 candle, not in summer, while similar behavior - resolved
+- Similarly to ASX, sub-hourly intraday candle at HH:51 - resolved
+
+**MT4 general**
+- Leap-year only lag of STD switch - unresolved (will solve in boundaries logic)
+- Interesting DST/STD switch logic, based on NY DST state either GMT+2/GMT+3 - resolved
+- 4x DST/STD annual switches per timezone-dependent asset - resolved
+
+**AI**
+- AI CANNOT be used for complex logic - it hallucinates and fails on edge cases
+- AI CAN be used for docstring and inline commenting of code - it excels at that
+- AI CAN be used for QA purposes - it actually found a bug that really mattered
+- AI CAN be really funny - especially Grok!
+
+I think the solution came out really really well.
+
