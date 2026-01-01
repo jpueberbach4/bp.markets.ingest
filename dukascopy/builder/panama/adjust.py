@@ -259,7 +259,7 @@ def adjust_symbol(symbol, input_filepath, output_filepath):
                 (strptime(date, '%d-%b-%y')::DATE
                  + INTERVAL '23 hours 59 minutes 59 seconds')::TIMESTAMP
                     AS roll_date,
-                (long::DOUBLE) * -1 AS adj_value 
+                ABS(short) AS adj_value 
             FROM read_csv('{rollover_filepath}', header=True)
         ),
         cumulative AS (
