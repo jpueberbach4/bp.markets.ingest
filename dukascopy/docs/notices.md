@@ -16,7 +16,7 @@ Aside from the ASX anomaly (see forensics/ASX.MD) and the one-week STD-switch de
 
 ## Notice: Panama backadjustment "Public beta" live
 
-I’ve implemented an initial version of the Panama backadjustment logic. It’s now available for you to try, although I’m still rigorously testing it myself. At the moment, rollover adjustments are supported for *-USD commodities. I have tested it with:
+I’ve implemented an initial version of the Panama backadjustment logic. It’s now available for you to try, although I’m still rigorously testing it myself. At the moment, rollover adjustments are supported for *-USD commodities, *-USX soft-commodities and *TR* bonds. I have tested it with:
 
 - BRENT.CMD-USD
 - GAS.CMD-USD
