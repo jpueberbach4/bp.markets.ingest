@@ -138,7 +138,9 @@ List of the most "interesting stuff" encountered, during development of this pro
 **ASX is record holder**
 - Monday-specific EPOCH-based candles only during day-session - resolved
 - H4 candles spanning 6h10m - resolved
-- 2020 severe DST/STD switch issues MT4-side - unresolved (still debating if should solve)
+- 2020 severe DST/STD switch issues MT4-side - unresolved (still debating if should solve) \
+  **The Debate is:** our data is actually better, should I replicate a likely bug that will give worse data? \
+  Is replicating the likely bug beneficial to the overal integrity and capabilities of the system?
 - Sub-hourly intraday candle offsets at HH:51 and HH:10 - resolved
 
 **SGD**
