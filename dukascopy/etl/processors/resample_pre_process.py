@@ -112,6 +112,7 @@ def resample_pre_process_origin(df: pd.DataFrame, ident, step, config) -> pd.Dat
     tz_server_std = pytz.timezone("Etc/GMT-2")
 
     # Compute the reference offset gap using current offsets
+    # TODO: fix bug below. Pick fixed ref-date in december.
     ref_now = datetime.now(tz_sg)
     server_now_std = datetime.now(tz_server_std)
     ref_gap = (
