@@ -138,7 +138,6 @@ def fetch_rollover_data_for_symbol(symbol) -> Optional[str]:
         Optional[str]: Path to the cached rollover CSV file if available,
         otherwise None if no data could be retrieved.
 
-    Note: Mixed feelings
     """
 
     # Build the expected cache path for the symbol
@@ -259,7 +258,7 @@ def adjust_symbol(symbol, input_filepath, output_filepath):
                 (strptime(date, '%d-%b-%y')::DATE
                  + INTERVAL '23 hours 59 minutes 59 seconds')::TIMESTAMP
                     AS roll_date,
-                ABS(short) AS adj_value 
+                (short::DOUBLE) AS adj_value 
             FROM read_csv('{rollover_filepath}', header=True)
         ),
         cumulative AS (
