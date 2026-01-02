@@ -65,7 +65,6 @@
             .replace('T', ' ')
             .slice(0, 19);
 
-        // 4. Function to trigger the API call
         function loadData() {
             const baseUrl = "http://localhost:8000/ohlcv/1.0/select/EUR-USD,1h/after/"+weekAgo+"/output/JSONP";
             const params = "?order=asc&limit=999&offset=0&callback=__callback2131";
