@@ -138,10 +138,36 @@
         function loadData() {
             const symbol = document.getElementById('symbolSelect').value;
             const tf = document.getElementById('tfSelect').value;
-            const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-                .toISOString().replace('T', ' ').slice(0, 19);
+            let afterDate;
 
-            const url = `http://localhost:8000/ohlcv/1.0/select/${symbol},${tf}/after/${encodeURIComponent(weekAgo)}/output/JSONP?order=asc&limit=999&callback=__callbackData`;
+            switch (tf) {
+                case '1M':
+                    const tenYearsAgo = new Date();
+                    tenYearsAgo.setFullYear(tenYearsAgo.getFullYear() - 10);
+                    afterDate = tenYearsAgo.toISOString().replace('T', ' ').slice(0, 19);
+                    break;
+                case '1Y':
+                    afterDate = "1970-01-01 00:00:00";
+                    break;
+                case '1d':
+                    const halfYearAgo = new Date();
+                    halfYearAgo.setMonth(halfYearAgo.getMonth() - 6);
+                    afterDate = halfYearAgo.toISOString().replace('T', ' ').slice(0, 19);
+                    break;                
+                case '1W':
+                    const yearAgo = new Date();
+                    yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+                    afterDate = yearAgo.toISOString().replace('T', ' ').slice(0, 19);
+                    break;
+
+                default:
+                    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                    afterDate = weekAgo.toISOString().replace('T', ' ').slice(0, 19);
+                    break;
+            }
+
+            const url = `http://localhost:8000/ohlcv/1.0/select/${symbol},${tf}/after/${encodeURIComponent(afterDate)}/output/JSONP?order=asc&limit=999&callback=__callbackData`;
+            
             fetchJSONP(url);
         }
 
