@@ -18,7 +18,7 @@ class HTTPServiceConfig:
 @dataclass
 class AppConfig:
     """The root configuration for the entire application."""
-    http-service: HTTPServiceConfig = field(default_factory=HTTPServiceConfig)
+    http: HTTPServiceConfig = field(default_factory=HTTPServiceConfig)
 
 #--- Load functionality ---
 T = TypeVar('T')

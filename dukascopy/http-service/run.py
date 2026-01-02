@@ -33,8 +33,10 @@
 ===============================================================================
 """
 from fastapi import FastAPI, HTTPException, status
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from typing import List
+from pathlib import Path
 import uvicorn
 
 # Import versioned OHLCV routes
@@ -65,18 +67,28 @@ async def health_check():
     """Return a simple online status for health-check purposes."""
     return {"status": "online"}
 
-# Root endpoint for basic API info
-@app.get("/", status_code=200)
-async def root():
-    """Return a basic greeting or info message at the API root."""
-    return {"status": "online", "message": "Hi there!"}
+# This we need to do outside of the main routine because of the StaticFiles below
+from config.app_config import load_app_config
+config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
+app_config = load_app_config(config_file)
+config = app_config.http
+
+# Resolve the absolute path for docs directory
+docs_path = Path(config.docs).resolve()
+if not docs_path.exists():
+    print(f"ERROR: Docs directory not found at {docs_path}") 
+
+# Root endpoint for html files
+app.mount("/", StaticFiles(directory=docs_path, html=True), name="docs")
 
 # Entrypoint for running the FastAPI app with Uvicorn
 if __name__ == "__main__":
+    ip, port = config.listen.split(':', 1)
+
     uvicorn.run(
         "run:app",          # Module and app instance
-        host="0.0.0.0",     # Listen on all interfaces
-        port=8000,          # Default port
+        host="127.0.0.1",   # Sorry, only localhost
+        port=int(port),     # Default port
         loop="uvloop",      # High-performance event loop
         http="httptools",   # HTTP protocol parser
         reload=True         # Auto-reload on code changes

@@ -61,8 +61,8 @@ download:
     live: data/temp                   # Live downloads
 
 ## Below you will find the configuration for the http service script.
-http-service:
-  docs: config/dukascopy/http-service # Directory where HTML docs will live
+http:
+  docs: config/dukascopy/http-docs    # Directory where HTML docs will live
   listen: ":8000"                     # Listen to this port
   limits:
     max_page: 1000                    # Maximum number of pages to support
