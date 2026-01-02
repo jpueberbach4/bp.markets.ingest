@@ -14,6 +14,11 @@ Server-side scripting will be added in-time. HTML is a good start. With a bit of
 
 **Note:** API call to get the available list of symbols -and TF's- is coming.
 
+You can now visually compare your data, example SGD:
+
+![SGD](../images/visual-compare-sgd.png)
+
+
 ## Notice: New Year Update
 
 Happy New Year! 🎉
