@@ -95,12 +95,7 @@ async def get_ohlcv(
             A dictionary containing the requested OHLCV data and
             associated metadata.
 
-        TODO: strongly typed response
     """
-    #
-    # http://localhost:8000/ohlcv/1.0/select/SYMBOL:test,TF1,TF2:skiplast:test/ \
-    # select/SYMBOL,TF1/after/2025-01-01+00:00:00/output/CSV/MT4?page=1&order=asc&limit=1000
-
     # Parse REQUEST_URI (path)
     options = parse_uri(request_uri)
 
@@ -112,24 +107,6 @@ async def get_ohlcv(
             "order": order
         }
     )
-
-    """
-    {
-        "selections": [
-            "SYMBOL:test/TF1,TF2:skiplast:test",
-            "SYMBOL/TF1"
-        ],
-        "after": "2025-01-01 00:00:00",
-        "output_format": "CSV",
-        "platform": "MT4",
-        "options": [],
-        "limit": 1000,
-        "page": 1,
-        "order": "asc"
-    }
-    Looks good. Commit.
-    Todo: make exactly comptible
-    """
 
     # We are now setup for path resolution to select files (see if can re-use builder code)
     from builder.helper import resolve_selections, get_available_data_from_fs
