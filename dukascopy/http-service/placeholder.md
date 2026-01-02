@@ -36,8 +36,8 @@ http-service:
 While not necessarily optimal, this approach provides full compatibility with the builder’s select options. By mirroring the builder syntax exactly, the API remains intuitive and easy to learn: if you know the builder syntax, you already know the URI syntax, and vice versa.
 
 ```sh
-# http://localhost:8000/ohlcv/1.0/select/SYMBOL:test,TF1,TF2:skiplast:test/ \
-# select/SYMBOL,TF1/after/2025-01-01+00:00:00/output/CSV/MT4?page=1&order=asc&limit=1000
+# http://localhost:8000/ohlcv/1.0/select/AUD-USD:test,1h,4h/after/2025-01-01+00:00:00 \
+# output/JSON?order=asc&limit=3
 ```
 
 Outputs can be:
@@ -51,7 +51,48 @@ Outputs can be:
 
 ## Output formats 
 
-Will be posted here soon.
+Example output for above example URL (January 1 was no trading ;))
+
+```json
+{
+  "status": "ok",
+  "result": [
+    {
+      "symbol": "AUD-USD",
+      "timeframe": "4h",
+      "year": "2025",
+      "time": "2025-01-02 00:00:00",
+      "open": 0.61804,
+      "high": 0.62149,
+      "low": 0.61796,
+      "close": 0.6211,
+      "volume": 15103.04
+    },
+    {
+      "symbol": "AUD-USD",
+      "timeframe": "1h",
+      "year": "2025",
+      "time": "2025-01-02 01:00:00",
+      "open": 0.61856,
+      "high": 0.61939,
+      "low": 0.61821,
+      "close": 0.6193,
+      "volume": 3189.15
+    },
+    {
+      "symbol": "AUD-USD",
+      "timeframe": "1h",
+      "year": "2025",
+      "time": "2025-01-02 02:00:00",
+      "open": 0.6193,
+      "high": 0.62026,
+      "low": 0.61878,
+      "close": 0.62,
+      "volume": 3675.22
+    }
+  ]
+}
+```
 
 ## ETA
 
