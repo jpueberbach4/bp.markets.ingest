@@ -255,12 +255,14 @@ def parse_args(config: BuilderConfig):
         sys.exit(0)
 
     # Resolve selections to actual CSV files
-    final_selections, _ = resolve_selections(
-        parser=parser,
-        select_args=args.select,
-        all_available_data=all_available_data,
-        force=args.force,
-    )
+    try:
+        final_selections, _ = resolve_selections(
+            select_args=args.select,
+            all_available_data=all_available_data,
+            force=args.force,
+        )
+    except Exception as e:
+        parser.error(e)
 
     # Normalize compression for CSV or 'none'
     if args.compression == "none" or args.output_type == "csv":

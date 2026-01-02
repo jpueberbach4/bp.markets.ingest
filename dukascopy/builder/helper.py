@@ -87,7 +87,6 @@ def get_available_data_from_fs(
 
 
 def resolve_selections(
-    parser: CustomArgumentParser,
     select_args: List[str],
     all_available_data: List[Tuple[str, str, str]],
     force: bool,
@@ -95,9 +94,6 @@ def resolve_selections(
     List[Tuple[str, str, str, Optional[str]]],
     Set[Tuple[str, str]],
 ]:
-
-    print(select_args)
-    exit
     """
     Resolve user selection strings into concrete dataset tasks.
 
@@ -122,7 +118,7 @@ def resolve_selections(
         - Set of resolved (symbol, timeframe) pairs.
     """
     if not all_available_data:
-        parser.error("No datasets found to select from. Run the main pipeline first.")
+        raise Exception("No datasets found to select from. Run the main pipeline first.")
 
     # Sets of available symbols and (symbol, timeframe) pairs
     available_symbols = {s for s, _, _ in all_available_data}
@@ -136,7 +132,7 @@ def resolve_selections(
 
     for selection in select_args:
         if "/" not in selection:
-            parser.error(f"Invalid format: {selection} (expected SYMBOL/TF[:modifier])")
+            raise Exception(f"Invalid format: {selection} (expected SYMBOL/TF[:modifier])")
         
         symbol_part, tf_part = selection.split("/", 1)
         
@@ -194,6 +190,6 @@ def resolve_selections(
             "\nCritical Error: The following selections match no existing files:\n"
             + "".join(f"- {s}/{tf}\n" for s, tf in unresolved_pairs)
         )
-        parser.error(msg)
+        raise Exception(msg)
 
     return sorted(best_tasks.values()), resolved_pairs
