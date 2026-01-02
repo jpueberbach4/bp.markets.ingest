@@ -7,33 +7,52 @@
     <style>
         body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
         #chart { background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 10px; }
-        .controls { margin-bottom: 20px; }
+        .controls { 
+            margin-bottom: 20px; 
+            display: flex; 
+            gap: 10px; 
+            align-items: center; 
+            background: #fff; 
+            padding: 15px; 
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        select, button { padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
+        label { font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h2>Live OHLC Stream - EUR-USD example</h2>
+    <h2>Interactive OHLC Stream</h2>
+    
     <div class="controls">
+        <label for="symbolSelect">Symbol:</label>
+        <select id="symbolSelect" onchange="updateTimeframeOptions()"></select>
+
+        <label for="tfSelect">Timeframe:</label>
+        <select id="tfSelect"></select>
+
         <button onclick="loadData()">Refresh Data</button>
     </div>
     
     <div id="chart"></div>
 
     <script>
+        let symbolData = {}; // Global store for the list response
+
         const options = {
             series: [],
             chart: {
                 type: 'candlestick',
                 height: 600,
-                id: 'ohlc-chart'
+                id: 'ohlc-chart',
+                animations: { enabled: false }
             },
-            title: { text: 'EUR-USD (1h) - Last 7 days', align: 'left' },
+            title: { text: 'Select a symbol to begin', align: 'left' },
             xaxis: { 
-                    type: 'category',
-                    tickAmount: 10, // Force only 10 labels to show
-                    labels: {
-                        rotate: -45
-                    }
+                type: 'category',
+                tickAmount: 10,
+                labels: { rotate: -45 }
             },
             yaxis: { tooltip: { enabled: true } }
         };
@@ -41,11 +60,50 @@
         const chart = new ApexCharts(document.querySelector("#chart"), options);
         chart.render();
 
-        window.__callback2131 = function(response) {
+        // 1. Callback for the INITIAL LIST of symbols
+        window.__callbackList = function(response) {
+            if (response.status === "ok") {
+                symbolData = response.result;
+                const symbolSelect = document.getElementById('symbolSelect');
+                
+                // Populate Symbol Dropdown
+                Object.keys(symbolData).sort().forEach(symbol => {
+                    const opt = document.createElement('option');
+                    opt.value = symbol;
+                    opt.innerHTML = symbol;
+                    symbolSelect.appendChild(opt);
+                });
+
+                // Default selection
+                symbolSelect.value = "EUR-USD";
+                updateTimeframeOptions();
+                loadData();
+            }
+        };
+
+        // Update timeframes based on selected symbol
+        function updateTimeframeOptions() {
+            const symbol = document.getElementById('symbolSelect').value;
+            const tfSelect = document.getElementById('tfSelect');
+            tfSelect.innerHTML = ""; // Clear existing
+
+            if (symbolData[symbol]) {
+                symbolData[symbol].forEach(tf => {
+                    const opt = document.createElement('option');
+                    opt.value = tf;
+                    opt.innerHTML = tf;
+                    tfSelect.appendChild(opt);
+                });
+                // Set default TF to 1h if available
+                if (symbolData[symbol].includes("1h")) tfSelect.value = "1h";
+            }
+        }
+
+        // 2. Callback for the ACTUAL CHART DATA
+        window.__callbackData = function(response) {
             const grouped = {};
             response.result.forEach(row => {
                 if (!grouped[row.symbol]) grouped[row.symbol] = [];
-                
                 grouped[row.symbol].push({
                     x: row.time, 
                     y: [row.open, row.high, row.low, row.close]
@@ -57,26 +115,41 @@
                 data: grouped[symbol]
             }));
 
+            const sym = document.getElementById('symbolSelect').value;
+            const tf = document.getElementById('tfSelect').value;
+            
+            chart.updateOptions({
+                title: { text: `${sym} (${tf}) - Last 7 days` }
+            });
             chart.updateSeries(seriesData);
         };
 
-        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-            .toISOString()
-            .replace('T', ' ')
-            .slice(0, 19);
-
-        function loadData() {
-            const baseUrl = "http://localhost:8000/ohlcv/1.0/select/EUR-USD,1h/after/"+weekAgo+"/output/JSONP";
-            const params = "?order=asc&limit=999&offset=0&callback=__callback2131";
+        // 3. Helper to fetch data
+        function fetchJSONP(url) {
+            const oldScript = document.getElementById('jsonp-script');
+            if (oldScript) oldScript.remove();
             
             const script = document.createElement('script');
-            script.id = 'jsonp-request';
-            script.src = baseUrl + params;
+            script.id = 'jsonp-script';
+            script.src = url;
             document.body.appendChild(script);
         }
 
-        // Initial load
-        loadData();
+        function loadData() {
+            const symbol = document.getElementById('symbolSelect').value;
+            const tf = document.getElementById('tfSelect').value;
+            const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+                .toISOString().replace('T', ' ').slice(0, 19);
+
+            const url = `http://localhost:8000/ohlcv/1.0/select/${symbol},${tf}/after/${encodeURIComponent(weekAgo)}/output/JSONP?order=asc&limit=999&callback=__callbackData`;
+            fetchJSONP(url);
+        }
+
+        function init() {
+            fetchJSONP("http://localhost:8000/ohlcv/1.0/list/output/JSONP?callback=__callbackList");
+        }
+
+        init();
     </script>
 </body>
 </html>
