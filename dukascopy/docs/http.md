@@ -70,6 +70,12 @@ If you want JSONP with a callback, example:
 # output/JSONP?order=asc&limit=3&callback=__my_callback
 ```
 
+Another example
+
+```sh
+http://localhost:8000/ohlcv/1.0/select/AUD-USD,1h/select/EUR-USD,1h/after/2025-12-01+00:00:00/output/JSON?order=desc&limit=50&offset=0
+```
+
 ## Output formats 
 
 Example output for above example URL

@@ -36,10 +36,17 @@ As per 30 december 2025
 
 ### Project Statistics (Logical SLOC) - HTTP-service
 
-Under development
+| File Name     | Logical SLOC | Core Responsibility |
+| :--- | :---: | :--- |
+| `routes.py`   | 108          | Main API logic: handles request flow, DuckDB SQL generation, and multi-format output.  |
+| `app_config.py`| 54           | Configuration engine: maps YAML to nested Dataclasses for type-safe config access.     |
+| `helper.py`   | 46           | DSL Parser: decodes path-based URL syntax into structured query parameters.            |
+| `run.py`      | 38           | Application entry point: manages server lifecycle and static file mounting.            |
+| `version.py`  | 1            | Metadata: defines the current API version string.                                      |
+| **Total** | **247** |                                                                                        |
 
 ### Project Statistics (Logical SLOC) - Replay
 
 Under development
 
->Currently about 1500 lines of code.
+>Currently about 1750 lines of code.
