@@ -10,6 +10,8 @@ I have implemented a first version of the [HTTP](http.md) service. It follows mo
 
 ![Example](../images/webservice-example.png)
 
+Server-side scripting will be added in-time. HTML is a good start.
+
 ## Notice: New Year Update
 
 Happy New Year! 🎉
