@@ -5,29 +5,30 @@
  File:        routes.py
  Author:      JP Ueberbach
  Created:     2026-01-02
- Description: FastAPI router for OHLCV data access using a path-based query DSL.
+ Description: FastAPI router implementing a path-based OHLCV query API.
 
-              This module defines a versioned `/ohlcv/{version}/*` catch-all
-              endpoint that accepts a path-encoded query language for
-              requesting OHLCV (Open, High, Low, Close, Volume) time-series
-              data.
+              This module exposes a versioned `/ohlcv/{version}/*` catch-all
+              endpoint that accepts a path-encoded query DSL for requesting
+              OHLCV (Open, High, Low, Close, Volume) time-series data.
 
-              The endpoint is responsible for:
+              Requests are processed by:
               
-              - Accepting and validating pagination and ordering parameters
-              - Parsing a path-based DSL describing symbols, timeframes,
-                filters (after/until), output format, and platform options
-              - Acting as an integration point for backend query execution
-                (e.g., DuckDB), which is currently a placeholder
+              - Parsing the path-based DSL into structured query options
+              - Validating and applying pagination and ordering parameters
+              - Resolving requested symbol/timeframe selections against
+                filesystem-backed OHLCV data
+              - Translating resolved options into a DuckDB SQL query
+              - Executing the query against CSV sources using an in-memory
+                DuckDB instance
 
-              Pagination is offset-based. Since financial time-series data
-              may change over time, clients can use the `until` parameter
-              to stabilize result sets across requests.
+              The API supports multiple output formats, including JSON,
+              JSONP, and CSV, selected via the query DSL. Pagination is
+              offset-based.
 
-              NOTE:
-              This module currently contains a dummy implementation and
-              returns a placeholder response. Query parsing, execution,
-              and strongly typed responses will be added incrementally.
+              The path-based DSL intentionally mirrors the syntax of the
+              internal builder, ensuring full compatibility and making the
+              API intuitive for users already familiar with the builder
+              workflow.
 
  Usage:
      Included as part of the FastAPI application router configuration.
@@ -35,11 +36,13 @@
  Requirements:
      - Python 3.8+
      - FastAPI
+     - DuckDB
 
  License:
      MIT License
 ===============================================================================
 """
+
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import PlainTextResponse, JSONResponse
 from typing import Dict, Optional
@@ -61,96 +64,98 @@ router = APIRouter(
 @router.get(f"/{API_VERSION}/{{request_uri:path}}")
 async def get_ohlcv(
     request_uri: str,
-    limit: Optional[int] = Query(1000, gt=0, le=1000),          # TODO: from config (max_page * max_per_page)
-    offset: Optional[int] = Query(1, ge=1, le=1000),            # TODO: from config (max_page)
-    order: Optional[str] = Query("asc", regex="^(asc|desc)$")
+    limit: Optional[int] = Query(1000, gt=0, le=1000),
+    offset: Optional[int] = Query(1, ge=1, le=1000),
+    order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
+    callback: Optional[str] = "__bp_callback"
 ):
-    """Retrieve OHLCV time-series data using a path-based query DSL.
+    """Resolve a path-based OHLCV query and return time-series market data.
 
-    This endpoint parses a path-encoded query language to determine
-    symbol selection, timeframes, output format, and platform-specific
-    options (e.g., MT4). Internally, it builds and executes a DuckDB
-    query and returns the resulting OHLCV data.
+    This endpoint accepts a path-encoded query language describing
+    symbol selections, timeframes, temporal filters, and output format.
+    The request is translated into a DuckDB SQL query executed against
+    CSV-backed OHLCV datasets.
 
-    Example URL structure:
-        /ohlcv/1.0/select/SYMBOL,TF1,TF2:skiplast/select/SYMBOL,TF1/
-        after/2025-01-01+00:00:00/output/CSV/MT4
-        ?page=1&order=asc&limit=1000
-
-    Pagination is offset-based. Since new candles may be created over
-    time, page boundaries can shift when ordering by descending time.
-    Clients can use the `until` parameter to stabilize result sets.
+    The response format is determined by the parsed output type and may
+    be returned as JSON, JSONP, or CSV.
 
     Args:
-        path_str (str):
-            Path-encoded query string defining selections, filters,
-            output format, and platform options.
-        limit (int):
-            Maximum number of records per page. Must be greater than 0
-            and less than or equal to limits.max_page * limits.max_per_page.
-        page (int):
-            Page number for pagination (1-based index).
-        order (str):
-            Sort order for results. Must be either `"asc"` or `"desc"`.
+        request_uri (str):
+            Path-encoded query string defining symbol selections,
+            filters, output format, and platform-specific options.
+        limit (Optional[int]):
+            Maximum number of records to return.
+        offset (Optional[int]):
+            Row offset for pagination.
+        order (Optional[str]):
+            Sort order for results, either `"asc"` or `"desc"`.
+        callback (Optional[str]):
+            JSONP callback function name when output type is JSONP.
 
     Returns:
-        Dict:
-            A dictionary containing the requested OHLCV data and
-            associated metadata.
-
+        dict | PlainTextResponse | JSONResponse:
+            A successful response contains OHLCV data formatted according
+            to the requested output type. On failure, an error payload is
+            returned with HTTP status code 400.
     """
-    # Parse REQUEST_URI (path)
+    # Parse the path-based request URI into structured query options
     options = parse_uri(request_uri)
 
-    # Add the limit, page and order
+    # Inject pagination, ordering, and callback parameters
     options.update(
         {
             "limit": limit,
             "offset": offset,
-            "order": order
+            "order": order,
+            "callback": callback,
         }
     )
 
-    # We are now setup for path resolution to select files (see if can re-use builder code)
+    # Import builder utilities for resolving file-backed OHLCV selections
     from builder.helper import resolve_selections, get_available_data_from_fs
     from builder.config.app_config import load_app_config
 
     try:
-        # Load config from builder
-        config = load_app_config('config.user.yaml')
+        # Load builder configuration
+        config = load_app_config("config.user.yaml")
 
-        # Resolve available data
+        # Discover available OHLCV data sources from the filesystem
         available_data = get_available_data_from_fs(config.builder)
 
-        # Resolve selections
-        options['select_data'] = resolve_selections(options['select_data'], available_data, False)[0]
+        # Resolve requested selections against available data
+        options["select_data"] = resolve_selections(
+            options["select_data"], available_data, False
+        )[0]
 
-        # Generate SQL
+        # Generate a DuckDB-compatible SQL query from resolved options
         sql = generate_sql(options)
 
-        # Execute the SQL statement
-
+        # Execute the SQL query in an in-memory DuckDB instance
         with duckdb.connect(database=":memory:") as con:
             rel = con.sql(sql)
             results = rel.fetchall()
             columns = rel.columns
 
+            # Default JSON output
             if options.get("output_type") == "JSON" or options.get("output_type") is None:
-                payload = {
-                    "status":"ok",
-                    "result": [dict(zip(columns, row)) for row in results]
+                return {
+                    "status": "ok",
+                    "result": [dict(zip(columns, row)) for row in results],
                 }
-                return payload
 
+            # JSONP output for browser-based consumption
             if options.get("output_type") == "JSONP":
                 payload = {
-                    "status":"ok",
-                    "result": [dict(zip(columns, row)) for row in results]
+                    "status": "ok",
+                    "result": [dict(zip(columns, row)) for row in results],
                 }
-                json_data = orjson.dumps(payload).decode('utf-8')
-                javascript_content = f"__callback({json_data});"
-                return PlainTextResponse(content=javascript_content, media_type="text/javascript")
+                json_data = orjson.dumps(payload).decode("utf-8")
+                return PlainTextResponse(
+                    content=f"{callback}({json_data});",
+                    media_type="text/javascript",
+                )
 
+            # CSV output for file-based or analytical workflows
             if options.get("output_type") == "CSV":
                 output = io.StringIO()
                 if results:
@@ -158,31 +163,70 @@ async def get_ohlcv(
                     writer = csv.DictWriter(output, fieldnames=columns)
                     writer.writeheader()
                     writer.writerows(dict_results)
-                
+
                 return PlainTextResponse(
-                    content=output.getvalue(), 
-                    media_type="text/csv"
+                    content=output.getvalue(),
+                    media_type="text/csv",
                 )
 
+            # Unsupported output type
             raise Exception("Unsupported content type")
 
     except Exception as e:
+        # Standardized error response
         error_payload = {"status": "failure", "exception": f"{e}"}
+
         if options.get("output_type") == "JSONP":
-             return PlainTextResponse(
-                 content=f"__callback({json.dumps(error_payload)});", 
-                 media_type="text/javascript"
-             )
+            return PlainTextResponse(
+                content=f"__callback({json.dumps(error_payload)});",
+                media_type="text/javascript",
+            )
+
         return JSONResponse(content=error_payload, status_code=400)
-    return options
+
 
 
 def generate_sql(options):
-    select_sql_array = []
-    for item in options['select_data']:
-        symbol, timeframe, input_filepath, modifiers, after, until = \
-            item + tuple([options.get('after'), options.get('until')])
+    """Generate a DuckDB SQL query for retrieving OHLCV data from CSV sources.
 
+    This function constructs a SQL query based on parsed query options,
+    including symbol/timeframe selections, temporal filters, modifiers,
+    ordering, and pagination. Each selection is translated into an
+    individual SELECT statement, which are then combined using
+    `UNION ALL` and wrapped in a final ordered, paginated query.
+
+    Args:
+        options (dict):
+            Parsed query options containing:
+            
+            - select_data (list[tuple]):
+                Tuples of the form
+                (symbol, timeframe, input_filepath, modifiers).
+            - after (str, optional):
+                Inclusive lower timestamp bound (ISO-8601–like).
+            - until (str, optional):
+                Exclusive upper timestamp bound.
+            - order (str, optional):
+                Sort order, either "asc" or "desc".
+            - limit (int, optional):
+                Maximum number of rows to return.
+            - offset (int, optional):
+                Row offset for pagination.
+
+    Returns:
+        str:
+            A complete DuckDB-compatible SQL query string.
+    """
+    # Collect individual SELECT statements (one per symbol/timeframe/file)
+    select_sql_array = []
+
+    for item in options['select_data']:
+        # Unpack select tuple and append global temporal filters
+        symbol, timeframe, input_filepath, modifiers, after, until = (
+            item + tuple([options.get('after'), options.get('until')])
+        )
+
+        # Columns selected from each CSV file, including normalized metadata
         select_columns = f"""
             '{symbol}'::VARCHAR AS symbol,
             '{timeframe}'::VARCHAR AS timeframe,
@@ -195,12 +239,14 @@ def generate_sql(options):
             volume
         """
 
+        # Base temporal filter applied to all selections
         where_clause = f"""
             WHERE time >= TIMESTAMP '{after}'
             AND time < TIMESTAMP '{until}'
         """
 
-        # Optional modifier: skip the latest timestamp
+        # Optional modifier: exclude the most recent candle
+        # Useful when the latest bar may still be forming
         if "skiplast" in modifiers:
             where_clause += (
                 f" AND time < ("
@@ -209,15 +255,18 @@ def generate_sql(options):
                 f")"
             )
 
+        # Construct SELECT statement for this specific CSV input
         select_sql = f"""
-            SELECT 
-                {select_columns} 
-                FROM read_csv_auto('{input_filepath}')
-                {where_clause}
+            SELECT
+                {select_columns}
+            FROM read_csv_auto('{input_filepath}')
+            {where_clause}
         """
 
         select_sql_array.append(select_sql)
 
+    # Columns selected from the UNIONed result set
+    # (time is formatted back to string form for output)
     select_columns = f"""
         symbol,
         timeframe,
@@ -230,17 +279,20 @@ def generate_sql(options):
         volume
     """
 
+    # Final ordering and pagination parameters with defaults
     order = options.get('order') if options.get('order') else "asc"
     limit = options.get('limit') if options.get('limit') else 100
     offset = options.get('offset') if options.get('offset') else 0
 
+    # Combine all SELECTs, apply ordering and pagination
     select_sql = f"""
-        SELECT {select_columns} 
+        SELECT {select_columns}
         FROM (
             {' UNION ALL '.join(select_sql_array)}
         )
-        ORDER BY time {order}, symbol ASC, timeframe ASC 
+        ORDER BY time {order}, symbol ASC, timeframe ASC
         LIMIT {limit} OFFSET {offset};
     """
 
     return select_sql
+
