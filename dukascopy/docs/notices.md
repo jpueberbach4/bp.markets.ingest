@@ -4,6 +4,12 @@
 
 The data portion is now (fairly) complete. Naturally, some QA issues remain, particularly in the builder component, which will be addressed over time. Ensuring optimal QA for the ETL process takes priority over the extraction utility itself.
 
+## Notice: HTTP service "Public beta" live
+
+I have implemented a first version of the [HTTP](http.md) service. It follows more or less the same syntax as the builder component. You can also define your own HTML pages, eg to render charts. Example is added to the ```config/dukascopy/http-docs``` directory.
+
+![Example](../images/webservice-example.png)
+
 ## Notice: New Year Update
 
 Happy New Year! 🎉
