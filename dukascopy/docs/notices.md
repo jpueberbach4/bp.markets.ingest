@@ -16,6 +16,8 @@ You can now visually compare your data, example SGD:
 
 ![SGD](../images/visual-compare-sgd.png)
 
+**Note:** I have been pushing out this really quickly because i need replay.
+
 
 ## Notice: New Year Update
 
