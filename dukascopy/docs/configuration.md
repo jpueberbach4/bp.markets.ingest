@@ -36,7 +36,9 @@ Post-processing is a data-refinement layer. It defines a set of transformation r
 
 ---
 
-**Important Note on Symbol Syntax:** When registering a new symbol in the configuration files, you must replace any slash (/) character in the instrument's name with a dash (-).
+>**Important Note on Symbol Syntax:** When registering a new symbol in the configuration files, you must replace any slash (/) character in the instrument's name with a dash (-).
+
+>**Important Note on Custom timeframes:** If you need custom timeframes globally, add them to the global defaults. If you need a custom timeframe for a single symbol, add it under the ```symbol.timeframes``` key. Custom timeframes cannot be defined or added at the session level. Session-level timeframes are used only to override existing timeframe properties.
 
 Now that the core definitions are established, we will demonstrate how to configure a symbol with custom sessions and determine the appropriate alignment settings. For this walkthrough, we will use the most complex asset in the current pipeline: SGD.IDX-SGD (the Singapore stock index). We will approach this scenario as a "from-scratch" implementation, assuming no prior configuration exists.
 
