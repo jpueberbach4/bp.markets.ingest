@@ -43,7 +43,7 @@ As per 30 december 2025
 | `helper.py`   | 46           | DSL Parser: decodes path-based URL syntax into structured query parameters.            |
 | `run.py`      | 38           | Application entry point: manages server lifecycle and static file mounting.            |
 | `version.py`  | 1            | Metadata: defines the current API version string.                                      |
-| **Total** | **247** |                                                                                        |
+| **Total Project** | **247** | **Logical Source Lines of Code** |
 
 ### Project Statistics (Logical SLOC) - Replay
 
