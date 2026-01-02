@@ -16,7 +16,7 @@ You can now visually compare your data, example SGD:
 
 ![SGD](../images/visual-compare-sgd.png)
 
-**Note:** I have been pushing out this really quickly because i need replay.
+**Note:** I have been pushing out this really quickly because i need replay. There are several ways to optimize the performance of this piece. At the moment, it focuses on enablement. Performance is of later concern.
 
 
 ## Notice: New Year Update
