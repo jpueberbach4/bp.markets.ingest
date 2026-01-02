@@ -95,6 +95,9 @@ def resolve_selections(
     List[Tuple[str, str, str, Optional[str]]],
     Set[Tuple[str, str]],
 ]:
+
+    print(select_args)
+    exit
     """
     Resolve user selection strings into concrete dataset tasks.
 

@@ -40,8 +40,9 @@
      MIT License
 ===============================================================================
 """
-from fastapi import APIRouter, HTTPException, status
-from typing import Dict
+from fastapi import APIRouter, HTTPException, Query, status
+from typing import Dict, Optional
+from helper import parse_uri
 from version import API_VERSION
 
 # Setup router
@@ -51,14 +52,12 @@ router = APIRouter(
 )
 
 # Setup catch-all /ohlcv/1.0/* route, this is dummy impl atm
-@router.get(f"/{API_VERSION}/{{path_str:path}}", response_model=Dict)
+@router.get(f"/{API_VERSION}/{{request_uri:path}}", response_model=Dict)
 async def get_ohlcv(
-    path_str: str,
-    limit: int = Query(1000, gt=0, le=1_000_000), # TODO: from config (max_page * max_per_page)
-    page: int = Query(1, ge=1, le=1000),          # TODO: from config (max_page)
-    order: str = Query("asc", regex="^(asc|desc)$"),
-    after: Optional[str] = None,
-    until: Optional[str] = None
+    request_uri: str,
+    limit: Optional[int] = Query(1000, gt=0, le=1_000_000), # TODO: from config (max_page * max_per_page)
+    page: Optional[int] = Query(1, ge=1, le=1000),          # TODO: from config (max_page)
+    order: Optional[str] = Query("asc", regex="^(asc|desc)$")
 ):
     """Retrieve OHLCV time-series data using a path-based query DSL.
 
@@ -87,13 +86,6 @@ async def get_ohlcv(
             Page number for pagination (1-based index).
         order (str):
             Sort order for results. Must be either `"asc"` or `"desc"`.
-        after (Optional[str]):
-            Timestamp indicating the lower bound (inclusive)
-            for returned candles.
-        until (Optional[str]):
-            Timestamp indicating the upper bound (exclusive)
-            for returned candles. Useful for preventing page shifts
-            as new data is added.
 
     Returns:
         Dict:
@@ -102,16 +94,52 @@ async def get_ohlcv(
 
         TODO: strongly typed response
     """
-    # parse string for SELECT, AFTER, UNTIL, OUTPUT and MT4 
-    # http://host:port/ohlcv/1.0/select/SYMBOL,TF1,TF2:skiplast/select/ \
-    # SYMBOL,TF1/after/2025-01-01+00:00:00/output/CSV/MT4 \
-    # ?page=1&order=asc|desc&limit=1000
-    # select files to evaluate
-    # construct DuckDB SQL query
-    # execute DuckDB SQL query
-    # construct response
-    # return response
+    #
+    # http://localhost:8000/ohlcv/1.0/select/SYMBOL:test,TF1,TF2:skiplast:test/ \
+    # select/SYMBOL,TF1/after/2025-01-01+00:00:00/output/CSV/MT4?page=1&order=asc&limit=1000
+
+    # Parse REQUEST_URI (path)
+    options = parse_uri(request_uri)
+
+    # Add the limit, page and order
+    options.update(
+        {
+            "limit": limit,
+            "page": page,
+            "order": order
+        }
+    )
+
+    """
+    {
+        "selections": [
+            "SYMBOL:test/TF1,TF2:skiplast:test",
+            "SYMBOL/TF1"
+        ],
+        "after": "2025-01-01 00:00:00",
+        "output_format": "CSV",
+        "platform": "MT4",
+        "options": [],
+        "limit": 1000,
+        "page": 1,
+        "order": "asc"
+    }
+    Looks good. Commit.
+    Todo: make exactly comptible
+    """
+
+    # We are now setup for path resolution to select files (see if can re-use builder code)
+
+    # Select files to evaluate
+
+    # Construct DuckDB SQL query
+    # Execute DuckDB SQL query using :memory:
+    # Construct response
+    # Return response
+    # 
     # Note: we don't implement a result-id, if user wants to prevent that
     #       pages shift (eg on order descending) because new candles get created, 
     #       the user can use "until"
-    return dict({"test":f"{path_str}"})
+
+    # Return options for debugging
+    return options
