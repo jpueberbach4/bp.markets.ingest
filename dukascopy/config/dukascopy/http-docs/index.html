@@ -1,17 +1,87 @@
-<html>
-    <head>
-        <title>Hi there!</title>
-    </head>
-    <body>
-        <h1>Hi There!</h1>
-        <p>
-            This is a placeholder document for the OHLCV API.
-        </p>
-        <p>
-            <i>
-                You can use this directory to specify your own HTML content. 
-                At the moment server-side scripting is not (yet) supported.
-            </i>
-        </p>
-    </body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>OHLC Dashboard - DuckDB API</title>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
+        #chart { background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 10px; }
+        .controls { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <h2>Live OHLC Stream - EUR-USD example</h2>
+    <div class="controls">
+        <button onclick="loadData()">Refresh Data</button>
+    </div>
+    
+    <div id="chart"></div>
+
+    <script>
+        // 2. Initialize the chart with empty data
+        const options = {
+            series: [],
+            chart: {
+                type: 'candlestick',
+                height: 450,
+                id: 'ohlc-chart'
+            },
+            title: { text: 'Currency Pairs (1h)', align: 'left' },
+            xaxis: { type: 'datetime' },
+            yaxis: { tooltip: { enabled: true } }
+        };
+
+        const chart = new ApexCharts(document.querySelector("#chart"), options);
+        chart.render();
+
+        // 3. JSONP Callback Handler
+        // This function MUST match the 'callback' parameter in your URL
+        window.__callback2131 = function(response) {
+            if (response.status !== "ok") {
+                console.error("API Error:", response);
+                return;
+            }
+
+            // Group data by symbol
+            const grouped = {};
+            response.result.forEach(row => {
+                if (!grouped[row.symbol]) grouped[row.symbol] = [];
+                
+                grouped[row.symbol].push({
+                    x: new Date(row.time),
+                    y: [row.open, row.high, row.low, row.close]
+                });
+            });
+
+            // Convert grouped object to ApexCharts series array
+            const seriesData = Object.keys(grouped).map(symbol => ({
+                name: symbol,
+                data: grouped[symbol]
+            }));
+
+            // Update the chart
+            chart.updateSeries(seriesData);
+            
+            // Cleanup: remove the temporary script tag
+            const oldScript = document.getElementById('jsonp-request');
+            if (oldScript) oldScript.remove();
+        };
+
+        // 4. Function to trigger the API call
+        function loadData() {
+            const baseUrl = "http://localhost:8000/ohlcv/1.0/select/EUR-USD,15m/output/JSONP";
+            const params = "?order=asc&limit=100&offset=0&callback=__callback2131";
+            
+            const script = document.createElement('script');
+            script.id = 'jsonp-request';
+            script.src = baseUrl + params;
+            document.body.appendChild(script);
+        }
+
+        // Initial load
+        loadData();
+    </script>
+</body>
 </html>
