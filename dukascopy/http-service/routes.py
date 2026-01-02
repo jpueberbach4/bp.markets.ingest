@@ -41,10 +41,14 @@
 ===============================================================================
 """
 from fastapi import APIRouter, HTTPException, Query, status
+from fastapi.responses import PlainTextResponse, JSONResponse
 from typing import Dict, Optional
 from helper import parse_uri
 from version import API_VERSION
+import io
+import csv
 import duckdb
+import orjson
 
 CSV_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 
@@ -54,8 +58,7 @@ router = APIRouter(
     tags=["ohlcv"]
 )
 
-# Setup catch-all /ohlcv/1.0/* route, this is dummy impl atm
-@router.get(f"/{API_VERSION}/{{request_uri:path}}", response_model=Dict)
+@router.get(f"/{API_VERSION}/{{request_uri:path}}")
 async def get_ohlcv(
     request_uri: str,
     limit: Optional[int] = Query(1000, gt=0, le=1000),          # TODO: from config (max_page * max_per_page)
@@ -131,16 +134,46 @@ async def get_ohlcv(
             rel = con.sql(sql)
             results = rel.fetchall()
             columns = rel.columns
-            return {
-                "status":"ok",
-                "result": [dict(zip(columns, row)) for row in results]
-            }
+
+            if options.get("output_type") == "JSON" or options.get("output_type") is None:
+                payload = {
+                    "status":"ok",
+                    "result": [dict(zip(columns, row)) for row in results]
+                }
+                return payload
+
+            if options.get("output_type") == "JSONP":
+                payload = {
+                    "status":"ok",
+                    "result": [dict(zip(columns, row)) for row in results]
+                }
+                json_data = orjson.dumps(payload).decode('utf-8')
+                javascript_content = f"__callback({json_data});"
+                return PlainTextResponse(content=javascript_content, media_type="text/javascript")
+
+            if options.get("output_type") == "CSV":
+                output = io.StringIO()
+                if results:
+                    dict_results = [dict(zip(columns, row)) for row in results]
+                    writer = csv.DictWriter(output, fieldnames=columns)
+                    writer.writeheader()
+                    writer.writerows(dict_results)
+                
+                return PlainTextResponse(
+                    content=output.getvalue(), 
+                    media_type="text/csv"
+                )
+
+            raise Exception("Unsupported content type")
 
     except Exception as e:
-        return {
-            "status": "failure",
-            "exception": f"{e}"
-        }
+        error_payload = {"status": "failure", "exception": f"{e}"}
+        if options.get("output_type") == "JSONP":
+             return PlainTextResponse(
+                 content=f"__callback({json.dumps(error_payload)});", 
+                 media_type="text/javascript"
+             )
+        return JSONResponse(content=error_payload, status_code=400)
     return options
 
 
