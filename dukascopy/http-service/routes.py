@@ -62,6 +62,61 @@ router = APIRouter(
     tags=["ohlcv"]
 )
 
+@router.get(f"/{API_VERSION}/list/{{request_uri:path}}")
+async def get_ohlcv_list(
+    request_uri: str,
+    callback: Optional[str] = "__bp_callback"
+):
+    # Parse the path-based request URI into structured query options
+    options = parse_uri(request_uri)
+
+    try:
+        from builder.helper import resolve_selections, get_available_data_from_fs
+        from builder.config.app_config import load_app_config
+        config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
+        config = load_app_config(config_file)
+
+        # Discover available OHLCV data sources from the filesystem
+        available_data = get_available_data_from_fs(config.builder)
+
+        symbols = {}
+        for symbol, timeframe, _ in available_data:
+            symbols.setdefault(symbol, []).append(timeframe)
+
+        # Default JSON output
+        if options.get("output_type") == "JSON" or options.get("output_type") is None:
+            return {
+                "status": "ok",
+                "result": symbols,
+            }
+
+        # JSONP output for browser-based consumption
+        if options.get("output_type") == "JSONP":
+            payload = {
+                "status": "ok",
+                "result": symbols,
+            }
+            json_data = orjson.dumps(payload).decode("utf-8")
+            return PlainTextResponse(
+                content=f"{callback}({json_data});",
+                media_type="text/javascript",
+            )
+
+        raise Exception("Unsupported content type (Sorry, CSV not supported)")
+
+    except Exception as e:
+        # Standardized error response
+        error_payload = {"status": "failure", "exception": f"{e}"}
+
+        if options.get("output_type") == "JSONP":
+            return PlainTextResponse(
+                content=f"__callback({orjson.dumps(error_payload)});",
+                media_type="text/javascript",
+            )
+
+        return JSONResponse(content=error_payload, status_code=400)
+    pass
+
 @router.get(f"/{API_VERSION}/{{request_uri:path}}")
 async def get_ohlcv(
     request_uri: str,

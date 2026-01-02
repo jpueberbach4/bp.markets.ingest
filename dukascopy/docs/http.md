@@ -77,6 +77,14 @@ http://localhost:8000/ohlcv/1.0/select/AUD-USD,1h/select/EUR-USD,1h/after/2025-1
 /output/JSON?order=desc&limit=50&offset=0
 ```
 
+Another example
+
+```sh
+http://localhost:8000/ohlcv/1.0/list/output/JSON
+```
+
+**Note:** parameter names and values like JSON, JSONP and CSV are case-sensitive.
+
 ## Output formats 
 
 Example output for above example URL
