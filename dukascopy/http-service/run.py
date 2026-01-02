@@ -33,6 +33,7 @@
 ===============================================================================
 """
 from fastapi import FastAPI, HTTPException, status
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from typing import List
@@ -57,6 +58,9 @@ app = FastAPI(
     version=API_VERSION,
     lifespan=lifespan
 )
+
+# GZIP compression support
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Include the OHLCV API router
 app.include_router(ohlcv_router)
