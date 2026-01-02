@@ -47,6 +47,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import PlainTextResponse, JSONResponse
 from typing import Dict, Optional
 from helper import parse_uri
+from pathlib import Path
 from version import API_VERSION
 import io
 import csv
@@ -117,7 +118,8 @@ async def get_ohlcv(
 
     try:
         # Load builder configuration
-        config = load_app_config("config.user.yaml")
+        config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
+        config = load_app_config(config_file)
 
         # Discover available OHLCV data sources from the filesystem
         available_data = get_available_data_from_fs(config.builder)
