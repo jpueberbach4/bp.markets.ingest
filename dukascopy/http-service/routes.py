@@ -121,7 +121,7 @@ async def get_ohlcv_list(
 async def get_ohlcv(
     request_uri: str,
     limit: Optional[int] = Query(1000, gt=0, le=1000),
-    offset: Optional[int] = Query(1, ge=0, le=1000),
+    offset: Optional[int] = Query(0, ge=0, le=1000),
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
     callback: Optional[str] = "__bp_callback"
 ):
