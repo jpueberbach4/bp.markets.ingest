@@ -65,7 +65,7 @@ router = APIRouter(
 async def get_ohlcv(
     request_uri: str,
     limit: Optional[int] = Query(1000, gt=0, le=1000),
-    offset: Optional[int] = Query(1, ge=1, le=1000),
+    offset: Optional[int] = Query(1, ge=0, le=1000),
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
     callback: Optional[str] = "__bp_callback"
 ):
