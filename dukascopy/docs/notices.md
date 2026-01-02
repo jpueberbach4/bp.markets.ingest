@@ -10,7 +10,9 @@ I have implemented a first version of the [HTTP](http.md) service. It follows mo
 
 ![Example](../images/webservice-example.png)
 
-Server-side scripting will be added in-time. HTML is a good start.
+Server-side scripting will be added in-time. HTML is a good start. With a bit of work you can turn this into something really beautiful. Offline-ready.
+
+**Note:** API call to get the available list of symbols -and TF's- is coming.
 
 ## Notice: New Year Update
 
