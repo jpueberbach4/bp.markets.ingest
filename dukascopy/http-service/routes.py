@@ -44,6 +44,9 @@ from fastapi import APIRouter, HTTPException, Query, status
 from typing import Dict, Optional
 from helper import parse_uri
 from version import API_VERSION
+import duckdb
+
+CSV_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 # Setup router
 router = APIRouter(
@@ -55,8 +58,8 @@ router = APIRouter(
 @router.get(f"/{API_VERSION}/{{request_uri:path}}", response_model=Dict)
 async def get_ohlcv(
     request_uri: str,
-    limit: Optional[int] = Query(1000, gt=0, le=1_000_000), # TODO: from config (max_page * max_per_page)
-    page: Optional[int] = Query(1, ge=1, le=1000),          # TODO: from config (max_page)
+    limit: Optional[int] = Query(1000, gt=0, le=1000),          # TODO: from config (max_page * max_per_page)
+    offset: Optional[int] = Query(1, ge=1, le=1000),            # TODO: from config (max_page)
     order: Optional[str] = Query("asc", regex="^(asc|desc)$")
 ):
     """Retrieve OHLCV time-series data using a path-based query DSL.
@@ -105,7 +108,7 @@ async def get_ohlcv(
     options.update(
         {
             "limit": limit,
-            "page": page,
+            "offset": offset,
             "order": order
         }
     )
@@ -129,17 +132,105 @@ async def get_ohlcv(
     """
 
     # We are now setup for path resolution to select files (see if can re-use builder code)
+    from builder.helper import resolve_selections, get_available_data_from_fs
+    from builder.config.app_config import load_app_config
 
-    # Select files to evaluate
+    try:
+        # Load config from builder
+        config = load_app_config('config.user.yaml')
 
-    # Construct DuckDB SQL query
-    # Execute DuckDB SQL query using :memory:
-    # Construct response
-    # Return response
-    # 
-    # Note: we don't implement a result-id, if user wants to prevent that
-    #       pages shift (eg on order descending) because new candles get created, 
-    #       the user can use "until"
+        # Resolve available data
+        available_data = get_available_data_from_fs(config.builder)
 
-    # Return options for debugging
+        # Resolve selections
+        options['select_data'] = resolve_selections(options['select_data'], available_data, False)[0]
+
+        # Generate SQL
+        sql = generate_sql(options)
+
+        # Execute the SQL statement
+
+        with duckdb.connect(database=":memory:") as con:
+            rel = con.sql(sql)
+            results = rel.fetchall()
+            columns = rel.columns
+            return {
+                "status":"ok",
+                "result": [dict(zip(columns, row)) for row in results]
+            }
+
+    except Exception as e:
+        return {
+            "status": "failure",
+            "exception": f"{e}"
+        }
     return options
+
+
+def generate_sql(options):
+    select_sql_array = []
+    for item in options['select_data']:
+        symbol, timeframe, input_filepath, modifiers, after, until = \
+            item + tuple([options.get('after'), options.get('until')])
+
+        select_columns = f"""
+            '{symbol}'::VARCHAR AS symbol,
+            '{timeframe}'::VARCHAR AS timeframe,
+            CAST(strftime(Time, '%Y') AS VARCHAR) AS year,
+            strptime(CAST(Time AS VARCHAR), '{CSV_TIMESTAMP_FORMAT}') AS time,
+            open,
+            high,
+            low,
+            close,
+            volume
+        """
+
+        where_clause = f"""
+            WHERE time >= TIMESTAMP '{after}'
+            AND time < TIMESTAMP '{until}'
+        """
+
+        # Optional modifier: skip the latest timestamp
+        if "skiplast" in modifiers:
+            where_clause += (
+                f" AND time < ("
+                f"SELECT MAX(time) "
+                f"FROM read_csv_auto('{input_filepath}')"
+                f")"
+            )
+
+        select_sql = f"""
+            SELECT 
+                {select_columns} 
+                FROM read_csv_auto('{input_filepath}')
+                {where_clause}
+        """
+
+        select_sql_array.append(select_sql)
+
+    select_columns = f"""
+        symbol,
+        timeframe,
+        CAST(strftime(Time, '%Y') AS VARCHAR) AS year,
+        strftime(time, '{CSV_TIMESTAMP_FORMAT}') AS time,
+        open,
+        high,
+        low,
+        close,
+        volume
+    """
+
+    order = options.get('order') if options.get('order') else "asc"
+    limit = options.get('limit') if options.get('limit') else 100
+    offset = options.get('offset') if options.get('offset') else 0
+
+    select_sql = f"""
+        SELECT {select_columns} 
+        FROM (
+            {' UNION ALL '.join(select_sql_array)}
+        )
+        ORDER BY time {order}, symbol ASC, timeframe ASC 
+        LIMIT {limit} OFFSET {offset};
+    """
+
+    return select_sql

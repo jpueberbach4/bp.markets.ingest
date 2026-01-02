@@ -69,7 +69,7 @@ def extract_symbol(task: Tuple[str, str, str, str, str, str, Dict[str, Any]]) ->
         True if extraction executed successfully, False if dry-run.
     """
 
-    symbol, timeframe, input_filepath, after_str, until_str, modifier, options = task
+    symbol, timeframe, input_filepath, after_str, until_str, modifiers, options = task
 
     # Determine output configuration
     output_type = options.get("output_type", "parquet").upper()
@@ -80,7 +80,7 @@ def extract_symbol(task: Tuple[str, str, str, str, str, str, Dict[str, Any]]) ->
     if options.get("dry_run"):
         print(
             f"DRY-RUN: {symbol}/{timeframe} => {input_filepath} "
-            f"(mode: {output_type}, modifier: {modifier})"
+            f"(mode: {output_type}, modifier: {modifiers})"
         )
         return False
 
@@ -145,7 +145,7 @@ def extract_symbol(task: Tuple[str, str, str, str, str, str, Dict[str, Any]]) ->
     """
 
     # Optional modifier: skip the latest timestamp
-    if modifier == "skiplast":
+    if "skiplast" in modifiers:
         where_clause += (
             f" AND {time_column} < ("
             f"SELECT MAX({time_column}) "

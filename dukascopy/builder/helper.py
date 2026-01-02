@@ -28,7 +28,7 @@ import re
 from pathlib import Path
 from typing import List, Tuple, Dict, Optional, Set
 
-from config.app_config import BuilderConfig
+from builder.config.app_config import BuilderConfig
 
 
 class CustomArgumentParser(argparse.ArgumentParser):
