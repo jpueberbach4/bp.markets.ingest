@@ -27,7 +27,7 @@ A block in the ```config.user.yaml``` needs to get added
 
 ```yaml
 ## Below you will find the configuration for the http service script.
-http-service:
+http:
   docs: config/dukascopy/http-docs    # Directory where HTML docs will live
   listen: ":8000"                     # Listen to this port
   limits:
@@ -50,8 +50,8 @@ Or, if using default configuration, ```./setup-dukascopy.sh```.
 While not necessarily optimal, this approach provides full compatibility with the builder’s select options. By mirroring the builder syntax exactly, the API remains intuitive and easy to learn: if you know the builder syntax, you already know the URI syntax, and vice versa.
 
 ```sh
-# http://localhost:8000/ohlcv/1.0/select/AUD-USD:test,1h,4h/after/2025-01-01+00:00:00 \
-# output/JSON?order=asc&limit=3
+http://localhost:8000/ohlcv/1.0/select/AUD-USD:test,1h,4h/after/2025-01-01+00:00:00 \
+output/JSON?order=asc&limit=3
 ```
 
 Outputs can be:
@@ -66,14 +66,15 @@ Outputs can be:
 If you want JSONP with a callback, example:
 
 ```sh
-# http://localhost:8000/ohlcv/1.0/select/AUD-USD,1h,4h/select/EUR-USD,1h/after/2025-01-01+00:00:00 \
-# output/JSONP?order=asc&limit=3&callback=__my_callback
+http://localhost:8000/ohlcv/1.0/select/AUD-USD,1h,4h/select/EUR-USD,1h/after/2025-01-01+00:00:00 \
+/output/JSONP?order=asc&limit=3&callback=__my_callback
 ```
 
 Another example
 
 ```sh
-http://localhost:8000/ohlcv/1.0/select/AUD-USD,1h/select/EUR-USD,1h/after/2025-12-01+00:00:00/output/JSON?order=desc&limit=50&offset=0
+http://localhost:8000/ohlcv/1.0/select/AUD-USD,1h/select/EUR-USD,1h/after/2025-12-01+00:00:00 \
+/output/JSON?order=desc&limit=50&offset=0
 ```
 
 ## Output formats 
