@@ -38,7 +38,7 @@ Post-processing is a data-refinement layer. It defines a set of transformation r
 
 >**Important Note on Symbol Syntax:** When registering a new symbol in the configuration files, you must replace any slash (/) character in the instrument's name with a dash (-).
 
->**Important Note on Custom Timeframes:** If you need custom timeframes globally, add them to the global defaults. If you need a custom timeframe for a single symbol, add it under the ```symbol.timeframes``` key. Custom timeframes cannot be defined or added at the session level. Session-level timeframes are used only to override existing timeframe properties.
+>**Important Note on Custom Timeframes:** If you need custom timeframes globally, add them to the global defaults. If you need a custom timeframe—such as a 2-minute or 2-hour timeframe—for a single symbol, add it under the ```symbol.timeframes``` key. Custom timeframes cannot be defined or added at the session level. Session-level timeframes are used only to override existing timeframe properties.
 
 >**Important Note on a Timeframe's Label and Closed Property:** To ensure maximum MT4 compatibility and to ensure you keep that compatibility, don't change the label or closed properties of a pre-defined timeframe. Keep them at "left". If you really need something to be aligned to the right, use a custom timeframe.
 
