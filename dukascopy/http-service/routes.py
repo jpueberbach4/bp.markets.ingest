@@ -178,7 +178,7 @@ async def get_ohlcv(
 
         if options.get("output_type") == "JSONP":
             return PlainTextResponse(
-                content=f"__callback({json.dumps(error_payload)});",
+                content=f"__callback({orjson.dumps(error_payload)});",
                 media_type="text/javascript",
             )
 

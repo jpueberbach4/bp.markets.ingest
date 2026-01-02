@@ -23,7 +23,7 @@ pip install requirements.txt
 
 ## Configuration
 
-A block in the ```config.user.yaml``` need to get added
+A block in the ```config.user.yaml``` needs to get added
 
 ```yaml
 ## Below you will find the configuration for the http service script.
