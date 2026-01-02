@@ -159,7 +159,14 @@
                     yearAgo.setFullYear(yearAgo.getFullYear() - 1);
                     afterDate = yearAgo.toISOString().replace('T', ' ').slice(0, 19);
                     break;
-
+                case '4h':
+                    const fourWeekAgo = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
+                    afterDate = fourWeekAgo.toISOString().replace('T', ' ').slice(0, 19);
+                    break;
+                case '1h':
+                    const twoWeekAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+                    afterDate = twoWeekAgo.toISOString().replace('T', ' ').slice(0, 19);
+                    break;
                 default:
                     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
                     afterDate = weekAgo.toISOString().replace('T', ' ').slice(0, 19);
