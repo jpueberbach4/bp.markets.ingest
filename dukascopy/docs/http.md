@@ -1,8 +1,8 @@
-# HTTP-Service (v0.6)
+# HTTP-Service (v0.6) - BETA
 
 This directory implements the HTTP-service feature for version 0.6.
 
-## Planned Functionalities:
+## Functionalities:
 
 - Expose CLI-like behavior over HTTP
 - Support queries from Expert Advisors
@@ -12,10 +12,14 @@ This directory implements the HTTP-service feature for version 0.6.
 - Health endpoint running in a separate thread
 - Basic HTML support for dashboards or minimal personalization
 - Only listens on 127.0.0.1 (localhost)
-- CORS * support is disabled for security
 - Configuration via central YAML config
 - Design and API specification will be published
-- README.md to be split into docs/architecture.md and additional docs to reduce file size
+
+## Prerequisites
+
+```sh
+pip install requirements.txt
+```
 
 ## Configuration
 
@@ -29,6 +33,16 @@ http-service:
   limits:
     max_page: 1000                    # Maximum number of pages to support
     max_per_page: 1000                # Maximum number of rows per page
+```
+
+Or, if using default configuration, ```./setup-dukascopy.sh```.
+
+## Start/Stop/Status service
+
+```sh
+./service.sh start
+./service.sh status
+./service.sh stop
 ```
 
 ## URI definition
@@ -49,9 +63,16 @@ Outputs can be:
 - CSV \
   Pure CSV text
 
+If you want JSONP with a callback, example:
+
+```sh
+# http://localhost:8000/ohlcv/1.0/select/AUD-USD,1h,4h/select/EUR-USD,1h/after/2025-01-01+00:00:00 \
+# output/JSONP?order=asc&limit=3&callback=__my_callback
+```
+
 ## Output formats 
 
-Example output for above example URL (January 1 was no trading ;))
+Example output for above example URL
 
 ```json
 {
@@ -94,6 +115,4 @@ Example output for above example URL (January 1 was no trading ;))
 }
 ```
 
-## ETA
-
-This will be done very soon. This is easy stuff compared to the rest.
+More information will be added soon
