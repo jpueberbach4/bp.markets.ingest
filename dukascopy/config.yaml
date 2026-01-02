@@ -50,7 +50,7 @@ builder:
     data: data                        # Input path for builder
     temp: data/temp/builder           # Temporary path for builder
 
-# Below you will find the configuration for the download.py script. 
+## Below you will find the configuration for the download.py script. 
 download:
   max_retries: 3                      # Number of retries before downloader raises
   backoff_factor: 2                   # Exponential backoff factor (wait time)
@@ -59,6 +59,11 @@ download:
   paths:
     historic: cache                   # Historical downloads
     live: data/temp                   # Live downloads
+
+## Below you will find the configuration for the http service script.
+http-service:
+  docs: config/dukascopy/http-service
+  listen: ":8000"
 
 ## Below you will find the configuration for the orchestrator script
 orchestrator:

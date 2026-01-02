@@ -60,6 +60,11 @@ download:
     historic: cache                   # Historical downloads
     live: data/temp                   # Live downloads
 
+## Below you will find the configuration for the http service script.
+http-service:
+  docs: config/dukascopy/http-service
+  listen: ":8000"
+
 ## Below you will find the configuration for the orchestrator script
 orchestrator:
   # num_processes: 8                  # Override maximum number of cores to use
