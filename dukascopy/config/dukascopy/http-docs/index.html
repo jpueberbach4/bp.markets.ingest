@@ -20,59 +20,55 @@
     <div id="chart"></div>
 
     <script>
-        // 2. Initialize the chart with empty data
         const options = {
             series: [],
             chart: {
                 type: 'candlestick',
-                height: 450,
+                height: 600,
                 id: 'ohlc-chart'
             },
-            title: { text: 'Currency Pairs (1h)', align: 'left' },
-            xaxis: { type: 'datetime' },
+            title: { text: 'EUR-USD (1h) - Last 7 days', align: 'left' },
+            xaxis: { 
+                    type: 'category',
+                    tickAmount: 10, // Force only 10 labels to show
+                    labels: {
+                        rotate: -45
+                    }
+            },
             yaxis: { tooltip: { enabled: true } }
         };
 
         const chart = new ApexCharts(document.querySelector("#chart"), options);
         chart.render();
 
-        // 3. JSONP Callback Handler
-        // This function MUST match the 'callback' parameter in your URL
         window.__callback2131 = function(response) {
-            if (response.status !== "ok") {
-                console.error("API Error:", response);
-                return;
-            }
-
-            // Group data by symbol
             const grouped = {};
             response.result.forEach(row => {
                 if (!grouped[row.symbol]) grouped[row.symbol] = [];
                 
                 grouped[row.symbol].push({
-                    x: new Date(row.time),
+                    x: row.time, 
                     y: [row.open, row.high, row.low, row.close]
                 });
             });
 
-            // Convert grouped object to ApexCharts series array
             const seriesData = Object.keys(grouped).map(symbol => ({
                 name: symbol,
                 data: grouped[symbol]
             }));
 
-            // Update the chart
             chart.updateSeries(seriesData);
-            
-            // Cleanup: remove the temporary script tag
-            const oldScript = document.getElementById('jsonp-request');
-            if (oldScript) oldScript.remove();
         };
+
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .replace('T', ' ')
+            .slice(0, 19);
 
         // 4. Function to trigger the API call
         function loadData() {
-            const baseUrl = "http://localhost:8000/ohlcv/1.0/select/EUR-USD,15m/output/JSONP";
-            const params = "?order=asc&limit=100&offset=0&callback=__callback2131";
+            const baseUrl = "http://localhost:8000/ohlcv/1.0/select/EUR-USD,1h/after/"+weekAgo+"/output/JSONP";
+            const params = "?order=asc&limit=999&offset=0&callback=__callback2131";
             
             const script = document.createElement('script');
             script.id = 'jsonp-request';
