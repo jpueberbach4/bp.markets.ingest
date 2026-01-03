@@ -65,6 +65,7 @@
         let isFetching = false;
         let shouldResetZoomOnNextLoad = false;
         let hasMoreHistory = true;
+        let gapRetryCount = 0; 
 
         const container = document.getElementById('chart-container');
         const tooltip = document.getElementById('tooltip');
@@ -142,6 +143,7 @@
         window.__callbackData = function(response) {
             const statusIndicator = document.getElementById('status-indicator');
             if (response.result && Array.isArray(response.result) && response.result.length > 0) {
+                gapRetryCount = 0; 
                 const incoming = response.result.map(row => ({
                     time: Math.floor(new Date(row.time).getTime() / 1000),
                     open: row.open, high: row.high, low: row.low, close: row.close
@@ -161,12 +163,22 @@
 
                 statusIndicator.innerText = `Loaded: ${masterData.length} candles`;
                 setTimeout(checkIfChartFull, 200); 
+                isFetching = false;
+                document.getElementById('loader').style.display = 'none';
             } else {
-                hasMoreHistory = false;
-                statusIndicator.innerText = `End of history reached (${masterData.length} candles)`;
+                if (gapRetryCount < 5) {
+                    gapRetryCount++;
+                    statusIndicator.innerText = `Searching history... (Attempt ${gapRetryCount}/5)`;
+                    isFetching = false; 
+                    // Even on initial load (masterData empty), paginateBack will now trigger
+                    paginateBack(); 
+                } else {
+                    hasMoreHistory = false;
+                    statusIndicator.innerText = `End of history reached (${masterData.length} candles)`;
+                    isFetching = false;
+                    document.getElementById('loader').style.display = 'none';
+                }
             }
-            isFetching = false;
-            document.getElementById('loader').style.display = 'none';
         };
 
         window.__callbackList = function(response) {
@@ -189,17 +201,21 @@
             masterData = [];
             candleSeries.setData([]); 
             hasMoreHistory = true; 
+            gapRetryCount = 0;
             shouldResetZoomOnNextLoad = true;
             chart.priceScale('right').applyOptions({ autoScale: true });
             const tf = document.getElementById('tfSelect').value;
-            currentAfterDate = new Date(Date.now() - getTimeframeOffset(tf));
-            currentUntilDate = null;
+            
+            // Set Until to NOW and After to NOW - Offset
+            currentUntilDate = new Date();
+            currentAfterDate = new Date(currentUntilDate.getTime() - getTimeframeOffset(tf));
             loadData();
         }
 
         function paginateBack() {
             if (isFetching || !hasMoreHistory) return;
             const tf = document.getElementById('tfSelect').value;
+            // Shift the window back: New Until is the old After
             currentUntilDate = new Date(currentAfterDate.getTime());
             currentAfterDate = new Date(currentAfterDate.getTime() - getTimeframeOffset(tf));
             loadData();
@@ -212,9 +228,10 @@
             isFetching = true;
             document.getElementById('loader').style.display = 'flex';
             const afterStr = encodeURIComponent(formatServerDate(currentAfterDate));
-            let url = `http://localhost:8000/ohlcv/1.0/select/${sym},${tf}/after/${afterStr}`;
-            if (currentUntilDate) url += `/until/${encodeURIComponent(formatServerDate(currentUntilDate))}`;
-            url += `/output/JSONP?order=asc&limit=1000&callback=__callbackData`;
+            const untilStr = encodeURIComponent(formatServerDate(currentUntilDate));
+            
+            let url = `http://localhost:8000/ohlcv/1.0/select/${sym},${tf}/after/${afterStr}/until/${untilStr}/output/JSONP?order=asc&limit=1440&callback=__callbackData`;
+            
             const old = document.getElementById('jsonp-script');
             if (old) old.remove();
             const s = document.createElement('script');
@@ -245,7 +262,11 @@
                 case '1W': return 100 * day;
                 case '1d': return 50 * day;
                 case '4h': return 15 * day;
-                case '1h': return 5 * day;
+                case '1h': return 6 * day;
+                case '30m': return 3 * day;
+                case '15m': return 3 * day;
+                case '5m': return 2 * day;
+                case '1m': return 1 * day;
                 default:   return 4 * day;
             }
         }
