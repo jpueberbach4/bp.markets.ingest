@@ -75,6 +75,15 @@
             width: chartElement.clientWidth,
             height: 600,
             layout: { background: { type: LightweightCharts.ColorType.Solid, color: '#ffffff' }, textColor: '#333' },
+            localization: {
+                    // This function overrides the default time format
+                    timeFormatter: (timestamp) => {
+                        const date = new Date(timestamp * 1000);
+                        const hours = date.getHours().toString().padStart(2, '0');
+                        const minutes = date.getMinutes().toString().padStart(2, '0');
+                        return `${hours}:${minutes}`; // Force 00:00 format
+                    },
+            },
             timeScale: { 
                 timeVisible: true, 
                 secondsVisible: false, 
@@ -98,7 +107,15 @@
                     tooltip.style.display = 'block';
                     const isBullish = data.close >= data.open;
                     const color = isBullish ? '#4caf50' : '#f44336';
-                    const dateStr = new Date(data.time * 1000).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+                    // Force 24-hour format and clean date display
+                    const dateStr = new Date(data.time * 1000).toLocaleString('en-GB', { 
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit', 
+                        minute: '2-digit', 
+                        hour12: false  // This converts 12:00 AM to 00:00
+                    });
                     
                     tooltip.innerHTML = `
                         <div style="font-weight: bold; margin-bottom: 5px; color: #333; border-bottom: 1px solid #eee;">${dateStr}</div>
