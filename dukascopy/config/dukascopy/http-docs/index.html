@@ -203,14 +203,10 @@
             hasMoreHistory = true; 
             gapRetryCount = 0;
             shouldResetZoomOnNextLoad = true;
-            chart.priceScale('right').applyOptions({ autoScale: true });
             const tf = document.getElementById('tfSelect').value;
             
             currentUntilDate = null; 
             
-            // Bugfix: initially we only take half the offset so that we definately have the
-            //         the latest data included. I can't vouch for ASSETS that are more than
-            //         12h offset on UTC (for 1m frame)
             const initialOffset = getTimeframeOffset(tf) / 2;
             currentAfterDate = new Date(Date.now() - initialOffset);
             
@@ -227,7 +223,12 @@
                 currentUntilDate = new Date(currentAfterDate.getTime());
             }
 
-            currentAfterDate = new Date(currentUntilDate.getTime() - getTimeframeOffset(tf));
+            const baseOffset = getTimeframeOffset(tf);
+            const jumpSize = baseOffset * (gapRetryCount + 1); 
+            
+            currentAfterDate = new Date(currentUntilDate.getTime() - jumpSize);
+            
+            console.log(`Searching back: ${currentAfterDate.toISOString()} to ${currentUntilDate.toISOString()}`);
             loadData();
         }
 
