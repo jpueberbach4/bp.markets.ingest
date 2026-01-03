@@ -4,15 +4,27 @@
 
 The data portion is now (fairly) complete. Naturally, some QA issues remain, particularly in the builder component, which will be addressed over time. Ensuring optimal QA for the ETL process takes priority over the extraction utility itself.
 
+## Notice: Today was a bugfix day
+
+Several bugs were fixed today—some from the to-do list, and others discovered during integration testing and manual verification.
+
+- **Severe:** The reference date was set to datetime.now(). Since origins are determined relative to this reference date, a DST/STD transition would shift datetime.now(), causing the origins to lose their offsets. This would corrupt alignment and, consequently, the data. This is a critical fix that must be deployed before March 2026.
+
+- Medium: The API limits were overly restrictive, causing the 1-minute and 5-minute timeframe charts to reach an artificial “end of history” and display gaps. This issue has now been fixed.
+
+- Medium: ApexCharts had certain limitations, so it was replaced with TradingView charts to provide a better user experience.
+
+As always: 
+
+```sh
+git pull origin main && ./setup-dukascopy.sh
+```
+
+(only if not using custom configuration settings)
+
 ## Notice: HTTP service live
 
-**Update:** While testing integration with 1m, i found a "bug". I have updated the limit of the API to 1440 and updated the HTML scripts to take the weekend-break into account by retrying maximum of 5 times, with window-shifting, in case no data was retrieved. This was only an issue on the low 1m and 5m TF's. You will now see "Searching history"-upper right corner-when a weekend-gap is encountered. If still working with default config: ```./setup-dukascopy.sh```, else copy over ```config/http-docs/index.html``` to your ```config.user``` directory. Additionally you can now use page-up and page-down for browsing.
-
-**Update:** Beta-state removed. This works and looks incredible. There will be updates for better integration with MT4. The MT4-flag is "not forgotten".
-
-**Update:** I have updated the index.html to use the TradingView library to render charts on your localized data. It gives better UX than Apex-Charts.
-
-I have implemented a first version of the [HTTP](http.md) service. It follows more or less the same syntax as the builder component. You can also define your own HTML pages, eg to render charts. Example is added to the ```config/dukascopy/http-docs``` directory.
+[HTTP API](http.md) service is implemented. It follows more or less the same syntax as the builder component. You can also define your own HTML pages, eg to render charts. Example is added to the ```config/dukascopy/http-docs``` directory.
 
 ![Example](../images/webservice-example.png)
 
