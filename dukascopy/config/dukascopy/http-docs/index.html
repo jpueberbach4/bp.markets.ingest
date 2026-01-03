@@ -209,7 +209,7 @@
             currentUntilDate = null; 
             
             // Bugfix: initially we only take half the offset so that we definately have the
-            //         the latest data included. I can't vouch for users that are more than
+            //         the latest data included. I can't vouch for ASSETS that are more than
             //         12h offset on UTC (for 1m frame)
             const initialOffset = getTimeframeOffset(tf) / 2;
             currentAfterDate = new Date(Date.now() - initialOffset);
@@ -241,7 +241,6 @@
             const afterStr = encodeURIComponent(formatServerDate(currentAfterDate));
             let url = `http://localhost:8000/ohlcv/1.0/select/${sym},${tf}/after/${afterStr}`;
             
-            // Only add until if it's explicitly set (during pagination)
             if (currentUntilDate) {
                 url += `/until/${encodeURIComponent(formatServerDate(currentUntilDate))}`;
             }
