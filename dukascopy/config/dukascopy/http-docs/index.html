@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>OHLC Dashboard - Pagination & Loading</title>
+    <title>OHLC Dashboard - Persistent Pagination</title>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <style>
         body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
@@ -16,7 +16,6 @@
             min-height: 600px;
         }
 
-        /* Loading Spinner Overlay */
         #loader {
             display: none;
             position: absolute;
@@ -71,9 +70,9 @@
         <label for="tfSelect">Timeframe:</label>
         <select id="tfSelect" onchange="resetAndLoad()"></select>
 
-        <button class="nav-btn" onclick="paginate(-1)"> < </button>
+        <button class="nav-btn" title="Load Previous" onclick="paginate(-1)"> < </button>
         <button onclick="resetAndLoad()">Today</button>
-        <button class="nav-btn" onclick="paginate(1)"> > </button>
+        <button class="nav-btn" title="Load Forward" onclick="paginate(1)"> > </button>
     </div>
     
     <div id="chart-container">
@@ -87,9 +86,11 @@
     <script>
         let symbolData = {}; 
         let currentAfterDate = new Date(); 
+        let currentUntilDate = null; 
+        let masterData = []; // Persistent storage for the chart data
 
         const options = {
-            series: [],
+            series: [{ data: [] }],
             chart: {
                 type: 'candlestick',
                 height: 600,
@@ -102,16 +103,20 @@
                 tickAmount: 10,
                 labels: { rotate: -45 }
             },
-            yaxis: { tooltip: { enabled: true } }
+            yaxis: { 
+                tooltip: { enabled: true },
+                labels: { formatter: (val) => val.toFixed(4) }
+            }
         };
 
         const chart = new ApexCharts(document.querySelector("#chart"), options);
         chart.render();
 
-        // Show/Hide Loader Helpers
         function toggleLoader(show) {
             document.getElementById('loader').style.display = show ? 'flex' : 'none';
         }
+
+        // --- JSONP Callbacks ---
 
         window.__callbackList = function(response) {
             if (response.status === "ok") {
@@ -129,6 +134,51 @@
             }
         };
 
+        window.__callbackData = function(response) {
+            if (response.result) {
+                // Map API data to Apex format
+                const incoming = response.result.map(row => ({
+                    x: row.time, 
+                    y: [row.open, row.high, row.low, row.close]
+                }));
+
+                // Combine with existing data in memory
+                const combined = [...masterData, ...incoming];
+
+                // Remove duplicates by timestamp and sort chronologically
+                const uniqueMap = new Map();
+                combined.forEach(item => uniqueMap.set(item.x, item));
+                
+                masterData = Array.from(uniqueMap.values()).sort((a, b) => 
+                    new Date(a.x) - new Date(b.x)
+                );
+
+                const sym = document.getElementById('symbolSelect').value;
+                const tf = document.getElementById('tfSelect').value;
+                
+                // Set the range for title and axis
+                const first = masterData[0].x;
+                const last = masterData[masterData.length - 1].x;
+
+                chart.updateOptions({
+                    title: { text: `${sym} (${tf}) | View: ${first} to ${last}` },
+                    xaxis: {
+                        min: first,
+                        max: last,
+                        tickAmount: 10 // Restores the clean "every 10 labels" look
+                    }
+                });
+
+                chart.updateSeries([{ data: masterData }]).then(() => {
+                    toggleLoader(false);
+                });
+            } else {
+                toggleLoader(false);
+            }
+        };
+
+        // --- Logic Functions ---
+
         function updateTimeframeOptions() {
             const symbol = document.getElementById('symbolSelect').value;
             const tfSelect = document.getElementById('tfSelect');
@@ -143,7 +193,6 @@
                     tfSelect.appendChild(opt);
                 });
 
-                // Persist selection logic
                 const available = symbolData[symbol];
                 if (previousSelection && available.includes(previousSelection)) {
                     tfSelect.value = previousSelection;
@@ -153,34 +202,8 @@
             }
         }
 
-        window.__callbackData = function(response) {
-            const grouped = {};
-            response.result.forEach(row => {
-                if (!grouped[row.symbol]) grouped[row.symbol] = [];
-                grouped[row.symbol].push({
-                    x: row.time, 
-                    y: [row.open, row.high, row.low, row.close]
-                });
-            });
-
-            const seriesData = Object.keys(grouped).map(symbol => ({
-                name: symbol,
-                data: grouped[symbol]
-            }));
-
-            const sym = document.getElementById('symbolSelect').value;
-            const tf = document.getElementById('tfSelect').value;
-            
-            chart.updateOptions({
-                title: { text: `${sym} (${tf}) - Starting: ${currentAfterDate.toLocaleString()}` }
-            });
-            chart.updateSeries(seriesData).then(() => {
-                toggleLoader(false); // Hide loader when chart finishes updating
-            });
-        };
-
         function fetchJSONP(url) {
-            toggleLoader(true); // Show loader before request
+            toggleLoader(true);
             const oldScript = document.getElementById('jsonp-script');
             if (oldScript) oldScript.remove();
             const script = document.createElement('script');
@@ -205,17 +228,31 @@
         }
 
         function resetAndLoad() {
+            masterData = []; // Reset storage when changing symbols/resetting
             const tf = document.getElementById('tfSelect').value;
             const offset = getTimeframeOffset(tf);
             currentAfterDate = new Date(Date.now() - offset);
+            currentUntilDate = null; 
             loadData();
         }
 
         function paginate(direction) {
             const tf = document.getElementById('tfSelect').value;
             const offset = getTimeframeOffset(tf);
-            const newTime = currentAfterDate.getTime() + (direction * offset);
-            currentAfterDate = new Date(newTime);
+            
+            if (direction < 0) {
+                // Prepend Logic: current start becomes the end cap
+                currentUntilDate = new Date(currentAfterDate.getTime());
+                currentAfterDate = new Date(currentAfterDate.getTime() - offset);
+            } else {
+                // Forward logic
+                currentAfterDate = new Date(currentAfterDate.getTime() + offset);
+                if (currentAfterDate >= new Date(Date.now() - offset)) {
+                    currentUntilDate = null;
+                } else if (currentUntilDate) {
+                    currentUntilDate = new Date(currentUntilDate.getTime() + offset);
+                }
+            }
             loadData();
         }
 
@@ -224,8 +261,18 @@
             const tf = document.getElementById('tfSelect').value;
             if(!symbol || !tf) return;
 
-            const afterStr = currentAfterDate.toISOString().replace('T', ' ').slice(0, 19);
-            const url = `http://localhost:8000/ohlcv/1.0/select/${symbol},${tf}/after/${encodeURIComponent(afterStr)}/output/JSONP?order=asc&limit=999&callback=__callbackData`;
+            const format = (date) => date.toISOString().replace('T', ' ').slice(0, 19);
+            const afterStr = encodeURIComponent(format(currentAfterDate));
+            
+            let url = `http://localhost:8000/ohlcv/1.0/select/${symbol},${tf}/after/${afterStr}`;
+            
+            if (currentUntilDate) {
+                const untilStr = encodeURIComponent(format(currentUntilDate));
+                url += `/until/${untilStr}`;
+            }
+
+            url += `/output/JSONP?order=asc&limit=999&callback=__callbackData`;
+            
             fetchJSONP(url);
         }
 
