@@ -164,7 +164,7 @@
             } else {
                 if (gapRetryCount < maxSearches) {
                     gapRetryCount++;
-                    statusIndicator.innerText = `Searching history... (Attempt ${gapRetryCount}/5)`;
+                    statusIndicator.innerText = `Searching history... (Attempt ${gapRetryCount}/${maxSearches})`;
                     isFetching = false; 
                     paginateBack(); 
                 } else {
