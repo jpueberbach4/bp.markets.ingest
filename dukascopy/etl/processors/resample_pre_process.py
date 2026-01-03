@@ -112,9 +112,12 @@ def resample_pre_process_origin(df: pd.DataFrame, ident, step, config) -> pd.Dat
     tz_server_std = pytz.timezone("Etc/GMT-2")
 
     # Compute the reference offset gap using current offsets
-    # TODO: fix bug below. Pick fixed ref-date in december.
-    ref_now = datetime.now(tz_sg)
-    server_now_std = datetime.now(tz_server_std)
+    # This is the WHY we define origins as if it were winter in Europe
+    # Not making this change would have broken the system +/- March 2026
+    ref_date = datetime(2024, 12, 1, 12, 0, 0)
+    ref_now = tz_sg.localize(ref_date)
+    server_now_std = tz_server_std.localize(ref_date)
+
     ref_gap = (
         ref_now.utcoffset().total_seconds() -
         server_now_std.utcoffset().total_seconds()
