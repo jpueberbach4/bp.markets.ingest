@@ -6,6 +6,8 @@ The data portion is now (fairly) complete. Naturally, some QA issues remain, par
 
 ## Notice: HTTP service "Public beta" live
 
+**Update:** I have updated the index.html to use the TradingView library to render charts on your localized data. It gives better UX than Apex-Charts.
+
 I have implemented a first version of the [HTTP](http.md) service. It follows more or less the same syntax as the builder component. You can also define your own HTML pages, eg to render charts. Example is added to the ```config/dukascopy/http-docs``` directory.
 
 ![Example](../images/webservice-example.png)
@@ -19,7 +21,6 @@ You can now visually compare your data, example SGD:
 **Note:** I have been pushing out this really quickly because i need replay. There are several ways to optimize the performance of this piece. At the moment, it focuses on enablement. Performance is of later concern.
 
 **Note:** Performance is not bad but, in my world, it should be faster. Especially on 1m, 5m charts.
-
 
 ## Notice: New Year Update
 
