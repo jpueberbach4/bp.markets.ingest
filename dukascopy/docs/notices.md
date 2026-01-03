@@ -6,7 +6,7 @@ The data portion is now (fairly) complete. Naturally, some QA issues remain, par
 
 ## Notice: HTTP service live
 
-**Update:** While testing integration with 1m, i found a "bug". I have updated the limit of the API to 1440 and updated the HTML scripts to take the weekend-break into account by retrying maximum of 5 times, with window-shifting, in case no data was retrieved. This was only an issue on the low 1m and 5m TF's. You will now see "Searching history"-upper right corner-when a weekend-gap is encountered. If still working with default config: ```./setup-dukascopy.sh```, else copy over ```config/http-docs/index.html``` to your ```config.user``` directory.
+**Update:** While testing integration with 1m, i found a "bug". I have updated the limit of the API to 1440 and updated the HTML scripts to take the weekend-break into account by retrying maximum of 5 times, with window-shifting, in case no data was retrieved. This was only an issue on the low 1m and 5m TF's. You will now see "Searching history"-upper right corner-when a weekend-gap is encountered. If still working with default config: ```./setup-dukascopy.sh```, else copy over ```config/http-docs/index.html``` to your ```config.user``` directory. Additionally you can now use page-up and page-down for browsing.
 
 **Update:** Beta-state removed. This works and looks incredible. There will be updates for better integration with MT4. The MT4-flag is "not forgotten".
 
