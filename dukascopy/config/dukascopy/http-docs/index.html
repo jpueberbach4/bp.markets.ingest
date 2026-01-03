@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>OHLC - Intelligent Infinite Scroll</title>
+    <title>OHLC - Pro Tooltips & Intelligent Scroll</title>
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
@@ -21,6 +21,18 @@
         }
         select, button { padding: 8px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
         #status-indicator { font-size: 12px; color: #888; margin-left: auto; }
+        
+        /* Tooltip Style */
+        .floating-tooltip {
+            width: 160px; height: 130px; position: absolute; display: none;
+            padding: 10px; box-sizing: border-box; font-size: 12px; color: #131722;
+            background-color: rgba(255, 255, 255, 0.95); text-align: left;
+            z-index: 1000; pointer-events: none; border: 1px solid #007bff;
+            border-radius: 4px; line-height: 1.6; box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .tooltip-row { display: flex; justify-content: space-between; }
+        .tooltip-row span { font-weight: bold; }
+
         .spinner {
             width: 30px; height: 30px; border: 4px solid #f3f3f3; border-top: 4px solid #007bff;
             border-radius: 50%; animation: spin 1s linear infinite;
@@ -42,6 +54,7 @@
     <div id="chart-container">
         <div id="loader"><div class="spinner"></div></div>
         <div id="chart" style="width: 100%; height: 100%;"></div>
+        <div id="tooltip" class="floating-tooltip"></div>
     </div>
 
     <script>
@@ -51,9 +64,12 @@
         let masterData = []; 
         let isFetching = false;
         let shouldResetZoomOnNextLoad = false;
-        let hasMoreHistory = true; // NEW: Prevents endless polling
+        let hasMoreHistory = true;
 
+        const container = document.getElementById('chart-container');
+        const tooltip = document.getElementById('tooltip');
         const chartElement = document.getElementById('chart');
+
         const chart = LightweightCharts.createChart(chartElement, {
             width: chartElement.clientWidth,
             height: 600,
@@ -71,6 +87,37 @@
             borderUpColor: '#4caf50', wickDownColor: '#f44336', wickUpColor: '#4caf50',
         });
 
+        // --- TOOLTIP IMPLEMENTATION ---
+        chart.subscribeCrosshairMove(param => {
+            if (param.point === undefined || !param.time || param.point.x < 0 || param.point.x > container.clientWidth) {
+                tooltip.style.display = 'none';
+            } else {
+                const data = param.seriesData.get(candleSeries);
+                if (data) {
+                    tooltip.style.display = 'block';
+                    const isBullish = data.close >= data.open;
+                    const color = isBullish ? '#4caf50' : '#f44336';
+                    const dateStr = new Date(data.time * 1000).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+                    
+                    tooltip.innerHTML = `
+                        <div style="font-weight: bold; margin-bottom: 5px; color: #333; border-bottom: 1px solid #eee;">${dateStr}</div>
+                        <div class="tooltip-row">Open: <span style="color: ${color}">${data.open.toFixed(4)}</span></div>
+                        <div class="tooltip-row">High: <span style="color: ${color}">${data.high.toFixed(4)}</span></div>
+                        <div class="tooltip-row">Low: <span style="color: ${color}">${data.low.toFixed(4)}</span></div>
+                        <div class="tooltip-row">Close: <span style="color: ${color}">${data.close.toFixed(4)}</span></div>
+                    `;
+
+                    // Smart Tooltip Positioning
+                    let left = param.point.x + 15;
+                    if (left > container.clientWidth - 170) {
+                        left = param.point.x - 175;
+                    }
+                    tooltip.style.left = left + 'px';
+                    tooltip.style.top = (param.point.y + 15) + 'px';
+                }
+            }
+        });
+
         function formatServerDate(date) {
             const pad = (n) => n.toString().padStart(2, '0');
             return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
@@ -78,14 +125,14 @@
         }
 
         function checkIfChartFull() {
-            // STOP if we already know there is no more history
             if (isFetching || masterData.length === 0 || !hasMoreHistory) return;
 
             const timeScale = chart.timeScale();
-            const visibleRange = timeScale.getVisibleRange();
+            const visibleRange = timeScale.getVisibleRange(); // Fixed method name
             
             if (!visibleRange) return;
 
+            // Trigger fetch if we are at the left edge
             if (visibleRange.from <= masterData[0].time) {
                 paginateBack();
             }
@@ -123,10 +170,8 @@
                 statusIndicator.innerText = `Loaded: ${masterData.length} candles`;
                 setTimeout(checkIfChartFull, 200); 
             } else {
-                // If the API returns nothing, we've hit the beginning of time for this asset
                 hasMoreHistory = false;
                 statusIndicator.innerText = `End of history reached (${masterData.length} candles)`;
-                console.log("No more history available on server.");
             }
 
             isFetching = false;
@@ -151,7 +196,7 @@
 
         function resetAndLoad() {
             masterData = [];
-            hasMoreHistory = true; // Reset flag for new search
+            hasMoreHistory = true; 
             shouldResetZoomOnNextLoad = true;
             const tf = document.getElementById('tfSelect').value;
             currentAfterDate = new Date(Date.now() - getTimeframeOffset(tf));
@@ -206,12 +251,12 @@
         function getTimeframeOffset(tf) {
             const day = 24 * 60 * 60 * 1000;
             switch (tf) {
-                case '1Y': return 10000 * day;
-                case '1M': return 1000 * day;
-                case '1W': return 300 * day;
-                case '1d': return 100 * day;
-                case '4h': return 25 * day;
-                case '1h': return 10 * day;
+                case '1Y': return 3650 * day;
+                case '1M': return 365 * day;
+                case '1W': return 100 * day;
+                case '1d': return 50 * day;
+                case '4h': return 15 * day;
+                case '1h': return 5 * day;
                 default:   return 2 * day;
             }
         }
