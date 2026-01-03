@@ -83,6 +83,14 @@ The replay system is intentionally minimal and UNIX-native. Rather than embeddin
 
 This approach leverages over 50 years of proven UNIX tooling while remaining flexible enough to support complex, event-driven market analysis. Injecting new data sources or transformations is simply a matter of implementing the agreed streaming interface.
 
+## Eliminating Lookahead Bias by Design
+
+In most backtesting frameworks, lookahead bias is a constant risk—it’s far too easy for an algorithm to accidentally "peek" at the Close price of a 1-hour candle while it is technically only halfway through that hour.
+
+The Replay Subsystem eliminates this risk by moving away from "vectorized" backtesting and instead using a strictly chronological, boundary-aligned emission model.
+
 etc...
 
 There is more. Ie stop, pause, resume a stream by its id. Alter the speed during runtime. Logging to default files which then can be visualized through the HTTP API and dashboards. And so on. This is a preliminary document.
+
+Backtesting without Lookahead Bias
