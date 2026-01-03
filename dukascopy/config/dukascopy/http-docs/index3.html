@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>OHLC Dashboard - Historical Pagination</title>
+    <title>OHLC Dashboard - Pagination & Loading</title>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <style>
         body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
@@ -16,6 +16,7 @@
             min-height: 600px;
         }
 
+        /* Loading Spinner Overlay */
         #loader {
             display: none;
             position: absolute;
@@ -73,7 +74,7 @@
         <button class="nav-btn" onclick="paginate(-1)"> < </button>
         <button onclick="resetAndLoad()">Today</button>
         <button class="nav-btn" onclick="paginate(1)"> > </button>
-        <a href="index2.html">Slightly different version</a>
+        <a href="index2.html">Back to original version</a>
     </div>
     
     <div id="chart-container">
@@ -87,7 +88,6 @@
     <script>
         let symbolData = {}; 
         let currentAfterDate = new Date(); 
-        let currentUntilDate = null; // Tracks the end-cap for back-pagination
 
         const options = {
             series: [],
@@ -109,11 +109,10 @@
         const chart = new ApexCharts(document.querySelector("#chart"), options);
         chart.render();
 
+        // Show/Hide Loader Helpers
         function toggleLoader(show) {
             document.getElementById('loader').style.display = show ? 'flex' : 'none';
         }
-
-        // --- JSONP Callbacks ---
 
         window.__callbackList = function(response) {
             if (response.status === "ok") {
@@ -131,43 +130,6 @@
             }
         };
 
-        window.__callbackData = function(response) {
-            const grouped = {};
-            if (response.result) {
-                response.result.forEach(row => {
-                    if (!grouped[row.symbol]) grouped[row.symbol] = [];
-                    grouped[row.symbol].push({
-                        x: row.time, 
-                        y: [row.open, row.high, row.low, row.close]
-                    });
-                });
-            }
-
-            const seriesData = Object.keys(grouped).map(symbol => ({
-                name: symbol,
-                data: grouped[symbol]
-            }));
-
-            const sym = document.getElementById('symbolSelect').value;
-            const tf = document.getElementById('tfSelect').value;
-            
-            // Format title to show the active time window
-            let rangeText = `After: ${currentAfterDate.toLocaleString()}`;
-            if (currentUntilDate) {
-                rangeText += ` | Until: ${currentUntilDate.toLocaleString()}`;
-            }
-
-            chart.updateOptions({
-                title: { text: `${sym} (${tf}) - ${rangeText}` }
-            });
-
-            chart.updateSeries(seriesData).then(() => {
-                toggleLoader(false);
-            });
-        };
-
-        // --- Logic Functions ---
-
         function updateTimeframeOptions() {
             const symbol = document.getElementById('symbolSelect').value;
             const tfSelect = document.getElementById('tfSelect');
@@ -182,6 +144,7 @@
                     tfSelect.appendChild(opt);
                 });
 
+                // Persist selection logic
                 const available = symbolData[symbol];
                 if (previousSelection && available.includes(previousSelection)) {
                     tfSelect.value = previousSelection;
@@ -191,8 +154,34 @@
             }
         }
 
+        window.__callbackData = function(response) {
+            const grouped = {};
+            response.result.forEach(row => {
+                if (!grouped[row.symbol]) grouped[row.symbol] = [];
+                grouped[row.symbol].push({
+                    x: row.time, 
+                    y: [row.open, row.high, row.low, row.close]
+                });
+            });
+
+            const seriesData = Object.keys(grouped).map(symbol => ({
+                name: symbol,
+                data: grouped[symbol]
+            }));
+
+            const sym = document.getElementById('symbolSelect').value;
+            const tf = document.getElementById('tfSelect').value;
+            
+            chart.updateOptions({
+                title: { text: `${sym} (${tf}) - Starting: ${currentAfterDate.toLocaleString()}` }
+            });
+            chart.updateSeries(seriesData).then(() => {
+                toggleLoader(false); // Hide loader when chart finishes updating
+            });
+        };
+
         function fetchJSONP(url) {
-            toggleLoader(true);
+            toggleLoader(true); // Show loader before request
             const oldScript = document.getElementById('jsonp-script');
             if (oldScript) oldScript.remove();
             const script = document.createElement('script');
@@ -220,30 +209,14 @@
             const tf = document.getElementById('tfSelect').value;
             const offset = getTimeframeOffset(tf);
             currentAfterDate = new Date(Date.now() - offset);
-            currentUntilDate = null; // Clear constraints for fresh load
             loadData();
         }
 
         function paginate(direction) {
             const tf = document.getElementById('tfSelect').value;
             const offset = getTimeframeOffset(tf);
-            
-            if (direction < 0) {
-                // Moving backward: 
-                // The current starting point becomes the upper 'until' limit
-                currentUntilDate = new Date(currentAfterDate.getTime());
-                // The new starting point moves further into the past
-                currentAfterDate = new Date(currentAfterDate.getTime() - offset);
-            } else {
-                // Moving forward:
-                currentAfterDate = new Date(currentAfterDate.getTime() + offset);
-                // If we move forward enough to hit "now", clear the until limit
-                if (currentAfterDate >= new Date(Date.now() - offset)) {
-                    currentUntilDate = null;
-                } else if (currentUntilDate) {
-                    currentUntilDate = new Date(currentUntilDate.getTime() + offset);
-                }
-            }
+            const newTime = currentAfterDate.getTime() + (direction * offset);
+            currentAfterDate = new Date(newTime);
             loadData();
         }
 
@@ -252,20 +225,8 @@
             const tf = document.getElementById('tfSelect').value;
             if(!symbol || !tf) return;
 
-            const format = (date) => date.toISOString().replace('T', ' ').slice(0, 19);
-            
-            const afterStr = encodeURIComponent(format(currentAfterDate));
-            
-            // Build URL with conditional /until/ segment
-            let url = `http://localhost:8000/ohlcv/1.0/select/${symbol},${tf}/after/${afterStr}`;
-            
-            if (currentUntilDate) {
-                const untilStr = encodeURIComponent(format(currentUntilDate));
-                url += `/until/${untilStr}`;
-            }
-
-            url += `/output/JSONP?order=asc&limit=999&callback=__callbackData`;
-            
+            const afterStr = currentAfterDate.toISOString().replace('T', ' ').slice(0, 19);
+            const url = `http://localhost:8000/ohlcv/1.0/select/${symbol},${tf}/after/${encodeURIComponent(afterStr)}/output/JSONP?order=asc&limit=999&callback=__callbackData`;
             fetchJSONP(url);
         }
 
