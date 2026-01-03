@@ -123,12 +123,6 @@
             }
         });
 
-        function formatServerDate(date) {
-            const pad = (n) => n.toString().padStart(2, '0');
-            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
-                   `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-        }
-
         function checkIfChartFull() {
             if (isFetching || masterData.length === 0 || !hasMoreHistory) return;
             const timeScale = chart.timeScale();
@@ -170,7 +164,6 @@
                     gapRetryCount++;
                     statusIndicator.innerText = `Searching history... (Attempt ${gapRetryCount}/5)`;
                     isFetching = false; 
-                    // Even on initial load (masterData empty), paginateBack will now trigger
                     paginateBack(); 
                 } else {
                     hasMoreHistory = false;
@@ -197,6 +190,13 @@
             }
         };
 
+        function formatServerDate(date) {
+            if (!date) return "";
+            const pad = (n) => n.toString().padStart(2, '0');
+            return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ` +
+                   `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
+        }
+
         function resetAndLoad() {
             masterData = [];
             candleSeries.setData([]); 
@@ -206,18 +206,28 @@
             chart.priceScale('right').applyOptions({ autoScale: true });
             const tf = document.getElementById('tfSelect').value;
             
-            // Set Until to NOW and After to NOW - Offset
-            currentUntilDate = new Date();
-            currentAfterDate = new Date(currentUntilDate.getTime() - getTimeframeOffset(tf));
+            currentUntilDate = null; 
+            
+            // Bugfix: initially we only take half the offset so that we definately have the
+            //         the latest data included. I can't vouch for users that are more than
+            //         12h offset on UTC (for 1m frame)
+            const initialOffset = getTimeframeOffset(tf) / 2;
+            currentAfterDate = new Date(Date.now() - initialOffset);
+            
             loadData();
         }
 
         function paginateBack() {
             if (isFetching || !hasMoreHistory) return;
             const tf = document.getElementById('tfSelect').value;
-            // Shift the window back: New Until is the old After
-            currentUntilDate = new Date(currentAfterDate.getTime());
-            currentAfterDate = new Date(currentAfterDate.getTime() - getTimeframeOffset(tf));
+            
+            if (masterData.length > 0) {
+                currentUntilDate = new Date(masterData[0].time * 1000);
+            } else {
+                currentUntilDate = new Date(currentAfterDate.getTime());
+            }
+
+            currentAfterDate = new Date(currentUntilDate.getTime() - getTimeframeOffset(tf));
             loadData();
         }
 
@@ -227,10 +237,16 @@
             if(!sym || !tf || isFetching) return;
             isFetching = true;
             document.getElementById('loader').style.display = 'flex';
-            const afterStr = encodeURIComponent(formatServerDate(currentAfterDate));
-            const untilStr = encodeURIComponent(formatServerDate(currentUntilDate));
             
-            let url = `http://localhost:8000/ohlcv/1.0/select/${sym},${tf}/after/${afterStr}/until/${untilStr}/output/JSONP?order=asc&limit=1440&callback=__callbackData`;
+            const afterStr = encodeURIComponent(formatServerDate(currentAfterDate));
+            let url = `http://localhost:8000/ohlcv/1.0/select/${sym},${tf}/after/${afterStr}`;
+            
+            // Only add until if it's explicitly set (during pagination)
+            if (currentUntilDate) {
+                url += `/until/${encodeURIComponent(formatServerDate(currentUntilDate))}`;
+            }
+            
+            url += `/output/JSONP?order=asc&limit=1440&callback=__callbackData`;
             
             const old = document.getElementById('jsonp-script');
             if (old) old.remove();
