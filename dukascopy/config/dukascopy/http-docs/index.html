@@ -2,11 +2,34 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>OHLC Dashboard</title>
+    <title>OHLC Dashboard - Pagination & Loading</title>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <style>
         body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
-        #chart { background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 10px; }
+        
+        #chart-container { 
+            position: relative; 
+            background: white; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+            padding: 10px; 
+            min-height: 600px;
+        }
+
+        /* Loading Spinner Overlay */
+        #loader {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 255, 255, 0.7);
+            z-index: 10;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            font-weight: bold;
+            color: #007bff;
+        }
+
         .controls { 
             margin-bottom: 20px; 
             display: flex; 
@@ -17,11 +40,24 @@
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
+
         select, button { padding: 8px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
         button:hover { background-color: #e0e0e0; }
         .nav-btn { font-weight: bold; min-width: 40px; background: #007bff; color: white; border: none; }
         .nav-btn:hover { background: #0056b3; }
         label { font-weight: bold; }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -40,11 +76,17 @@
         <button class="nav-btn" onclick="paginate(1)"> > </button>
     </div>
     
-    <div id="chart"></div>
+    <div id="chart-container">
+        <div id="loader">
+            <div class="spinner"></div>
+            Loading Market Data...
+        </div>
+        <div id="chart"></div>
+    </div>
 
     <script>
         let symbolData = {}; 
-        let currentAfterDate = new Date(); // Tracks our current view position
+        let currentAfterDate = new Date(); 
 
         const options = {
             series: [],
@@ -54,7 +96,7 @@
                 id: 'ohlc-chart',
                 animations: { enabled: false }
             },
-            title: { text: 'Select a symbol to begin', align: 'left' },
+            title: { text: 'Initializing...', align: 'left' },
             xaxis: { 
                 type: 'category',
                 tickAmount: 10,
@@ -65,6 +107,11 @@
 
         const chart = new ApexCharts(document.querySelector("#chart"), options);
         chart.render();
+
+        // Show/Hide Loader Helpers
+        function toggleLoader(show) {
+            document.getElementById('loader').style.display = show ? 'flex' : 'none';
+        }
 
         window.__callbackList = function(response) {
             if (response.status === "ok") {
@@ -85,6 +132,8 @@
         function updateTimeframeOptions() {
             const symbol = document.getElementById('symbolSelect').value;
             const tfSelect = document.getElementById('tfSelect');
+            const previousSelection = tfSelect.value; 
+            
             tfSelect.innerHTML = ""; 
             if (symbolData[symbol]) {
                 symbolData[symbol].forEach(tf => {
@@ -93,7 +142,14 @@
                     opt.innerHTML = tf;
                     tfSelect.appendChild(opt);
                 });
-                if (symbolData[symbol].includes("1h")) tfSelect.value = "1h";
+
+                // Persist selection logic
+                const available = symbolData[symbol];
+                if (previousSelection && available.includes(previousSelection)) {
+                    tfSelect.value = previousSelection;
+                } else if (available.includes("1h")) {
+                    tfSelect.value = "1h";
+                }
             }
         }
 
@@ -118,10 +174,13 @@
             chart.updateOptions({
                 title: { text: `${sym} (${tf}) - Starting: ${currentAfterDate.toLocaleString()}` }
             });
-            chart.updateSeries(seriesData);
+            chart.updateSeries(seriesData).then(() => {
+                toggleLoader(false); // Hide loader when chart finishes updating
+            });
         };
 
         function fetchJSONP(url) {
+            toggleLoader(true); // Show loader before request
             const oldScript = document.getElementById('jsonp-script');
             if (oldScript) oldScript.remove();
             const script = document.createElement('script');
@@ -130,23 +189,21 @@
             document.body.appendChild(script);
         }
 
-        // Helper to get jump size in milliseconds based on TF
         function getTimeframeOffset(tf) {
             switch (tf) {
-                case '1M':  return 10 * 365 * 24 * 60 * 60 * 1000; // 10 Years
-                case '1Y':  return 50 * 365 * 24 * 60 * 60 * 1000; // Large jump for All Time
-                case '1d':  return 180 * 24 * 60 * 60 * 1000;      // 6 Months
-                case '1W':  return 365 * 24 * 60 * 60 * 1000;      // 1 Year
-                case '4h':  return 14 * 24 * 60 * 60 * 1000;       // 2 Weeks
-                case '1h':  return 7 * 24 * 60 * 60 * 1000;        // 1 Week
-                case '30m': return 3 * 24 * 60 * 60 * 1000;        // 3 Days
-                case '15m': return 1 * 24 * 60 * 60 * 1000;        // 1 Day
-                case '5m':  return 12 * 60 * 60 * 1000;            // 12 Hours
-                default:    return 1 * 60 * 60 * 1000;             // 1 Hour
+                case '1M':  return 10 * 365 * 24 * 60 * 60 * 1000;
+                case '1Y':  return 50 * 365 * 24 * 60 * 60 * 1000;
+                case '1d':  return 180 * 24 * 60 * 60 * 1000;
+                case '1W':  return 365 * 24 * 60 * 60 * 1000;
+                case '4h':  return 14 * 24 * 60 * 60 * 1000;
+                case '1h':  return 7 * 24 * 60 * 60 * 1000;
+                case '30m': return 3 * 24 * 60 * 60 * 1000;
+                case '15m': return 1 * 24 * 60 * 60 * 1000;
+                case '5m':  return 12 * 60 * 60 * 1000;
+                default:    return 1 * 60 * 60 * 1000;
             }
         }
 
-        // Reset to "Now" and load
         function resetAndLoad() {
             const tf = document.getElementById('tfSelect').value;
             const offset = getTimeframeOffset(tf);
@@ -154,27 +211,21 @@
             loadData();
         }
 
-        // Paginates forward or backward
         function paginate(direction) {
             const tf = document.getElementById('tfSelect').value;
             const offset = getTimeframeOffset(tf);
-            
-            // Adjust the current global date by the offset
             const newTime = currentAfterDate.getTime() + (direction * offset);
             currentAfterDate = new Date(newTime);
-            
             loadData();
         }
 
         function loadData() {
             const symbol = document.getElementById('symbolSelect').value;
             const tf = document.getElementById('tfSelect').value;
-            
-            // Format date for API
-            const afterStr = currentAfterDate.toISOString().replace('T', ' ').slice(0, 19);
+            if(!symbol || !tf) return;
 
+            const afterStr = currentAfterDate.toISOString().replace('T', ' ').slice(0, 19);
             const url = `http://localhost:8000/ohlcv/1.0/select/${symbol},${tf}/after/${encodeURIComponent(afterStr)}/output/JSONP?order=asc&limit=999&callback=__callbackData`;
-            
             fetchJSONP(url);
         }
 

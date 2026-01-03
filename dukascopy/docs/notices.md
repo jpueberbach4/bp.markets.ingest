@@ -177,6 +177,7 @@ List of the most "interesting stuff" encountered, during development of this pro
 - AI CANNOT be used for complex logic - it hallucinates and fails on edge cases
 - AI CAN be used for docstring and inline commenting of code - it excels at that
 - AI CAN be used for QA purposes - it actually found a bug that really mattered
+- AI CAN be used for generic HTML and Javascript implementations - it excels at that
 - AI CAN be really funny - especially Grok!
 
 I think the solution came out really really well.
