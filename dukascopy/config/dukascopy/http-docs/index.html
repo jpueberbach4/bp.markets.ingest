@@ -71,6 +71,8 @@
         const tooltip = document.getElementById('tooltip');
         const chartElement = document.getElementById('chart');
 
+        const maxSearches = 10
+
         const chart = LightweightCharts.createChart(chartElement, {
             width: chartElement.clientWidth,
             height: 600,
@@ -160,7 +162,7 @@
                 isFetching = false;
                 document.getElementById('loader').style.display = 'none';
             } else {
-                if (gapRetryCount < 5) {
+                if (gapRetryCount < maxSearches) {
                     gapRetryCount++;
                     statusIndicator.innerText = `Searching history... (Attempt ${gapRetryCount}/5)`;
                     isFetching = false; 
