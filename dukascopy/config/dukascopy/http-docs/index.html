@@ -2,278 +2,227 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>OHLC Dashboard - Historical Pagination</title>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <title>OHLC - Intelligent Infinite Scroll</title>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
-        
         #chart-container { 
-            position: relative; 
-            background: white; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-            padding: 10px; 
-            min-height: 600px;
+            position: relative; background: white; border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); height: 600px; width: 100%;
         }
-
         #loader {
-            display: none;
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255, 255, 255, 0.7);
-            z-index: 10;
-            justify-content: center;
-            align-items: center;
-            border-radius: 8px;
-            font-weight: bold;
-            color: #007bff;
+            display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 255, 255, 0.4); z-index: 10;
+            justify-content: center; align-items: center; border-radius: 8px;
         }
-
         .controls { 
-            margin-bottom: 20px; 
-            display: flex; 
-            gap: 10px; 
-            align-items: center; 
-            background: #fff; 
-            padding: 15px; 
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            margin-bottom: 20px; display: flex; gap: 10px; align-items: center; 
+            background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
-
         select, button { padding: 8px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
-        button:hover { background-color: #e0e0e0; }
-        .nav-btn { font-weight: bold; min-width: 40px; background: #007bff; color: white; border: none; }
-        .nav-btn:hover { background: #0056b3; }
-        label { font-weight: bold; }
-
+        #status-indicator { font-size: 12px; color: #888; margin-left: auto; }
         .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #007bff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
+            width: 30px; height: 30px; border: 4px solid #f3f3f3; border-top: 4px solid #007bff;
+            border-radius: 50%; animation: spin 1s linear infinite;
         }
-
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-    <h2>Interactive OHLC Stream</h2>
-    
     <div class="controls">
-        <label for="symbolSelect">Symbol:</label>
+        <label>Symbol:</label>
         <select id="symbolSelect" onchange="updateTimeframeOptions(); resetAndLoad();"></select>
-
-        <label for="tfSelect">Timeframe:</label>
+        <label>Timeframe:</label>
         <select id="tfSelect" onchange="resetAndLoad()"></select>
-
-        <button class="nav-btn" onclick="paginate(-1)"> < </button>
-        <button onclick="resetAndLoad()">Today</button>
-        <button class="nav-btn" onclick="paginate(1)"> > </button>
-        <a href="index2.html">Slightly different version</a>
+        <button onclick="resetAndLoad()">Reset to Today</button>
+        <div id="status-indicator"></div>
     </div>
     
     <div id="chart-container">
-        <div id="loader">
-            <div class="spinner"></div>
-            Loading Market Data...
-        </div>
-        <div id="chart"></div>
+        <div id="loader"><div class="spinner"></div></div>
+        <div id="chart" style="width: 100%; height: 100%;"></div>
     </div>
 
     <script>
         let symbolData = {}; 
         let currentAfterDate = new Date(); 
-        let currentUntilDate = null; // Tracks the end-cap for back-pagination
+        let currentUntilDate = null; 
+        let masterData = []; 
+        let isFetching = false;
+        let shouldResetZoomOnNextLoad = false;
+        let hasMoreHistory = true; // NEW: Prevents endless polling
 
-        const options = {
-            series: [],
-            chart: {
-                type: 'candlestick',
-                height: 600,
-                id: 'ohlc-chart',
-                animations: { enabled: false }
+        const chartElement = document.getElementById('chart');
+        const chart = LightweightCharts.createChart(chartElement, {
+            width: chartElement.clientWidth,
+            height: 600,
+            layout: { background: { type: LightweightCharts.ColorType.Solid, color: '#ffffff' }, textColor: '#333' },
+            timeScale: { 
+                timeVisible: true, 
+                secondsVisible: false, 
+                borderColor: '#cccccc',
+                shiftVisibleRangeOnNewBar: false 
             },
-            title: { text: 'Initializing...', align: 'left' },
-            xaxis: { 
-                type: 'category',
-                tickAmount: 10,
-                labels: { rotate: -45 }
-            },
-            yaxis: { tooltip: { enabled: true } }
-        };
+        });
 
-        const chart = new ApexCharts(document.querySelector("#chart"), options);
-        chart.render();
+        const candleSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {
+            upColor: '#4caf50', downColor: '#f44336', borderDownColor: '#f44336',
+            borderUpColor: '#4caf50', wickDownColor: '#f44336', wickUpColor: '#4caf50',
+        });
 
-        function toggleLoader(show) {
-            document.getElementById('loader').style.display = show ? 'flex' : 'none';
+        function formatServerDate(date) {
+            const pad = (n) => n.toString().padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+                   `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
         }
 
-        // --- JSONP Callbacks ---
+        function checkIfChartFull() {
+            // STOP if we already know there is no more history
+            if (isFetching || masterData.length === 0 || !hasMoreHistory) return;
+
+            const timeScale = chart.timeScale();
+            const visibleRange = timeScale.getVisibleRange();
+            
+            if (!visibleRange) return;
+
+            if (visibleRange.from <= masterData[0].time) {
+                paginateBack();
+            }
+        }
+
+        chart.timeScale().subscribeVisibleLogicalRangeChange(() => {
+            requestAnimationFrame(checkIfChartFull);
+        });
+
+        window.__callbackData = function(response) {
+            const statusIndicator = document.getElementById('status-indicator');
+            
+            if (response.result && Array.isArray(response.result) && response.result.length > 0) {
+                const incoming = response.result.map(row => ({
+                    time: Math.floor(new Date(row.time).getTime() / 1000),
+                    open: row.open, high: row.high, low: row.low, close: row.close
+                }));
+
+                const combined = [...masterData, ...incoming];
+                const uniqueMap = new Map();
+                combined.forEach(item => { if(item.time) uniqueMap.set(item.time, item); });
+                
+                masterData = Array.from(uniqueMap.values()).sort((a, b) => a.time - b.time);
+                candleSeries.setData(masterData);
+
+                if (shouldResetZoomOnNextLoad) {
+                    const lastIdx = masterData.length - 1;
+                    chart.timeScale().setVisibleLogicalRange({
+                        from: lastIdx - 100, 
+                        to: lastIdx + 5      
+                    });
+                    shouldResetZoomOnNextLoad = false;
+                }
+
+                statusIndicator.innerText = `Loaded: ${masterData.length} candles`;
+                setTimeout(checkIfChartFull, 200); 
+            } else {
+                // If the API returns nothing, we've hit the beginning of time for this asset
+                hasMoreHistory = false;
+                statusIndicator.innerText = `End of history reached (${masterData.length} candles)`;
+                console.log("No more history available on server.");
+            }
+
+            isFetching = false;
+            document.getElementById('loader').style.display = 'none';
+        };
 
         window.__callbackList = function(response) {
             if (response.status === "ok") {
                 symbolData = response.result;
-                const symbolSelect = document.getElementById('symbolSelect');
-                Object.keys(symbolData).sort().forEach(symbol => {
+                const sel = document.getElementById('symbolSelect');
+                sel.innerHTML = "";
+                Object.keys(symbolData).sort().forEach(s => {
                     const opt = document.createElement('option');
-                    opt.value = symbol;
-                    opt.innerHTML = symbol;
-                    symbolSelect.appendChild(opt);
+                    opt.value = s; opt.innerHTML = s;
+                    sel.appendChild(opt);
                 });
-                symbolSelect.value = "EUR-USD";
+                sel.value = "EUR-USD";
                 updateTimeframeOptions();
                 resetAndLoad();
             }
         };
 
-        window.__callbackData = function(response) {
-            const grouped = {};
-            if (response.result) {
-                response.result.forEach(row => {
-                    if (!grouped[row.symbol]) grouped[row.symbol] = [];
-                    grouped[row.symbol].push({
-                        x: row.time, 
-                        y: [row.open, row.high, row.low, row.close]
-                    });
-                });
-            }
-
-            const seriesData = Object.keys(grouped).map(symbol => ({
-                name: symbol,
-                data: grouped[symbol]
-            }));
-
-            const sym = document.getElementById('symbolSelect').value;
-            const tf = document.getElementById('tfSelect').value;
-            
-            // Format title to show the active time window
-            let rangeText = `After: ${currentAfterDate.toLocaleString()}`;
-            if (currentUntilDate) {
-                rangeText += ` | Until: ${currentUntilDate.toLocaleString()}`;
-            }
-
-            chart.updateOptions({
-                title: { text: `${sym} (${tf}) - ${rangeText}` }
-            });
-
-            chart.updateSeries(seriesData).then(() => {
-                toggleLoader(false);
-            });
-        };
-
-        // --- Logic Functions ---
-
-        function updateTimeframeOptions() {
-            const symbol = document.getElementById('symbolSelect').value;
-            const tfSelect = document.getElementById('tfSelect');
-            const previousSelection = tfSelect.value; 
-            
-            tfSelect.innerHTML = ""; 
-            if (symbolData[symbol]) {
-                symbolData[symbol].forEach(tf => {
-                    const opt = document.createElement('option');
-                    opt.value = tf;
-                    opt.innerHTML = tf;
-                    tfSelect.appendChild(opt);
-                });
-
-                const available = symbolData[symbol];
-                if (previousSelection && available.includes(previousSelection)) {
-                    tfSelect.value = previousSelection;
-                } else if (available.includes("1h")) {
-                    tfSelect.value = "1h";
-                }
-            }
-        }
-
-        function fetchJSONP(url) {
-            toggleLoader(true);
-            const oldScript = document.getElementById('jsonp-script');
-            if (oldScript) oldScript.remove();
-            const script = document.createElement('script');
-            script.id = 'jsonp-script';
-            script.src = url;
-            document.body.appendChild(script);
-        }
-
-        function getTimeframeOffset(tf) {
-            switch (tf) {
-                case '1M':  return 10 * 365 * 24 * 60 * 60 * 1000;
-                case '1Y':  return 50 * 365 * 24 * 60 * 60 * 1000;
-                case '1d':  return 180 * 24 * 60 * 60 * 1000;
-                case '1W':  return 365 * 24 * 60 * 60 * 1000;
-                case '4h':  return 14 * 24 * 60 * 60 * 1000;
-                case '1h':  return 7 * 24 * 60 * 60 * 1000;
-                case '30m': return 3 * 24 * 60 * 60 * 1000;
-                case '15m': return 1 * 24 * 60 * 60 * 1000;
-                case '5m':  return 12 * 60 * 60 * 1000;
-                default:    return 1 * 60 * 60 * 1000;
-            }
-        }
-
         function resetAndLoad() {
+            masterData = [];
+            hasMoreHistory = true; // Reset flag for new search
+            shouldResetZoomOnNextLoad = true;
             const tf = document.getElementById('tfSelect').value;
-            const offset = getTimeframeOffset(tf);
-            currentAfterDate = new Date(Date.now() - offset);
-            currentUntilDate = null; // Clear constraints for fresh load
+            currentAfterDate = new Date(Date.now() - getTimeframeOffset(tf));
+            currentUntilDate = null;
             loadData();
         }
 
-        function paginate(direction) {
+        function paginateBack() {
+            if (isFetching || !hasMoreHistory) return;
             const tf = document.getElementById('tfSelect').value;
             const offset = getTimeframeOffset(tf);
-            
-            if (direction < 0) {
-                // Moving backward: 
-                // The current starting point becomes the upper 'until' limit
-                currentUntilDate = new Date(currentAfterDate.getTime());
-                // The new starting point moves further into the past
-                currentAfterDate = new Date(currentAfterDate.getTime() - offset);
-            } else {
-                // Moving forward:
-                currentAfterDate = new Date(currentAfterDate.getTime() + offset);
-                // If we move forward enough to hit "now", clear the until limit
-                if (currentAfterDate >= new Date(Date.now() - offset)) {
-                    currentUntilDate = null;
-                } else if (currentUntilDate) {
-                    currentUntilDate = new Date(currentUntilDate.getTime() + offset);
-                }
-            }
+            currentUntilDate = new Date(currentAfterDate.getTime());
+            currentAfterDate = new Date(currentAfterDate.getTime() - offset);
             loadData();
         }
 
         function loadData() {
-            const symbol = document.getElementById('symbolSelect').value;
+            const sym = document.getElementById('symbolSelect').value;
             const tf = document.getElementById('tfSelect').value;
-            if(!symbol || !tf) return;
+            if(!sym || !tf || isFetching) return;
 
-            const format = (date) => date.toISOString().replace('T', ' ').slice(0, 19);
+            isFetching = true;
+            document.getElementById('loader').style.display = 'flex';
+
+            const afterStr = encodeURIComponent(formatServerDate(currentAfterDate));
+            let url = `http://localhost:8000/ohlcv/1.0/select/${sym},${tf}/after/${afterStr}`;
+            if (currentUntilDate) url += `/until/${encodeURIComponent(formatServerDate(currentUntilDate))}`;
+            url += `/output/JSONP?order=asc&limit=1000&callback=__callbackData`;
             
-            const afterStr = encodeURIComponent(format(currentAfterDate));
-            
-            // Build URL with conditional /until/ segment
-            let url = `http://localhost:8000/ohlcv/1.0/select/${symbol},${tf}/after/${afterStr}`;
-            
-            if (currentUntilDate) {
-                const untilStr = encodeURIComponent(format(currentUntilDate));
-                url += `/until/${untilStr}`;
+            const old = document.getElementById('jsonp-script');
+            if (old) old.remove();
+            const s = document.createElement('script');
+            s.id = 'jsonp-script'; s.src = url;
+            document.body.appendChild(s);
+        }
+
+        function updateTimeframeOptions() {
+            const sym = document.getElementById('symbolSelect').value;
+            const tfS = document.getElementById('tfSelect');
+            const prev = tfS.value;
+            tfS.innerHTML = "";
+            if (symbolData[sym]) {
+                symbolData[sym].forEach(tf => {
+                    const opt = document.createElement('option');
+                    opt.value = tf; opt.innerHTML = tf;
+                    tfS.appendChild(opt);
+                });
+                tfS.value = symbolData[sym].includes(prev) ? prev : "1h";
             }
-
-            url += `/output/JSONP?order=asc&limit=999&callback=__callbackData`;
-            
-            fetchJSONP(url);
         }
 
-        function init() {
-            fetchJSONP("http://localhost:8000/ohlcv/1.0/list/output/JSONP?callback=__callbackList");
+        function getTimeframeOffset(tf) {
+            const day = 24 * 60 * 60 * 1000;
+            switch (tf) {
+                case '1Y': return 10000 * day;
+                case '1M': return 1000 * day;
+                case '1W': return 300 * day;
+                case '1d': return 100 * day;
+                case '4h': return 25 * day;
+                case '1h': return 10 * day;
+                default:   return 2 * day;
+            }
         }
 
-        init();
+        const s = document.createElement('script');
+        s.src = "http://localhost:8000/ohlcv/1.0/list/output/JSONP?callback=__callbackList";
+        document.body.appendChild(s);
+
+        window.addEventListener('resize', () => {
+            chart.applyOptions({ width: chartElement.clientWidth });
+        });
     </script>
 </body>
 </html>
