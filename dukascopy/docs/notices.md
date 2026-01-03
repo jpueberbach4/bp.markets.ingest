@@ -4,7 +4,9 @@
 
 The data portion is now (fairly) complete. Naturally, some QA issues remain, particularly in the builder component, which will be addressed over time. Ensuring optimal QA for the ETL process takes priority over the extraction utility itself.
 
-## Notice: HTTP service "Public beta" live
+## Notice: HTTP service live
+
+**Update:** Beta-state removed. This works and looks incredible. There will be updates for better integration with MT4. The MT4-flag is "not forgotten".
 
 **Update:** I have updated the index.html to use the TradingView library to render charts on your localized data. It gives better UX than Apex-Charts.
 
