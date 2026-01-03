@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>OHLC Dashboard - DuckDB API</title>
+    <title>OHLC Dashboard - Pagination</title>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <style>
         body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
@@ -17,7 +17,10 @@
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
-        select, button { padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
+        select, button { padding: 8px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
+        button:hover { background-color: #e0e0e0; }
+        .nav-btn { font-weight: bold; min-width: 40px; background: #007bff; color: white; border: none; }
+        .nav-btn:hover { background: #0056b3; }
         label { font-weight: bold; }
     </style>
 </head>
@@ -27,18 +30,21 @@
     
     <div class="controls">
         <label for="symbolSelect">Symbol:</label>
-        <select id="symbolSelect" onchange="updateTimeframeOptions()"></select>
+        <select id="symbolSelect" onchange="updateTimeframeOptions(); resetAndLoad();"></select>
 
         <label for="tfSelect">Timeframe:</label>
-        <select id="tfSelect"></select>
+        <select id="tfSelect" onchange="resetAndLoad()"></select>
 
-        <button onclick="loadData()">Refresh Data</button>
+        <button class="nav-btn" onclick="paginate(-1)"> < </button>
+        <button onclick="resetAndLoad()">Today</button>
+        <button class="nav-btn" onclick="paginate(1)"> > </button>
     </div>
     
     <div id="chart"></div>
 
     <script>
-        let symbolData = {}; // Global store for the list response
+        let symbolData = {}; 
+        let currentAfterDate = new Date(); // Tracks our current view position
 
         const options = {
             series: [],
@@ -60,33 +66,26 @@
         const chart = new ApexCharts(document.querySelector("#chart"), options);
         chart.render();
 
-        // 1. Callback for the INITIAL LIST of symbols
         window.__callbackList = function(response) {
             if (response.status === "ok") {
                 symbolData = response.result;
                 const symbolSelect = document.getElementById('symbolSelect');
-                
-                // Populate Symbol Dropdown
                 Object.keys(symbolData).sort().forEach(symbol => {
                     const opt = document.createElement('option');
                     opt.value = symbol;
                     opt.innerHTML = symbol;
                     symbolSelect.appendChild(opt);
                 });
-
-                // Default selection
                 symbolSelect.value = "EUR-USD";
                 updateTimeframeOptions();
-                loadData();
+                resetAndLoad();
             }
         };
 
-        // Update timeframes based on selected symbol
         function updateTimeframeOptions() {
             const symbol = document.getElementById('symbolSelect').value;
             const tfSelect = document.getElementById('tfSelect');
-            tfSelect.innerHTML = ""; // Clear existing
-
+            tfSelect.innerHTML = ""; 
             if (symbolData[symbol]) {
                 symbolData[symbol].forEach(tf => {
                     const opt = document.createElement('option');
@@ -94,12 +93,10 @@
                     opt.innerHTML = tf;
                     tfSelect.appendChild(opt);
                 });
-                // Set default TF to 1h if available
                 if (symbolData[symbol].includes("1h")) tfSelect.value = "1h";
             }
         }
 
-        // 2. Callback for the ACTUAL CHART DATA
         window.__callbackData = function(response) {
             const grouped = {};
             response.result.forEach(row => {
@@ -119,61 +116,64 @@
             const tf = document.getElementById('tfSelect').value;
             
             chart.updateOptions({
-                title: { text: `${sym} (${tf})` }
+                title: { text: `${sym} (${tf}) - Starting: ${currentAfterDate.toLocaleString()}` }
             });
             chart.updateSeries(seriesData);
         };
 
-        // 3. Helper to fetch data
         function fetchJSONP(url) {
             const oldScript = document.getElementById('jsonp-script');
             if (oldScript) oldScript.remove();
-            
             const script = document.createElement('script');
             script.id = 'jsonp-script';
             script.src = url;
             document.body.appendChild(script);
         }
 
+        // Helper to get jump size in milliseconds based on TF
+        function getTimeframeOffset(tf) {
+            switch (tf) {
+                case '1M':  return 10 * 365 * 24 * 60 * 60 * 1000; // 10 Years
+                case '1Y':  return 50 * 365 * 24 * 60 * 60 * 1000; // Large jump for All Time
+                case '1d':  return 180 * 24 * 60 * 60 * 1000;      // 6 Months
+                case '1W':  return 365 * 24 * 60 * 60 * 1000;      // 1 Year
+                case '4h':  return 14 * 24 * 60 * 60 * 1000;       // 2 Weeks
+                case '1h':  return 7 * 24 * 60 * 60 * 1000;        // 1 Week
+                case '30m': return 3 * 24 * 60 * 60 * 1000;        // 3 Days
+                case '15m': return 1 * 24 * 60 * 60 * 1000;        // 1 Day
+                case '5m':  return 12 * 60 * 60 * 1000;            // 12 Hours
+                default:    return 1 * 60 * 60 * 1000;             // 1 Hour
+            }
+        }
+
+        // Reset to "Now" and load
+        function resetAndLoad() {
+            const tf = document.getElementById('tfSelect').value;
+            const offset = getTimeframeOffset(tf);
+            currentAfterDate = new Date(Date.now() - offset);
+            loadData();
+        }
+
+        // Paginates forward or backward
+        function paginate(direction) {
+            const tf = document.getElementById('tfSelect').value;
+            const offset = getTimeframeOffset(tf);
+            
+            // Adjust the current global date by the offset
+            const newTime = currentAfterDate.getTime() + (direction * offset);
+            currentAfterDate = new Date(newTime);
+            
+            loadData();
+        }
+
         function loadData() {
             const symbol = document.getElementById('symbolSelect').value;
             const tf = document.getElementById('tfSelect').value;
-            let afterDate;
+            
+            // Format date for API
+            const afterStr = currentAfterDate.toISOString().replace('T', ' ').slice(0, 19);
 
-            switch (tf) {
-                case '1M':
-                    const tenYearsAgo = new Date();
-                    tenYearsAgo.setFullYear(tenYearsAgo.getFullYear() - 10);
-                    afterDate = tenYearsAgo.toISOString().replace('T', ' ').slice(0, 19);
-                    break;
-                case '1Y':
-                    afterDate = "1970-01-01 00:00:00";
-                    break;
-                case '1d':
-                    const halfYearAgo = new Date();
-                    halfYearAgo.setMonth(halfYearAgo.getMonth() - 6);
-                    afterDate = halfYearAgo.toISOString().replace('T', ' ').slice(0, 19);
-                    break;                
-                case '1W':
-                    const yearAgo = new Date();
-                    yearAgo.setFullYear(yearAgo.getFullYear() - 1);
-                    afterDate = yearAgo.toISOString().replace('T', ' ').slice(0, 19);
-                    break;
-                case '4h':
-                    const fourWeekAgo = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
-                    afterDate = fourWeekAgo.toISOString().replace('T', ' ').slice(0, 19);
-                    break;
-                case '1h':
-                    const twoWeekAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
-                    afterDate = twoWeekAgo.toISOString().replace('T', ' ').slice(0, 19);
-                    break;
-                default:
-                    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-                    afterDate = weekAgo.toISOString().replace('T', ' ').slice(0, 19);
-                    break;
-            }
-
-            const url = `http://localhost:8000/ohlcv/1.0/select/${symbol},${tf}/after/${encodeURIComponent(afterDate)}/output/JSONP?order=asc&limit=999&callback=__callbackData`;
+            const url = `http://localhost:8000/ohlcv/1.0/select/${symbol},${tf}/after/${encodeURIComponent(afterStr)}/output/JSONP?order=asc&limit=999&callback=__callbackData`;
             
             fetchJSONP(url);
         }
