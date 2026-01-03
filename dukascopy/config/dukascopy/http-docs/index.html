@@ -155,7 +155,7 @@
                 candleSeries.setData(masterData);
 
                 if (shouldResetZoomOnNextLoad) {
-                    chart.timeScale().fitContent(); // Initial reset to show all loaded data
+                    chart.timeScale().fitContent();
                     shouldResetZoomOnNextLoad = false;
                 }
 
@@ -186,17 +186,11 @@
         };
 
         function resetAndLoad() {
-            // 1. Clear Data immediately
             masterData = [];
             candleSeries.setData([]); 
-            
-            // 2. Reset Scale Flags
             hasMoreHistory = true; 
             shouldResetZoomOnNextLoad = true;
-            
-            // 3. Reset Y-Axis (Price Scale)
             chart.priceScale('right').applyOptions({ autoScale: true });
-            
             const tf = document.getElementById('tfSelect').value;
             currentAfterDate = new Date(Date.now() - getTimeframeOffset(tf));
             currentUntilDate = null;
@@ -262,6 +256,28 @@
 
         window.addEventListener('resize', () => {
             chart.applyOptions({ width: chartElement.clientWidth });
+        });
+
+        window.addEventListener('keydown', (event) => {
+            if (masterData.length === 0) return;
+            const timeScale = chart.timeScale();
+            const visibleRange = timeScale.getVisibleLogicalRange();
+            if (!visibleRange) return;
+            const rangeWidth = visibleRange.to - visibleRange.from;
+
+            if (event.key === 'PageUp') {
+                event.preventDefault();
+                timeScale.setVisibleLogicalRange({
+                    from: visibleRange.from - rangeWidth,
+                    to: visibleRange.to - rangeWidth
+                });
+            } else if (event.key === 'PageDown') {
+                event.preventDefault();
+                timeScale.setVisibleLogicalRange({
+                    from: visibleRange.from + rangeWidth,
+                    to: visibleRange.to + rangeWidth
+                });
+            }
         });
     </script>
 </body>
