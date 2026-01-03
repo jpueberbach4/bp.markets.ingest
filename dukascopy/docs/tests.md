@@ -12,7 +12,7 @@
 - Special Indices
   - AUS.IDX: NOT OK \
     2020 is a mess. See here [why](forensics/ASX.MD) \
-    post-2020 : OK
+    post-2020 : OK 
   - SGD.IDX: OK
   - CHI.IDX: OK
   - HKG.IDX: OK \
