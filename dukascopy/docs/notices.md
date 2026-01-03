@@ -163,7 +163,7 @@ List of the most "interesting stuff" encountered, during development of this pro
 - Monday-specific EPOCH-based candles only during day-session - resolved
 - H4 candles spanning 6h10m - resolved
 - 2020 severe DST/STD switch issues MT4-side - unresolved (still debating if should solve) \
-  **The Debate is:** our data is actually better, should I replicate a likely bug that will give worse data? \
+  **The debate is:** our data is actually better, should I replicate a likely bug that will give worse data? \
   **The decision is:** We are going to replicate the behavior through date-range bound, custom,  timeshift support in transform. There are changes for leap-years needed anyhow. The two complement each other.
 - Sub-hourly intraday candle offsets at HH:51 and HH:10 - resolved
 
