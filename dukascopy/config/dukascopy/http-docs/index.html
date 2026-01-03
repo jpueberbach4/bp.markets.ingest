@@ -22,7 +22,6 @@
         select, button { padding: 8px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
         #status-indicator { font-size: 12px; color: #888; margin-left: auto; }
         
-        /* Tooltip Style */
         .floating-tooltip {
             width: 160px; height: 130px; position: absolute; display: none;
             padding: 10px; box-sizing: border-box; font-size: 12px; color: #131722;
@@ -76,13 +75,10 @@
             height: 600,
             layout: { background: { type: LightweightCharts.ColorType.Solid, color: '#ffffff' }, textColor: '#333' },
             localization: {
-                    // This function overrides the default time format
-                    timeFormatter: (timestamp) => {
-                        const date = new Date(timestamp * 1000);
-                        const hours = date.getHours().toString().padStart(2, '0');
-                        const minutes = date.getMinutes().toString().padStart(2, '0');
-                        return `${hours}:${minutes}`; // Force 00:00 format
-                    },
+                timeFormatter: (timestamp) => {
+                    const date = new Date(timestamp * 1000);
+                    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                },
             },
             timeScale: { 
                 timeVisible: true, 
@@ -97,7 +93,6 @@
             borderUpColor: '#4caf50', wickDownColor: '#f44336', wickUpColor: '#4caf50',
         });
 
-        // --- TOOLTIP IMPLEMENTATION ---
         chart.subscribeCrosshairMove(param => {
             if (param.point === undefined || !param.time || param.point.x < 0 || param.point.x > container.clientWidth) {
                 tooltip.style.display = 'none';
@@ -107,14 +102,8 @@
                     tooltip.style.display = 'block';
                     const isBullish = data.close >= data.open;
                     const color = isBullish ? '#4caf50' : '#f44336';
-                    // Force 24-hour format and clean date display
                     const dateStr = new Date(data.time * 1000).toLocaleString('en-GB', { 
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: '2-digit', 
-                        minute: '2-digit', 
-                        hour12: false  // This converts 12:00 AM to 00:00
+                        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false 
                     });
                     
                     tooltip.innerHTML = `
@@ -125,11 +114,8 @@
                         <div class="tooltip-row">Close: <span style="color: ${color}">${data.close.toFixed(4)}</span></div>
                     `;
 
-                    // Smart Tooltip Positioning
                     let left = param.point.x + 15;
-                    if (left > container.clientWidth - 170) {
-                        left = param.point.x - 175;
-                    }
+                    if (left > container.clientWidth - 170) left = param.point.x - 175;
                     tooltip.style.left = left + 'px';
                     tooltip.style.top = (param.point.y + 15) + 'px';
                 }
@@ -144,16 +130,9 @@
 
         function checkIfChartFull() {
             if (isFetching || masterData.length === 0 || !hasMoreHistory) return;
-
             const timeScale = chart.timeScale();
-            const visibleRange = timeScale.getVisibleRange(); // Fixed method name
-            
-            if (!visibleRange) return;
-
-            // Trigger fetch if we are at the left edge
-            if (visibleRange.from <= masterData[0].time) {
-                paginateBack();
-            }
+            const visibleRange = timeScale.getVisibleRange();
+            if (visibleRange && visibleRange.from <= masterData[0].time) paginateBack();
         }
 
         chart.timeScale().subscribeVisibleLogicalRangeChange(() => {
@@ -162,7 +141,6 @@
 
         window.__callbackData = function(response) {
             const statusIndicator = document.getElementById('status-indicator');
-            
             if (response.result && Array.isArray(response.result) && response.result.length > 0) {
                 const incoming = response.result.map(row => ({
                     time: Math.floor(new Date(row.time).getTime() / 1000),
@@ -177,11 +155,7 @@
                 candleSeries.setData(masterData);
 
                 if (shouldResetZoomOnNextLoad) {
-                    const lastIdx = masterData.length - 1;
-                    chart.timeScale().setVisibleLogicalRange({
-                        from: lastIdx - 100, 
-                        to: lastIdx + 5      
-                    });
+                    chart.timeScale().fitContent(); // Initial reset to show all loaded data
                     shouldResetZoomOnNextLoad = false;
                 }
 
@@ -191,7 +165,6 @@
                 hasMoreHistory = false;
                 statusIndicator.innerText = `End of history reached (${masterData.length} candles)`;
             }
-
             isFetching = false;
             document.getElementById('loader').style.display = 'none';
         };
@@ -213,9 +186,17 @@
         };
 
         function resetAndLoad() {
+            // 1. Clear Data immediately
             masterData = [];
+            candleSeries.setData([]); 
+            
+            // 2. Reset Scale Flags
             hasMoreHistory = true; 
             shouldResetZoomOnNextLoad = true;
+            
+            // 3. Reset Y-Axis (Price Scale)
+            chart.priceScale('right').applyOptions({ autoScale: true });
+            
             const tf = document.getElementById('tfSelect').value;
             currentAfterDate = new Date(Date.now() - getTimeframeOffset(tf));
             currentUntilDate = null;
@@ -225,9 +206,8 @@
         function paginateBack() {
             if (isFetching || !hasMoreHistory) return;
             const tf = document.getElementById('tfSelect').value;
-            const offset = getTimeframeOffset(tf);
             currentUntilDate = new Date(currentAfterDate.getTime());
-            currentAfterDate = new Date(currentAfterDate.getTime() - offset);
+            currentAfterDate = new Date(currentAfterDate.getTime() - getTimeframeOffset(tf));
             loadData();
         }
 
@@ -235,15 +215,12 @@
             const sym = document.getElementById('symbolSelect').value;
             const tf = document.getElementById('tfSelect').value;
             if(!sym || !tf || isFetching) return;
-
             isFetching = true;
             document.getElementById('loader').style.display = 'flex';
-
             const afterStr = encodeURIComponent(formatServerDate(currentAfterDate));
             let url = `http://localhost:8000/ohlcv/1.0/select/${sym},${tf}/after/${afterStr}`;
             if (currentUntilDate) url += `/until/${encodeURIComponent(formatServerDate(currentUntilDate))}`;
             url += `/output/JSONP?order=asc&limit=1000&callback=__callbackData`;
-            
             const old = document.getElementById('jsonp-script');
             if (old) old.remove();
             const s = document.createElement('script');
