@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>OHLC Dashboard - Persistent Pagination</title>
+    <title>OHLC Dashboard - Historical Pagination</title>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <style>
         body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
@@ -70,9 +70,9 @@
         <label for="tfSelect">Timeframe:</label>
         <select id="tfSelect" onchange="resetAndLoad()"></select>
 
-        <button class="nav-btn" title="Load Previous" onclick="paginate(-1)"> < </button>
+        <button class="nav-btn" onclick="paginate(-1)"> < </button>
         <button onclick="resetAndLoad()">Today</button>
-        <button class="nav-btn" title="Load Forward" onclick="paginate(1)"> > </button>
+        <button class="nav-btn" onclick="paginate(1)"> > </button>
     </div>
     
     <div id="chart-container">
@@ -86,11 +86,10 @@
     <script>
         let symbolData = {}; 
         let currentAfterDate = new Date(); 
-        let currentUntilDate = null; 
-        let masterData = []; // Persistent storage for the chart data
+        let currentUntilDate = null; // Tracks the end-cap for back-pagination
 
         const options = {
-            series: [{ data: [] }],
+            series: [],
             chart: {
                 type: 'candlestick',
                 height: 600,
@@ -103,10 +102,7 @@
                 tickAmount: 10,
                 labels: { rotate: -45 }
             },
-            yaxis: { 
-                tooltip: { enabled: true },
-                labels: { formatter: (val) => val.toFixed(4) }
-            }
+            yaxis: { tooltip: { enabled: true } }
         };
 
         const chart = new ApexCharts(document.querySelector("#chart"), options);
@@ -135,46 +131,38 @@
         };
 
         window.__callbackData = function(response) {
+            const grouped = {};
             if (response.result) {
-                // Map API data to Apex format
-                const incoming = response.result.map(row => ({
-                    x: row.time, 
-                    y: [row.open, row.high, row.low, row.close]
-                }));
-
-                // Combine with existing data in memory
-                const combined = [...masterData, ...incoming];
-
-                // Remove duplicates by timestamp and sort chronologically
-                const uniqueMap = new Map();
-                combined.forEach(item => uniqueMap.set(item.x, item));
-                
-                masterData = Array.from(uniqueMap.values()).sort((a, b) => 
-                    new Date(a.x) - new Date(b.x)
-                );
-
-                const sym = document.getElementById('symbolSelect').value;
-                const tf = document.getElementById('tfSelect').value;
-                
-                // Set the range for title and axis
-                const first = masterData[0].x;
-                const last = masterData[masterData.length - 1].x;
-
-                chart.updateOptions({
-                    title: { text: `${sym} (${tf}) | View: ${first} to ${last}` },
-                    xaxis: {
-                        min: first,
-                        max: last,
-                        tickAmount: 10 // Restores the clean "every 10 labels" look
-                    }
+                response.result.forEach(row => {
+                    if (!grouped[row.symbol]) grouped[row.symbol] = [];
+                    grouped[row.symbol].push({
+                        x: row.time, 
+                        y: [row.open, row.high, row.low, row.close]
+                    });
                 });
-
-                chart.updateSeries([{ data: masterData }]).then(() => {
-                    toggleLoader(false);
-                });
-            } else {
-                toggleLoader(false);
             }
+
+            const seriesData = Object.keys(grouped).map(symbol => ({
+                name: symbol,
+                data: grouped[symbol]
+            }));
+
+            const sym = document.getElementById('symbolSelect').value;
+            const tf = document.getElementById('tfSelect').value;
+            
+            // Format title to show the active time window
+            let rangeText = `After: ${currentAfterDate.toLocaleString()}`;
+            if (currentUntilDate) {
+                rangeText += ` | Until: ${currentUntilDate.toLocaleString()}`;
+            }
+
+            chart.updateOptions({
+                title: { text: `${sym} (${tf}) - ${rangeText}` }
+            });
+
+            chart.updateSeries(seriesData).then(() => {
+                toggleLoader(false);
+            });
         };
 
         // --- Logic Functions ---
@@ -228,11 +216,10 @@
         }
 
         function resetAndLoad() {
-            masterData = []; // Reset storage when changing symbols/resetting
             const tf = document.getElementById('tfSelect').value;
             const offset = getTimeframeOffset(tf);
             currentAfterDate = new Date(Date.now() - offset);
-            currentUntilDate = null; 
+            currentUntilDate = null; // Clear constraints for fresh load
             loadData();
         }
 
@@ -241,12 +228,15 @@
             const offset = getTimeframeOffset(tf);
             
             if (direction < 0) {
-                // Prepend Logic: current start becomes the end cap
+                // Moving backward: 
+                // The current starting point becomes the upper 'until' limit
                 currentUntilDate = new Date(currentAfterDate.getTime());
+                // The new starting point moves further into the past
                 currentAfterDate = new Date(currentAfterDate.getTime() - offset);
             } else {
-                // Forward logic
+                // Moving forward:
                 currentAfterDate = new Date(currentAfterDate.getTime() + offset);
+                // If we move forward enough to hit "now", clear the until limit
                 if (currentAfterDate >= new Date(Date.now() - offset)) {
                     currentUntilDate = null;
                 } else if (currentUntilDate) {
@@ -262,8 +252,10 @@
             if(!symbol || !tf) return;
 
             const format = (date) => date.toISOString().replace('T', ' ').slice(0, 19);
+            
             const afterStr = encodeURIComponent(format(currentAfterDate));
             
+            // Build URL with conditional /until/ segment
             let url = `http://localhost:8000/ohlcv/1.0/select/${symbol},${tf}/after/${afterStr}`;
             
             if (currentUntilDate) {
