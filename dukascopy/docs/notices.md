@@ -18,6 +18,8 @@ You can now visually compare your data, example SGD:
 
 **Note:** I have been pushing out this really quickly because i need replay. There are several ways to optimize the performance of this piece. At the moment, it focuses on enablement. Performance is of later concern.
 
+**Note:** Performance is not bad but, in my world, it should be faster. Especially on 1m, 5m charts.
+
 
 ## Notice: New Year Update
 
