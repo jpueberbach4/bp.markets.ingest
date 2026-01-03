@@ -85,4 +85,4 @@ This approach leverages over 50 years of proven UNIX tooling while remaining fle
 
 etc...
 
-There is more. Ie stop, pause, resume a stream by it's id. Alter the speed during runtime. Logging to default files which then can be visualized through the HTTP API and dashboards. And so on. This is a preliminary document.
+There is more. Ie stop, pause, resume a stream by its id. Alter the speed during runtime. Logging to default files which then can be visualized through the HTTP API and dashboards. And so on. This is a preliminary document.
