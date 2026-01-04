@@ -89,6 +89,17 @@ In most backtesting frameworks, lookahead bias is a constant risk—it’s far t
 
 The Replay Subsystem eliminates this risk by moving away from "vectorized" backtesting and instead using a strictly chronological, boundary-aligned emission model.
 
+## What makes this replay different from others
+
+| Feature | Standard Replay | "This" Replay |
+| :--- | :--- | :--- |
+| **Emission Time** | Fixed (Start + Duration) | **Dynamic (Based on Session/Merge Logic)** |
+| **Lookahead Bias** | High Risk (Vectorized) | **Eliminated (Boundary-Aligned)** |
+| **Alignment** | Round numbers (1H, 4H) | **Anomalous (6h10m, HH:51, HH:10)** |
+| **State** | Stateless | **Context-Aware (Date/Weekday specific)** |
+
+The complexity lies in the fact that we aren't just replaying time; we are replaying state transitions.
+
 ## Ideas
 
 - When replaying, display replayed charts with a layover indicating current positions on charts
