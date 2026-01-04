@@ -100,6 +100,8 @@ The Replay Subsystem eliminates this risk by moving away from "vectorized" backt
 
 The complexity lies in the fact that we aren't just replaying time; we are replaying state transitions.
 
+There are multiple approaches to this problem. We can extend ETL to keep a record of "state" or we try to rebuild the state from the candles themselves using the configuration. We will first have a go at the second option. Will be "interesting".
+
 ## Ideas
 
 - When replaying, display replayed charts with a layover indicating current positions on charts
@@ -107,6 +109,8 @@ The complexity lies in the fact that we aren't just replaying time; we are repla
 - When replaying, use STDERR to indicate progress while STDOUT for main pipeline comms
 
 - Support --pause, --resume, --restart, --stop, --speed with id to alter runtime state
+
+- "Job"-files
 
 - Visualization through a dashboard, leveraging HTTP API extensions
 
