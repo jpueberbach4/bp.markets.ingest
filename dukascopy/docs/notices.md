@@ -4,7 +4,7 @@
 
 The data portion is now (fairly) complete. Naturally, some QA issues remain, particularly in the builder component, which will be addressed over time. Ensuring optimal QA for the ETL process takes priority over the extraction utility itself.
 
-[Replay](../replay/placeholder.md) is next but expect this development to take a week, more or less-for a beta version. This is as complex as ETL.
+[Replay](../replay/placeholder.md) is next but expect this development to take a week, more or less-for a beta version. This is as complex as ETL. This is, for me, the holy grail.
 
 ## Notice: Bugfixes - 2025-01-04
 
