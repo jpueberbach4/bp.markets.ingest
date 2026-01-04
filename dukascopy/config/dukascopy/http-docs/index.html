@@ -224,18 +224,20 @@
             if (isFetching || !hasMoreHistory) return;
             const tf = document.getElementById('tfSelect').value;
             
+            let referenceTime;
             if (masterData.length > 0) {
-                currentUntilDate = new Date(masterData[0].time * 1000);
+                referenceTime = masterData[0].time;
             } else {
-                currentUntilDate = new Date(currentAfterDate.getTime());
+                referenceTime = Math.floor(currentAfterDate.getTime() / 1000);
             }
+
+            currentUntilDate = new Date((referenceTime - 1) * 1000);
 
             const baseOffset = getTimeframeOffset(tf);
             const jumpSize = baseOffset * (gapRetryCount + 1); 
             
             currentAfterDate = new Date(currentUntilDate.getTime() - jumpSize);
             
-            console.log(`Searching back: ${currentAfterDate.toISOString()} to ${currentUntilDate.toISOString()}`);
             loadData();
         }
 
