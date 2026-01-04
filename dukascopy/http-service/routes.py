@@ -370,7 +370,7 @@ def generate_sql(options):
         select_sql = f"""
             SELECT {select_columns}
             FROM (
-                {' UNION ALL '.join(select_sql_array)}
+                {''.join(select_sql_array)}
             )
             ORDER BY date, time 
             LIMIT {limit} OFFSET {offset};
