@@ -114,6 +114,8 @@ until/2025-12-22+13:59:59/output/CSV
 
 **Note:** Modifier `panama` is unsupported via the API.
 
+**Note:** API is limited to a limit of 1440 records. Perform multiple calls for bigger sets, use after/until.
+
 For an example on how to use this API for chart generation, [see here](../config/dukascopy/http-docs/index.html).
 
 ## Output format
