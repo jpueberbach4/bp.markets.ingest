@@ -1,19 +1,8 @@
 ## Notes and Future Work
 
 >HTTP API for OHLC retrieval (0.6)
-```sh
-scratchpad:
-# Mapping CLI-alike behavior to HTTP. We will only support 127.0.0.1 (legal-boundary). No CORS *. It's for EA purposes.
-http://localhost:port/api/v1/ohlc/select/SYMBOL,TF1,TF2:skiplast/select/SYMBOL,TF1/after/2025-01-01+00:00:00/output/CSV/MT4
-# will be better than this. 
 
-# Health endpoint
-http://localhost:port/healtz
-# Metrics endpoint (performance, total bytes, number of requests, response times etc)
-http://localhost:port/metrics
-
-Or something similar. Need to check industry standards (best UX/elegancy).
-```
+First version is implemented [see here](http.md)
 
 >Replay functionality (0.7)
 
