@@ -68,7 +68,7 @@ Used for windowing and wrapping responses.
 | :--- | :--- | :--- | :--- |
 | `offset` | `integer` | `0` | Number of records to skip. |
 | `limit` | `integer` | `100` | Maximum number of records to return. |
-| `callback` | `string` | `None` | **Required if output is JSONP.** Function name for the wrapper. |
+| `callback` | `string` | `__bp_callback` | **Use with JSONP.** Function name for the wrapper. |
 
 ---
 
