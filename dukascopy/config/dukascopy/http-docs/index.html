@@ -263,14 +263,19 @@
         window.__callbackList = function(response) {
             if (response.status === "ok") {
                 symbolData = response.result;
+
+                const symbols = Object.keys(symbolData).sort();
                 const sel = document.getElementById('symbolSelect');
                 sel.innerHTML = "";
-                Object.keys(symbolData).sort().forEach(s => {
+                symbols.sort().forEach(s => {
                     const opt = document.createElement('option');
                     opt.value = s; opt.innerHTML = s;
                     sel.appendChild(opt);
                 });
-                sel.value = "EUR-USD";
+
+                if (symbols.length > 0) {
+                    sel.value = symbols[0];
+                }
                 updateTimeframeOptions();
                 resetAndLoad();
             }
