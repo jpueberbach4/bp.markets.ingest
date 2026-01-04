@@ -19,6 +19,8 @@
 - [Quick Check](#quick-check)
 - [Parquet converter](docs/tools.md#parquetcsv-export-v04-and-above)
   - Details on CSV->Parquet conversion
+- [HTTP API service](docs/http.md)
+  - Details on HTTP API
 - [Performance Benchmarks](docs/benchmarks.md#performance-benchmarks)
   - Cold Run (Full History)
   - Incremental Daily Update
