@@ -108,9 +108,11 @@ GET /ohlcv/1.0/list/output/JSON
 **Extensive example:**
 ```sh
 GET http://localhost:8000/ohlcv/1.0/select/AAPL.US-USD,1h/ \
-select/EUR-USD,1h/after/2025.11.22,13:59:59/ \
+select/EUR-USD,1h:skiplast/after/2025.11.22,13:59:59/ \
 until/2025-12-22+13:59:59/output/CSV
 ```
+
+**Note:** Modifier `panama` is unsupported via the API.
 
 For an example on how to use this API for chart generation, [see here](../config/dukascopy/http-docs/index.html).
 
