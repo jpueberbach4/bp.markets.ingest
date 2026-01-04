@@ -89,8 +89,18 @@ In most backtesting frameworks, lookahead bias is a constant risk—it’s far t
 
 The Replay Subsystem eliminates this risk by moving away from "vectorized" backtesting and instead using a strictly chronological, boundary-aligned emission model.
 
-etc...
+## Ideas
 
-There is more. Ie stop, pause, resume a stream by its id. Alter the speed during runtime. Logging to default files which then can be visualized through the HTTP API and dashboards. And so on. This is a preliminary document.
+- When replaying, display replayed charts with a layover indicating current positions on charts
 
-Backtesting without Lookahead Bias
+- When replaying, use STDERR to indicate progress while STDOUT for main pipeline comms
+
+- Support --pause, --resume, --restart, --stop, --speed with id to alter runtime state
+
+- Visualization through a dashboard, leveraging HTTP API extensions
+
+- Concrete examples eg using AWK for indicator calculations
+
+- Code examples
+
+- Extensive basic set of plugins
