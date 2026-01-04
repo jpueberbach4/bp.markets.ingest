@@ -91,7 +91,7 @@ When `output/JSONP` is specified, the response is wrapped in the function name p
 
 **Standard JSONP Request:**
 ```sh
-GET /ohlcv/1.0/select/AAPL.US-USD%2C1h/after/2025.11.22/until/2025.12.22/output/JSONP? \  callback=my_handler&limit=5
+GET /ohlcv/1.0/select/AAPL.US-USD%2C1h/after/2025.11.22/until/2025.12.22/output/JSONP? \ callback=my_handler&limit=5
 ```
 
 **MT4 CSV Export:**
