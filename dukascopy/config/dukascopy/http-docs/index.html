@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>OHLC - Pro Tooltips & Intelligent Scroll</title>
+    <title>OHLC Charts - Version 1.0</title>
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
@@ -66,12 +66,11 @@
         let shouldResetZoomOnNextLoad = false;
         let hasMoreHistory = true;
         let gapRetryCount = 0; 
+        const maxSearches = 10;
 
         const container = document.getElementById('chart-container');
         const tooltip = document.getElementById('tooltip');
         const chartElement = document.getElementById('chart');
-
-        const maxSearches = 10
 
         const chart = LightweightCharts.createChart(chartElement, {
             width: chartElement.clientWidth,
@@ -95,6 +94,131 @@
             upColor: '#4caf50', downColor: '#f44336', borderDownColor: '#f44336',
             borderUpColor: '#4caf50', wickDownColor: '#f44336', wickUpColor: '#4caf50',
         });
+
+        function formatUnixToLiteral(unix) {
+            const d = new Date(unix * 1000);
+            const pad = (n) => n.toString().padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        }
+
+        function parseLiteralToUnix(dateStr) {
+            const parts = dateStr.split(/[- :]/);
+            const d = new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
+            return Math.floor(d.getTime() / 1000);
+        }
+
+        function resetAndLoad() {
+            masterData = [];
+            candleSeries.setData([]); 
+            hasMoreHistory = true; 
+            gapRetryCount = 0;
+            shouldResetZoomOnNextLoad = true;
+
+            chart.priceScale('right').applyOptions({ autoScale: true });
+
+            const tf = document.getElementById('tfSelect').value;
+            currentUntilDate = null; 
+            
+            const initialOffset = getTimeframeOffset(tf) / 2;
+            currentAfterDate = new Date(Date.now() - initialOffset);
+            
+            loadData();
+        }
+
+        function paginateBack() {
+            if (isFetching || !hasMoreHistory || masterData.length === 0) return;
+            const tf = document.getElementById('tfSelect').value;
+            
+            const referenceTime = masterData[0].time;
+            
+            const untilUnix = referenceTime - 1;
+            currentUntilDate = new Date(untilUnix * 1000);
+
+            const baseOffset = getTimeframeOffset(tf);
+            const jumpSize = baseOffset * (gapRetryCount + 1); 
+            
+            const afterUnix = untilUnix - (jumpSize / 1000);
+            currentAfterDate = new Date(afterUnix * 1000);
+            
+            loadData();
+        }
+
+        function loadData() {
+            const sym = document.getElementById('symbolSelect').value;
+            const tf = document.getElementById('tfSelect').value;
+            if(!sym || !tf || isFetching) return;
+            isFetching = true;
+            document.getElementById('loader').style.display = 'flex';
+            
+            const afterStr = (formatUnixToLiteral(Math.floor(currentAfterDate.getTime() / 1000)));
+            let url = `http://localhost:8000/ohlcv/1.0/select/${sym},${tf}/after/${afterStr}`;
+            
+            if (currentUntilDate) {
+                const untilStr = (formatUnixToLiteral(Math.floor(currentUntilDate.getTime() / 1000)));
+                url += `/until/${untilStr}`;
+            }
+            
+            url += `/output/JSONP?order=asc&limit=1440&callback=__callbackData`;
+            
+            const old = document.getElementById('jsonp-script');
+            if (old) old.remove();
+            const s = document.createElement('script');
+            s.id = 'jsonp-script'; s.src = url;
+            document.body.appendChild(s);
+        }
+
+        window.__callbackData = function(response) {
+            const statusIndicator = document.getElementById('status-indicator');
+            
+            if (response.result && Array.isArray(response.result) && response.result.length > 0) {
+                gapRetryCount = 0; 
+                const incoming = response.result.map(row => ({
+                    time: parseLiteralToUnix(row.time),
+                    open: row.open, high: row.high, low: row.low, close: row.close
+                }));
+
+                const combined = [...masterData, ...incoming];
+                const uniqueMap = new Map();
+                combined.forEach(item => { if(item.time) uniqueMap.set(item.time, item); });
+                
+                masterData = Array.from(uniqueMap.values()).sort((a, b) => a.time - b.time);
+                candleSeries.setData(masterData);
+
+                if (shouldResetZoomOnNextLoad) {
+                    chart.timeScale().fitContent();
+                    shouldResetZoomOnNextLoad = false;
+                }
+
+                statusIndicator.innerText = `Loaded: ${masterData.length} candles`;
+                setTimeout(checkIfChartFull, 200); 
+                isFetching = false;
+                document.getElementById('loader').style.display = 'none';
+
+            } else {
+                if (gapRetryCount < maxSearches) {
+                    gapRetryCount++;
+                    statusIndicator.innerText = `Searching history... (Attempt ${gapRetryCount}/${maxSearches})`;
+                    
+                    isFetching = false; 
+                    
+                    if (masterData.length === 0) {
+                        const tf = document.getElementById('tfSelect').value;
+                        const baseOffset = getTimeframeOffset(tf);
+                        
+                        currentUntilDate = new Date(currentAfterDate.getTime() - 1000);
+                        currentAfterDate = new Date(currentUntilDate.getTime() - baseOffset);
+                        loadData();
+                    } else {
+                        paginateBack(); 
+                    }
+                } else {
+                    hasMoreHistory = false;
+                    statusIndicator.innerText = `End of history reached (${masterData.length} candles)`;
+                    isFetching = false;
+                    document.getElementById('loader').style.display = 'none';
+                }
+            }
+        };
 
         chart.subscribeCrosshairMove(param => {
             if (param.point === undefined || !param.time || param.point.x < 0 || param.point.x > container.clientWidth) {
@@ -136,46 +260,6 @@
             requestAnimationFrame(checkIfChartFull);
         });
 
-        window.__callbackData = function(response) {
-            const statusIndicator = document.getElementById('status-indicator');
-            if (response.result && Array.isArray(response.result) && response.result.length > 0) {
-                gapRetryCount = 0; 
-                const incoming = response.result.map(row => ({
-                    time: Math.floor(new Date(row.time).getTime() / 1000),
-                    open: row.open, high: row.high, low: row.low, close: row.close
-                }));
-
-                const combined = [...masterData, ...incoming];
-                const uniqueMap = new Map();
-                combined.forEach(item => { if(item.time) uniqueMap.set(item.time, item); });
-                
-                masterData = Array.from(uniqueMap.values()).sort((a, b) => a.time - b.time);
-                candleSeries.setData(masterData);
-
-                if (shouldResetZoomOnNextLoad) {
-                    chart.timeScale().fitContent();
-                    shouldResetZoomOnNextLoad = false;
-                }
-
-                statusIndicator.innerText = `Loaded: ${masterData.length} candles`;
-                setTimeout(checkIfChartFull, 200); 
-                isFetching = false;
-                document.getElementById('loader').style.display = 'none';
-            } else {
-                if (gapRetryCount < maxSearches) {
-                    gapRetryCount++;
-                    statusIndicator.innerText = `Searching history... (Attempt ${gapRetryCount}/${maxSearches})`;
-                    isFetching = false; 
-                    paginateBack(); 
-                } else {
-                    hasMoreHistory = false;
-                    statusIndicator.innerText = `End of history reached (${masterData.length} candles)`;
-                    isFetching = false;
-                    document.getElementById('loader').style.display = 'none';
-                }
-            }
-        };
-
         window.__callbackList = function(response) {
             if (response.status === "ok") {
                 symbolData = response.result;
@@ -191,78 +275,6 @@
                 resetAndLoad();
             }
         };
-
-        function formatServerDate(date) {
-            if (!date) return "";
-            const pad = (n) => n.toString().padStart(2, '0');
-            return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ` +
-                   `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
-        }
-
-        function resetAndLoad() {
-            masterData = [];
-            candleSeries.setData([]); 
-            hasMoreHistory = true; 
-            gapRetryCount = 0;
-            shouldResetZoomOnNextLoad = true;
-
-            chart.priceScale('right').applyOptions({
-                autoScale: true,
-            });
-
-            const tf = document.getElementById('tfSelect').value;
-            
-            currentUntilDate = null; 
-            
-            const initialOffset = getTimeframeOffset(tf) / 2;
-            currentAfterDate = new Date(Date.now() - initialOffset);
-            
-            loadData();
-        }
-
-        function paginateBack() {
-            if (isFetching || !hasMoreHistory) return;
-            const tf = document.getElementById('tfSelect').value;
-            
-            let referenceTime;
-            if (masterData.length > 0) {
-                referenceTime = masterData[0].time;
-            } else {
-                referenceTime = Math.floor(currentAfterDate.getTime() / 1000);
-            }
-
-            currentUntilDate = new Date((referenceTime - 1) * 1000);
-
-            const baseOffset = getTimeframeOffset(tf);
-            const jumpSize = baseOffset * (gapRetryCount + 1); 
-            
-            currentAfterDate = new Date(currentUntilDate.getTime() - jumpSize);
-            
-            loadData();
-        }
-
-        function loadData() {
-            const sym = document.getElementById('symbolSelect').value;
-            const tf = document.getElementById('tfSelect').value;
-            if(!sym || !tf || isFetching) return;
-            isFetching = true;
-            document.getElementById('loader').style.display = 'flex';
-            
-            const afterStr = encodeURIComponent(formatServerDate(currentAfterDate));
-            let url = `http://localhost:8000/ohlcv/1.0/select/${sym},${tf}/after/${afterStr}`;
-            
-            if (currentUntilDate) {
-                url += `/until/${encodeURIComponent(formatServerDate(currentUntilDate))}`;
-            }
-            
-            url += `/output/JSONP?order=asc&limit=1440&callback=__callbackData`;
-            
-            const old = document.getElementById('jsonp-script');
-            if (old) old.remove();
-            const s = document.createElement('script');
-            s.id = 'jsonp-script'; s.src = url;
-            document.body.appendChild(s);
-        }
 
         function updateTimeframeOptions() {
             const sym = document.getElementById('symbolSelect').value;
@@ -296,9 +308,9 @@
             }
         }
 
-        const s = document.createElement('script');
-        s.src = "http://localhost:8000/ohlcv/1.0/list/output/JSONP?callback=__callbackList";
-        document.body.appendChild(s);
+        const sList = document.createElement('script');
+        sList.src = "http://localhost:8000/ohlcv/1.0/list/output/JSONP?callback=__callbackList";
+        document.body.appendChild(sList);
 
         window.addEventListener('resize', () => {
             chart.applyOptions({ width: chartElement.clientWidth });
