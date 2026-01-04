@@ -10,6 +10,8 @@ All of this previous work was done for this replay functionality. I am missing s
 
 The C++ edition is the real-time version. The python version is limited by CSV and string parsing. If you profile this resampler you will notice that more than 80 percent of performance goes to read_csv and to_csv. So we are capped by the underlying storage format. However, this pipeline was always focussed on "the revelation" and complete transparency, human-inspectability. For python and CSV we are near-optimal performance.
 
+Why not switch to a binary format for the python edition? Since there is tooling to convert to Parquet/CSV? I think, if we go binary, we should go "all the way", including eliminating the python GIL altogether. Hence 100% C++. C++ gives full control of everything. 
+
 ## Notice: Bugfixes - 2025-01-04
 
 Several bugs were fixed today—some from the to-do list, and others discovered during integration testing and manual verification.
