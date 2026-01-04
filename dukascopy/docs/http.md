@@ -116,6 +116,8 @@ until/2025-12-22+13:59:59/output/CSV
 
 **Note:** API is limited to a limit of 1440 records. Perform multiple calls for bigger sets, use after/until.
 
+**Note:** No rate-limits on this one ;)
+
 ## Standard HTML support
 
 Below the root of the endpoint you can servce your own HTML/JS/CSS documents. You should put these documents below the root configured in `config.user.yaml`. Default this location is `config/dukascopy/http-docs`.
