@@ -9,7 +9,7 @@ See [Tests](tests.md)
 ## Open issues / To do list
 
 **P1 (Critical):**
-- Custom shifting for ASX 2020 anomaly (blocks March 2026 DST transition)
+- Custom shifting for ASX 2020 anomaly
 - Custom shifting for leap-year DST lag (affects 2020,2024,2028,etc)
 - Replay functionality
 
