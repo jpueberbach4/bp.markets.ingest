@@ -8,20 +8,21 @@ See [Tests](tests.md)
 
 ## Open issues / To do list
 
-- Support MT4 flag on HTTP API for "best MT4 EA integration experience"
-- Support for getting a MIN-MAX date-range for a symbol on HTTP API
-- Performance 1m charts-not bad but can be improved (a lot)
-- Custom shifting in transform to support the ASX 2020 anomaly [See here](forensics/ASX.MD).
-- Custom shifting in transform to support the DST-switch lag on leap-years.
+**P1 (Critical):**
+- Custom shifting for ASX 2020 anomaly (blocks March 2026 DST transition)
+- Custom shifting for leap-year DST lag (affects 2020,2024,2028,etc)
 - Replay functionality
-- Beyond compare configuration checks on commodities
+
+**P2 (Important):**
+- MT4 flag on HTTP API
+- MIN-MAX date-range API
+
+**P3 (Nice-to-have):**
+- Performance improvements
+
+**P4 (Architectural):**
+- General QA improvements
+- IO Layer abstraction
+- Librarization
 
 This is still in an MVP state. Although working very well. It's an MVP.
-
-- General QA: wrapping builder components in classes
-- General QA: wrapping http-service components in classes
-- General QA: abstraction of IO layer for resample
-- General QA: "librarization" of code
-
-But these things will be done after all bugfixes and after the primary functionalities are done.
-
