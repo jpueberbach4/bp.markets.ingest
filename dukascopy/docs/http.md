@@ -39,6 +39,8 @@ Or, if using default configuration, ```./setup-dukascopy.sh```.
 ./service.sh stop
 ```
 
+After starting service, open a browser and type ```http://localhost:8000/``` (change port if you change port in config.user.yaml).
+
 ## API Reference: OHLCV Endpoint
 
 The API uses a path-based Domain Specific Language (DSL) for primary filtering, followed by standard query parameters for pagination and cross-origin requests.
