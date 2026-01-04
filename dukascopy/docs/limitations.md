@@ -15,6 +15,7 @@ See [Tests](tests.md)
 
 **P2 (Important):**
 - MIN-MAX date-range API
+- Stock split support
 
 **P3 (Nice-to-have):**
 - Performance improvements
