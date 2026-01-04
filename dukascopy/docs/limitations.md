@@ -19,7 +19,7 @@ See [Tests](tests.md)
 
 **P3 (Nice-to-have):**
 - Performance improvements
-- Track a life-backadjusted 1m base-including resampling- in a seperate directory (configurable)
+- Track a live-backadjusted 1m base-including resampling- in a seperate directory (configurable)
 
 **P4 (Architectural):**
 - General QA improvements
