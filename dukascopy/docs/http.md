@@ -111,9 +111,9 @@ until/2025-12-22+13:59:59/output/CSV
 
 For an example on how to use this API for chart generation, [see here](../config/dukascopy/http-docs/index.html).
 
-## Output formats 
+## Output format
 
-Example output for above example URL
+Example output for JSON URL
 
 ```json
 {
@@ -153,6 +153,33 @@ Example output for above example URL
       "volume": 3675.22
     }
   ]
+}
+```
+
+## Example Error output - Always JSON, statuscode 400
+
+```json
+{
+  "status": "failure",
+  "exception": "MT4 flag requires output/CSV",
+  "options": {
+    "select_data": [
+      [
+        "AAPL.US-USD",
+        "1h",
+        "/home/jpueberb/repos2/bp.markets.ingest/dukascopy/data/resample/1h/AAPL.US-USD.csv",
+        []
+      ]
+    ],
+    "after": "2025-11-22 13:59:59",
+    "until": "2025-12-22 13:59:59",
+    "output_type": "JSON",
+    "mt4": true,
+    "limit": 1440,
+    "offset": 0,
+    "order": "asc",
+    "callback": "__bp_callback"
+  }
 }
 ```
 
