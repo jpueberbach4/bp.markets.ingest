@@ -6,6 +6,10 @@ The data portion is now (fairly) complete. Naturally, some QA issues remain, par
 
 [Replay](../replay/placeholder.md) is next but expect this development to take a week, more or less-for a beta version. This is as complex as ETL. This is, for me, the holy grail. What makes it complex? Eg those 6h10m candles. The Replay engine can't just look at the timeframe label (4H). It has to look at the actual content of the candle or the session rules that created it.
 
+All of this previous work was done for this replay functionality. I am missing something in my "trading experience" and THIS solves it beautifully.
+
+The C++ edition is the real-time version.
+
 ## Notice: Bugfixes - 2025-01-04
 
 Several bugs were fixed today—some from the to-do list, and others discovered during integration testing and manual verification.
