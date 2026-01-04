@@ -102,6 +102,8 @@ The complexity lies in the fact that we aren't just replaying time; we are repla
 
 There are multiple approaches to this problem. We can extend ETL to keep a record of "state" or we try to rebuild the state from the candles themselves using the configuration. We will first have a go at the second option. Will be "interesting".
 
+State is a function of (timestamp, symbol, timeframe, config). If we can make that function deterministic and efficient, we'll have a truly unique and powerful replay system.
+
 ## Ideas
 
 - When replaying, display replayed charts with a layover indicating current positions on charts

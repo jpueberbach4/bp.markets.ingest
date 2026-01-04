@@ -183,7 +183,7 @@
                     high: row.high, 
                     low: row.low, 
                     close: row.close,
-                    volume: row.volume  // Storing volume in master data
+                    volume: row.volume
                 }));
 
                 const combined = [...masterData, ...incoming];
@@ -240,7 +240,6 @@
                         day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false 
                     });
                     
-                    // FIX: Manual lookup in masterData to prevent the library from stripping the volume
                     const fullData = masterData.find(d => d.time === data.time);
                     const volValue = (fullData && fullData.volume !== undefined) ? fullData.volume.toLocaleString() : "N/A";
 
