@@ -1,4 +1,4 @@
-# HTTP-Service (v0.6) - BETA
+# HTTP-Service (v0.6)
 
 This directory implements the HTTP-service feature for version 0.6.
 
@@ -6,14 +6,11 @@ This directory implements the HTTP-service feature for version 0.6.
 
 - Expose CLI-like behavior over HTTP
 - Support queries from Expert Advisors
-- MT4/MT5 compatibility
-- Additional features to be added iteratively for seamless integration
-- Metrics endpoint running in a separate thread
-- Health endpoint running in a separate thread
+- MT4 compatibility
+- Health endpoint
 - Basic HTML support for dashboards or minimal personalization
 - Only listens on 127.0.0.1 (localhost)
 - Configuration via central YAML config
-- Design and API specification will be published
 
 ## Prerequisites
 
@@ -30,9 +27,6 @@ A block in the ```config.user.yaml``` needs to get added
 http:
   docs: config/dukascopy/http-docs    # Directory where HTML docs will live
   listen: ":8000"                     # Listen to this port
-  limits:
-    max_page: 1000                    # Maximum number of pages to support
-    max_per_page: 1000                # Maximum number of rows per page
 ```
 
 Or, if using default configuration, ```./setup-dukascopy.sh```.
