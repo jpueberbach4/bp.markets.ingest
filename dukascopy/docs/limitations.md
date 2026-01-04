@@ -10,7 +10,7 @@ See [Tests](tests.md)
 
 **P1 (Critical):**
 - Custom shifting for ASX 2020 anomaly
-- Custom shifting for leap-year DST lag (affects 2020,2024,2028,etc)
+- Custom shifting for one-week-leap-year DST lag (affects Nov 2020,2024,2028,etc)
 - Replay functionality
 
 **P2 (Important):**
