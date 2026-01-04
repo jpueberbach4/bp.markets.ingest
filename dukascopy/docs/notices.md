@@ -8,7 +8,7 @@ The data portion is now (fairly) complete. Naturally, some QA issues remain, par
 
 All of this previous work was done for this replay functionality. I am missing something in my "trading experience" and THIS solves it beautifully.
 
-The C++ edition is the real-time version.
+The C++ edition is the real-time version. The python version is limited by CSV and string parsing. If you profile this resampler you will notice that more than 80 percent of performance goes to read_csv and to_csv.
 
 ## Notice: Bugfixes - 2025-01-04
 
