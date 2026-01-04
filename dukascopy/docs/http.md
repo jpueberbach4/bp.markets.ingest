@@ -39,45 +39,77 @@ Or, if using default configuration, ```./setup-dukascopy.sh```.
 ./service.sh stop
 ```
 
-## URI definition
+## API Reference: OHLCV Endpoint
 
-While not necessarily optimal, this approach provides full compatibility with the builder’s select options. By mirroring the builder syntax exactly, the API remains intuitive and easy to learn: if you know the builder syntax, you already know the URI syntax, and vice versa.
+The API uses a path-based Domain Specific Language (DSL) for primary filtering, followed by standard query parameters for pagination and cross-origin requests.
 
+### Base URL
+`http://localhost:8000/ohlcv/1.0/`
+
+---
+
+### Path Parameters (Positional DSL)
+
+Timestamps are flexible and will be normalized to `YYYY-MM-DD HH:MM:SS`.
+
+| Segment | Component | Description | Example |
+| :--- | :--- | :--- | :--- |
+| `select` | `{symbol},{tf}` | **Required.** Asset symbol and timeframe (comma-separated). | `AAPL.US-USD,1h` |
+| `after` | `{timestamp}` | Inclusive start time. Supports `.` or `-` and `,` or ` `. | `2025.11.22,13:59:59` |
+| `until` | `{timestamp}` | Exclusive end time. Supports same flexible formatting. | `2025-12-22 13:59:59` |
+| `output` | `{format}` | Data format: `CSV`, `JSON`, or `JSONP`. | `JSONP` |
+| `MT4` | *Optional* | Flag for MetaTrader 4 formatting (only valid with `output/CSV`). | `MT4` |
+
+### Query Parameters
+
+Used for windowing and wrapping responses.
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `offset` | `integer` | `0` | Number of records to skip. |
+| `limit` | `integer` | `100` | Maximum number of records to return. |
+| `callback` | `string` | `None` | **Required if output is JSONP.** Function name for the wrapper. |
+
+---
+
+### Normalization & Formats
+
+#### Timestamp Normalization
+The parser automatically cleans delimiters to ensure ISO-8601 compatibility:
+* `2025.11.22,13:59:59` → `2025-11-22 13:59:59`
+* `2025.11.22 13:59:59` → `2025-11-22 13:59:59`
+
+#### JSONP Usage
+When `output/JSONP` is specified, the response is wrapped in the function name provided by the `callback` query parameter.
+* **Format:** `callback_name({...data...})`
+
+---
+
+### Example Requests
+
+**Standard JSONP Request:**
 ```sh
-http://localhost:8000/ohlcv/1.0/select/AUD-USD:test,1h,4h/after/2025-01-01+00:00:00 \
-output/JSON?order=asc&limit=3
+GET /ohlcv/1.0/select/AAPL.US-USD%2C1h/after/2025.11.22/until/2025.12.22/output/JSONP? \ callback=my_handler&limit=5
 ```
 
-Outputs can be:
-
-- JSON \
-  Simple JSON records
-- JSONP \
-  Simple JSON records wrapped with a callback method
-- CSV \
-  Pure CSV text
-
-If you want JSONP with a callback, example:
-
+**MT4 CSV Export:**
 ```sh
-http://localhost:8000/ohlcv/1.0/select/AUD-USD,1h,4h/select/EUR-USD,1h/after/2025-01-01+00:00:00 \
-/output/JSONP?order=asc&limit=3&callback=__my_callback
+GET /ohlcv/1.0/select/EURUSD,1h/after/2025.01.01/output/CSV/MT4
 ```
 
-Another example
-
+**List request:**
 ```sh
-http://localhost:8000/ohlcv/1.0/select/AUD-USD,1h/select/EUR-USD,1h/after/2025-12-01+00:00:00 \
-/output/JSON?order=desc&limit=50&offset=0
+GET /ohlcv/1.0/list/output/JSON
 ```
 
-Another example
-
+**Extensive example:**
 ```sh
-http://localhost:8000/ohlcv/1.0/list/output/JSON
+GET http://localhost:8000/ohlcv/1.0/select/AAPL.US-USD,1h/ \
+select/EUR-USD,1h/after/2025.11.22,13:59:59/ \
+until/2025-12-22+13:59:59/output/CSV
 ```
 
-**Note:** parameter names and values like JSON, JSONP and CSV are case-sensitive.
+For an example on how to use this API for chart generation, [see here](../config/dukascopy/http-docs/index.html).
 
 ## Output formats 
 
@@ -124,4 +156,3 @@ Example output for above example URL
 }
 ```
 
-More information will be added soon

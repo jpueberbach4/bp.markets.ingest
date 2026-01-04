@@ -16,6 +16,8 @@ Several bugs were fixed today—some from the to-do list, and others discovered 
 
 - Medium: HTTP-docs were not "truly offline capable". Localized the JS files.
 
+- Low: MT4 support has been added, [see here](http.md).
+
 As always: 
 
 ```sh

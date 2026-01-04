@@ -14,7 +14,6 @@ See [Tests](tests.md)
 - Replay functionality
 
 **P2 (Important):**
-- MT4 flag on HTTP API
 - MIN-MAX date-range API
 
 **P3 (Nice-to-have):**

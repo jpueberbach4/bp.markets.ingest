@@ -40,6 +40,14 @@
 from typing import Dict, Any
 from urllib.parse import unquote_plus
 
+def normalize_timestamp(ts: str) -> str:
+    if not ts:
+        return ts
+    # Replace dots with dashes: 2025.12.22 -> 2025-12-22
+    # Replace commas with spaces: 2025.12.22,13:59 -> 2025.12.22 13:59
+    normalized = ts.replace(".", "-").replace(",", " ")
+    return normalized
+
 def parse_uri(uri: str) -> Dict[str, Any]:
     """Parse a path-based OHLCV query URI into structured query options.
 
@@ -85,8 +93,7 @@ def parse_uri(uri: str) -> Dict[str, Any]:
         "after": "1970-01-01 00:00:00",
         "until": "3000-01-01 00:00:00",
         "output_type": None,
-        "mt4": None,
-        "options": [],
+        "mt4": None
     }
 
     # Iterate over path segments sequentially
@@ -109,19 +116,19 @@ def parse_uri(uri: str) -> Dict[str, Any]:
         # Handle lower time bound
         elif part == "after":
             quoted_val = next(it, None)
-            result["after"] = unquote_plus(quoted_val) if quoted_val else None
+            result["after"] = normalize_timestamp(unquote_plus(quoted_val)) if quoted_val else None
 
         # Handle upper time bound
         elif part == "until":
             quoted_val = next(it, None)
-            result["until"] = unquote_plus(quoted_val) if quoted_val else None
+            result["until"] = normalize_timestamp(unquote_plus(quoted_val)) if quoted_val else None
 
         # Handle output format and optional MT4 flag
         elif part == "output":
             quoted_val = next(it, None)
             result["output_type"] = unquote_plus(quoted_val) if quoted_val else None
 
-            quoted_val = next(it, None)
-            result["mt4"] = True if quoted_val else None
+        elif part == "MT4":
+            result["mt4"] = True
 
     return result

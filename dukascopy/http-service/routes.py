@@ -55,6 +55,8 @@ import duckdb
 import orjson
 
 CSV_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
+CSV_TIMESTAMP_FORMAT_MT4_DATE = "%Y.%m.%d"
+CSV_TIMESTAMP_FORMAT_MT4_TIME = "%H:%M:%S"
 
 # Setup router
 router = APIRouter(
@@ -184,6 +186,13 @@ async def get_ohlcv(
             options["select_data"], available_data, False
         )[0]
 
+        # Handle MT4 cases
+        if options.get("mt4") and len(options.get("select_data"))>1:
+            raise Exception("MT4 flag cannot handle multi-symbol/multi-timeframe selects")
+
+        if options.get("mt4") and options.get("output_type") != "CSV":
+            raise Exception("MT4 flag requires output/CSV")
+
         # Generate a DuckDB-compatible SQL query from resolved options
         sql = generate_sql(options)
 
@@ -218,7 +227,10 @@ async def get_ohlcv(
                 if results:
                     dict_results = [dict(zip(columns, row)) for row in results]
                     writer = csv.DictWriter(output, fieldnames=columns)
-                    writer.writeheader()
+                    if not options.get('mt4'):
+                        # No header if MT4 flag is set
+                        writer.writeheader()
+
                     writer.writerows(dict_results)
 
                 return PlainTextResponse(
@@ -231,7 +243,7 @@ async def get_ohlcv(
 
     except Exception as e:
         # Standardized error response
-        error_payload = {"status": "failure", "exception": f"{e}"}
+        error_payload = {"status": "failure", "exception": f"{e}","options": options}
 
         if options.get("output_type") == "JSONP":
             return PlainTextResponse(
@@ -324,17 +336,29 @@ def generate_sql(options):
 
     # Columns selected from the UNIONed result set
     # (time is formatted back to string form for output)
-    select_columns = f"""
-        symbol,
-        timeframe,
-        CAST(strftime(Time, '%Y') AS VARCHAR) AS year,
-        strftime(time, '{CSV_TIMESTAMP_FORMAT}') AS time,
-        open,
-        high,
-        low,
-        close,
-        volume
-    """
+    if options['mt4']:
+        # Columns selected from each CSV file, normalized for MT4
+        select_columns = f"""
+            strftime(time, '{CSV_TIMESTAMP_FORMAT_MT4_DATE}') AS date,
+            strftime(time, '{CSV_TIMESTAMP_FORMAT_MT4_TIME}') AS time,
+            open,
+            high,
+            low,
+            close,
+            volume
+        """
+    else:
+        select_columns = f"""
+            symbol,
+            timeframe,
+            CAST(strftime(Time, '%Y') AS VARCHAR) AS year,
+            strftime(time, '{CSV_TIMESTAMP_FORMAT}') AS time,
+            open,
+            high,
+            low,
+            close,
+            volume
+        """
 
     # Final ordering and pagination parameters with defaults
     order = options.get('order') if options.get('order') else "asc"
