@@ -4,7 +4,7 @@
 
 The data portion is now (fairly) complete. Naturally, some QA issues remain, particularly in the builder component, which will be addressed over time. Ensuring optimal QA for the ETL process takes priority over the extraction utility itself.
 
-## Notice: Today was a bugfix day
+## Notice: Bugfixes - 2025-01-04
 
 Several bugs were fixed today—some from the to-do list, and others discovered during integration testing and manual verification.
 
@@ -14,6 +14,8 @@ Several bugs were fixed today—some from the to-do list, and others discovered 
 
 - Medium: ApexCharts had certain limitations, so it was replaced with TradingView charts to provide a better user experience.
 
+- Medium: HTTP-docs were not "truly offline capable". Localized the JS files.
+
 As always: 
 
 ```sh
@@ -22,21 +24,19 @@ git pull origin main && ./setup-dukascopy.sh
 
 (only if not using custom configuration settings)
 
+**Note:** I am experimenting with EA's. To see on how to support the MT4 flag on the API URI in a most sensible way.
+
 ## Notice: HTTP service live
 
 [HTTP API](http.md) service is implemented. It follows more or less the same syntax as the builder component. You can also define your own HTML pages, eg to render charts. Example is added to the ```config/dukascopy/http-docs``` directory.
 
 ![Example](../images/webservice-example.png)
 
-Server-side scripting will be added in-time. HTML is a good start. With a bit of work you can turn this into something really beautiful. Offline-ready.
-
 You can now visually compare your data, example SGD:
 
 ![SGD](../images/visual-compare-sgd.png)
 
-**Note:** I have been pushing out this really quickly because i need replay. There are several ways to optimize the performance of this piece. At the moment, it focuses on enablement. Performance is of later concern.
-
-**Note:** Performance is not bad but, in my world, it should be faster. Especially on 1m, 5m charts.
+**Note:** Performance is not bad but, in my world, it should be faster. Especially on 1m, 5m charts. Will be taken care of eventually. I think most will think its good performance.
 
 ## Notice: New Year Update
 
