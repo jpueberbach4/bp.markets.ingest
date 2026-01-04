@@ -205,6 +205,11 @@
             hasMoreHistory = true; 
             gapRetryCount = 0;
             shouldResetZoomOnNextLoad = true;
+
+            chart.priceScale('right').applyOptions({
+                autoScale: true,
+            });
+
             const tf = document.getElementById('tfSelect').value;
             
             currentUntilDate = null; 
