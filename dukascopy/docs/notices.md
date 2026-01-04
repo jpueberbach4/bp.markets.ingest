@@ -26,6 +26,8 @@ git pull origin main && ./setup-dukascopy.sh
 
 **Note:** I am experimenting with EA's. To see on how to support the MT4 flag on the API URI in a most sensible way.
 
+**Note:** Additional API calls will be added, eg to get a date-range for a specific symbol. To eliminate the initial searching.
+
 ## Notice: HTTP service live
 
 [HTTP API](http.md) service is implemented. It follows more or less the same syntax as the builder component. You can also define your own HTML pages, eg to render charts. Example is added to the ```config/dukascopy/http-docs``` directory.
