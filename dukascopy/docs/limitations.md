@@ -16,3 +16,12 @@ See [Tests](tests.md)
 - Replay functionality
 - Beyond compare configuration checks on commodities
 
+This is still in an MVP state. Although working very well. It's an MVP.
+
+- General QA: wrapping builder components in classes
+- General QA: wrapping http-service components in classes
+- General QA: abstraction of IO layer for resample
+- General QA: "librarization" of code
+
+But these things will be done after all bugfixes and after the primary functionalities are done.
+
