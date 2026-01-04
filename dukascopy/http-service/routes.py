@@ -366,14 +366,24 @@ def generate_sql(options):
     offset = options.get('offset') if options.get('offset') else 0
 
     # Combine all SELECTs, apply ordering and pagination
-    select_sql = f"""
-        SELECT {select_columns}
-        FROM (
-            {' UNION ALL '.join(select_sql_array)}
-        )
-        ORDER BY time {order}, symbol ASC, timeframe ASC
-        LIMIT {limit} OFFSET {offset};
-    """
+    if options['mt4']:
+        select_sql = f"""
+            SELECT {select_columns}
+            FROM (
+                {' UNION ALL '.join(select_sql_array)}
+            )
+            ORDER BY date, time 
+            LIMIT {limit} OFFSET {offset};
+        """
+    else:
+        select_sql = f"""
+            SELECT {select_columns}
+            FROM (
+                {' UNION ALL '.join(select_sql_array)}
+            )
+            ORDER BY time {order}, symbol ASC, timeframe ASC
+            LIMIT {limit} OFFSET {offset};
+        """
 
     return select_sql
 
