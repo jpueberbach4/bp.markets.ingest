@@ -2,58 +2,148 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>OHLC Charts - Version 1.0</title>
+    <title>Trading Interface - OHLC Charts</title>
     <script src="scripts/lightweight-charts.standalone.production.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
-        #chart-container { 
-            position: relative; background: white; border-radius: 8px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); height: 600px; width: 100%;
+        :root {
+            --bg-main: #f0f3fa;
+            --sidebar-dark: #131722;
+            --accent-blue: #2962ff;
+            --text-gray: #787b86;
+            --white: #ffffff;
+            --border-color: #e0e3eb;
         }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif; 
+            background: var(--bg-main); 
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Top Header Styling */
+        header {
+            background: var(--sidebar-dark);
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        header h2 { margin: 0; font-size: 18px; font-weight: 500; }
+        #dukascopy-link { color: white; text-decoration: none; opacity: 0.9; }
+        #dukascopy-link:hover { opacity: 1; }
+
+        /* Controls Area */
+        .controls { 
+            background: var(--white);
+            padding: 8px 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .control-group { display: flex; align-items: center; gap: 8px; }
+        
+        label { 
+            font-size: 12px; 
+            color: var(--text-gray); 
+            text-transform: uppercase; 
+            font-weight: 700;
+        }
+
+        select {
+            padding: 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: #fff;
+            font-size: 13px;
+            outline: none;
+        }
+
+        button {
+            padding: 6px 15px;
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        button:hover { background: #1e53e5; }
+
+        #status-indicator { 
+            font-size: 11px; 
+            color: var(--text-gray); 
+            margin-left: auto; 
+            background: #e9eefb;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        /* Chart Layout */
+        #chart-container { 
+            position: relative; 
+            flex-grow: 1;
+            background: white;
+            margin: 15px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
         #loader {
             display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255, 255, 255, 0.4); z-index: 10;
-            justify-content: center; align-items: center; border-radius: 8px;
+            background: rgba(255, 255, 255, 0.7); z-index: 10;
+            justify-content: center; align-items: center;
         }
-        .controls { 
-            margin-bottom: 20px; display: flex; gap: 10px; align-items: center; 
-            background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        select, button { padding: 8px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
-        #status-indicator { font-size: 12px; color: #888; margin-left: auto; }
 
-        #dukascopy-link {
-            text-decoration: none;
-            color: black;
-        }
-        
         .floating-tooltip {
-            width: 160px; height: auto; min-height: 145px; position: absolute; display: none;
-            padding: 10px; box-sizing: border-box; font-size: 12px; color: #131722;
-            background-color: rgba(255, 255, 255, 0.95); text-align: left;
-            z-index: 1000; pointer-events: none; border: 1px solid #007bff;
-            border-radius: 4px; line-height: 1.6; box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            width: 150px; position: absolute; display: none;
+            padding: 8px; box-sizing: border-box; font-size: 12px;
+            background-color: rgba(255, 255, 255, 0.96);
+            z-index: 1000; pointer-events: none; 
+            border: 1px solid var(--border-color);
+            border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-        .tooltip-row { display: flex; justify-content: space-between; }
-        .tooltip-row span { font-weight: bold; }
+
+        .tooltip-row { display: flex; justify-content: space-between; margin: 2px 0; }
+        .tooltip-row span { font-weight: 600; font-family: monospace; }
 
         .spinner {
-            width: 30px; height: 30px; border: 4px solid #f3f3f3; border-top: 4px solid #007bff;
-            border-radius: 50%; animation: spin 1s linear infinite;
+            width: 24px; height: 24px; border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--accent-blue);
+            border-radius: 50%; animation: spin 0.8s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-    <h2><a id="dukascopy-link" href="https://www.dukascopy.com/" target="_new">Dukascopy</a> - Interactive OHLC Stream</h2>
+
+    <header>
+        <h2>Interactive Stream</h2>
+        <a id="dukascopy-link" href="https://www.dukascopy.com/" target="_new">Market Data via Dukascopy</a>
+    </header>
 
     <div class="controls">
-        <label>Symbol:</label>
-        <select id="symbolSelect" onchange="updateTimeframeOptions(); resetAndLoad(true);"></select>
-        <label>Timeframe:</label>
-        <select id="tfSelect" onchange="resetAndLoad(true)"></select>
-        <button onclick="resetAndLoad(false)">Reset to Today</button>
-        <div id="status-indicator"></div>
+        <div class="control-group">
+            <label>Symbol</label>
+            <select id="symbolSelect" onchange="updateTimeframeOptions(); resetAndLoad(true);"></select>
+        </div>
+        <div class="control-group">
+            <label>Interval</label>
+            <select id="tfSelect" onchange="resetAndLoad(true)"></select>
+        </div>
+        <button onclick="resetAndLoad(false)">Reset View</button>
+        <div id="status-indicator">Initialising...</div>
     </div>
     
     <div id="chart-container">
@@ -83,8 +173,21 @@
 
         const chart = LightweightCharts.createChart(chartElement, {
             width: chartElement.clientWidth,
-            height: 600,
-            layout: { background: { type: LightweightCharts.ColorType.Solid, color: '#ffffff' }, textColor: '#333' },
+            height: chartElement.clientHeight,
+            layout: { 
+                background: { type: LightweightCharts.ColorType.Solid, color: '#ffffff' }, 
+                textColor: '#131722',
+                fontSize: 12,
+            },
+            grid: {
+                vertLines: { color: '#f0f3fa' },
+                horzLines: { color: '#f0f3fa' },
+            },
+            crosshair: {
+                mode: LightweightCharts.CrosshairMode.Normal,
+                vertLine: { width: 1, color: '#787b86', style: 2 },
+                horzLine: { width: 1, color: '#787b86', style: 2 },
+            },
             localization: {
                 timeFormatter: (timestamp) => {
                     const date = new Date(timestamp * 1000);
@@ -93,16 +196,16 @@
             },
             timeScale: { 
                 timeVisible: true, 
-                secondsVisible: false, 
-                borderColor: '#cccccc',
-                shiftVisibleRangeOnNewBar: false 
+                borderColor: '#e0e3eb',
             },
         });
 
         const candleSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {
-            upColor: '#4caf50', downColor: '#f44336', borderDownColor: '#f44336',
-            borderUpColor: '#4caf50', wickDownColor: '#f44336', wickUpColor: '#4caf50',
+            upColor: '#26a69a', downColor: '#ef5350', borderVisible: false,
+            wickUpColor: '#26a69a', wickDownColor: '#ef5350',
         });
+
+        // --- Core Logic functions (Remaining same as original script for functionality) ---
 
         function formatUnixToLiteral(unix) {
             const d = new Date(unix * 1000);
@@ -124,16 +227,13 @@
                 shouldResetZoomOnNextLoad = true;
                 chart.priceScale('right').applyOptions({ autoScale: true });
             }
-            
             currentMaxSearches = initialMaxSearches;
             hasMoreHistory = true; 
             gapRetryCount = 0;
             currentUntilDate = null; 
-
             const tf = document.getElementById('tfSelect').value;
             const initialOffset = getTimeframeOffset(tf) / 2;
             currentAfterDate = new Date(Date.now() - initialOffset);
-            
             loadData();
         }
 
@@ -157,17 +257,13 @@
             if(!sym || !tf || isFetching) return;
             isFetching = true;
             document.getElementById('loader').style.display = 'flex';
-            
             const afterStr = (formatUnixToLiteral(Math.floor(currentAfterDate.getTime() / 1000)));
             let url = `/ohlcv/1.0/select/${sym},${tf}/after/${afterStr}`;
-            
             if (currentUntilDate) {
                 const untilStr = (formatUnixToLiteral(Math.floor(currentUntilDate.getTime() / 1000)));
                 url += `/until/${untilStr}`;
             }
-            
             url += `/output/JSONP?order=asc&limit=1440&callback=__callbackData`;
-            
             const old = document.getElementById('jsonp-script');
             if (old) old.remove();
             const s = document.createElement('script');
@@ -177,46 +273,37 @@
 
         window.__callbackData = function(response) {
             const statusIndicator = document.getElementById('status-indicator');
-            
             if (response.result && Array.isArray(response.result) && response.result.length > 0) {
                 currentMaxSearches = normalMaxSearches;
                 gapRetryCount = 0; 
-
                 const timeScale = chart.timeScale();
                 const visibleRange = timeScale.getVisibleRange();
                 const lastExistingBar = masterData.length > 0 ? masterData[masterData.length - 1].time : null;
-                
                 const isAtLiveEnd = visibleRange && lastExistingBar && (visibleRange.to >= lastExistingBar);
-
                 const incoming = response.result.map(row => ({
                     time: parseLiteralToUnix(row.time),
                     open: row.open, high: row.high, low: row.low, close: row.close, volume: row.volume
                 }));
-
                 const combined = [...masterData, ...incoming];
                 const uniqueMap = new Map();
                 combined.forEach(item => { if(item.time) uniqueMap.set(item.time, item); });
-                
                 masterData = Array.from(uniqueMap.values()).sort((a, b) => a.time - b.time);
                 candleSeries.setData(masterData);
-
                 if (shouldResetZoomOnNextLoad) {
                     timeScale.fitContent();
                     shouldResetZoomOnNextLoad = false;
                 } else if (isManualReset && !isAtLiveEnd && lastExistingBar !== null) {
                     timeScale.scrollToPosition(0, false);
                 }
-                
                 isManualReset = false;
-                statusIndicator.innerText = `Loaded: ${masterData.length} candles`;
+                statusIndicator.innerText = `Data Synced: ${masterData.length} candles`;
                 setTimeout(checkIfChartFull, 200); 
                 isFetching = false;
                 document.getElementById('loader').style.display = 'none';
-
             } else {
                 if (gapRetryCount < currentMaxSearches) {
                     gapRetryCount++;
-                    statusIndicator.innerText = `Searching history... (${gapRetryCount}/${currentMaxSearches})`;
+                    statusIndicator.innerText = `Searching History... (${gapRetryCount}/${currentMaxSearches})`;
                     isFetching = false; 
                     if (masterData.length === 0) {
                         const tf = document.getElementById('tfSelect').value;
@@ -229,7 +316,7 @@
                     }
                 } else {
                     hasMoreHistory = false;
-                    statusIndicator.innerText = `End of history reached (${masterData.length} candles)`;
+                    statusIndicator.innerText = `History Limit Reached`;
                     isFetching = false;
                     document.getElementById('loader').style.display = 'none';
                 }
@@ -244,22 +331,22 @@
                 if (data) {
                     tooltip.style.display = 'block';
                     const isBullish = data.close >= data.open;
-                    const color = isBullish ? '#4caf50' : '#f44336';
+                    const color = isBullish ? '#26a69a' : '#ef5350';
                     const dateStr = new Date(data.time * 1000).toLocaleString('en-GB', { 
-                        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false 
+                        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false 
                     });
                     const fullData = masterData.find(d => d.time === data.time);
                     const volValue = (fullData && fullData.volume !== undefined) ? fullData.volume.toLocaleString() : "N/A";
                     tooltip.innerHTML = `
-                        <div style="font-weight: bold; margin-bottom: 5px; color: #333; border-bottom: 1px solid #eee;">${dateStr}</div>
-                        <div class="tooltip-row">Open: <span style="color: ${color}">${data.open.toFixed(4)}</span></div>
-                        <div class="tooltip-row">High: <span style="color: ${color}">${data.high.toFixed(4)}</span></div>
-                        <div class="tooltip-row">Low: <span style="color: ${color}">${data.low.toFixed(4)}</span></div>
-                        <div class="tooltip-row">Close: <span style="color: ${color}">${data.close.toFixed(4)}</span></div>
-                        <div class="tooltip-row">Volume: <span style="color: #333">${volValue}</span></div>
+                        <div style="font-weight: bold; margin-bottom: 5px; color: #131722; border-bottom: 1px solid #eee; font-size: 11px;">${dateStr}</div>
+                        <div class="tooltip-row">O: <span style="color: ${color}">${data.open.toFixed(4)}</span></div>
+                        <div class="tooltip-row">H: <span style="color: ${color}">${data.high.toFixed(4)}</span></div>
+                        <div class="tooltip-row">L: <span style="color: ${color}">${data.low.toFixed(4)}</span></div>
+                        <div class="tooltip-row">C: <span style="color: ${color}">${data.close.toFixed(4)}</span></div>
+                        <div class="tooltip-row">V: <span style="color: #787b86">${volValue}</span></div>
                     `;
                     let left = param.point.x + 15;
-                    if (left > container.clientWidth - 170) left = param.point.x - 175;
+                    if (left > container.clientWidth - 160) left = param.point.x - 165;
                     tooltip.style.left = left + 'px';
                     tooltip.style.top = (param.point.y + 15) + 'px';
                 }
@@ -324,32 +411,7 @@
         document.body.appendChild(sList);
 
         window.addEventListener('resize', () => {
-            chart.applyOptions({ width: chartElement.clientWidth });
-        });
-
-        window.addEventListener('keydown', (event) => {
-            if (masterData.length === 0) return;
-            const timeScale = chart.timeScale();
-            const visibleRange = timeScale.getVisibleLogicalRange();
-            if (!visibleRange) return;
-            const rangeWidth = visibleRange.to - visibleRange.from;
-
-            if (event.key === 'PageUp') {
-                event.preventDefault();
-                timeScale.setVisibleLogicalRange({
-                    from: visibleRange.from - rangeWidth,
-                    to: visibleRange.to - rangeWidth
-                });
-            } else if (event.key === 'PageDown') {
-                event.preventDefault();
-                timeScale.setVisibleLogicalRange({
-                    from: visibleRange.from + rangeWidth,
-                    to: visibleRange.to + rangeWidth
-                });
-            } else if (event.key === 'End') {
-                event.preventDefault();
-                timeScale.scrollToPosition(0, true);
-            }
+            chart.applyOptions({ width: chartElement.clientWidth, height: chartElement.clientHeight });
         });
     </script>
 </body>
