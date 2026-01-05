@@ -159,7 +159,7 @@
             document.getElementById('loader').style.display = 'flex';
             
             const afterStr = (formatUnixToLiteral(Math.floor(currentAfterDate.getTime() / 1000)));
-            let url = `http://localhost:8000/ohlcv/1.0/select/${sym},${tf}/after/${afterStr}`;
+            let url = `/ohlcv/1.0/select/${sym},${tf}/after/${afterStr}`;
             
             if (currentUntilDate) {
                 const untilStr = (formatUnixToLiteral(Math.floor(currentUntilDate.getTime() / 1000)));
@@ -320,7 +320,7 @@
         }
 
         const sList = document.createElement('script');
-        sList.src = "http://localhost:8000/ohlcv/1.0/list/output/JSONP?callback=__callbackList";
+        sList.src = "/ohlcv/1.0/list/output/JSONP?callback=__callbackList";
         document.body.appendChild(sList);
 
         window.addEventListener('resize', () => {
