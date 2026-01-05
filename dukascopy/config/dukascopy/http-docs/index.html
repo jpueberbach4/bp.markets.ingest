@@ -205,8 +205,6 @@
             wickUpColor: '#26a69a', wickDownColor: '#ef5350',
         });
 
-        // --- Core Logic functions (Remaining same as original script for functionality) ---
-
         function formatUnixToLiteral(unix) {
             const d = new Date(unix * 1000);
             const pad = (n) => n.toString().padStart(2, '0');
@@ -419,6 +417,33 @@
         window.addEventListener('resize', () => {
             chart.applyOptions({ width: chartElement.clientWidth, height: chartElement.clientHeight });
         });
+
+        window.addEventListener('keydown', (event) => {
+            if (masterData.length === 0) return;
+            const timeScale = chart.timeScale();
+            const visibleRange = timeScale.getVisibleLogicalRange();
+            if (!visibleRange) return;
+            
+            const rangeWidth = visibleRange.to - visibleRange.from;
+
+            if (event.key === 'PageUp') {
+                event.preventDefault();
+                timeScale.setVisibleLogicalRange({
+                    from: visibleRange.from - rangeWidth,
+                    to: visibleRange.to - rangeWidth
+                });
+            } else if (event.key === 'PageDown') {
+                event.preventDefault();
+                timeScale.setVisibleLogicalRange({
+                    from: visibleRange.from + rangeWidth,
+                    to: visibleRange.to + rangeWidth
+                });
+            } else if (event.key === 'End') {
+                event.preventDefault();
+                timeScale.scrollToPosition(0, true);
+            }
+        });
+
     </script>
 </body>
 </html>
