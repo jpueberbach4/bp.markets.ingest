@@ -21,6 +21,11 @@
         }
         select, button { padding: 8px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; }
         #status-indicator { font-size: 12px; color: #888; margin-left: auto; }
+
+        #dukascopy-link {
+            text-decoration: none;
+            color: black;
+        }
         
         .floating-tooltip {
             width: 160px; height: auto; min-height: 145px; position: absolute; display: none;
@@ -40,7 +45,7 @@
     </style>
 </head>
 <body>
-    <h2>Interactive OHLC Stream</h2>
+    <h2><a id="dukascopy-link" href="https://www.dukascopy.com/" target="_new">Dukascopy</a> - Interactive OHLC Stream</h2>
 
     <div class="controls">
         <label>Symbol:</label>
