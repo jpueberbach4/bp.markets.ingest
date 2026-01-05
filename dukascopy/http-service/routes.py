@@ -372,7 +372,7 @@ def generate_sql(options):
             FROM (
                 {''.join(select_sql_array)}
             )
-            ORDER BY date, time 
+            ORDER BY date {order}, time {order} 
             LIMIT {limit} OFFSET {offset};
         """
     else:
