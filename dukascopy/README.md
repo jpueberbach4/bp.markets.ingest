@@ -54,7 +54,7 @@ What started as a personal project (private use-case) to tackle the intricate pr
 
 ## What Is This Tool Used For?
 
->This tool builds a high-quality historical OHLCV dataset and maintains it automatically with efficient incremental updates. As a bonus you get a completely localized mini-tradingview to observe and inspect your data. For 99 percent of backtesters this is a great add-on.
+>This tool builds a high-quality historical OHLCV dataset and maintains it automatically with efficient incremental updates. As a bonus you get a completely localized mini-tradingview to observe and inspect your data. For 99 percent of backtesters this is a great add-on. Or even a "game-changer".
 
 Example 20 year chart of GBP-USD:
 
