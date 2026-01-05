@@ -44,10 +44,10 @@
 
     <div class="controls">
         <label>Symbol:</label>
-        <select id="symbolSelect" onchange="updateTimeframeOptions(); resetAndLoad();"></select>
+        <select id="symbolSelect" onchange="updateTimeframeOptions(); resetAndLoad(true);"></select>
         <label>Timeframe:</label>
-        <select id="tfSelect" onchange="resetAndLoad()"></select>
-        <button onclick="resetAndLoad()">Reset to Today</button>
+        <select id="tfSelect" onchange="resetAndLoad(true)"></select>
+        <button onclick="resetAndLoad(false)">Reset to Today</button>
         <div id="status-indicator"></div>
     </div>
     
@@ -66,6 +66,7 @@
         let shouldResetZoomOnNextLoad = false;
         let hasMoreHistory = true;
         let gapRetryCount = 0; 
+        let isManualReset = false;
 
         const initialMaxSearches = 100;
         const normalMaxSearches = 10;
@@ -110,19 +111,20 @@
             return Math.floor(d.getTime() / 1000);
         }
 
-        function resetAndLoad() {
-            currentMaxSearches = initialMaxSearches
-            masterData = [];
-            candleSeries.setData([]); 
+        function resetAndLoad(forceClear = false) {
+            isManualReset = true;
+            if (forceClear) {
+                masterData = [];
+                candleSeries.setData([]);
+                shouldResetZoomOnNextLoad = true;
+            }
+            
+            currentMaxSearches = initialMaxSearches;
             hasMoreHistory = true; 
             gapRetryCount = 0;
-            shouldResetZoomOnNextLoad = true;
-
-            chart.priceScale('right').applyOptions({ autoScale: true });
+            currentUntilDate = null; 
 
             const tf = document.getElementById('tfSelect').value;
-            currentUntilDate = null; 
-            
             const initialOffset = getTimeframeOffset(tf) / 2;
             currentAfterDate = new Date(Date.now() - initialOffset);
             
@@ -131,18 +133,15 @@
 
         function paginateBack() {
             if (isFetching || !hasMoreHistory || masterData.length === 0) return;
+            isManualReset = false;
             const tf = document.getElementById('tfSelect').value;
-            
             const referenceTime = masterData[0].time;
             const untilUnix = referenceTime - 1;
             currentUntilDate = new Date(untilUnix * 1000);
-
             const baseOffset = getTimeframeOffset(tf);
             const jumpSize = baseOffset * (gapRetryCount + 1); 
-            
             const afterUnix = untilUnix - (jumpSize / 1000);
             currentAfterDate = new Date(afterUnix * 1000);
-            
             loadData();
         }
 
@@ -177,13 +176,15 @@
                 currentMaxSearches = normalMaxSearches;
                 gapRetryCount = 0; 
 
+                const timeScale = chart.timeScale();
+                const visibleRange = timeScale.getVisibleRange();
+                const lastExistingBar = masterData.length > 0 ? masterData[masterData.length - 1].time : null;
+                
+                const isAtLiveEnd = visibleRange && lastExistingBar && (visibleRange.to >= lastExistingBar);
+
                 const incoming = response.result.map(row => ({
                     time: parseLiteralToUnix(row.time),
-                    open: row.open, 
-                    high: row.high, 
-                    low: row.low, 
-                    close: row.close,
-                    volume: row.volume
+                    open: row.open, high: row.high, low: row.low, close: row.close, volume: row.volume
                 }));
 
                 const combined = [...masterData, ...incoming];
@@ -194,10 +195,13 @@
                 candleSeries.setData(masterData);
 
                 if (shouldResetZoomOnNextLoad) {
-                    chart.timeScale().fitContent();
+                    timeScale.fitContent();
                     shouldResetZoomOnNextLoad = false;
+                } else if (isManualReset && !isAtLiveEnd && lastExistingBar !== null) {
+                    timeScale.scrollToPosition(0, false);
                 }
-
+                
+                isManualReset = false;
                 statusIndicator.innerText = `Loaded: ${masterData.length} candles`;
                 setTimeout(checkIfChartFull, 200); 
                 isFetching = false;
@@ -206,9 +210,8 @@
             } else {
                 if (gapRetryCount < currentMaxSearches) {
                     gapRetryCount++;
-                    statusIndicator.innerText = `Searching history... (Attempt ${gapRetryCount}/${currentMaxSearches})`;
+                    statusIndicator.innerText = `Searching history... (${gapRetryCount}/${currentMaxSearches})`;
                     isFetching = false; 
-                    
                     if (masterData.length === 0) {
                         const tf = document.getElementById('tfSelect').value;
                         const baseOffset = getTimeframeOffset(tf);
@@ -239,10 +242,8 @@
                     const dateStr = new Date(data.time * 1000).toLocaleString('en-GB', { 
                         day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false 
                     });
-                    
                     const fullData = masterData.find(d => d.time === data.time);
                     const volValue = (fullData && fullData.volume !== undefined) ? fullData.volume.toLocaleString() : "N/A";
-
                     tooltip.innerHTML = `
                         <div style="font-weight: bold; margin-bottom: 5px; color: #333; border-bottom: 1px solid #eee;">${dateStr}</div>
                         <div class="tooltip-row">Open: <span style="color: ${color}">${data.open.toFixed(4)}</span></div>
@@ -251,7 +252,6 @@
                         <div class="tooltip-row">Close: <span style="color: ${color}">${data.close.toFixed(4)}</span></div>
                         <div class="tooltip-row">Volume: <span style="color: #333">${volValue}</span></div>
                     `;
-
                     let left = param.point.x + 15;
                     if (left > container.clientWidth - 170) left = param.point.x - 175;
                     tooltip.style.left = left + 'px';
@@ -282,12 +282,9 @@
                     opt.value = s; opt.innerHTML = s;
                     sel.appendChild(opt);
                 });
-
-                if (symbols.length > 0) {
-                    sel.value = symbols[0];
-                }
+                if (symbols.length > 0) sel.value = symbols[0];
                 updateTimeframeOptions();
-                resetAndLoad();
+                resetAndLoad(true);
             }
         };
 
@@ -309,17 +306,10 @@
         function getTimeframeOffset(tf) {
             const day = 24 * 60 * 60 * 1000;
             switch (tf) {
-                case '1Y': return 3650 * day;
-                case '1M': return 3650 * day;
-                case '1W': return 730 * day;
-                case '1d': return 365 * day;
-                case '4h': return 100 * day;
-                case '1h': return 30 * day;
-                case '30m': return 15 * day;
-                case '15m': return 7 * day;
-                case '5m': return 2 * day;
-                case '1m': return 1 * day;
-                default:   return 4 * day;
+                case '1Y': return 3650 * day; case '1M': return 3650 * day; case '1W': return 730 * day;
+                case '1d': return 365 * day; case '4h': return 100 * day; case '1h': return 30 * day;
+                case '30m': return 15 * day; case '15m': return 7 * day; case '5m': return 2 * day;
+                case '1m': return 1 * day; default: return 4 * day;
             }
         }
 
