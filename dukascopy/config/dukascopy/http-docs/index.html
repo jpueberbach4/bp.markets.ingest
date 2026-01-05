@@ -341,6 +341,9 @@
                     from: visibleRange.from + rangeWidth,
                     to: visibleRange.to + rangeWidth
                 });
+            } else if (event.key === 'End') {
+                event.preventDefault();
+                timeScale.scrollToPosition(0, true);
             }
         });
     </script>
