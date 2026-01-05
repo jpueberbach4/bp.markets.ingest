@@ -117,6 +117,7 @@
                 masterData = [];
                 candleSeries.setData([]);
                 shouldResetZoomOnNextLoad = true;
+                chart.priceScale('right').applyOptions({ autoScale: true });
             }
             
             currentMaxSearches = initialMaxSearches;
