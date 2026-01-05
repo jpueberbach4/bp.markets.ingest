@@ -4,13 +4,7 @@
 
 The data portion is now (fairly) complete. Naturally, some QA issues remain, particularly in the builder component, which will be addressed over time. Ensuring optimal QA for the ETL process takes priority over the extraction utility itself.
 
-[Replay](../replay/placeholder.md) is next but expect this development to take a week, more or less-for a beta version. This is as complex as ETL. This is, for me, the holy grail. What makes it complex? Eg those 6h10m candles. The Replay engine can't just look at the timeframe label (4H). It has to look at the actual content of the candle or the session rules that created it.
-
-All of this previous work was done for this replay functionality. I am missing something in my "trading experience" and THIS solves it beautifully.
-
-The C++ edition is the real-time version. The python version is limited by CSV and string parsing. If you profile this resampler you will notice that more than 80 percent of performance goes to read_csv and to_csv. So we are capped by the underlying storage format. However, this pipeline was always focussed on "the revelation" and complete transparency, human-inspectability. For python and CSV we are near-optimal performance.
-
-Why not switch to a binary format for the python edition? Since there is tooling to convert to Parquet/CSV? I think, if we go binary, we should go "all the way", including eliminating the python GIL altogether. Hence 100% C++. C++ gives full control of everything. We can move massive amounts of data with C++ in microseconds (ticks too).
+[Replay](../replay/placeholder.md) is next.
 
 ## Notice: Bugfixes - 2025-01-04
 
