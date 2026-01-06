@@ -406,7 +406,13 @@
                 case '1Y': return 3650 * day; case '1M': return 3650 * day; case '1W': return 730 * day;
                 case '1d': return 365 * day; case '4h': return 100 * day; case '1h': return 30 * day;
                 case '30m': return 15 * day; case '15m': return 7 * day; case '5m': return 2 * day;
-                case '1m': return 1 * day; default: return 4 * day;
+                case '1m': return 1 * day; 
+                default:
+                    if (tf.includes('M')) return 3650 * day;
+                    if (tf.includes('W')) return 1460 * day;
+                    if (tf.includes('h')) return 60 * day;
+                    if (tf.includes('m')) return 4 * day;
+                    return 4 * day;
             }
         }
 
