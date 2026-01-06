@@ -8,6 +8,10 @@ The data portion is now (fairly) complete. Naturally, some QA issues remain, par
 
 Feature pre-testing starts tomorrow. One focus is determining whether a candle’s “state” can be derived deterministically and efficiently using the timestamp, timeframe, symbol, and configuration. Success here would eliminate a major obstacle.
 
+## Notice: Configuration validation - 2025-01-08
+
+Configuration is now checked against the schema defined in `etl/config/schema.json`. When you `git pull`, execute `pip install -r requirements.txt`.
+
 ## Notice: Bugfixes - 2025-01-04
 
 Several bugs were fixed today—some from the to-do list, and others discovered during integration testing and manual verification.
