@@ -230,4 +230,6 @@ It’s unclear whether this feature will remain. There are currently issues with
 
 With the current approach, the first N rows (for example, 14) are dropped starting at—and including—the specified after date.
 
-Use with caution. If this behavior changes in the future, the most likely adjustment is that the after date will be included in the response (the warmup rows will be handled in the background but "invisible" in the response).
+Use with caution. If this behavior changes in the future, the most likely adjustment is that the after date will be included in the response. Warmup rows would be computed relative to after (looking backward), handled internally, and excluded from the returned results.
+
+**Sorting DESCENDING is currently a good practice**
