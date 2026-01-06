@@ -24,7 +24,7 @@ See [Tests](tests.md)
 **P4 (Architectural):**
 - General QA improvements
 - IO Layer abstraction \
-  By abstracting the IO layer someone, or me, could potentially switch to a binary format, eliminating the 80% consumption because of CSV. I will provide for it, we will see later what to do with it. Scheduled right after replay and the custom-shifting in transform. DuckDB has a read_binary method.
+  By abstracting the IO layer someone, or me, could potentially switch to a binary format, eliminating the 80% consumption because of CSV. I will provide for it, we will see later what to do with it. Scheduled right after replay and the custom-shifting in transform. DuckDB has a read_binary method. Did a quick calculation: estimated speedup: 20-30x.
 - Librarization
 
 This is still in an MVP state. Although working very well. It's an MVP.
