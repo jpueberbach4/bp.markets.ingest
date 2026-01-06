@@ -14,6 +14,7 @@ See [Tests](tests.md)
 - Replay functionality
 
 **P2 (Important):**
+- Redesign of HTTP API for version 1.1
 - MIN-MAX date-range API
 - Stock split support
 
