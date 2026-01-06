@@ -4,7 +4,7 @@
 
 The data portion is now (fairly) complete. Naturally, some QA issues remain, particularly in the builder component, which will be addressed over time. Ensuring optimal QA for the ETL process takes priority over the extraction utility itself.
 
-[Replay](../replay/placeholder.md) is next.
+[Replay](replay.md) is next.
 
 Feature pre-testing starts tomorrow. One focus is determining whether a candle’s “state” can be derived deterministically and efficiently using the timestamp, timeframe, symbol, and configuration. Success here would eliminate a major obstacle.
 
