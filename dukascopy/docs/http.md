@@ -225,6 +225,12 @@ MACD
 GET http://localhost:8000/ohlcv/1.0/indicator/macd/fast/12/slow/26/signal/9/select/EUR-USD,1h/after/2025-12-01+00:00:00/until/2025-12-31+00:00:00/output/JSON?order=desc
 ```
 
+Bollinger
+
+```sh
+http://localhost:8000/ohlcv/1.0/indicator/bbands/period/14/std/2.0/select/EUR-USD,1h/until/2025-12-31+00:00:00/output/JSON?order=desc
+```
+
 
 It’s unclear whether this feature will remain. There are currently issues with how warmup rows and limit are handled. While the warmup rows are correctly dropped, the behavior makes the feature difficult to use in practice.
 
