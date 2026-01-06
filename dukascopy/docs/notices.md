@@ -6,6 +6,8 @@ The data portion is now (fairly) complete. Naturally, some QA issues remain, par
 
 **Note:** I’ve addressed the main issue with replay, but I believe it’s prudent to start abstracting the I/O layer first. As more features are added, an increasing number of components are being built on the current I/O implementation. To avoid a large-scale refactor later, it makes sense to tackle the I/O layer now. We’re moving toward a binary format with fixed-length records, while keeping a configurable fallback to CSV to avoid breaking existing installations.
 
+Output from the builder tool will remain the same - CSV/Parquet.
+
 ## Notice: Configuration validation - 2025-01-06
 
 Configuration is now checked against the schema defined in `etl/config/schema.json`. When you `git pull`, execute `pip install -r requirements.txt`.
