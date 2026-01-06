@@ -214,7 +214,7 @@ This leads to a warmup period discrepancy: the engine currently drops the first 
 The Relative Strength Index (RSI) is a momentum oscillator that measures the speed and magnitude of recent price changes to evaluate overbought or oversold conditions in an asset. It oscillates on a scale from 0 to 100, with readings typically above 70 indicating that a security is becoming overvalued (overbought) and readings below 30 suggesting it is undervalued (oversold). Traders use these levels to anticipate potential trend reversals or corrective pullbacks, often looking for "divergences" where the price and RSI move in opposite directions to confirm a weakening trend.
 
 ```sh
-GET http://localhost:8000/ohlcv/1.0/indicator/rsi/period/14/select/EUR-USD,1h/after/2025-12-01+00:00:00/until/2025-12-31+00:00:00/output/JSON?order=desc
+GET http://localhost:8000/ohlcv/1.0/indicator/rsi/period/14/select/EUR-USD,1h/after/2025-12-01+00:00:00/output/JSON?order=desc
 ```
 
 **SMA**
@@ -222,7 +222,7 @@ GET http://localhost:8000/ohlcv/1.0/indicator/rsi/period/14/select/EUR-USD,1h/af
 The Simple Moving Average (SMA) is a basic technical indicator that calculates the average price of an asset over a specific number of time periods by summing the closing prices and dividing by the count. It is primarily used to smooth out price volatility and identify the underlying trend direction by filtering out short-term market "noise." Because it relies equally on all data points within its window, it tends to lag behind current price action more than weighted or exponential averages.
 
 ```sh
-GET http://localhost:8000/ohlcv/1.0/indicator/sma/period/20/select/EUR-USD,1h/after/2025-12-01+00:00:00/until/2025-12-31+00:00:00/output/JSON?order=desc
+GET http://localhost:8000/ohlcv/1.0/indicator/sma/period/20/select/EUR-USD,1h/after/2025-12-01+00:00:00/output/JSON?order=desc
 ```
 
 **EMA**
