@@ -175,3 +175,25 @@ CHE.IDX-CHF:
 ```
 
 **Note:** When merging, you need to take the STD/DST switches into account as well. Generally you dont merge anything in the hourly chart. Merging is mostly needed ONLY on the 4h chart-or for other (very) specialized needs. When you want to merge two candles, say 16:00 and 15:00 into the 14:00, specify them both in descending order, below ends_with, This should work but is completely untested. 16:00 merges into 15:00, 15:00 merges into 14:00, the offset of 14:00 is returned. Yes, this should work.
+
+## Pandas rules
+
+This table defines the standard strings used in the `timeframe.rule` fields to determine the length of the resampling interval.
+
+| Alias | Description | Common Usage Examples |
+| :--- | :--- | :--- |
+| **T** or **min** | Minutes | `1T`, `5min`, `15T` |
+| **H** | Hours | `1H`, `4H` (Standard for indices/forex) |
+| **D** | Calendar day | `1D` (24-hour period) |
+| **B** | Business day | `1B` (Skips weekends) |
+| **W** | Weekly | `W` (Defaults to Sunday end) |
+| **W-MON** | Weekly (Monday) | `W-MON` (Standard for MT4/trading week) |
+| **M** | Month end | `1M` (Last day of calendar month) |
+| **MS** | Month start | `1MS` (First day of calendar month) |
+| **Q** | Quarter end | `1Q` |
+| **A** or **Y** | Year end | `1A` or `1Y` |
+| **AS** or **YS** | Year start | `1AS` or `1YS` |
+
+Hope this helps.
+
+As `timeframe.source` you should take the closest "parent"-timeframe. Eg for hours, you take the 1h, for months, you take 1d (do not use weeks since weeks can span multiple months). For quarter you take months. This is to make sure that resampling stays effective. Ofcourse you can take any source, but deriving a quarterly frame from minutes is not very efficient.
