@@ -9,7 +9,6 @@ See [Tests](tests.md)
 ## Open issues / To do list
 
 **P1 (Critical):**
-- Schema-based configuration validation
 - Custom shifting for ASX 2020 anomaly
 - Custom shifting for one-week-leap-year DST lag (affects Nov 2020,2024,2028,etc)
 - Replay functionality
