@@ -232,4 +232,6 @@ With the current approach, the first N rows (for example, 14) are dropped starti
 
 Use with caution. If this behavior changes in the future, the most likely adjustment is that the after date will be included in the response. Warmup rows would be computed relative to after (looking backward), handled internally, and excluded from the returned results.
 
+The design is currently like this because of heavily relying on the "regular select" (code re-use).
+
 **Sorting DESCENDING is currently a good practice**
