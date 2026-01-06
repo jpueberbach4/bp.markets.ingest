@@ -197,9 +197,7 @@ Example output for JSON URL
 ```
 
 
-## Beta
-
-Below is an example on how to get the RSI of candle 2025-12-30 23:00:00 (notice the until is +1h)
+## Indicators
 
 RSI
 
@@ -237,18 +235,13 @@ ATR
 http://localhost:8000/ohlcv/1.0/indicator/atr/select/BTC-USD,1d/period/14/output/JSON
 ```
 
-
-It’s unclear whether this feature will remain. There are currently issues with how warmup rows and limit are handled. While the warmup rows are correctly dropped, the behavior makes the feature difficult to use in practice.
-
-With the current approach, the first N rows (for example, 14) are dropped starting at—and including—the specified after date.
-
-Use with caution. If this behavior changes in the future, the most likely adjustment is that the after date will be included in the response. Warmup rows would be computed relative to after (looking backward), handled internally, and excluded from the returned results.
-
-The design is currently like this because of heavily relying on the "regular select" (code re-use).
+Above will remain in the 1.0 API. You can use it safely, although its not optimal atm.
 
 **Sorting DESCENDING is currently a good practice**
 
-**Decision:** This is going to be redesigned. We are going to make it part of the main select API. I will keep the current version under the 1.0 API endpoint. API Version 1.1 will support this:
+## Redesign
+
+**Decision:** This is going to be redesigned. We are going to make this part of the main select API. I will keep the current version under the 1.0 API endpoint. API Version 1.1 will support this:
 
 ```sh
 GET http://localhost:8000/ohlcv/1.1/select/AAPL.US-USD,1h[sma(20,50),ema(50),macd(12,26,9)]:skiplast/ \
@@ -287,4 +280,4 @@ Example:
 }
 ```
 
-I don't have time atm to implement 1.1 right now. The reason to move to a binary append-only solution is becoming more urgent. Gain on performance to counter-act the cost of extension of additional features.
+The reason to move to a binary append-only solution is becoming more urgent. Gain on performance to counter-act the cost of extension of additional features.
