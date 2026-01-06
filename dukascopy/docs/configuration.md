@@ -113,3 +113,62 @@ There are already extensive configuration examples available within the config/ 
 To setup for general MT4 and/or Dukascopy MT4, the only thing you need to do is to execute ```./setup-dukascopy.sh```.
 
 The main configuration file ```config.yaml``` or ```config.user.yaml``` is pretty self-explanatory. Good luck!
+
+## Examples
+
+Custom 2-hourly timeframe on BRENT, aligned to 03:00 -`config.user/dukascopy/timeframes/commodities.yaml`
+
+```sh
+...
+BRENT.CMD-USD:
+  timeframes:
+    2h:
+      rule: "2H"              # You need to specify this, if the timeframe not globally present
+      label: "left"           # You need to specify this, if the timeframe not globally present
+      closed: "left"          # You need to specify this, if the timeframe not globally present                 
+      origin: "03:00"         # You need to specify this, if the timeframe not globally present
+      source: "1h"            # You need to specify this, if the timeframe not globally present
+    4h:                     
+      origin: "03:00"
+...
+```
+
+Make the Swiss index follow `Europe/Zurich` DST/STD transitions - `config.user/dukascopy/timeframes/indices/CHF-indices.yaml`
+
+```sh 
+CHE.IDX-CHF:
+  timezone: Europe/Zurich     # Specify the timezone here
+  sessions:
+    day:
+      ranges:
+        24h:
+          from: "00:00"
+          to: "23:59"
+      timeframes:
+        4h:                     
+          origin: "09:00"
+```
+
+Merge a H1 15:00 candle into the H1 14:00 candle - i don't think merging a 16:00 in a 14:00 candle is supported ;)
+
+```sh
+CHE.IDX-CHF:
+  timezone: Europe/Zurich
+  sessions:
+    day:
+      ranges:
+        24h:
+          from: "00:00"
+          to: "23:59"
+      timeframes:
+        1h:
+          post:
+            merge-step:
+              action: merge
+              ends_with:
+              - "15:00:00"      # Select candle ending with this timestamp
+              offset: -1        # 16:00 (offset 0), 15:00 (offset -1)
+        4h:                     
+          origin: "09:00"
+```
+
