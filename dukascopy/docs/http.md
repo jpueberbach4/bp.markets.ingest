@@ -231,6 +231,12 @@ Bollinger
 http://localhost:8000/ohlcv/1.0/indicator/bbands/period/14/std/2.0/select/EUR-USD,1h/until/2025-12-31+00:00:00/output/JSON?order=desc
 ```
 
+ATR
+
+```sh
+http://localhost:8000/ohlcv/1.0/indicator/atr/select/BTC-USD,1d/period/14/output/JSON
+```
+
 
 It’s unclear whether this feature will remain. There are currently issues with how warmup rows and limit are handled. While the warmup rows are correctly dropped, the behavior makes the feature difficult to use in practice.
 
