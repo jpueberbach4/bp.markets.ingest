@@ -112,6 +112,8 @@ There are already extensive configuration examples available within the config/ 
 
 To setup for general MT4 and/or Dukascopy MT4, the only thing you need to do is to execute ```./setup-dukascopy.sh```.
 
+>**Note:** When you change timeframes, you need to `./rebuild-resample.sh`.
+
 The main configuration file ```config.yaml``` or ```config.user.yaml``` is pretty self-explanatory. Good luck!
 
 ## Examples
