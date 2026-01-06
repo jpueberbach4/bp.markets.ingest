@@ -287,4 +287,4 @@ Example:
 }
 ```
 
-I don't have time atm to implement 1.1 right now.
+I don't have time atm to implement 1.1 right now. The reason to move to a binary append-only solution is becoming more urgent. Gain on performance to counter-act the cost of extension of additional features.
