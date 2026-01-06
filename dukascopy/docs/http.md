@@ -196,3 +196,10 @@ Example output for JSON URL
 }
 ```
 
+
+## Beta
+
+There is a beta version of RSI calculation but don't use it yet. It's not finished. I am thinking of a way to efficiently work with warmup rows. The bigger the limit, the more time the indicator calculation has to "stabilize". 
+
+```sh
+http://localhost:8000/ohlcv/1.0/indicator/rsi/select/EUR-USD,1h:skiplast/after/2025-12-01+00:00:00/period/20/output/JSON?order=desc&limit=50

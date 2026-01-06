@@ -66,10 +66,8 @@ from typing import Dict, Optional
 from helper import parse_uri, generate_sql, load_indicator_plugins, discover_options, generate_output
 from pathlib import Path
 from version import API_VERSION
-import io
-import csv
-import duckdb 
 import orjson
+import duckdb 
 
 # Setup router
 router = APIRouter(
