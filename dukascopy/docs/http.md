@@ -199,49 +199,87 @@ Example output for JSON URL
 
 ## Indicators
 
-RSI
+**Limitations and Future Evolution (v1.0 vs v1.1)**
+
+While the current v1.0 indicator implementation is functional, it is not yet optimal for professional-grade technical analysis. Because the current engine heavily re-uses the "regular select" logic, the API treats indicators as secondary filters rather than integrated data streams. 
+
+This leads to a warmup period discrepancy: the engine currently drops the first N-rows starting from your after date to accommodate calculations, meaning the response may lack data for the specific start time you requested. To resolve these synchronization issues, we are transitioning to a more robust architecture:
+
+- Version 1.0 (Legacy Support): This version will remain available for existing integrations and simple queries. It is reliable for basic data fetches but requires manual handling of lookback periods and limits.
+
+- Version 1.1 (Next Gen): The upcoming 1.1 API will introduce an integrated selection logic where warmup periods are handled internally. It will automatically fetch the necessary historical data to ensure your requested after date contains a stable, accurate indicator value from the very first row of the response.
+
+**RSI**
+
+The Relative Strength Index (RSI) is a momentum oscillator that measures the speed and magnitude of recent price changes to evaluate overbought or oversold conditions in an asset. It oscillates on a scale from 0 to 100, with readings typically above 70 indicating that a security is becoming overvalued (overbought) and readings below 30 suggesting it is undervalued (oversold). Traders use these levels to anticipate potential trend reversals or corrective pullbacks, often looking for "divergences" where the price and RSI move in opposite directions to confirm a weakening trend.
 
 ```sh
 GET http://localhost:8000/ohlcv/1.0/indicator/rsi/period/14/select/EUR-USD,1h/after/2025-12-01+00:00:00/until/2025-12-31+00:00:00/output/JSON?order=desc
 ```
 
-SMA
+**SMA**
+
+The Simple Moving Average (SMA) is a basic technical indicator that calculates the average price of an asset over a specific number of time periods by summing the closing prices and dividing by the count. It is primarily used to smooth out price volatility and identify the underlying trend direction by filtering out short-term market "noise." Because it relies equally on all data points within its window, it tends to lag behind current price action more than weighted or exponential averages.
 
 ```sh
 GET http://localhost:8000/ohlcv/1.0/indicator/sma/period/20/select/EUR-USD,1h/after/2025-12-01+00:00:00/until/2025-12-31+00:00:00/output/JSON?order=desc
 ```
 
-EMA
+**EMA**
+
+The Exponential Moving Average (EMA) is a type of moving average that places a greater weight and significance on the most recent data points, making it more responsive to new price information than a Simple Moving Average. It is widely used by traders to identify trend direction and potential reversal points by smoothing out price fluctuations while minimizing the "lag" associated with older data. Because the EMA reacts more quickly to price changes, it is often favored for identifying short-term momentum shifts and as a primary component in complex indicators like the MACD.
 
 ```sh
-GET http://localhost:8000/ohlcv/1.0/indicator/ema/period/50/select/EUR-USD,1h/after/2025-12-01+00:00:00/until/2025-12-31+00:00:00/output/JSON?order=desc
+GET http://localhost:8000/ohlcv/1.0/indicator/ema/period/50/select/EUR-USD,1h/after/2025-12-01+00:00:00/output/JSON?order=desc
 ```
 
-MACD
+**MACD**
+
+The Moving Average Convergence Divergence (MACD) is a trend-following momentum indicator that calculates the difference between a 12-period and a 26-period Exponential Moving Average (EMA). It consists of a MACD line, a signal line (a 9-period EMA of the MACD line), and a histogram that visualizes the distance between the two. Traders look for crossovers between these lines and movements above or below the center zero line to identify shifts in trend direction and momentum.
+
 
 ```sh
-GET http://localhost:8000/ohlcv/1.0/indicator/macd/fast/12/slow/26/signal/9/select/EUR-USD,1h/after/2025-12-01+00:00:00/until/2025-12-31+00:00:00/output/JSON?order=desc
+GET http://localhost:8000/ohlcv/1.0/indicator/macd/fast/12/slow/26/signal/9/select/EUR-USD,1h/after/2025-12-01+00:00:00/output/JSON?order=desc
 ```
 
-Bollinger
+**Bollinger**
+
+Bollinger Bands are a volatility-based technical indicator consisting of a middle Simple Moving Average (SMA) and two outer bands plotted at a standard deviation distance above and below it. The bands automatically expand during periods of high market volatility and contract during stable periods, providing a visual representation of price relative to historical norms. Traders typically use the indicator to identify overbought conditions when price touches the upper band or oversold conditions at the lower band, often anticipating a "mean reversion" back toward the middle average.
 
 ```sh
-http://localhost:8000/ohlcv/1.0/indicator/bbands/period/14/std/2.0/select/EUR-USD,1h/until/2025-12-31+00:00:00/output/JSON?order=desc
+GET http://localhost:8000/ohlcv/1.0/indicator/bbands/period/14/std/2.0/select/EUR-USD,1h/until/2025-12-31+00:00:00/output/JSON?order=desc
 ```
 
-ATR
+**ATR**
+
+The Average True Range (ATR) is a volatility indicator that measures the market's "breathing room" by calculating the average range between price highs and lows over a set period, typically 14 days. Unlike momentum oscillators, it does not indicate price direction, but rather the degree of price movement or "noise" present in the market. Traders primarily use it to set dynamic stop-loss levels that expand during high volatility and tighten when the market is quiet to avoid being prematurely stopped out.
 
 ```sh
-http://localhost:8000/ohlcv/1.0/indicator/atr/select/BTC-USD,1d/period/14/output/JSON
+GET http://localhost:8000/ohlcv/1.0/indicator/atr/select/BTC-USD,1d/period/14/output/JSON?order=desc
+```
+
+**STOCHASTIC**
+
+The Stochastic Oscillator is a momentum indicator that measures the current closing price of an asset relative to its high-low range over a specific period, typically 14 days. It utilizes a scale from 0 to 100 to identify overbought conditions above 80 and oversold conditions below 20, signaling where price reversals may occur. By tracking the speed of price movement through its %K and %D lines, it helps traders anticipate trend changes before they appear in the actual price action.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/stochastic/select/EUR-USD,1h/k_period/14/d_period/3/output/JSON?order=desc
+```
+
+**ADX**
+
+The Average Directional Index (ADX) is a non-directional technical indicator used to quantify the strength of a price trend on a scale from 0 to 100. It typically identifies a strong trend when the value rises above 25 and a weak or ranging market when it falls below 20. While it measures trend intensity regardless of direction, it is often paired with Positive (+DI) and Negative (-DI) indicators to determine whether that trend is bullish or bearish.
+
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/adx/select/BTC-USD,1h:skiplast/period/14/output/JSON?order=desc
 ```
 
 Above will remain in the 1.0 API. You can use it safely, although its not optimal atm.
 
 **Sorting DESCENDING is currently a good practice**
 
-## Redesign
-
-**Decision:** This is going to be redesigned. We are going to make this part of the main select API. I will keep the current version under the 1.0 API endpoint. API Version 1.1 will support this:
+## Version 1.1
 
 ```sh
 GET http://localhost:8000/ohlcv/1.1/select/AAPL.US-USD,1h[sma(20,50),ema(50),macd(12,26,9)]:skiplast/ \
@@ -249,7 +287,9 @@ select/EUR-USD,1h:skiplast/after/2025.11.22,13:59:59/until/2025-12-22+13:59:59/o
 
 ```
 
-It will then extend the default price output with the indicator values, in a subsection indicators.
+The Version 1.1 API introduces a unified selection logic that shifts from sequential processing to a single-stream data architecture. By embedding indicator definitions directly within the selection brackets [...], the engine can perform all mathematical calculations in one pass. 
+
+This version extends the default OHLCV response by injecting a dedicated indicators subsection into every price unit, ensuring that indicators are perfectly time-aligned with their corresponding candles.
 
 Example:
 
