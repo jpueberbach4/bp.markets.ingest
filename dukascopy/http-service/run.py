@@ -91,7 +91,7 @@ if __name__ == "__main__":
 
     uvicorn.run(
         "run:app",          # Module and app instance
-        host="127.0.0.1",   # Sorry, only localhost
+        host="127.0.0.1",   # 🔒 LOCAL USE ONLY - Not for network exposure!
         port=int(port),     # Default port
         loop="uvloop",      # High-performance event loop
         http="httptools",   # HTTP protocol parser

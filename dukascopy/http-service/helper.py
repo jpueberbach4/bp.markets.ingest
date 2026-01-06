@@ -357,6 +357,10 @@ def generate_sql(options):
             item + tuple([options.get('after'), options.get('until')])
         )
 
+        # Security check
+        if not Path(input_filepath).is_absolute():
+            raise ValueError("Invalid file path")
+
         # Columns selected from each CSV file, including normalized metadata
         select_columns = f"""
             '{symbol}'::VARCHAR AS symbol,
