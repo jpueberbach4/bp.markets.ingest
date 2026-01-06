@@ -226,4 +226,8 @@ GET http://localhost:8000/ohlcv/1.0/indicator/macd/fast/12/slow/26/signal/9/sele
 ```
 
 
-I don't know if this feature remains. I am having issues with the way "warmup" rows and limit are currently handled. ATM it drops (correctly) the warmup rows but it makes it difficult to use. Have to see on specs of other API's.
+It’s unclear whether this feature will remain. There are currently issues with how warmup rows and limit are handled. While the warmup rows are correctly dropped, the behavior makes the feature difficult to use in practice.
+
+With the current approach, the first N rows (for example, 14) are dropped starting at—and including—the specified after date.
+
+Use with caution. If this behavior changes in the future, the most likely adjustment is that the after date will be included in the response (the warmup rows will be handled in the background but "invisible" in the response).
