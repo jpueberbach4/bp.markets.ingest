@@ -14,6 +14,7 @@ See [Tests](tests.md)
 - Replay functionality
 
 **P2 (Important):**
+- Redesign of HTTP API for version 1.1
 - MIN-MAX date-range API
 - Stock split support
 
@@ -23,7 +24,8 @@ See [Tests](tests.md)
 
 **P4 (Architectural):**
 - General QA improvements
-- IO Layer abstraction
+- IO Layer abstraction \
+  By abstracting the IO layer someone, or me, could potentially switch to a binary format, eliminating the 80% consumption because of CSV. I will provide for it, we will see later what to do with it. Scheduled right after replay and the custom-shifting in transform. DuckDB has a read_binary method. Did a quick calculation: estimated speedup: 20-30x. 60-80% storage reduction. So that would mean ~10 million candles per second on commodity hardware (theoretically). That's laughable fast. Initially i didnt want to do this, because the C++ variant already handles it. But its also intriguing to know how far we can push with Python (This is not 100 percent accurate since we already use heavily C-optimized routines (numpy, pandas)). **Note:** I will first seek formal approval before going down this path. It needs to be legally clean.
 - Librarization
 
 This is still in an MVP state. Although working very well. It's an MVP.
