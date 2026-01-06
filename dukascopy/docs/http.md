@@ -204,25 +204,25 @@ Below is an example on how to get the RSI of candle 2025-12-30 23:00:00 (notice 
 RSI
 
 ```sh
-GET http://localhost:8000/ohlcv/1.0/indicator/rsi/period/14/select/EUR-USD,1h/after/2025-12-01+00:00:00/until/2025-12-31+00:00:00/period/14/output/JSON?order=desc
+GET http://localhost:8000/ohlcv/1.0/indicator/rsi/period/14/select/EUR-USD,1h/after/2025-12-01+00:00:00/until/2025-12-31+00:00:00/output/JSON?order=desc
 ```
 
 SMA
 
 ```sh
-GET http://localhost:8000/ohlcv/1.0/indicator/sma/period/14/select/EUR-USD,1h/after/2025-12-01+00:00:00/until/2025-12-31+00:00:00/period/14/output/JSON?order=desc
+GET http://localhost:8000/ohlcv/1.0/indicator/sma/period/20/select/EUR-USD,1h/after/2025-12-01+00:00:00/until/2025-12-31+00:00:00/output/JSON?order=desc
 ```
 
 EMA
 
 ```sh
-GET http://localhost:8000/ohlcv/1.0/indicator/ema/period/14/select/EUR-USD,1h/after/2025-12-01+00:00:00/until/2025-12-31+00:00:00/period/14/output/JSON?order=desc
+GET http://localhost:8000/ohlcv/1.0/indicator/ema/period/50/select/EUR-USD,1h/after/2025-12-01+00:00:00/until/2025-12-31+00:00:00/output/JSON?order=desc
 ```
 
 MACD
 
 ```sh
-GET http://localhost:8000/ohlcv/1.0/indicator/macd/fast/12/slow/26/signal/9/select/EUR-USD,1h/after/2025-12-01+00:00:00/until/2025-12-31+00:00:00/period/14/output/JSON?order=desc
+GET http://localhost:8000/ohlcv/1.0/indicator/macd/fast/12/slow/26/signal/9/select/EUR-USD,1h/after/2025-12-01+00:00:00/until/2025-12-31+00:00:00/output/JSON?order=desc
 ```
 
 
