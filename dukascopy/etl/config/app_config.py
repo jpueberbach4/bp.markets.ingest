@@ -27,8 +27,13 @@
 import yaml
 import glob
 import copy
+import jsonschema
+import orjson
+from jsonschema import validate
 from dataclasses import dataclass, fields, field
+from pathlib import Path
 from typing import Dict, List, Optional, Type, TypeVar, Any, Union, get_origin, get_args
+from etl.exceptions import *
 
 
 @dataclass
@@ -584,9 +589,20 @@ def load_app_config(file_path: str = "config.yaml") -> AppConfig:
     # Resolve YAML includes and load the merged YAML content as a string
     try:
         yaml_str = resolve_yaml_includes_to_string(file_path)
-
         # Parse the resolved YAML string into a Python dictionary
         yaml_data = yaml.safe_load(yaml_str)
+
+        # Load JSON Schema
+        schema_path = Path(__file__).parent.resolve() / "schema.json"
+        with open(schema_path, "rb") as f:
+            schema = orjson.loads(f.read())
+
+        try:
+            # Validate against JSON schema
+            validate(instance=yaml_data, schema=schema)
+        except jsonschema.exceptions.ValidationError as e:
+            raise ConfigurationError(f"Configuration invalid {list(e.path)}: {e.message}")
+
     except (FileNotFoundError, yaml.YAMLError):
         # Fall back to default configuration if loading or parsing fails
         return AppConfig()

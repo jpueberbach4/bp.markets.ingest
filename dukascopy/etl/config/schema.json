@@ -1,0 +1,138 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "additionalProperties": true,
+    "required": ["aggregate", "download", "orchestrator", "transform", "resample"],
+    "definitions": {
+        "path_string": {
+            "type": "string",
+            "minLength": 1
+        },
+        "time_string": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)(:[0-5]\\d)?$|^epoch$"
+        },
+        "date_string": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}( \\d{2}:\\d{2}:\\d{2})?$"
+        },
+        "processing_step": {
+            "type": "object",
+            "properties": {
+                "action": { "type": "string" },
+                "ends_with": { "type": "array", "items": { "type": "string" } },
+                "offset": { "type": "integer" }
+            }
+        },
+        "timeframe_config": {
+            "type": "object",
+            "properties": {
+                "rule": { "type": "string" },
+                "label": { "enum": ["left", "right"] },
+                "closed": { "enum": ["left", "right"] },
+                "source": { "type": "string" },
+                "origin": { "$ref": "#/definitions/time_string" },
+                "pre": { "type": "object", "additionalProperties": { "$ref": "#/definitions/processing_step" } },
+                "post": { "type": "object", "additionalProperties": { "$ref": "#/definitions/processing_step" } }
+            },
+            "additionalProperties": false
+        }
+    },
+    "properties": {
+        "aggregate": {
+            "type": "object",
+            "properties": {
+                "fsync": { "type": "boolean" },
+                "paths": {
+                    "type": "object",
+                    "properties": {
+                        "data": { "$ref": "#/definitions/path_string" },
+                        "source": { "$ref": "#/definitions/path_string" }
+                    }
+                }
+            }
+        },
+        "download": {
+            "type": "object",
+            "properties": {
+                "max_retries": { "type": "integer", "minimum": 0 },
+                "backoff_factor": { "type": "number", "minimum": 1 },
+                "timeout": { "type": "integer", "minimum": 1 },
+                "rate_limit_rps": { "type": "number", "minimum": 0 },
+                "paths": { "type": "object" }
+            }
+        },
+        "orchestrator": {
+            "type": "object",
+            "properties": {
+                "paths": {
+                    "type": "object",
+                    "additionalProperties": { "$ref": "#/definitions/path_string" }
+                }
+            }
+        },
+        "transform": {
+            "type": "object",
+            "properties": {
+                "time_shift_ms": { "type": "integer" },
+                "round_decimals": { "type": "integer" },
+                "fsync": { "type": "boolean" },
+                "validate": { "type": "boolean" },
+                "paths": { "type": "object" },
+                "timezones": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                            "offset_to_shift_map": { "type": "object" },
+                            "symbols": { "type": "array", "items": { "type": "string" } }
+                        }
+                    }
+                }
+            }
+        },
+        "resample": {
+            "type": "object",
+            "properties": {
+                "round_decimals": { "type": "integer" },
+                "batch_size": { "type": "integer" },
+                "fsync": { "type": "boolean" },
+                "paths": { "type": "object" },
+                "timeframes": { "type": "object", "additionalProperties": { "$ref": "#/definitions/timeframe_config" } },
+                "symbols": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                            "timezone": { "type": "string" },
+                            "skip_timeframes": { "type": "array", "items": { "type": "string" } },
+                            "timeframes": { "type": "object", "additionalProperties": { "$ref": "#/definitions/timeframe_config" } },
+                            "sessions": {
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "object",
+                                    "properties": {
+                                        "from_date": { "$ref": "#/definitions/date_string" },
+                                        "to_date": { "$ref": "#/definitions/date_string" },
+                                        "weekdays": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 6 } },
+                                        "ranges": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "from": { "$ref": "#/definitions/time_string" },
+                                                    "to": { "$ref": "#/definitions/time_string" }
+                                                }
+                                            }
+                                        },
+                                        "timeframes": { "type": "object", "additionalProperties": { "$ref": "#/definitions/timeframe_config" } }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

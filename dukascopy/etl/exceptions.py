@@ -28,6 +28,10 @@ class IndexCorruptionError(EtlError):
     """Raised when .idx files are unreadable or logically inconsistent."""
     pass
 
+class ConfigurationError(EtlError):
+    """Raised when configuration could not be schema-validated."""
+    pass
+
 class ProcessingError(EtlError):
     """Raised during Pandas resampling or post-processing merges."""
     pass
