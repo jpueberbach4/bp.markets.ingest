@@ -12,6 +12,7 @@ symbols.user.txt
 crypto.user.txt
 dukascopy.db
 tests/*
+etl/tests/*
 config.user/*
 *.parquet
 *.csv
