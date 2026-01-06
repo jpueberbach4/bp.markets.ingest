@@ -172,3 +172,4 @@ CHE.IDX-CHF:
           origin: "09:00"
 ```
 
+**Note:** When merging, you need to take the STD/DST switches into account as well. Generally you dont merge anything in the hourly chart. Merging is mostly needed ONLY on the 4h chart-or for other (very) specialized needs. When you want to merge two candles, say 16:00 and 15:00 into the 14:00, specify them both in descending order, below ends_with, This should work but is completely untested.
