@@ -247,3 +247,44 @@ Use with caution. If this behavior changes in the future, the most likely adjust
 The design is currently like this because of heavily relying on the "regular select" (code re-use).
 
 **Sorting DESCENDING is currently a good practice**
+
+**Decision:** This is going to be redesigned. We are going to make it part of the main select API. I will keep the current version under the 1.0 API endpoint. API Version 1.1 will support this:
+
+```sh
+GET http://localhost:8000/ohlcv/1.1/select/AAPL.US-USD,1h[sma(20,50),ema(50),macd(12,26,9)]:skiplast/ \
+select/EUR-USD,1h:skiplast/after/2025.11.22,13:59:59/until/2025-12-22+13:59:59/output/JSON
+
+```
+
+It will then extend the default price output with the indicator values, in a subsection indicators.
+
+Example:
+
+```json
+{
+  "symbol": "AAPL.US-USD",
+  "timeframe": "1h",
+  "data": [
+    {
+      "time": "2025-11-22 14:00:00",
+      "open": 150.00,
+      "high": 155.00,
+      "low": 149.00,
+      "close": 152.00,
+      "volume": 1200,
+      "indicators": {
+        "sma_20": 151.20,
+        "sma_50": 148.50,
+        "ema_50": 149.10,
+        "macd_12_26_9": {
+          "line": 1.2,
+          "signal": 0.8,
+          "hist": 0.4
+        }
+      }
+    }
+  ]
+}
+```
+
+I don't have time atm to implement 1.1 right now.
