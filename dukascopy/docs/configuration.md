@@ -194,6 +194,9 @@ This table defines the standard strings used in the `timeframe.rule` fields to d
 | **A** or **Y** | Year end | `1A` or `1Y` |
 | **AS** or **YS** | Year start | `1AS` or `1YS` |
 
-Hope this helps.
-
 As `timeframe.source` you should take the closest "parent"-timeframe. Eg for hours, you take the 1h, for months, you take 1d (do not use weeks since weeks can span multiple months). For quarter you take months. This is to make sure that resampling stays effective. Ofcourse you can take any source, but deriving a quarterly frame from minutes is not very efficient.
+
+One more thing: please maintain a clear and consistent naming convention for custom timeframes. For example, a 2-hour timeframe should be named `2h`. If you want a 5-hour timeframe aligned to the right, name it 5h-right.
+This is important because the web interface parses the timeframe name to determine the API interval query length. It looks for `d`, `m`, `W`, or `M` in the name when the timeframe is not a default one. If a completely different naming scheme is used, the `index.html` file will need to be modified for efficiency.
+
+Hope this helps.
