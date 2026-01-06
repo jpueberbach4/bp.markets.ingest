@@ -199,7 +199,31 @@ Example output for JSON URL
 
 ## Beta
 
-There is a beta version of RSI calculation but don't use it yet. It's not finished. I am thinking of a way to efficiently work with warmup rows. The bigger the limit, the more time the indicator calculation has to "stabilize". 
+Below is an example on how to get the RSI of candle 2025-12-30 23:00:00 (notice the until is +1h)
+
+RSI
 
 ```sh
-http://localhost:8000/ohlcv/1.0/indicator/rsi/select/EUR-USD,1h:skiplast/after/2025-12-01+00:00:00/period/20/output/JSON?order=desc&limit=50
+GET http://localhost:8000/ohlcv/1.0/indicator/rsi/period/14/select/EUR-USD,1h/after/2025-12-01+00:00:00/until/2025-12-31+00:00:00/period/14/output/JSON?order=desc
+```
+
+SMA
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/sma/period/14/select/EUR-USD,1h/after/2025-12-01+00:00:00/until/2025-12-31+00:00:00/period/14/output/JSON?order=desc
+```
+
+EMA
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/ema/period/14/select/EUR-USD,1h/after/2025-12-01+00:00:00/until/2025-12-31+00:00:00/period/14/output/JSON?order=desc
+```
+
+MACD
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/macd/fast/12/slow/26/signal/9/select/EUR-USD,1h/after/2025-12-01+00:00:00/until/2025-12-31+00:00:00/period/14/output/JSON?order=desc
+```
+
+
+I don't know if this feature remains. I am having issues with the way "warmup" rows and limit are currently handled. ATM it drops (correctly) the warmup rows but it makes it difficult to use. Have to see on specs of other API's.
