@@ -167,7 +167,7 @@ CHE.IDX-CHF:
               action: merge
               ends_with:
               - "15:00:00"      # Select candle ending with this timestamp
-              offset: -1        # 16:00 (offset 0), 15:00 (offset -1)
+              offset: -1        # 15:00 (offset 0), 14:00 (offset -1)
         4h:                     
           origin: "09:00"
 ```
