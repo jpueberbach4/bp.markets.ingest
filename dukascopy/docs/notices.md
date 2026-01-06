@@ -4,11 +4,7 @@
 
 The data portion is now (fairly) complete. Naturally, some QA issues remain, particularly in the builder component, which will be addressed over time. Ensuring optimal QA for the ETL process takes priority over the extraction utility itself.
 
-[Replay](../replay/placeholder.md) is next.
-
-Feature pre-testing starts tomorrow. One focus is determining whether a candle’s “state” can be derived deterministically and efficiently using the timestamp, timeframe, symbol, and configuration. Success here would eliminate a major obstacle.
-
-**Update:** Cracked it. Tomorrow actual programming begins.
+**Note:** I’ve addressed the main issue with replay, but I believe it’s prudent to start abstracting the I/O layer first. As more features are added, an increasing number of components are being built on the current I/O implementation. To avoid a large-scale refactor later, it makes sense to tackle the I/O layer now. We’re moving toward a binary format with fixed-length records, while keeping a configurable fallback to CSV to avoid breaking existing installations.
 
 ## Notice: Configuration validation - 2025-01-06
 
