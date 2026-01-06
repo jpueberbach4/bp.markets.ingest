@@ -42,8 +42,6 @@ Post-processing is a data-refinement layer. It defines a set of transformation r
 
 >**Important Note on a Timeframe's Label and Closed Property:** To ensure maximum MT4 compatibility and to ensure you keep that compatibility, don't change the label or closed properties of a pre-defined timeframe. Keep them at "left". If you really need something to be aligned to the right, use a custom timeframe.
 
->**Important Note on Config Validation:** Currently, the system has limited configuration validation. Invalid configuration does not corrupt your data but will break the execution of the system. I will add schema and config validation to the ```load_app_config``` method, soon. 
-
 Now that the core definitions are established, we will demonstrate how to configure a symbol with custom sessions and determine the appropriate alignment settings. For this walkthrough, we will use the most complex asset in the current pipeline: SGD.IDX-SGD (the Singapore stock index). We will approach this scenario as a "from-scratch" implementation, assuming no prior configuration exists.
 
 **First step:** Symbol discovery and registration
