@@ -63,7 +63,13 @@ Output from the builder tool will remain the same - CSV/Parquet.
 
 This is pretty fast already but will become extremely fast.
 
-**Update**: transform is 2.8x as fast in binary mode.
+**Update**: First results are in for binary mode
+
+- Transform: 2.8x increase in throughput
+- Aggregate: 3.4x increase in throughput
+- Resample: 7.6x increase in throughput (20 year EUR-USD data, 10 timeframes, 2 seconds)
+
+That's really amazing. If it's right. Can't think of a reason why it shouldn't be. Will verify this thoroughly.
 
 ## Notice: Configuration validation - 2025-01-06
 
