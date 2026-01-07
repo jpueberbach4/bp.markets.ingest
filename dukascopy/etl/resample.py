@@ -161,6 +161,10 @@ class ResampleEngine:
         # Resolve all filesystem paths immediately
         self._resolve_paths()
 
+        # Setup reader/writer/indexreaderwriter
+
+
+
     def _resolve_paths(self) -> None:
         # TODO: changes needed, currently pinned to .csv
 
@@ -323,8 +327,6 @@ class ResampleEngine:
             )
             sio.close()
             return df, eof
-        except (SessionResolutionError) as e:
-            raise BatchError(f"Batch preparation failed for {self.symbol}: {e}") from e
         except Exception as e:
             raise RuntimeError(f"Unexpected system failure during batching: {e}") from e
 

@@ -106,6 +106,7 @@ class ResampleConfig:
     """Root configuration for the resampling stage."""
     round_decimals: int = 8
     batch_size: int = 250_000
+    fmode: str = "text"
     fsync: bool = False
     paths: ResamplePaths = field(default_factory=ResamplePaths)
     timeframes: Dict[str, ResampleTimeframe] = field(default_factory=dict)
