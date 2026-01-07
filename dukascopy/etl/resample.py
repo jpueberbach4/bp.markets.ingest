@@ -107,6 +107,13 @@ completely. So, we drop from 90 seconds to about 30 seconds. Half a minute for
 resampling 42 symbols, 10 timeframes, average 15-20 years of 1m data per symbol.
 Session-handling logic inclusive.
 
+Furthermore. DuckDB supports a method to directly read from a zero-copy np.frombuffer
+array. This is orders of magnitude faster than read_csv. We will gain massively
+on DuckDB manipulations as well, thereby massively increasing performance of the
+web-interface (for lowest granularities), indicator calculations and builder exports.
+
+I noticed the webinterface having a hard time with 1m and 5m charts. That will become history.
+
 Example:
 
 from typing import Protocol, runtime_checkable
