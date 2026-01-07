@@ -155,7 +155,6 @@ class AggregateEngine:
                 data = reader.read_raw()
 
                 if not data:
-                    print("nodata")
                     return False
 
                 writer.seek(output_position)
