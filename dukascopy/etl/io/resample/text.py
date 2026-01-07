@@ -2,10 +2,11 @@ import os
 import pandas as pd
 from pathlib import Path
 from typing import Tuple, Optional
+from io import StringIO
 import io
 
-from etl.io.protocols import ResampleIOReader, ResampleIOWriter
-from etl.exceptions import ProcessingError
+from etl.io.protocols import ResampleIOReader, ResampleIOWriter, ResampleIOIndexReaderWriter
+from etl.exceptions import *
 
 class ResampleIOReaderText(ResampleIOReader):
     
@@ -25,7 +26,8 @@ class ResampleIOReaderText(ResampleIOReader):
         self.header = first_line.decode(self.encoding).strip()
         self.byte_offset = self.file.tell()
     
-    def read_batch(self, offset: int, batch_size: int) -> pd.DataFrame:
+    def read_batch(self, batch_size: int) -> pd.DataFrame:
+        header = "time,open,high,low,close,volume\n"
         sio = StringIO()
         try:
             sio.write(f"{header.strip()},offset\n")
@@ -99,13 +101,21 @@ class ResampleIOWriterText(ResampleIOWriter):
             self.bytes_written += self.file.write("time,open,high,low,close,volume\n")
 
     def write_batch(self, df: pd.DataFrame, offset: Optional[int] = None) -> int:
+        df.index = df.index.strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
         csv_str = df.to_csv(index=True, header=False)
+        if offset:
+            self.file.seek(offset)
+
         self.bytes_written += self.file.write(csv_str)
         return self.bytes_written
     
     def truncate(self, size: int) -> None:
         if size < 0:
             raise ValueError("Truncation size cannot be negative")
+
+        self.file.truncate(size)
     
     def flush(self, fsync: bool = False) -> None:
         if self.file:
@@ -129,3 +139,50 @@ class ResampleIOWriterText(ResampleIOWriter):
         if self.file:
             self.file.close()
             self.file = None
+
+
+class ResampleIOIndexReaderWriterText(ResampleIOIndexReaderWriter):
+    def __init__(self, index_path: Path, fsync: bool = False):
+        self.index_path = index_path
+        self.fsync = fsync
+    
+    def read(self) -> Tuple[int, int]:
+        try:
+            if not self.index_path.exists():
+                self.write(0, 0)
+                return 0, 0
+            
+            with open(self.index_path, "r") as f:
+                lines = f.readlines()[:2]
+            
+            if len(lines) < 2:
+                raise IndexCorruptionError(f"Incomplete index at {self.index_path}")
+            
+            return int(lines[0].strip()), int(lines[1].strip())
+            
+        except (ValueError, IndexError) as e:
+            raise IndexCorruptionError(f"Corrupt index at {self.index_path}: {e}")
+    
+    def write(self, input_pos: int, output_pos: int) -> None:
+        if input_pos < 0 or output_pos < 0:
+            raise IndexValidationError(
+                f"Invalid offsets: IN={input_pos}, OUT={output_pos}"
+            )
+        
+        try:
+            self.index_path.parent.mkdir(parents=True, exist_ok=True)
+            temp_path = self.index_path.with_suffix(".tmp")
+            
+            with open(temp_path, "w") as f:
+                f.write(f"{input_pos}\n{output_pos}")
+                f.flush()
+                if self.fsync:
+                    os.fsync(f.fileno())
+            
+            os.replace(temp_path, self.index_path)
+            
+        except OSError as e:
+            raise IndexWriteError(f"Failed to persist index: {e}")
+    
+    def close(self) -> None:
+        pass    

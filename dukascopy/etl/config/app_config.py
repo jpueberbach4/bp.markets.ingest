@@ -94,6 +94,7 @@ class ResampleSymbol:
     round_decimals: Optional[int] = None
     batch_size: Optional[int] = None
     fsync: Optional[bool] = None
+    fmode: Optional[str] = None
     skip_timeframes: List[str] = field(default_factory=list)
     timeframes: Dict[str, ResampleTimeframe] = field(default_factory=dict)
     timezone: str = ""
@@ -446,6 +447,9 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleSy
     # Optional fsync safety feature (forces flushing to disk)
     if symbol_override.fsync is None:
         symbol_override.fsync = merged_config.fsync
+        
+    # fmode (binary or text), inherit from global
+    symbol_override.fmode = merged_config.fmode
 
     def normalize_tf(tf: ResampleTimeframe) -> ResampleTimeframe:
         """Normalize timeframe pre/post processing steps.

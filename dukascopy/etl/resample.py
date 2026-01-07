@@ -61,7 +61,12 @@ from typing import Tuple, IO, Optional
 from etl.config.app_config import AppConfig, ResampleSymbol, resample_get_symbol_config, ResampleTimeframeProcessingStep
 from etl.processors.resample_pre_process import resample_pre_process_origin
 from etl.processors.resample_post_process import resample_post_process_merge, resample_post_process_shift
+
+
+from etl.io.protocols import *  # lazy for a moment
 from etl.exceptions import *
+
+from etl.io.resample.factory import ResampleIOFactory
 import traceback
 
 """
@@ -142,6 +147,10 @@ class ResampleEngine:
         config: ResampleSymbol,
         data_path: Path,
     ):
+
+        # Set primary IO mode
+        self.fmode = config.fmode
+
         # Set properties
         self.symbol = symbol
         self.ident = ident
@@ -149,6 +158,12 @@ class ResampleEngine:
 
         # Root directory for resampled CSVs
         self.data_path = data_path
+
+        # Setup IO
+        self.reader: Optional[ResampleIOReader] = None
+        self.writer: Optional[ResampleIOWriter] = None
+        self.index: Optional[ResampleIOIndexReaderWriter] = None
+
 
         # These are resolved dynamically based on timeframe configuration
         self.input_path: Optional[Path] = None
@@ -161,18 +176,24 @@ class ResampleEngine:
         # Resolve all filesystem paths immediately
         self._resolve_paths()
 
-        # Setup reader/writer/indexreaderwriter
+        # Skip setting up IO if root timeframe (eg 1m)
+        if self.is_root:
+            return
 
+        # Setup IO
+        self.index = ResampleIOFactory.get_index_handler(self.index_path, self.fmode, fsync=self.config.fsync)
+        self.reader = ResampleIOFactory.get_reader(self.input_path, self.fmode)
+        self.writer =  ResampleIOFactory.get_writer(self.output_path, self.fmode, fsync=self.config.fsync)
+        # Done setting up IO, next routine
 
 
     def _resolve_paths(self) -> None:
-        # TODO: changes needed, currently pinned to .csv
-
+        extension = "csv" if self.fmode == "text" else "bin"
         timeframe = self.config.timeframes.get(self.ident)
 
         # Root timeframe: pass-through source (e.g. 1m CSV)
         if not timeframe.rule:
-            root_source = Path(timeframe.source) / f"{self.symbol}.csv"
+            root_source = Path(timeframe.source) / f"{self.symbol}.{extension}"
 
             # Root CSV must exist
             if not root_source.exists():
@@ -195,14 +216,14 @@ class ResampleEngine:
         # Resolve upstream input path
         if source_tf.rule is not None:
             # Source itself is resampled
-            input_path = self.data_path / timeframe.source / f"{self.symbol}.csv"
+            input_path = self.data_path / timeframe.source / f"{self.symbol}.{extension}"
         else:
             # Source is an external CSV
-            input_path = Path(source_tf.source) / f"{self.symbol}.csv"
+            input_path = Path(source_tf.source) / f"{self.symbol}.{extension}"
 
         # Output CSV and index file locations
-        output_path = self.data_path / self.ident / f"{self.symbol}.csv"
-        index_path = self.data_path / self.ident / "index" / f"{self.symbol}.idx"
+        output_path = self.data_path / self.ident / f"{self.symbol}.{extension}"
+        index_path = self.data_path / self.ident / "index" / f"{self.symbol}.{extension}"
 
         # Validate that upstream data exists
         if not input_path.exists():
@@ -243,95 +264,7 @@ class ResampleEngine:
 
         return df
 
-    def read_index(self) -> Tuple[int, int]:
-        # TODO: changes needed, asbtract this function away
-        try:
-            # Initialize index if missing
-            if not self.index_path or not self.index_path.exists():
-                self.write_index(0, 0)
-                return 0, 0
-
-            # Read the first two lines (input_pos, output_pos)
-            with open(self.index_path, "r") as f:
-                lines = f.readlines()[:2]
-        
-            # No length check needed, caught by IndexError
-            return int(lines[0].strip()), int(lines[1].strip())
-
-        except (ValueError, IndexError) as e:
-            
-            raise IndexCorruptionError(f"Corrupt index at {self.index_path}. Check for partial writes.") from e
-
-
-    def write_index(self, input_pos: int, output_pos: int) -> None:
-        # TODO: changes needed, asbtract this function away
-        if input_pos < 0 or output_pos < 0:
-            raise IndexValidationError(
-                f"Invalid offsets for {self.symbol}: IN={input_pos}, OUT={output_pos}"
-            )
-        try:
-            # Ensure index directory exists
-            self.index_path.parent.mkdir(parents=True, exist_ok=True)
-
-            # Write offsets to a temporary file
-            temp_path = self.index_path.with_suffix(".tmp")
-
-            with open(temp_path, "w") as f:
-                # Write positions
-                f.write(f"{input_pos}\n{output_pos}")
-                # Flush to OS
-                f.flush()
-                # Force persist to disk
-                if self.config.fsync:
-                    os.fsync(f.fileno())
-
-            # Atomic replace
-            os.replace(temp_path, self.index_path)
-        
-        except OSError as e:
-            # Disk full, Permission denied, etc.
-            raise IndexWriteError(
-                f"Failed to persist index for {self.symbol}: {e}"
-            ) from e
-
-    def prepare_batch(self, f_input: IO, header: str) -> Tuple[pd.DataFrame, bool]:
-        # TODO: changes needed. 
-        #       reader must be passed in, header can be eliminated, becomes fixed
-        #       reader has read_batch(size) function, returns dataframe with byte positions
-        #       in case of binary reader with fixed length records, offset in df
-        #       can be a vectorized multiplication start+(id*records_size)
-        #       we can make it "zero-copy", use a mmap view and np.frombuffer
-        #       this will become very very very fast. no more string/parsing overhead
-        sio = StringIO()
-        try:
-            sio.write(f"{header.strip()},offset\n")
-            eof = False
-            offset_before = f_input.tell()
-            for _ in range(self.config.batch_size):
-                line_bytes = f_input.readline()
-                if not line_bytes:
-                    eof = True
-                    break
-
-                line = line_bytes.decode('utf-8').strip()
-                sio.write(f"{line.strip()},{offset_before}\n")
-                offset_before += len(line_bytes)
-            sio.seek(0)
-            df = pd.read_csv(
-                sio,
-                parse_dates=["time"],
-                index_col="time",
-                date_format="%Y-%m-%d %H:%M:%S",
-                low_memory=False,
-                sep=',',
-            )
-            sio.close()
-            return df, eof
-        except Exception as e:
-            raise RuntimeError(f"Unexpected system failure during batching: {e}") from e
-
     def process_resample(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, int]:
-        # TODO: changes needed
         try:
             if not pd.api.types.is_datetime64_any_dtype(df.index):
                 raise ProcessingError(f"Timestamp parsing failed for {self.symbol}: Index is not datetime.")
@@ -387,11 +320,6 @@ class ResampleEngine:
                 if tf_post:
                     for name, tf_step in tf_post.items():
                         full_resampled = self._apply_post_processing(full_resampled, tf_step)
-
-            # TODO: this will only be necessary for the CSV writer, move it to the CSV writer
-            full_resampled.index = full_resampled.index.strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
 
             try:
                 next_input_pos = int(full_resampled.iloc[-1]["offset"])
@@ -452,57 +380,37 @@ class ResampleWorker:
                 
 
     def _execute_engine(self, engine: ResampleEngine) -> None:
-        # TODO: changes needed
+
         try:
-            # TODO: setup index, writer, reader (or do in constructor)
+            input_pos, output_pos = engine.index.read()
 
-            # TODO: index.READ()
-            input_pos, output_pos = engine.read_index()
+            with engine.reader, engine.writer:
+                if input_pos > 0:
+                    engine.reader.seek(input_pos)
 
-            with open(engine.input_path, "rb") as f_in, open(engine.output_path, "r+") as f_out:
-                
-                # TODO: reader.READ-HEADER function
-                header_bytes = f_in.readline()
-                header = header_bytes.decode('utf-8')
-                if input_pos > 0: f_in.seek(input_pos)
-
-                # TODO: writer.WRITE-HEADER function
                 if output_pos == 0:
-                    f_out.write(header)
-                    output_pos = f_out.tell()
+                    output_pos = engine.writer.tell()
 
                 while True:
-                    # TODO: pass in reader, eliminate eof
-                    df, eof = engine.prepare_batch(f_in, header)
+                    df = engine.reader.read_batch(self.config.batch_size)
                     try:
-                        # This remains unchanged
                         resampled, next_in_pos = engine.process_resample(df)
 
-                        # TODO: writer.WRITE_AT(output_pos, df, [truncate=true, fsync=self.config.fsync])
-                        f_out.seek(output_pos)
-                        f_out.truncate(output_pos)
-                        f_out.write(resampled.iloc[:-1].to_csv(index=True, header=False))
-                        f_out.flush()
-                        if self.config.fsync: os.fsync(f_out.fileno())
-                        
-                        # TODO: output_pos = writer.TELL()
-                        output_pos = f_out.tell()
+                        engine.writer.truncate(output_pos)
+                        engine.writer.write_batch(resampled.iloc[:-1], output_pos)
+                        engine.writer.flush()
 
-                        # TODO: index.WRITE(next_in_pos, output_pos)
-                        engine.write_index(next_in_pos, output_pos)
-                        
-                        # TODO: writer.WRITE(df)
-                        f_out.write(resampled.tail(1).to_csv(index=True, header=False))
+                        output_pos = engine.writer.tell()
+                        engine.index.write(next_in_pos, output_pos)
+                        engine.writer.write_batch(resampled.tail(1))
 
                     finally:
                         pass
 
-                    # TODO: reader.EOF()
-                    if eof:
+                    if engine.reader.eof():
                         break
                     
-                    # TODO: reader.SEEK
-                    f_in.seek(next_in_pos)
+                    engine.reader.seek(next_in_pos)
 
         except OSError as e:
             # Any OS Error
@@ -533,3 +441,13 @@ def fork_resample(args) -> bool:
         raise ForkProcessError(f"Error on resample fork for {symbol}") from e
 
     return True
+
+
+
+if __name__ == "__main__":
+    from etl.config.app_config import *
+
+    app_config = load_app_config('config.user.yaml')
+
+    fork_resample(["EUR-USD", app_config])
+

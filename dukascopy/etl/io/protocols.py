@@ -18,7 +18,7 @@ class EtlIO(ABC):
 
 class ResampleIOReader(EtlIO):
     @abstractmethod
-    def read_batch(self, offset: int, batch_size: int) -> Tuple[pd.DataFrame, int]:
+    def read_batch(self, batch_size: int) -> Tuple[pd.DataFrame, int]:
         pass
     
     @abstractmethod
@@ -56,3 +56,13 @@ class ResampleIOWriter(EtlIO):
     def finalize(self) -> Path:
         pass
 
+
+class ResampleIOIndexReaderWriter(EtlIO):
+    @abstractmethod
+    def read(self) -> Tuple[int,int]:
+        pass
+
+    @abstractmethod
+    def write(self, input_pos: int, output_pos: int) -> None:
+        pass
+     

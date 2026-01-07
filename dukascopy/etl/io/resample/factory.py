@@ -1,11 +1,9 @@
 from pathlib import Path
 from typing import Optional, Dict, Any
 
-from etl.io.protocols import ResampleIOReader, ResampleIOWriter
-from etl.io.resample.index import ResampleIOIndexReaderWriter
-from etl.io.resample.text import ResampleIOReaderText, ResampleIOWriterText
-from etl.io.resample.binary import ResampleIOReaderBinary, ResampleIOWriterBinary
-
+from etl.io.protocols import ResampleIOReader, ResampleIOWriter, ResampleIOIndexReaderWriter
+from etl.io.resample.text import ResampleIOReaderText, ResampleIOWriterText, ResampleIOIndexReaderWriterText
+from etl.io.resample.binary import ResampleIOReaderBinary, ResampleIOWriterBinary, ResampleIOIndexReaderWriterBinary
 
 class ResampleIOFactory:
 
@@ -36,10 +34,14 @@ class ResampleIOFactory:
     
     @staticmethod
     def get_index_handler(
-        index_path: Path,
-        fsync: bool = False
+        filepath: Path,
+        format: str = 'text',
+        **kwargs
     ) -> ResampleIOIndexReaderWriter:
-        return ResampleIOIndexReaderWriter(index_path, fsync)
+        if format == 'binary':
+            return ResampleIOIndexReaderWriterBinary(filepath, **kwargs)
+        else:
+            return ResampleIOIndexReaderWriterText(filepath, **kwargs)
     
     @staticmethod
     def _detect_format(filepath: Path) -> str:

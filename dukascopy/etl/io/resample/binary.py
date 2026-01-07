@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Tuple, Optional
 import io
 
-from etl.io.protocols import ResampleIOReader, ResampleIOWriter
+from etl.io.protocols import ResampleIOReader, ResampleIOWriter, ResampleIOIndexReaderWriter
 from etl.exceptions import ProcessingError
 
 # TODO: implement
@@ -83,3 +83,17 @@ class ResampleIOWriterBinary(ResampleIOWriter):
         if self.file:
             self.file.close()
             self.file = None
+
+class ResampleIOIndexReaderWriterBinary(ResampleIOIndexReaderWriter):
+    def __init__(self, index_path: Path, fsync: bool = False):
+        self.index_path = index_path
+        self.fsync = fsync
+    
+    def read(self) -> Tuple[int, int]:
+        pass
+    
+    def write(self, input_pos: int, output_pos: int) -> None:
+        pass
+    
+    def close(self) -> None:
+        pass    
