@@ -14,9 +14,12 @@ We are going to make big changes in these classes. IO will get abstracted
 - ResampleIOWriterText (Regular handling) - implemented
 - ResampleIOIndexReaderWriterText (Regular handling) - implemented
 
-- ResampleIOReaderBinary (MemoryMapped)
-- ResampleIOWriterBinary (MemoryMapped)
-- ResampleIOIndexReaderWriterBinary (16 bytes write, perhaps header)
+- ResampleIOReaderBinary - implemented - untested
+- ResampleIOWriterBinary - implemented - untested
+- ResampleIOIndexReaderWriterBinary - implemented - untested
+
+
+**Note:** We will need binary output from aggregate and transform as well. When those steps are done we can start testing and profiling.
 
 - ResampleIOFactory - implemented
   To return wither a Text/Binary reader/writer
