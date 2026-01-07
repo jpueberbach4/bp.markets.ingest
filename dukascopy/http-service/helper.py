@@ -59,11 +59,28 @@ import csv
 import io
 import os
 import orjson
+import mmap
+import numpy as np
+import pandas as pd
+import duckdb 
 
 from typing import Dict, Any, List
 from urllib.parse import unquote_plus
 from pathlib import Path
 from fastapi.responses import PlainTextResponse, JSONResponse
+
+
+# Define the C-struct equivalent for numpy
+DTYPE = np.dtype([
+    ('ts', '<u8'),           # Timestamp in milliseconds
+    ('ohlcv', '<f8', (5,)),  # Open, High, Low, Close, Volume
+    ('padding', '<u8', (2,)) # Padding to 64 bytes
+])
+
+RECORD_SIZE = 64  # Fixed size of each record in bytes.
+                  # Aligned to standard x86_64 CPU cache-line size.
+                  # This ensures a single record never spans across two cache lines,
+                  # minimizing memory latency and preventing split-load penalties.
 
 CSV_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 CSV_TIMESTAMP_FORMAT_MT4_DATE = "%Y.%m.%d"
@@ -247,6 +264,37 @@ def discover_options(options: Dict):
     except Exception as e:
         raise
 
+
+def generate_mmap_resources(con, options):
+    mmap_resources = []
+    if options.get('fmode') == "binary":
+        for item in options['select_data']:
+            symbol, tf, file_path, modifiers = item
+
+            view_name = f"{symbol}_{tf}_VIEW"
+            #  Open file and create mmap
+            f = open(file_path, "rb")
+            mm = mmap.mmap(f.fileno(), length=0, access=mmap.ACCESS_READ)
+            
+            # Store handles so they don't close prematurely
+            mmap_resources.append((f, mm))
+            
+            # Create the NumPy view
+            data_view = np.frombuffer(mm, dtype=DTYPE)
+            
+            # Map to dict and register (using the epoch_ms optimization)
+            data_dict = {
+                "time_raw": data_view['ts'],
+                "open": data_view['ohlcv'][:, 0],
+                "high": data_view['ohlcv'][:, 1],
+                "low": data_view['ohlcv'][:, 2],
+                "close": data_view['ohlcv'][:, 3],
+                "volume": data_view['ohlcv'][:, 4]
+            }
+            
+            con.register(view_name, pd.DataFrame(data_dict))
+
+    return mmap_resources
 
 def generate_output(options: Dict, columns: List, results: List):
     """Generate formatted output based on the requested output type.

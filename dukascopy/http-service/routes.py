@@ -63,7 +63,7 @@
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import PlainTextResponse, JSONResponse
 from typing import Dict, Optional
-from helper import parse_uri, generate_sql, load_indicator_plugins, discover_options, generate_output
+from helper import parse_uri, generate_sql, load_indicator_plugins, discover_options, generate_output, generate_mmap_resources
 from pathlib import Path
 from version import API_VERSION
 from config.app_config import load_app_config
@@ -74,18 +74,6 @@ import numpy as np
 import pandas as pd
 import orjson
 import duckdb 
-
-# Define the C-struct equivalent for numpy
-DTYPE = np.dtype([
-    ('ts', '<u8'),           # Timestamp in milliseconds
-    ('ohlcv', '<f8', (5,)),  # Open, High, Low, Close, Volume
-    ('padding', '<u8', (2,)) # Padding to 64 bytes
-])
-
-RECORD_SIZE = 64  # Fixed size of each record in bytes.
-                  # Aligned to standard x86_64 CPU cache-line size.
-                  # This ensures a single record never spans across two cache lines,
-                  # minimizing memory latency and preventing split-load penalties.
 
 @lru_cache
 def get_config():
@@ -173,6 +161,7 @@ async def get_indicator(
 
         # Execute the SQL query in an in-memory DuckDB instance
         with duckdb.connect(database=":memory:") as con:
+            mmap_resources = generate_mmap_resources(con, options)
             rel = con.sql(sql)
             columns = rel.columns
             results = rel.fetchall()
@@ -358,32 +347,7 @@ async def get_ohlcv(
         # Execute the SQL query in an in-memory DuckDB instance
         with duckdb.connect(database=":memory:") as con:
 
-            if options.get('fmode') == "binary":
-                for item in options['select_data']:
-                    symbol, tf, file_path, modifiers = item
-
-                    view_name = f"{symbol}_{tf}_VIEW"
-                    #  Open file and create mmap
-                    f = open(file_path, "rb")
-                    mm = mmap.mmap(f.fileno(), length=0, access=mmap.ACCESS_READ)
-                    
-                    # Store handles so they don't close prematurely
-                    mmap_resources.append((f, mm))
-                    
-                    # Create the NumPy view
-                    data_view = np.frombuffer(mm, dtype=DTYPE)
-                    
-                    # Map to dict and register (using the epoch_ms optimization)
-                    data_dict = {
-                        "time_raw": data_view['ts'],
-                        "open": data_view['ohlcv'][:, 0],
-                        "high": data_view['ohlcv'][:, 1],
-                        "low": data_view['ohlcv'][:, 2],
-                        "close": data_view['ohlcv'][:, 3],
-                        "volume": data_view['ohlcv'][:, 4]
-                    }
-                    
-                    con.register(view_name, pd.DataFrame(data_dict))
+            mmap_resources = generate_mmap_resources(con, options)
 
             rel = con.sql(sql)
             results = rel.fetchall()
