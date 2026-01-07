@@ -29,6 +29,9 @@
 """
 import duckdb
 import uuid
+import mmap
+import numpy as np
+import pandas as pd
 from pathlib import Path
 from typing import Tuple, Dict, Any
 
@@ -44,6 +47,18 @@ DUKASCOPY_CSV_SCHEMA = {
 
 # Standard CSV timestamp format for parsing
 CSV_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+# Define the C-struct equivalent for numpy
+DTYPE = np.dtype([
+    ('ts', '<u8'),           # Timestamp in milliseconds
+    ('ohlcv', '<f8', (5,)),  # Open, High, Low, Close, Volume
+    ('padding', '<u8', (2,)) # Padding to 64 bytes
+])
+
+RECORD_SIZE = 64  # Fixed size of each record in bytes.
+                    # Aligned to standard x86_64 CPU cache-line size.
+                    # This ensures a single record never spans across two cache lines,
+                    # minimizing memory latency and preventing split-load penalties.
 
 
 def extract_symbol(task: Tuple[str, str, str, str, str, str, Dict[str, Any]]) -> bool:
@@ -153,20 +168,27 @@ def extract_symbol(task: Tuple[str, str, str, str, str, str, Dict[str, Any]]) ->
             f")"
         )
 
-    # Build DuckDB read CSV statement
-    read_csv_sql = f"""
-        SELECT *
-        FROM read_csv_auto(
-            '{input_filepath}',
-            columns={DUKASCOPY_CSV_SCHEMA}
-        )
-    """
+    if options.get("fmode") == "binary":
+        read_sql = f"""
+            SELECT epoch_ms(time_raw::BIGINT) AS time, 
+            open, high, low, close, volume FROM ohlcv_view
+        """
+    else:
+
+        # Build DuckDB read CSV statement
+        read_sql = f"""
+            SELECT *
+                FROM read_csv_auto(
+                    '{input_filepath}',
+                    columns={DUKASCOPY_CSV_SCHEMA}
+                )
+        """
 
     # Build final COPY statement
     copy_sql = f"""
         COPY (
             SELECT {select_columns}
-            FROM ({read_csv_sql})
+            FROM ({read_sql})
             {where_clause}
         )
         TO '{output_path}'
@@ -177,6 +199,35 @@ def extract_symbol(task: Tuple[str, str, str, str, str, str, Dict[str, Any]]) ->
 
     # Execute COPY in an isolated in-memory DuckDB instance
     con = duckdb.connect(database=":memory:")
+
+    if options.get("fmode") == "binary":
+        # We are in binary mode, open file as binary
+        f = open(input_filepath,"rb")
+        # Memory map the file
+        mm = mmap.mmap(f.fileno(), length=0, access=mmap.ACCESS_READ)
+        # Create a zero copy view
+        data_view = np.frombuffer(mm, dtype=DTYPE)
+        # map the view to a data dict
+        data_dict = {
+            "time_raw": data_view['ts'],
+            "open": data_view['ohlcv'][:, 0],
+            "high": data_view['ohlcv'][:, 1],
+            "low": data_view['ohlcv'][:, 2],
+            "close": data_view['ohlcv'][:, 3],
+            "volume": data_view['ohlcv'][:, 4]
+        }
+
+        # Register view in duckdb
+        con.register('ohlcv_view', pd.DataFrame(data_dict))
+        con.execute(copy_sql)
+        con.unregister('ohlcv_view')
+        con.close()
+        del data_dict
+        del data_view
+        mm.close()
+        f.close()
+        return True
+
     con.execute(copy_sql)
     con.close()
 

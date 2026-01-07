@@ -13,6 +13,7 @@ class HTTPServiceConfig:
     """The root configuration for the http-service script."""
     docs: str = "config/dukascopy/http-docs"
     listen: str = "127.0.0.1:8000"
+    fmode: str = "text"
     limits: HTTPServiceLimits = field(default_factory=HTTPServiceLimits)
 
 @dataclass

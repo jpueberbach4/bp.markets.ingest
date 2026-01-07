@@ -286,5 +286,6 @@ def parse_args(config: BuilderConfig):
         "until": args.until,
         "output": args.output,
         "compression": args.compression,
+        "fmode": config.fmode,
         "mt4": args.mt4,
     }

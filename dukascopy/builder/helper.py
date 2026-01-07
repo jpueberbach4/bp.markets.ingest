@@ -74,13 +74,15 @@ def get_available_data_from_fs(
 
     available_data: Set[Tuple[str, str, str]] = set()
 
+    # Fmode support
+    extension = ".bin" if config.fmode == "binary" else ".csv"
     # Iterate through directories and collect CSV files
     for timeframe, dir_path in scan_dirs.items():
         if not dir_path.is_dir():
             continue
-        for csv_file in dir_path.glob("*.csv"):
+        for data_file in dir_path.glob(f"*{extension}"):
             available_data.add(
-                (csv_file.stem, timeframe, str(csv_file.resolve()))
+                (data_file.stem, timeframe, str(data_file.resolve()))
             )
 
     return sorted(available_data)

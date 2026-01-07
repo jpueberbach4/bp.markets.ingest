@@ -66,8 +66,16 @@ from typing import Dict, Optional
 from helper import parse_uri, generate_sql, load_indicator_plugins, discover_options, generate_output
 from pathlib import Path
 from version import API_VERSION
+from config.app_config import load_app_config
+from functools import lru_cache
 import orjson
 import duckdb 
+
+@lru_cache
+def get_config():
+    config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
+    app_config = load_app_config(config_file)
+    return app_config
 
 # Setup router
 router = APIRouter(

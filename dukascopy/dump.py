@@ -35,4 +35,4 @@ def dump_binary_file(filepath: str, num_records: int = 10):
 dump_binary_file("data/transform/1m/2025/05/EUR-USD_20250501.bin")
 
 
-dump_binary_file("data/resample/15m/EUR-USD.bin")
+dump_binary_file("data/resample/4h/SGD.IDX-SGD.bin")
