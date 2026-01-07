@@ -161,12 +161,20 @@ def extract_symbol(task: Tuple[str, str, str, str, str, str, Dict[str, Any]]) ->
 
     # Optional modifier: skip the latest timestamp
     if "skiplast" in modifiers:
-        where_clause += (
-            f" AND {time_column} < ("
-            f"SELECT MAX({time_column}) "
-            f"FROM read_csv_auto('{input_filepath}')"
-            f")"
-        )
+        if options.get("fmode") == "binary":
+            where_clause += (
+                f" AND {time_column} < ("
+                f"SELECT MAX(epoch_ms(time_raw::BIGINT)) "
+                f"FROM ohlcv_view"
+                f")"
+            )
+        else:
+            where_clause += (
+                f" AND {time_column} < ("
+                f"SELECT MAX({time_column}) "
+                f"FROM read_csv_auto('{input_filepath}')"
+                f")"
+            )
 
     if options.get("fmode") == "binary":
         read_sql = f"""

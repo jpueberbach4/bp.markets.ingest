@@ -40,12 +40,14 @@
 # Below you will find the configuration for the aggregate.py script. 
 aggregate:
   fsync: false                        # Force flush to disk after each aggregation
+  fmode: text                         # File-mode text/binary (all components need to be on same mode)
   paths:
     data: data/aggregate/1m           # Output path for aggregate
     source: data/transform/1m         # Input path for aggregate
 
 ## Below you will find the configuration for the builder script
 builder:
+  fmode: text                         # File-mode text/binary (all components need to be on same mode)
   paths:
     data: data                        # Input path for builder
     temp: data/temp/builder           # Temporary path for builder
@@ -62,6 +64,7 @@ download:
 
 ## Below you will find the configuration for the http service script.
 http:
+  fmode: text                         # File-mode text/binary (all components need to be on same mode)
   docs: config/dukascopy/http-docs    # Directory where HTML docs will live
   listen: ":8000"                     # Listen to this port
   limits:
@@ -81,6 +84,7 @@ transform:
   time_shift_ms: 7200000              # How many milliseconds should we shift (0=UTC, 7200000=GMT+2 (eg MT4 Dukascopy) )
   round_decimals: 8                   # Number of decimals to round OHLCV to
   fsync: false                        # Force flush to disk after each transformation
+  fmode: text                         # File-mode text/binary (all components need to be on same mode)
   validate: false                     # Force validation of OHLCV values
   paths:
     data: data/transform/1m           # Output directory for transform
@@ -98,6 +102,7 @@ resample:
   round_decimals: 8                   # Number of decimals to round OHLCV to
   batch_size: 250000                  # Maximum number of lines to read per batch
   fsync: false                        # Force flush to disk after each batch
+  fmode: text                         # File-mode text/binary (all components need to be on same mode)
   paths:
     data: data/resample               # Output directory for resampled timeframes
   timeframes:
