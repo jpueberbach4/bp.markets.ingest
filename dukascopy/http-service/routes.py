@@ -48,6 +48,8 @@
      configuration and should not be executed directly.
 
  TODO: Think of a way to better handle "warmup rows" for indicators
+ TODO: API VERSION 1.1 IMPL
+ TODO: MARKETDATA CACHE optimization
 
  Requirements:
      - Python 3.8+
@@ -162,9 +164,10 @@ async def get_indicator(
         # Generate SQL
         sql = generate_sql(options)
 
-        # Execute the SQL query in an in-memory DuckDB instance
+        # If binary mode, generate mmap resource for each view
         generate_mmap_resources(options)
 
+        # Execute the SQL query in an in-memory DuckDB instance
         rel = MARKETDATA_CACHE.con.sql(sql)
         results = rel.fetchall()
         columns = rel.columns
@@ -349,12 +352,10 @@ async def get_ohlcv(
         # Generate SQL
         sql = generate_sql(options)
 
-        # Map for holding the binary-mode file_handle and mmap
-        mmap_resources = []
-        # Execute the SQL query in an in-memory DuckDB instance
-
+        # If binary mode, generate mmap resource for each view
         generate_mmap_resources(options)
 
+        # Execute the SQL query in an in-memory DuckDB instance
         rel = MARKETDATA_CACHE.con.sql(sql)
         results = rel.fetchall()
         columns = rel.columns
