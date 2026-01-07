@@ -165,3 +165,20 @@ Correct.
 ** Can't wait to see DuckDB performance on this **
 
 I am still optimizing transform and aggregate, but these two saturate the NVMe drive. Don't know if can make faster if hardware says no.
+
+## Key Takeaways
+
+| Operation | CSV Mode | Binary Mode | Speedup |
+| :--- | :--- | :--- | :--- |
+| **Transform** | 6.00s | 3.00s | 2.0x faster |
+| **Aggregate** | 2.76s | 3.05s | (Slightly slower - optimizing) |
+| **Resample** | 28.14s | 2.52s | **11.2x FASTER!** 🎉 |
+| --- | --- | --- | --- |
+| **TOTAL** | **38.42s** | **9.69s** | **4.0x FASTER OVERALL** |
+
+Total bars: 7,861,440
+
+**Actual throughput: ~810,000 bars/second (on a single core!)**
+**Theoretical throughput on 16-core: ~13 million/s**
+
+That's astonishing performance for a "python script".
