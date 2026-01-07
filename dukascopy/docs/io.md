@@ -179,6 +179,7 @@ I am still optimizing transform and aggregate, but these two saturate the NVMe d
 Total bars: 7,861,440
 
 **Actual throughput: ~810,000 bars/second (on a single core!)**
-**Theoretical throughput on 16-core: ~13 million/s**
+
+**Theoretical throughput on 16-core: ~13 million bars/second**
 
 That's astonishing performance for a "python script".
