@@ -182,4 +182,4 @@ Total bars: 7,861,440
 
 **Theoretical throughput on 16-core: ~13 million bars/second**
 
-That's astonishing performance for a "python script".
+That's astonishing performance for a "python script". On a 2023 laptop.
