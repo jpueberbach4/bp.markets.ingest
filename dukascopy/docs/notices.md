@@ -57,7 +57,7 @@ The move to binary will make a rebuild a walk-in-the-park. A matter of a minute-
 
 The data portion is now (fairly) complete. Naturally, some QA issues remain, particularly in the builder component, which will be addressed over time. Ensuring optimal QA for the ETL process takes priority over the extraction utility itself.
 
-**Note:** I’ve addressed the main issue with replay, but I believe it’s prudent to start abstracting the I/O layer first. As more features are added, an increasing number of components are being built on the current I/O implementation. To avoid a large-scale refactor later, it makes sense to tackle the I/O layer now. We’re moving toward a binary format with fixed-length records, while keeping a configurable fallback to CSV to avoid breaking existing installations.
+**Note:** I’ve addressed the main issue with replay, but I believe it’s prudent to start abstracting the I/O layer first. As more features are added, an increasing number of components are being built on the current I/O implementation. To avoid a large-scale refactor later, it makes sense to tackle the [I/O layer](io.md) now. We’re moving toward a binary format with fixed-length records, while keeping a configurable fallback to CSV to avoid breaking existing installations.
 
 Output from the builder tool will remain the same - CSV/Parquet.
 
