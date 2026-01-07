@@ -78,3 +78,5 @@ class MmapWriter:
 ```
 
 This is a further optimization that mainly impacts syntax. Not performance.
+
+PS. This is no longer a "toy-project". These kind of optimizations are typically seen in HFT environments.
