@@ -126,6 +126,7 @@ class AggregatePaths:
 class AggregateConfig:
     """Root configuration for the aggregation stage."""
     fsync: bool = False
+    fmode: str = "text"
     paths: AggregatePaths = field(default_factory=AggregatePaths)
 
 
@@ -180,6 +181,7 @@ class TransformConfig:
     """Root configuration for the transform stage."""
     time_shift_ms: int = 0
     round_decimals: int = 10
+    fmode: Optional[str] = None
     fsync: bool = False
     validate: bool = False
     paths: TransformPaths = field(default_factory=TransformPaths)

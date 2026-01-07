@@ -27,8 +27,9 @@ from pathlib import Path
 from datetime import date, datetime
 from typing import Tuple, List
 
-from config.app_config import AppConfig, AggregateConfig
-from exceptions import *
+from etl.config.app_config import AppConfig, AggregateConfig
+from etl.io.resample.factory import *
+from etl.exceptions import *
 
 
 class AggregateEngine:
@@ -50,85 +51,11 @@ class AggregateEngine:
         # Set properties
         self.symbol = symbol
         self.config = config
+        self.fmode = config.fmode
         
         # Paths for index tracking and master output file
         self.index_path = Path(self.config.paths.data) / f"index/{self.symbol}.idx"
         self.output_path = Path(self.config.paths.data) / f"{self.symbol}.csv"
-
-    def read_index(self) -> Tuple[date, int, int]:
-        """Read the last processed date and file positions from the index file.
-
-        If the index file does not exist, it is initialized with a default date
-        (Unix epoch) and zeroed positions.
-
-        Returns:
-            Tuple[date, int, int]: A tuple containing:
-                - Last processed date (`date`)
-                - Input file position (`int`)
-                - Output file position (`int`)
-
-        Raises:
-            IndexCorruptionError: If the index file exists but cannot be parsed
-                correctly due to missing lines, invalid formatting, or corrupt data.
-        """
-        try:
-            # Check if idx file exists
-            if not self.index_path.exists():
-                # Create idx file
-                self.write_index(datetime.utcfromtimestamp(0).date(), 0, 0)
-                return datetime.utcfromtimestamp(0).date(), 0, 0
-            
-            # Read idx file
-            with open(self.index_path, 'r') as f_idx:
-                lines = f_idx.readlines()[:3]
-                date_str, in_pos, out_pos = [line.strip() for line in lines]
-                return datetime.strptime(date_str, "%Y-%m-%d").date(), int(in_pos), int(out_pos)
-
-        except (ValueError, IndexError) as e:
-            raise IndexCorruptionError(f"Corrupt index at {self.index_path}. Check for partial writes.") from e
-
-    def write_index(self, dt: date, input_pos: int, output_pos: int):
-        """Atomically write the last processed date and file positions to the index file.
-
-        This method ensures that the index is written safely using a temporary file
-        and atomic replacement. Optionally, it can force the data to disk if
-        `fsync` is enabled in the configuration.
-
-        Args:
-            dt (date): Last processed date to record.
-            input_pos (int): Input file position after reading.
-            output_pos (int): Output file position after writing.
-
-        Raises:
-            IndexValidationError: If `input_pos` or `output_pos` are negative.
-            OSError: If writing to disk or atomic replacement fails.
-        """
-        if input_pos < 0 or output_pos < 0:
-            raise IndexValidationError(
-                f"Invalid offsets for {self.symbol}: IN={input_pos}, OUT={output_pos}"
-            )
-            
-        try:
-            self.index_path.parent.mkdir(parents=True, exist_ok=True)
-            temp_path = Path(f"{self.index_path}.tmp")
-            
-            # Write state to idx file
-            with open(temp_path, "w") as f:
-                f.write(f"{dt:%Y-%m-%d}\n{input_pos}\n{output_pos}")
-                # Flush to OS
-                f.flush()
-                # Force persist to disk
-                if self.config.fsync:
-                    os.fsync(f.fileno())
-            
-            # Atomic replace
-            os.replace(temp_path, self.index_path)
-        
-        except OSError as e:
-            # Disk full, Permission denied, etc.
-            raise IndexWriteError(
-                f"Failed to persist index for {self.symbol}: {e}"
-            ) from e
 
     def _resolve_input_path(self, dt: date) -> Path:
         """Resolve the input CSV file path for a given date.
@@ -180,8 +107,15 @@ class AggregateEngine:
         if not input_path.exists():
             return False
 
-        # Read Index
-        date_from, input_position, output_position = self.read_index()
+        # Initialize index reader
+        index = ResampleIOFactory.get_index_handler(self.index_path, self.fmode, fsync=self.config.fsync)
+
+        # Read the index
+        date_int, input_position, output_position = index.read()
+
+        # Convert into date object
+        date_str = str(date_int)
+        date_from = date(year=int(date_str[:4]), month=int(date_str[4:6]), day=int(date_str[6:8]))
 
         if dt < date_from:
             # Already processed date, return
@@ -192,43 +126,35 @@ class AggregateEngine:
             input_position = 0
 
         try:
-            if not self.output_path.exists():
-                self.output_path.parent.mkdir(parents=True, exist_ok=True)
-                self.output_path.touch()
+            # Initialize IO
+            reader = ResampleIOFactory.get_reader(input_path, self.fmode)
+            writer = ResampleIOFactory.get_writer(self.output_path, self.fmode, fsync=self.config.fsync)
 
-            with open(self.output_path, "r+", encoding="utf-8") as f_out, \
-                open(input_path, "r", encoding="utf-8") as f_in:
-
-                # Read header
-                header = f_in.readline()
-
+            with reader, writer:
                 # We processed this file before, continue from last know position
                 if input_position > 0:
-                    f_in.seek(input_position)
+                    reader.seek(input_position)
+
+                # Initialize output position if this is the first write
+                if output_position == 0:
+                    output_position = writer.tell()
 
                 # Crash-safety: rewind output file to last committed position
-                f_out.truncate(output_position)
-                f_out.seek(output_position)
-
-                # Write header when output is new file
-                if output_position == 0:
-                    f_out.write(header)
+                writer.truncate(output_position)
                 
                 # Slurp file contents
-                data = f_in.read()
+                data = reader.read_raw()
+
                 if not data:
                     return False
 
-                # Write the data
-                f_out.write(data)
-                # Flush to OS
-                f_out.flush()
-                # Force persist to disk
-                if self.config.fsync:
-                    os.fsync(f_out.fileno())
-                
-                # Update index after writing
-                self.write_index(dt, f_in.tell(), f_out.tell())
+                writer.seek(output_position)
+                writer.write_raw(data)
+                writer.flush()
+
+                dt_int = int(dt.strftime('%Y%m%d'))
+
+                index.write(reader.tell(), writer.tell(), dt_int)
         except OSError as e:
                 raise TransactionError(f"I/O failure during aggregation of {self.symbol} for {dt}: {e}")
 

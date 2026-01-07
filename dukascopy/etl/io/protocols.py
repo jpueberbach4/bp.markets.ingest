@@ -76,7 +76,11 @@ class ResampleIOReader(EtlIO):
     @abstractmethod
     def read_batch(self, batch_size: int) -> Tuple[pd.DataFrame, int]:
         pass
-    
+
+    @abstractmethod
+    def read_raw(self, size: int = -1) -> bytes:
+        pass
+
     @abstractmethod
     def seek(self, offset: int) -> None:
         pass
@@ -95,7 +99,15 @@ class ResampleIOWriter(EtlIO):
     @abstractmethod
     def write_batch(self, df: pd.DataFrame, offset: Optional[int] = None) -> int:
         pass
-    
+
+    @abstractmethod
+    def write_raw(self, data: bytes) -> int:
+        pass
+
+    @abstractmethod
+    def seek(self, offset: int) -> None:
+        pass
+        
     @abstractmethod
     def truncate(self, size: int) -> None:
         pass
@@ -115,10 +127,10 @@ class ResampleIOWriter(EtlIO):
 
 class ResampleIOIndexReaderWriter(EtlIO):
     @abstractmethod
-    def read(self) -> Tuple[int,int]:
+    def read(self) -> Tuple[int,int, int]:
         pass
 
     @abstractmethod
-    def write(self, input_pos: int, output_pos: int) -> None:
+    def write(self, input_pos: int, output_pos: int, dt: int = 19700101) -> None:
         pass
      

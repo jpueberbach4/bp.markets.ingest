@@ -290,64 +290,54 @@ class ResampleIOWriterBinary(ResampleIOWriter):
 
 
 class ResampleIOIndexReaderWriterBinary(ResampleIOIndexReaderWriter):
-    """
-    Binary index handler using a fixed 16-byte structure (2x uint64).
-    """
-    STRUCT = np.dtype([('in_pos', '<u8'), ('out_pos', '<u8')])
+    # New 24-byte structure
+    STRUCT = np.dtype([
+        ('last_date', '<i4'), 
+        ('padding', '<u4'), 
+        ('in_pos', '<u8'), 
+        ('out_pos', '<u8')
+    ])
+    # Legacy 16-byte structure for migration
+    LEGACY_STRUCT = np.dtype([('in_pos', '<u8'), ('out_pos', '<u8')])
 
     def __init__(self, index_path: Path, fsync: bool = False, **kwargs):
-        """
-        Initialize a binary index handler.
-
-        Args:
-            index_path (Path): Path to the index file.
-            fsync (bool, optional): Force flush to disk on write.
-            **kwargs: Placeholder for future extensions.
-        """
         self.index_path = index_path
         self.fsync = fsync
 
-    def read(self) -> Tuple[int, int]:
-        """
-        Read input and output offsets from the index file.
-
-        Returns:
-            Tuple[int, int]: Input and output positions.
-
-        Raises:
-            IndexCorruptionError: If the index file is corrupted.
-        """
+    def read(self) -> Tuple[int, int, int]:
         if not self.index_path.exists():
-            self.write(0, 0)
-            return 0, 0
+            self.write(0, 0, 19700101)
+            return 19700101, 0, 0
+
+        file_size = self.index_path.stat().st_size
 
         try:
+            # Migration Logic: If size is 16 bytes, read as legacy
+            if file_size == 16:
+                data = np.fromfile(self.index_path, dtype=self.LEGACY_STRUCT, count=1)
+                # Return epoch date for legacy files to force a safety check
+                return 19700101, int(data['in_pos'][0]), int(data['out_pos'][0])
+            
+            # Standard Path: Read new 24-byte structure
             data = np.fromfile(self.index_path, dtype=self.STRUCT, count=1)
-            return int(data['in_pos'][0]), int(data['out_pos'][0])
-        except Exception:
-            raise IndexCorruptionError(f"Binary index corrupted: {self.index_path}")
+            return (
+                int(data['last_date'][0]),
+                int(data['in_pos'][0]),
+                int(data['out_pos'][0])
+            )
+        except Exception as e:
+            raise IndexCorruptionError(f"Binary index corrupted: {self.index_path}") from e
 
-    def write(self, input_pos: int, output_pos: int) -> None:
-        """
-        Persist input and output positions to the index file.
-
-        Args:
-            input_pos (int): Input offset.
-            output_pos (int): Output offset.
-        """
+    def write(self, input_pos: int, output_pos: int, dt: int = 19700101) -> None:
         temp_path = self.index_path.with_suffix(".tmp")
-        data = np.array([(input_pos, output_pos)], dtype=self.STRUCT)
+        data = np.array([(dt, 0, input_pos, output_pos)], dtype=self.STRUCT)
 
         with open(temp_path, 'wb') as f:
             f.write(data.tobytes())
             f.flush()
             if self.fsync:
                 os.fsync(f.fileno())
-
         os.replace(temp_path, self.index_path)
 
     def close(self) -> None:
-        """
-        Close the index handler (no-op for binary implementation).
-        """
         pass

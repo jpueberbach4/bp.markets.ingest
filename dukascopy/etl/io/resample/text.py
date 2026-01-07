@@ -151,6 +151,9 @@ class ResampleIOReaderText(ResampleIOReader):
             return df
         except Exception as e:
             raise RuntimeError(f"Unexpected system failure during batching: {e}") from e
+
+    def read_raw(self, size: int = -1) -> bytes:
+        return self.file.read(size)
     
     def seek(self, offset: int) -> None:
         """Move the file read pointer to a specific byte offset.
@@ -253,12 +256,15 @@ class ResampleIOWriterText(ResampleIOWriter):
             Path(self.filepath).touch()
             new_file = True
         
-        self.file = open(self.filepath, 'r+', encoding=self.encoding, newline='')
+        self.file = open(self.filepath, 'rb+')
 
         if new_file:
-            self.bytes_written += self.file.write("time,open,high,low,close,volume\n")
+            self.bytes_written += self.file.write(b"time,open,high,low,close,volume\n")
         else:
             self.file.readline()
+
+    def write_raw(self, data: bytes):
+        return self.file.write(data)
 
     def write_batch(self, df: pd.DataFrame, offset: Optional[int] = None) -> int:
         """Write a batch of DataFrame rows to the file as CSV.
@@ -290,9 +296,20 @@ class ResampleIOWriterText(ResampleIOWriter):
         if offset:
             self.file.seek(offset)
 
-        self.bytes_written += self.file.write(csv_str)
+        self.bytes_written += self.file.write(csv_str.encode('utf-8'))
         return self.bytes_written
-    
+
+    def seek(self, offset: int) -> None:
+        """Move the file read pointer to a specific byte offset.
+
+        This method updates the file's current read position and synchronizes
+        the internal `byte_offset` tracker to allow incremental or resumed reading.
+
+        Args:
+            offset (int): The byte position in the file to seek to.
+        """
+        self.file.seek(offset)
+
     def truncate(self, size: int) -> None:
         """Truncate the file to a specified byte size.
 
@@ -384,103 +401,56 @@ class ResampleIOWriterText(ResampleIOWriter):
 
 class ResampleIOIndexReaderWriterText(ResampleIOIndexReaderWriter):
     def __init__(self, index_path: Path, fsync: bool = False):
-        """Initialize an index handler for tracking input/output positions.
-
-        This constructor sets up the file path for the index and whether
-        writes should be synchronized to disk using fsync. The index is
-        used to persist the current read/write offsets for crash-safe
-        incremental processing.
-
-        Args:
-            index_path (Path): Path to the index file used to store offsets.
-            fsync (bool, optional): Whether to flush writes to disk for
-                durability after each update. Defaults to False.
-
-        Attributes:
-            index_path (Path): Path to the index file.
-            fsync (bool): Flag indicating if writes should be fsynced.
-        """
         self.index_path = index_path
         self.fsync = fsync
     
-    def read(self) -> Tuple[int, int]:
-        """Read input and output offsets from the index file.
-
-        This method retrieves the last persisted input and output positions
-        from the index file. If the index file does not exist, it is
-        automatically initialized with zeros. The method validates that
-        the file contains exactly two numeric lines and raises an exception
-        if corruption is detected.
-
-        Returns:
-            Tuple[int, int]: A tuple containing the input offset and
-            output offset.
-
-        Raises:
-            IndexCorruptionError: If the index file is incomplete, contains
-                non-numeric values, or is otherwise corrupted.
-        """
+    def read(self) -> Tuple[int, int, int]:
+        if not self.index_path.exists():
+            self.write(0, 0, 19700101)
+            return 19700101, 0, 0
+            
         try:
-            if not self.index_path.exists():
-                self.write(0, 0)
-                return 0, 0
-            
             with open(self.index_path, "r") as f:
-                lines = f.readlines()[:2]
+                lines = [line.strip() for line in f.readlines() if line.strip()]
             
-            if len(lines) < 2:
+            # Migration Logic: Handle 2-line legacy index
+            if len(lines) == 2:
+                # Return (Epoch, InPos, OutPos)
+                return 19700101, int(lines[0]), int(lines[1])
+            
+            if len(lines) < 3:
                 raise IndexCorruptionError(f"Incomplete index at {self.index_path}")
             
-            return int(lines[0].strip()), int(lines[1].strip())
+            raw_date = lines[0]
+            if "-" in raw_date:
+                dt_int = int(raw_date.replace("-", ""))
+            else:
+                dt_int = int(raw_date)
+
+            # Standard Path: (Date, InPos, OutPos)
+            return int(dt_int), int(lines[1]), int(lines[2])
             
         except (ValueError, IndexError) as e:
             raise IndexCorruptionError(f"Corrupt index at {self.index_path}: {e}")
     
-    def write(self, input_pos: int, output_pos: int) -> None:
-        """Persist input and output offsets to the index file.
-
-        This method writes the given input and output positions to a temporary
-        file and atomically replaces the existing index file to ensure
-        crash-safe updates. Optionally, it can force a filesystem-level
-        flush (fsync) for durability.
-
-        Args:
-            input_pos (int): The current input offset to persist.
-            output_pos (int): The current output offset to persist.
-
-        Raises:
-            IndexValidationError: If either offset is negative.
-            IndexWriteError: If the index cannot be written to disk due
-                to an OS-level failure.
-        """
+    def write(self, input_pos: int, output_pos: int, dt: int = 19700101) -> None:
         if input_pos < 0 or output_pos < 0:
-            raise IndexValidationError(
-                f"Invalid offsets: IN={input_pos}, OUT={output_pos}"
-            )
+            raise IndexValidationError(f"Invalid offsets: IN={input_pos}, OUT={output_pos}")
         
         try:
             self.index_path.parent.mkdir(parents=True, exist_ok=True)
             temp_path = self.index_path.with_suffix(".tmp")
             
             with open(temp_path, "w") as f:
-                f.write(f"{input_pos}\n{output_pos}")
+                # Always write in the new 3-line format
+                f.write(f"{dt}\n{input_pos}\n{output_pos}")
                 f.flush()
                 if self.fsync:
                     os.fsync(f.fileno())
             
             os.replace(temp_path, self.index_path)
-            
         except OSError as e:
             raise IndexWriteError(f"Failed to persist index: {e}")
     
     def close(self) -> None:
-        """Close the index handler.
-
-        This method is a placeholder for compatibility with the interface.
-        The text-based index does not require explicit closure because files
-        are opened and closed per operation.
-
-        Note:
-            No action is performed in this implementation.
-        """
-        pass    
+        pass

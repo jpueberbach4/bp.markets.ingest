@@ -512,7 +512,7 @@ class ResampleWorker:
         """
         try:
             # Read last known input/output positions from the index
-            input_pos, output_pos = engine.index.read()
+            dt, input_pos, output_pos = engine.index.read()
 
             # Ensure reader and writer resources are properly managed
             with engine.reader, engine.writer:
@@ -543,7 +543,7 @@ class ResampleWorker:
                         output_pos = engine.writer.tell()
 
                         # Persist new input/output positions atomically
-                        engine.index.write(next_in_pos, output_pos)
+                        engine.index.write(next_in_pos, output_pos, dt)
 
                         # Write the final bar (kept open for next iteration)
                         engine.writer.write_batch(resampled.tail(1))
