@@ -235,7 +235,6 @@ def discover_options(options: Dict):
         # Load builder configuration
         config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
         config = load_app_config(config_file)
-
         # Discover available OHLCV data sources from the filesystem
         available_data = get_available_data_from_fs(config.builder)
 
@@ -354,8 +353,8 @@ def generate_sql(options):
 
     for item in options['select_data']:
         # Unpack select tuple and append global temporal filters
-        symbol, timeframe, input_filepath, modifiers, after, until = (
-            item + tuple([options.get('after'), options.get('until')])
+        symbol, timeframe, input_filepath, modifiers, after, until, fmode = (
+            item + tuple([options.get('after'), options.get('until'),options.get('fmode')])
         )
 
         # Security check
@@ -363,17 +362,26 @@ def generate_sql(options):
             raise ValueError("Invalid file path")
 
         # Columns selected from each CSV file, including normalized metadata
+        if fmode == "binary":
+            time_column = f"""
+                epoch_ms(time_raw::BIGINT) 
+            """
+        else:
+            time_column = "Time"
+
+
         select_columns = f"""
             '{symbol}'::VARCHAR AS symbol,
             '{timeframe}'::VARCHAR AS timeframe,
-            CAST(strftime(Time, '%Y') AS VARCHAR) AS year,
-            strptime(CAST(Time AS VARCHAR), '{CSV_TIMESTAMP_FORMAT}') AS time,
+            CAST(strftime({time_column}, '%Y') AS VARCHAR) AS year,
+            strptime(CAST({time_column} AS VARCHAR), '{CSV_TIMESTAMP_FORMAT}') AS time,
             open,
             high,
             low,
             close,
             volume
         """
+
 
         # Base temporal filter applied to all selections
         where_clause = f"""
@@ -392,12 +400,20 @@ def generate_sql(options):
             )
 
         # Construct SELECT statement for this specific CSV input
-        select_sql = f"""
-            SELECT
-                {select_columns}
-            FROM read_csv_auto('{input_filepath}')
-            {where_clause}
-        """
+        if fmode == "binary":
+            select_sql = f"""
+                SELECT
+                    {select_columns}
+                FROM "{symbol}_{timeframe}_VIEW"  
+                {where_clause}
+            """
+        else:
+            select_sql = f"""
+                SELECT
+                    {select_columns}
+                FROM read_csv_auto('{input_filepath}')
+                {where_clause}
+            """
 
         select_sql_array.append(select_sql)
 

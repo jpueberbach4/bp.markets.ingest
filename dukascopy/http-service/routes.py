@@ -68,8 +68,24 @@ from pathlib import Path
 from version import API_VERSION
 from config.app_config import load_app_config
 from functools import lru_cache
+from fastapi import Depends
+import mmap
+import numpy as np
+import pandas as pd
 import orjson
 import duckdb 
+
+# Define the C-struct equivalent for numpy
+DTYPE = np.dtype([
+    ('ts', '<u8'),           # Timestamp in milliseconds
+    ('ohlcv', '<f8', (5,)),  # Open, High, Low, Close, Volume
+    ('padding', '<u8', (2,)) # Padding to 64 bytes
+])
+
+RECORD_SIZE = 64  # Fixed size of each record in bytes.
+                  # Aligned to standard x86_64 CPU cache-line size.
+                  # This ensures a single record never spans across two cache lines,
+                  # minimizing memory latency and preventing split-load penalties.
 
 @lru_cache
 def get_config():
@@ -92,7 +108,8 @@ async def get_indicator(
     limit: Optional[int] = Query(1440, gt=0, le=1440),
     offset: Optional[int] = Query(0, ge=0, le=1000),
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
-    callback: Optional[str] = "__bp_callback"
+    callback: Optional[str] = "__bp_callback",
+    config = Depends(get_config)
 ):
     """Execute a registered indicator against OHLCV data and return results.
 
@@ -144,6 +161,7 @@ async def get_indicator(
                 "offset": offset,
                 "order": order,
                 "callback": callback,
+                "fmode": config.http.fmode
             }
         )
 
@@ -188,7 +206,8 @@ async def get_indicator(
 @router.get(f"/{API_VERSION}/list/{{request_uri:path}}")
 async def get_ohlcv_list(
     request_uri: str,
-    callback: Optional[str] = "__bp_callback"
+    callback: Optional[str] = "__bp_callback",
+    config = Depends(get_config)
 ):
     """List available OHLCV symbols and timeframes.
 
@@ -274,7 +293,8 @@ async def get_ohlcv(
     limit: Optional[int] = Query(1440, gt=0, le=1440),
     offset: Optional[int] = Query(0, ge=0, le=1000),
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
-    callback: Optional[str] = "__bp_callback"
+    callback: Optional[str] = "__bp_callback",
+    config = Depends(get_config)
 ):
     """Resolve a path-based OHLCV query and return time-series market data.
 
@@ -315,6 +335,7 @@ async def get_ohlcv(
             "offset": offset,
             "order": order,
             "callback": callback,
+            "fmode": config.http.fmode
         }
     )
 
@@ -332,8 +353,38 @@ async def get_ohlcv(
         # Generate SQL
         sql = generate_sql(options)
 
+        # Map for holding the binary-mode file_handle and mmap
+        mmap_resources = []
         # Execute the SQL query in an in-memory DuckDB instance
         with duckdb.connect(database=":memory:") as con:
+
+            if options.get('fmode') == "binary":
+                for item in options['select_data']:
+                    symbol, tf, file_path, modifiers = item
+
+                    view_name = f"{symbol}_{tf}_VIEW"
+                    #  Open file and create mmap
+                    f = open(file_path, "rb")
+                    mm = mmap.mmap(f.fileno(), length=0, access=mmap.ACCESS_READ)
+                    
+                    # Store handles so they don't close prematurely
+                    mmap_resources.append((f, mm))
+                    
+                    # Create the NumPy view
+                    data_view = np.frombuffer(mm, dtype=DTYPE)
+                    
+                    # Map to dict and register (using the epoch_ms optimization)
+                    data_dict = {
+                        "time_raw": data_view['ts'],
+                        "open": data_view['ohlcv'][:, 0],
+                        "high": data_view['ohlcv'][:, 1],
+                        "low": data_view['ohlcv'][:, 2],
+                        "close": data_view['ohlcv'][:, 3],
+                        "volume": data_view['ohlcv'][:, 4]
+                    }
+                    
+                    con.register(view_name, pd.DataFrame(data_dict))
+
             rel = con.sql(sql)
             results = rel.fetchall()
             columns = rel.columns
