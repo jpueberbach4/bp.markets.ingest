@@ -63,6 +63,8 @@ Output from the builder tool will remain the same - CSV/Parquet.
 
 This is pretty fast already but will become extremely fast.
 
+**Update**: [Performance update on BINARY mode (unoptimized)](io.md#first-results-on-performance-unoptimized)
+
 ## Notice: Configuration validation - 2025-01-06
 
 Configuration is now checked against the schema defined in `etl/config/schema.json`. When you `git pull`, execute `pip install -r requirements.txt`.
