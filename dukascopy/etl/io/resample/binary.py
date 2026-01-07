@@ -1,5 +1,57 @@
 
 
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+===============================================================================
+ File:        binary.py
+ Author:      JP Ueberbach
+ Created:     2026-01-07
+
+ Description:
+     Binary-format, incremental OHLCV file I/O and aggregation engine.
+
+     This module provides crash-safe, incremental reading, writing, and
+     index-tracking for custom binary-formatted OHLCV data. It is designed
+     to support batch resampling and aggregation pipelines with precise
+     record-offset tracking for resumable processing.
+
+     Key classes:
+         - ResampleIOReaderBinary: Reads batches of binary records with
+           offset tracking, providing EOF detection and random-access seeking.
+         - ResampleIOWriterBinary: Writes batches of OHLCV records to a
+           binary file with optional fsync, truncation, flushing, and
+           transactional safety.
+         - ResampleIOIndexReaderWriterBinary: Manages persistent input/output
+           offsets for crash-safe incremental processing of binary files.
+
+     Features:
+         - Batch reading and writing with support for resuming from a
+           specific record offset.
+         - Optional fsync to guarantee durability of writes and index updates.
+         - Transactional index updates using temporary files and atomic replace.
+         - Integration with resampling pipelines or aggregation workflows.
+         - Memory-mapped I/O for efficient binary reading of large datasets.
+
+ Usage:
+     - Imported and used by resampling or aggregation engines.
+     - Supports multiprocessing or forked worker contexts.
+     - Enables incremental appending and crash-safe recovery for binary OHLCV data.
+     - Designed to be used via `ResampleIOFactory` to select text or binary I/O.
+
+ Requirements:
+     - Python 3.8+
+     - pandas
+     - mmap (for memory-mapped file access)
+
+ Exceptions:
+     - ProcessingError: Raised for file corruption, invalid operations,
+       or failure to open/read binary files.
+     - IndexCorruptionError: Raised when an index file is malformed.
+     - IndexValidationError: Raised when offsets are invalid.
+     - IndexWriteError: Raised on failure to persist index to disk.
+===============================================================================
+"""
 import os
 import pandas as pd
 from pathlib import Path
