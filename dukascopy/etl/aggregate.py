@@ -108,7 +108,6 @@ class AggregateEngine:
                 or flushing to disk.
         """
         input_path = self._resolve_input_path(dt)
-        print(f"INPUT_PATH={input_path}")
         if not input_path.exists():
             return False
 
