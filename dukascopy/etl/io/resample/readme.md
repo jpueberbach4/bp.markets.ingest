@@ -76,3 +76,15 @@ def save_data(writer: DataWriter):
 ```
 
 **Update:** Used the ABC method since that is best known to me. Perhaps later use runtime_checkable.
+
+## Padding to 64 bytes?
+
+By aligning each record to 64 bytes, the only bottlenecks left are NVMe/SSD disk I/O and memory bus bandwidth.
+
+Standard Python code typically utilizes only about 5% of a machine’s hardware potential.
+
+With this architecture, we can approach nearly 100% utilization because the CPU’s linear prefetcher detects the 64-byte stride pattern and proactively loads the next records into L1 cache before Python requests them.
+
+This is a common C++ optimization that prevents Split-Loads and enables Hardware Prefetching.
+
+Since we’re using NumPy, which is implemented in C and supports vectorized SIMD operations, this padding strategy works seamlessly—even when the code is executed from Python.
