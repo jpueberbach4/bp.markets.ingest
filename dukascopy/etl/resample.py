@@ -99,6 +99,14 @@ Goal: support binary reading writing with fallback for CSV
 Note: have a look at Protocol, runtime_checkable (Duck Typing) **
       it's a new way for "abstraction". might save some time.
 
+Expected gains:
+
+At the moment, resampling takes about 90 seconds for 42 symbols. 70 percent of that
+time is for read_csv and to_csv. The above will eliminate that full 70 percent almost
+completely. So, we drop from 90 seconds to about 30 seconds. Half a minute for
+resampling 42 symbols, 10 timeframes, average 15-20 years of 1m data per symbol.
+Session-handling logic inclusive.
+
 Example:
 
 from typing import Protocol, runtime_checkable
