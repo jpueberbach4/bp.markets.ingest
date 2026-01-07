@@ -91,7 +91,9 @@ class ResampleIOWriterText(ResampleIOWriter):
     
     def _initialize(self) -> None:
         new_file = False
+        print(f"exists:{Path(self.filepath).exists()} {self.filepath}")
         if not Path(self.filepath).exists():
+            Path(self.filepath).parent.mkdir(parents=True, exist_ok=True)
             Path(self.filepath).touch()
             new_file = True
         
@@ -99,6 +101,9 @@ class ResampleIOWriterText(ResampleIOWriter):
 
         if new_file:
             self.bytes_written += self.file.write("time,open,high,low,close,volume\n")
+        else:
+            # first line always header
+            self.file.readline()
 
     def write_batch(self, df: pd.DataFrame, offset: Optional[int] = None) -> int:
         df.index = df.index.strftime(
