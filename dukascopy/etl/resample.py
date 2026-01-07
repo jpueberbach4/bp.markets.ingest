@@ -82,7 +82,19 @@ We are going to make big changes in these classes. IO will get abstracted
   To return wither a Text/Binary reader/writer
   get_reader(config), get_writer(config)
 
+Reason:
+
+Profiling indicates that 70-80% of execution time is consumed by CSV 
+serialization overhead (read_csv/to_csv). Implementing a fixed-length 
+binary mode eliminates this bottleneck via a zero-copy architecture. 
+By memory-mapping the file and utilizing np.frombuffer, we create a 
+direct memory view that bypasses traditional parsing. Furthermore, 
+vectorized offset calculations allow for high-performance, crash-safe indexing. 
+This approach is significantly more efficient, shifting the workload from 
+CPU-intensive string processing to near-native memory speeds.
+
 Goal: support binary reading writing with fallback for CSV
+      binary mode will completely eliminate string parsing
 
 Note: have a look at Protocol, runtime_checkable (Duck Typing) **
       it's a new way for "abstraction". might save some time.
