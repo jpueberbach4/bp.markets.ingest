@@ -91,7 +91,6 @@ class ResampleIOWriterText(ResampleIOWriter):
     
     def _initialize(self) -> None:
         new_file = False
-        print(f"exists:{Path(self.filepath).exists()} {self.filepath}")
         if not Path(self.filepath).exists():
             Path(self.filepath).parent.mkdir(parents=True, exist_ok=True)
             Path(self.filepath).touch()
