@@ -153,6 +153,21 @@ class ResampleIOReaderBinary(ResampleIOReader):
         self._pos = end_idx * self.RECORD_SIZE
         return df
 
+    def read_raw(self, size: int = -1):
+        """
+        Read raw bytes from the memory map.
+        
+        Args:
+            size (int): Number of bytes to read. -1 for all remaining.
+        """
+        if size == -1:
+            size = len(self.mm) - self._pos
+        
+        # Slice the memory map directly (no copy)
+        data = self.mm[self._pos : self._pos + size]
+        self._pos += len(data)
+        return data
+
     def seek(self, offset: int) -> None:
         """
         Move the reader to a specific byte offset.
@@ -160,6 +175,9 @@ class ResampleIOReaderBinary(ResampleIOReader):
         Args:
             offset (int): Byte offset in the file.
         """
+        if offset < 0 or offset > len(self.mm):
+            raise IndexValidationError(f"Invalid seek offset: {offset}")
+
         self._pos = offset
 
     def tell(self) -> int:
@@ -239,6 +257,25 @@ class ResampleIOWriterBinary(ResampleIOWriter):
         # Write all records at once
         self.file.write(buf.tobytes())
         return self.file.tell()
+
+    def write_raw(self, data: bytes):
+        written = self.file.write(data)
+        if self.fsync:
+            self.flush(fsync=True)
+        return self.file.tell()
+
+    def seek(self, offset: int) -> None:
+        """Move the file read pointer to a specific byte offset.
+
+        This method updates the file's current read position and synchronizes
+        the internal `byte_offset` tracker to allow incremental or resumed reading.
+
+        Args:
+            offset (int): The byte position in the file to seek to.
+        """
+        if offset < 0:
+             raise IndexValidationError(f"Negative seek offset: {offset}")
+        self.file.seek(offset)
 
     def truncate(self, size: int) -> None:
         """
