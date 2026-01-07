@@ -52,10 +52,13 @@ class AggregateEngine:
         self.symbol = symbol
         self.config = config
         self.fmode = config.fmode
-        
+
+        # Get the extension
+        extension = ResampleIOFactory.get_appropriate_extension(self.fmode)
+
         # Paths for index tracking and master output file
         self.index_path = Path(self.config.paths.data) / f"index/{self.symbol}.idx"
-        self.output_path = Path(self.config.paths.data) / f"{self.symbol}.csv"
+        self.output_path = Path(self.config.paths.data) / f"{self.symbol}{extension}"
 
     def _resolve_input_path(self, dt: date) -> Path:
         """Resolve the input CSV file path for a given date.
@@ -74,9 +77,10 @@ class AggregateEngine:
             The method does not raise an exception if the file does not exist;
             it only constructs and returns the expected path.
         """
-        path = Path(self.config.paths.historic) / f"{dt.year}/{dt.month:02}/{self.symbol}_{dt:%Y%m%d}.csv"
+        extension = ResampleIOFactory.get_appropriate_extension(self.fmode)
+        path = Path(self.config.paths.historic) / f"{dt.year}/{dt.month:02}/{self.symbol}_{dt:%Y%m%d}{extension}"
         if not path.exists():
-            path = Path(self.config.paths.live) / f"{self.symbol}_{dt:%Y%m%d}.csv"
+            path = Path(self.config.paths.live) / f"{self.symbol}_{dt:%Y%m%d}{extension}"
         
         return path
 
@@ -104,6 +108,7 @@ class AggregateEngine:
                 or flushing to disk.
         """
         input_path = self._resolve_input_path(dt)
+        print(f"INPUT_PATH={input_path}")
         if not input_path.exists():
             return False
 
@@ -126,6 +131,11 @@ class AggregateEngine:
             input_position = 0
 
         try:
+            # Bugfix for binary mode, if 0 filesize, we can't memmap file. Might be a weekend-day without data
+            size = os.path.getsize(input_path)
+            if size == 0:
+                return False
+
             # Initialize IO
             reader = ResampleIOFactory.get_reader(input_path, self.fmode)
             writer = ResampleIOFactory.get_writer(self.output_path, self.fmode, fsync=self.config.fsync)
@@ -146,6 +156,7 @@ class AggregateEngine:
                 data = reader.read_raw()
 
                 if not data:
+                    print("nodata")
                     return False
 
                 writer.seek(output_position)

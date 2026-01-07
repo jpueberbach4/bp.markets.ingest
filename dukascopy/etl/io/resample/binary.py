@@ -200,10 +200,23 @@ class ResampleIOReaderBinary(ResampleIOReader):
 
     def close(self) -> None:
         """
-        Close the memory map and file handle.
+        Close the memory map and file handle, ensuring references are cleared.
         """
-        if self.mm: self.mm.close()
-        if self.file_handle: self.file_handle.close()
+        # Clear the numpy view first to release exported pointers
+        self.data_view = None
+        
+        # Now it is safe to close the mmap
+        if self.mm is not None:
+            try:
+                self.mm.close()
+            except BufferError:
+                pass
+            self.mm = None
+
+        # 3. Close the file handle
+        if self.file_handle is not None:
+            self.file_handle.close()
+            self.file_handle = None
 
 
 class ResampleIOWriterBinary(ResampleIOWriter):
@@ -255,7 +268,7 @@ class ResampleIOWriterBinary(ResampleIOWriter):
         buf['ohlcv'] = df[['open', 'high', 'low', 'close', 'volume']].values
 
         # Write all records at once
-        self.file.write(buf.tobytes())
+        written = self.file.write(buf.tobytes())
         return self.file.tell()
 
     def write_raw(self, data: bytes):
@@ -367,6 +380,7 @@ class ResampleIOIndexReaderWriterBinary(ResampleIOIndexReaderWriter):
 
     def write(self, input_pos: int, output_pos: int, dt: int = 19700101) -> None:
         temp_path = self.index_path.with_suffix(".tmp")
+        temp_path.parent.mkdir(parents=True, exist_ok=True)
         data = np.array([(dt, 0, input_pos, output_pos)], dtype=self.STRUCT)
 
         with open(temp_path, 'wb') as f:
