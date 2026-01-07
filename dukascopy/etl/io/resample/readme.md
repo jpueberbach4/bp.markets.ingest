@@ -88,3 +88,5 @@ With this architecture, we can approach nearly 100% utilization because the CPU�
 This is a common C++ optimization that prevents Split-Loads and enables Hardware Prefetching.
 
 Since we’re using NumPy, which is implemented in C and supports vectorized SIMD operations, this padding strategy works seamlessly—even when the code is executed from Python.
+
+Lets see how much we can squeeze out of this Python/Pandas/Numpy combination. I think we will be surprised.
