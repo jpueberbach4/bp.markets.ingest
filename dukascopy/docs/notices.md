@@ -1,5 +1,58 @@
 <u>MT4 is decoded.</u>
 
+
+## Notice: Backfilling. Exact example.
+
+I am currently abstracting the IO layer and ofcourse checks are needed to validate correct operation. I use my favorite asset for validation, the SGD index. I noticed one tiny 5m candle looking a tiny bit different and went on the research rampage. This is what i found.
+
+Incoming 1m data from Dukascopy. Notice the liquidity gaps eg between 13:05 and 13:08 no data.
+
+```sh
+2026-01-07 12:40:00,462.544,462.559,462.444,462.444,0.0048
+2026-01-07 12:43:00,462.599,462.599,462.599,462.599,0.0012
+2026-01-07 12:47:00,462.656,462.656,462.556,462.647,0.006
+2026-01-07 12:48:00,462.556,462.699,462.556,462.556,0.0036
+2026-01-07 12:49:00,462.65,462.65,462.65,462.65,0.0012
+2026-01-07 12:50:00,462.759,462.759,462.759,462.759,0.0012
+2026-01-07 13:02:00,462.656,462.656,462.656,462.656,0.0012 <
+2026-01-07 13:04:00,462.753,462.753,462.753,462.753,0.0012 <
+2026-01-07 13:05:00,462.699,462.75,462.647,462.647,0.0036 <
+2026-01-07 13:08:00,462.75,462.75,462.75,462.75,0.0012 <
+2026-01-07 13:10:00,462.656,462.656,462.656,462.656,0.0012 <!-- here we are in-sync again
+2026-01-07 13:11:00,462.759,462.759,462.641,462.65,0.0048
+2026-01-07 13:12:00,462.756,462.756,462.756,462.756,0.0012'
+```
+
+Since the data is gapping, i decided to check for backfills. So i ran the `./rebuild-weekly.sh` script. 
+
+This is how the input changed:
+
+```sh
+2026-01-07 12:33:00,462.447,462.447,462.447,462.447,0.0012
+2026-01-07 12:40:00,462.544,462.559,462.444,462.444,0.0048
+2026-01-07 12:43:00,462.599,462.599,462.599,462.599,0.0012
+2026-01-07 12:47:00,462.656,462.656,462.556,462.647,0.006
+2026-01-07 12:48:00,462.556,462.699,462.556,462.556,0.0036
+2026-01-07 12:49:00,462.65,462.65,462.65,462.65,0.0012
+2026-01-07 12:50:00,462.759,462.759,462.759,462.759,0.0012
+2026-01-07 12:57:00,462.656,462.656,462.656,462.656,0.0012 <
+2026-01-07 12:59:00,462.753,462.753,462.753,462.753,0.0012 <
+2026-01-07 13:00:00,462.699,462.75,462.647,462.647,0.0036 <
+2026-01-07 13:03:00,462.75,462.75,462.75,462.75,0.0012 <
+2026-01-07 13:10:00,462.656,462.656,462.656,462.656,0.0012 <!-- here we are in-sync again
+2026-01-07 13:11:00,462.759,462.759,462.641,462.65,0.0048
+2026-01-07 13:12:00,462.756,462.756,462.756,462.756,0.0012
+2026-01-07 13:15:00,462.856,462.856,462.741,462.741,0.0048
+```
+
+This is not a bug on this pipeline's end. I checked the original source files and compared them. The 1m input file changed on broker end.
+
+This is why you need to run the `./rebuild-weekly.sh` script regularly-if you are dealing with illiquid assets.
+
+The move to binary will make a rebuild a walk-in-the-park. A matter of a minute-unless you have a crazy rain-forest of symbols-for which this software originally was not intended.
+
+**Note:** Now i have seen exactly what a broker does when "backfilling", i am certain i can "detect" it. What to do when we detect it? At minimum notify the user on it in the web-interface. My initial conclusion was that during backfilling only candles get updated or inserted. Now we see, that candles are actually moved around-the timestamp.
+
 ## Notice: Data
 
 The data portion is now (fairly) complete. Naturally, some QA issues remain, particularly in the builder component, which will be addressed over time. Ensuring optimal QA for the ETL process takes priority over the extraction utility itself.
