@@ -32,7 +32,7 @@ def dump_binary_file(filepath: str, num_records: int = 10):
     print(f"\nTotal Records: {len(data)}")
 
 # Usage
-dump_binary_file("data/transform/1m/2025/05/EUR-USD_20250501.bin")
+dump_binary_file("data/aggregate/1m/EUR-USD.bin")
 
 
-dump_binary_file("data/resample/4h/SGD.IDX-SGD.bin")
+#dump_binary_file("data/resample/5m/EUR-USD.bin")

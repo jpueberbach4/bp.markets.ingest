@@ -65,6 +65,7 @@ import pandas as pd
 import duckdb 
 
 from typing import Dict, Any, List
+from state import MARKETDATA_CACHE
 from urllib.parse import unquote_plus
 from pathlib import Path
 from fastapi.responses import PlainTextResponse, JSONResponse
@@ -265,36 +266,46 @@ def discover_options(options: Dict):
         raise
 
 
-def generate_mmap_resources(con, options):
-    mmap_resources = []
+def generate_mmap_resources(options):
     if options.get('fmode') == "binary":
         for item in options['select_data']:
             symbol, tf, file_path, modifiers = item
 
             view_name = f"{symbol}_{tf}_VIEW"
-            #  Open file and create mmap
-            f = open(file_path, "rb")
-            mm = mmap.mmap(f.fileno(), length=0, access=mmap.ACCESS_READ)
-            
-            # Store handles so they don't close prematurely
-            mmap_resources.append((f, mm))
-            
-            # Create the NumPy view
-            data_view = np.frombuffer(mm, dtype=DTYPE)
-            
-            # Map to dict and register (using the epoch_ms optimization)
-            data_dict = {
-                "time_raw": data_view['ts'],
-                "open": data_view['ohlcv'][:, 0],
-                "high": data_view['ohlcv'][:, 1],
-                "low": data_view['ohlcv'][:, 2],
-                "close": data_view['ohlcv'][:, 3],
-                "volume": data_view['ohlcv'][:, 4]
-            }
-            
-            con.register(view_name, pd.DataFrame(data_dict))
 
-    return mmap_resources
+            current_size = os.path.getsize(file_path)
+            cached_resource = MARKETDATA_CACHE.mmaps.get(view_name)
+
+            # Check if we need to (re)map
+            if not cached_resource or current_size > cached_resource['size']:
+                # Cleanup old mapping if it exists
+                if cached_resource:
+                    cached_resource['mm'].close()
+                    cached_resource['f'].close()
+                    MARKETDATA_CACHE.con.unregister(view_name)
+
+                # Create new mapping
+                f = open(file_path, "rb")
+                mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+                data_view = np.frombuffer(mm, dtype=DTYPE)
+
+                # Map to dict and register (using the epoch_ms optimization)
+                data_dict = {
+                    "time_raw": data_view['ts'],
+                    "open": data_view['ohlcv'][:, 0],
+                    "high": data_view['ohlcv'][:, 1],
+                    "low": data_view['ohlcv'][:, 2],
+                    "close": data_view['ohlcv'][:, 3],
+                    "volume": data_view['ohlcv'][:, 4]
+                }
+        
+                # Re-register with DuckDB
+                MARKETDATA_CACHE.con.register(view_name, pd.DataFrame(data_dict))
+        
+                # Update cache
+                MARKETDATA_CACHE.mmaps[view_name] = {'f': f, 'mm': mm, 'size': current_size}
+                MARKETDATA_CACHE.registered_views.add(view_name)
+
 
 def generate_output(options: Dict, columns: List, results: List):
     """Generate formatted output based on the requested output type.
@@ -340,6 +351,7 @@ def generate_output(options: Dict, columns: List, results: List):
             "options": options,
             "result": [dict(zip(columns, row)) for row in results],
         }
+
         json_data = orjson.dumps(payload).decode("utf-8")
         return PlainTextResponse(
             content=f"{callback}({json_data});",

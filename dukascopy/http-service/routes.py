@@ -69,7 +69,9 @@ from version import API_VERSION
 from config.app_config import load_app_config
 from functools import lru_cache
 from fastapi import Depends
+from state import MARKETDATA_CACHE
 import mmap
+import time
 import numpy as np
 import pandas as pd
 import orjson
@@ -138,7 +140,8 @@ async def get_indicator(
         if name not in indicator_registry:
             raise HTTPException(status_code=404, detail="Indicator not found")
         
-
+        # Wall time
+        time_start = time.time()  
         # Parse options
         options = parse_uri(request_uri)
         
@@ -160,19 +163,22 @@ async def get_indicator(
         sql = generate_sql(options)
 
         # Execute the SQL query in an in-memory DuckDB instance
-        with duckdb.connect(database=":memory:") as con:
-            mmap_resources = generate_mmap_resources(con, options)
-            rel = con.sql(sql)
-            columns = rel.columns
-            results = rel.fetchall()
-            # Zip the data using columns and rows
-            data = [dict(zip(columns, row)) for row in results]
+        generate_mmap_resources(options)
+
+        rel = MARKETDATA_CACHE.con.sql(sql)
+        results = rel.fetchall()
+        columns = rel.columns
+        
+        data = [dict(zip(columns, row)) for row in results]
 
         # Call the indicator
         columns, results = indicator_registry[name](data, options)
 
         # Generate the output
         output = generate_output(options, columns, results)
+
+        # Register wall-time
+        output['options']['wall'] = time.time() - time_start
 
         # If we have output, return the result
         if output:
@@ -181,7 +187,7 @@ async def get_indicator(
         raise Exception(f"{name} had no output")
     except Exception as e:
         # Standardized error response
-        error_payload = {"status": "failure", "exception": f"{e}"}
+        error_payload = {"status": "failure", "exception": f"{e}","options": options}
 
         if options.get("output_type") == "JSONP":
             return PlainTextResponse(
@@ -265,9 +271,8 @@ async def get_ohlcv_list(
 
     except Exception as e:
         # Standardized error response
-        error_payload = {"status": "failure", "exception": f"{e}"}
-
-        if options.get("output_type") == "JSONP":
+        error_payload = {"status": "failure", "exception": f"{e}","options": options}
+        if options.get("output_type") == "JSONPX":
             return PlainTextResponse(
                 content=f"{callback}({orjson.dumps(error_payload)});",
                 media_type="text/javascript",
@@ -314,6 +319,8 @@ async def get_ohlcv(
             to the requested output type. On failure, an error payload is
             returned with HTTP status code 400.
     """
+    # Wall
+    time_start = time.time()  
     # Parse the path-based request URI into structured query options
     options = parse_uri(request_uri)
 
@@ -345,23 +352,24 @@ async def get_ohlcv(
         # Map for holding the binary-mode file_handle and mmap
         mmap_resources = []
         # Execute the SQL query in an in-memory DuckDB instance
-        with duckdb.connect(database=":memory:") as con:
 
-            mmap_resources = generate_mmap_resources(con, options)
+        generate_mmap_resources(options)
 
-            rel = con.sql(sql)
-            results = rel.fetchall()
-            columns = rel.columns
+        rel = MARKETDATA_CACHE.con.sql(sql)
+        results = rel.fetchall()
+        columns = rel.columns
 
-            # Generate the output
-            output = generate_output(options, columns, results)
+        # Wall
+        options['wall'] = time.time() - time_start
+        # Generate the output
+        output = generate_output(options, columns, results)
 
-            # If we have output, return the result
-            if output:
-                return output
+        # If we have output, return the result
+        if output:
+            return output
 
-            # Unsupported output type
-            raise Exception("Unsupported content type")
+        # Unsupported output type
+        raise Exception("Unsupported content type")
 
     except Exception as e:
         # Standardized error response

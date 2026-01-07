@@ -42,6 +42,7 @@ import uvicorn
 
 # Import versioned OHLCV routes
 from routes import router as ohlcv_router
+from state import MARKETDATA_CACHE
 from version import API_VERSION
 
 # Lifespan context manager for startup/shutdown hooks
@@ -51,6 +52,10 @@ async def lifespan(app: FastAPI):
     print("Server starting: Optimizing resources...")
     yield  # Application is running
     print("Server shutting down...")
+    for f, mm in MARKETDATA_CACHE.mmaps.values():
+        mm.close()
+        f.close()
+    MARKETDATA_CACHE.con.close()
 
 # Initialize FastAPI application
 app = FastAPI(
