@@ -80,3 +80,86 @@ class MmapWriter:
 This is a further optimization that mainly impacts syntax. Not performance.
 
 PS. This is no longer a "toy-project". These kind of optimizations are typically seen in HFT environments.
+
+## First results on performance (unoptimized)
+
+* **EUR-USD, CSV-mode, 20 years of data, 10 timeframes, no session rules**
+
+```sh
+Deleting data/*...
+Rebuilding...
+Running Dukascopy ETL pipeline (16 processes)
+Using lockfile data/locks/run.lock
+Step: Download...
+100%|████████████████████████████████████████████| 1/1 [00:00<00:00,  4.53downloads/s]
+Step: Transform...
+100%|████████████████████████████████████████████| 7677/7677 [00:06<00:00, 1114.18files/s]
+Step: Aggregate...
+100%|████████████████████████████████████████████| 1/1 [00:02<00:00,  2.76s/symbols]
+Step: Resample...
+100%|████████████████████████████████████████████| 1/1 [00:28<00:00, 28.14s/symbols]
+
+ETL pipeline complete!
+Total runtime: 38.42 seconds (0.64 minutes)
+Done.
+```
+
+
+* **EUR-USD, BINARY-mode, 20 years of data, 10 timeframes, no session rules**
+
+```sh
+jpueberb@LAPTOP-0LK1UE8L:~/repos2/bp.markets.ingest/dukascopy$ ./rebuild-full.sh
+Deleting data/*...
+Rebuilding...
+Running Dukascopy ETL pipeline (16 processes)
+Using lockfile data/locks/run.lock
+Step: Download...
+100%|████████████████████████████████████████████| 1/1 [00:00<00:00,  3.37downloads/s]
+Step: Transform...
+100%|████████████████████████████████████████████| 7677/7677 [00:03<00:00, 2239.16files/s]
+Step: Aggregate...
+100%|████████████████████████████████████████████| 1/1 [00:03<00:00,  3.05s/symbols]
+Step: Resample...
+100%|████████████████████████████████████████████| 1/1 [00:02<00:00,  2.52s/symbols]
+
+ETL pipeline complete!
+Total runtime: 9.69 seconds (0.16 minutes)
+Done.
+```
+
+* **EUR-USD, BINARY-mode, verification of 15m data:**
+
+Total Records: 1440
+--- Top 10 records of EUR-USD.bin ---
+                        open     high      low    close  volume
+2005-01-03 00:00:00  1.35464  1.35560  1.35464  1.35548  7598.0
+2005-01-03 00:15:00  1.35534  1.35619  1.35486  1.35610  6961.5
+2005-01-03 00:30:00  1.35583  1.35612  1.35456  1.35537  7477.4
+2005-01-03 00:45:00  1.35555  1.35620  1.35491  1.35593  8176.8
+2005-01-03 01:00:00  1.35573  1.35676  1.35540  1.35652  8413.6
+2005-01-03 01:15:00  1.35670  1.35704  1.35616  1.35630  7331.3
+2005-01-03 01:30:00  1.35604  1.35685  1.35596  1.35660  7309.3
+2005-01-03 01:45:00  1.35656  1.35771  1.35638  1.35761  7878.8
+2005-01-03 02:00:00  1.35772  1.35777  1.35627  1.35662  7683.9
+2005-01-03 02:15:00  1.35629  1.35641  1.35568  1.35621  7121.0
+
+--- Bottom 10 records of EUR-USD.bin ---
+                        open     high      low    close   volume
+2026-01-07 17:45:00  1.16953  1.16956  1.16831  1.16901  1943.41
+2026-01-07 18:00:00  1.16900  1.16931  1.16823  1.16827  1613.25
+2026-01-07 18:15:00  1.16829  1.16879  1.16822  1.16854   989.43
+2026-01-07 18:30:00  1.16856  1.16906  1.16844  1.16892  1991.03
+2026-01-07 18:45:00  1.16892  1.16893  1.16841  1.16893  1338.77
+2026-01-07 19:00:00  1.16892  1.16948  1.16873  1.16880  1301.47
+2026-01-07 19:15:00  1.16879  1.16900  1.16862  1.16895  1381.92
+2026-01-07 19:30:00  1.16895  1.16911  1.16877  1.16903  1674.40
+2026-01-07 19:45:00  1.16904  1.16916  1.16861  1.16879  1576.97
+2026-01-07 20:00:00  1.16880  1.16897  1.16856  1.16890   781.85
+
+Total Records: 524096
+
+Correct.
+
+** Can't wait to see DuckDB performance on this **
+
+I am still optimizing transform and aggregate, but these two saturate the NVMe drive. Don't know if can make faster if hardware says no.
