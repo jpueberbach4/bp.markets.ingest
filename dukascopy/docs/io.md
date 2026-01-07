@@ -183,3 +183,33 @@ Total bars: 7,861,440
 **Theoretical throughput on 16-core: ~13 million bars/second**
 
 That's astonishing performance for a "python script". On a 2023 laptop.
+
+```sh
+Deleting data/*...
+Rebuilding...
+Running Dukascopy ETL pipeline (16 processes)
+Using lockfile data/locks/run.lock
+Step: Download...
+100%|█████████████████████████████████████████████████| 42/42 [00:02<00:00, 15.50downloads/s]
+Step: Transform...
+100%|█████████████████████████████████████████████████| 322434/322434 [01:48<00:00, 2972.85files/s]
+Step: Aggregate...
+100%|█████████████████████████████████████████████████| 42/42 [00:35<00:00,  1.19symbols/s]
+Step: Resample...
+100%|█████████████████████████████████████████████████| 42/42 [00:24<00:00,  1.72symbols/s]
+
+ETL pipeline complete!
+Total runtime: 178.90 seconds (2.98 minutes)
+Done.
+```
+
+Another 2 minutes chopped off.
+
+Transform operations require further optimization (next version). Notably, what was previously our most complex computational process—the multi-timeframe resampling cascade—has become our fastest operation. This efficiency stems from the optimized Directed Acyclic Graph (DAG) architecture for timeframe processing: 1m → 5m → 15m → ... → 1Y.
+
+I will finalize this binary implementation:
+
+- Adding support for binary files to builder component
+- Adding support for binary files to webservice component
+- Adding MAGIC bytes and version info into the binary file's header
+- Few QA passes
