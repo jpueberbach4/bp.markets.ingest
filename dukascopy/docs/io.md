@@ -129,6 +129,7 @@ Done.
 
 * **EUR-USD, BINARY-mode, verification of 15m data:**
 
+```sh
 Total Records: 1440
 --- Top 10 records of EUR-USD.bin ---
                         open     high      low    close  volume
@@ -157,6 +158,7 @@ Total Records: 1440
 2026-01-07 20:00:00  1.16880  1.16897  1.16856  1.16890   781.85
 
 Total Records: 524096
+```
 
 Correct.
 
