@@ -178,11 +178,12 @@ I am still optimizing transform and aggregate, but these two saturate the NVMe d
 
 Total bars: 7,861,440
 
-**Actual throughput: ~810,000 bars/second (on a single core!)**
-
-**Theoretical throughput on 16-core: ~13 million bars/second**
+**Actual throughput: ~810,000 bars/second**
 
 That's astonishing performance for a "python script". On a 2023 laptop.
+
+
+42 symbols, CSV-mode:
 
 ```sh
 Deleting data/*...
@@ -190,13 +191,34 @@ Rebuilding...
 Running Dukascopy ETL pipeline (16 processes)
 Using lockfile data/locks/run.lock
 Step: Download...
-100%|█████████████████████████████████████████████████| 42/42 [00:02<00:00, 15.50downloads/s]
+100%|██████████████████████████████████████| 42/42 [00:03<00:00, 12.38downloads/s]
 Step: Transform...
-100%|█████████████████████████████████████████████████| 322434/322434 [01:48<00:00, 2972.85files/s]
+100%|██████████████████████████████████████| 322434/322434 [02:12<00:00, 2426.63files/s]
 Step: Aggregate...
-100%|█████████████████████████████████████████████████| 42/42 [00:35<00:00,  1.19symbols/s]
+100%|██████████████████████████████████████| 42/42 [00:39<00:00,  1.07symbols/s]
 Step: Resample...
-100%|█████████████████████████████████████████████████| 42/42 [00:24<00:00,  1.72symbols/s]
+100%|██████████████████████████████████████| 42/42 [01:49<00:00,  2.62s/symbols]
+
+ETL pipeline complete!
+Total runtime: 297.26 seconds (4.95 minutes)
+Done.
+```
+
+42 symbols, BINARY-mode:
+
+```sh
+Deleting data/*...
+Rebuilding...
+Running Dukascopy ETL pipeline (16 processes)
+Using lockfile data/locks/run.lock
+Step: Download...
+100%|█████████████████████████████████████████| 42/42 [00:02<00:00, 15.50downloads/s]
+Step: Transform...
+100%|█████████████████████████████████████████| 322434/322434 [01:48<00:00, 2972.85files/s]
+Step: Aggregate...
+100%|█████████████████████████████████████████| 42/42 [00:35<00:00,  1.19symbols/s]
+Step: Resample...
+100%|█████████████████████████████████████████| 42/42 [00:24<00:00,  1.72symbols/s]
 
 ETL pipeline complete!
 Total runtime: 178.90 seconds (2.98 minutes)
