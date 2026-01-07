@@ -1,69 +1,18 @@
 <u>MT4 is decoded.</u>
 
 
-## Notice: Backfilling. Exact example.
+## Notice: Performance
 
-I am currently abstracting the IO layer and ofcourse checks are needed to validate correct operation. I use my favorite asset for validation, the SGD index. I noticed one tiny 5m candle looking a tiny bit different and went on the research rampage. This is what i found.
+The performance branch is largely complete. Memory mapping alone was not sufficient to achieve the desired web service speed improvements, so additional optimizations were implemented.
 
-Incoming 1m data from Dukascopy. Notice the liquidity gaps eg between 13:05 and 13:08 no data.
+Overall performance is now under 150 ms for 1,440 candles on the 1-minute chart, well below 100 ms on the 5-minute chart, and between 10–30 ms for the remaining timeframes.
 
-```sh
-2026-01-07 12:40:00,462.544,462.559,462.444,462.444,0.0048
-2026-01-07 12:43:00,462.599,462.599,462.599,462.599,0.0012
-2026-01-07 12:47:00,462.656,462.656,462.556,462.647,0.006
-2026-01-07 12:48:00,462.556,462.699,462.556,462.556,0.0036
-2026-01-07 12:49:00,462.65,462.65,462.65,462.65,0.0012
-2026-01-07 12:50:00,462.759,462.759,462.759,462.759,0.0012
-2026-01-07 13:02:00,462.656,462.656,462.656,462.656,0.0012 <
-2026-01-07 13:04:00,462.753,462.753,462.753,462.753,0.0012 <
-2026-01-07 13:05:00,462.699,462.75,462.647,462.647,0.0036 <
-2026-01-07 13:08:00,462.75,462.75,462.75,462.75,0.0012 <
-2026-01-07 13:10:00,462.656,462.656,462.656,462.656,0.0012 <!-- here we are in-sync again
-2026-01-07 13:11:00,462.759,462.759,462.641,462.65,0.0048
-2026-01-07 13:12:00,462.756,462.756,462.756,462.756,0.0012'
-```
-
-Since the data is gapping, i decided to check for backfills. So i ran the `./rebuild-weekly.sh` script. 
-
-This is how the input changed:
-
-```sh
-2026-01-07 12:33:00,462.447,462.447,462.447,462.447,0.0012
-2026-01-07 12:40:00,462.544,462.559,462.444,462.444,0.0048
-2026-01-07 12:43:00,462.599,462.599,462.599,462.599,0.0012
-2026-01-07 12:47:00,462.656,462.656,462.556,462.647,0.006
-2026-01-07 12:48:00,462.556,462.699,462.556,462.556,0.0036
-2026-01-07 12:49:00,462.65,462.65,462.65,462.65,0.0012
-2026-01-07 12:50:00,462.759,462.759,462.759,462.759,0.0012
-2026-01-07 12:57:00,462.656,462.656,462.656,462.656,0.0012 <
-2026-01-07 12:59:00,462.753,462.753,462.753,462.753,0.0012 <
-2026-01-07 13:00:00,462.699,462.75,462.647,462.647,0.0036 <
-2026-01-07 13:03:00,462.75,462.75,462.75,462.75,0.0012 <
-2026-01-07 13:10:00,462.656,462.656,462.656,462.656,0.0012 <!-- here we are in-sync again
-2026-01-07 13:11:00,462.759,462.759,462.641,462.65,0.0048
-2026-01-07 13:12:00,462.756,462.756,462.756,462.756,0.0012
-2026-01-07 13:15:00,462.856,462.856,462.741,462.741,0.0048
-```
-
-This is not a bug on this pipeline's end. I checked the original source files and compared them. The 1m input file changed on broker end.
-
-This is why you need to run the `./rebuild-weekly.sh` script regularly-if you are dealing with illiquid assets.
-
-The move to binary will make a rebuild a walk-in-the-park. A matter of a minute-unless you have a crazy rain-forest of symbols-for which this software originally was not intended.
-
-**Note:** Now i have seen exactly what a broker does when "backfilling", i am certain i can "detect" it. What to do when we detect it? At minimum notify the user on it in the web-interface. My initial conclusion was that during backfilling only candles get updated or inserted. Now we see, that candles are actually moved around-the timestamp.
+A few QA passes -especially on the cache part- and additional testing are still required before release. Especially the backward CSV compatibility needs to be tested.
 
 ## Notice: Data
 
 The data portion is now (fairly) complete. Naturally, some QA issues remain, particularly in the builder component, which will be addressed over time. Ensuring optimal QA for the ETL process takes priority over the extraction utility itself.
 
-**Note:** I’ve addressed the main issue with replay, but I believe it’s prudent to start abstracting the I/O layer first. As more features are added, an increasing number of components are being built on the current I/O implementation. To avoid a large-scale refactor later, it makes sense to tackle the [I/O layer](io.md) now. We’re moving toward a binary format with fixed-length records, while keeping a configurable fallback to CSV to avoid breaking existing installations.
-
-Output from the builder tool will remain the same - CSV/Parquet.
-
-This is pretty fast already but will become extremely fast.
-
-**Update**: [Performance update on BINARY mode (unoptimized)](io.md#first-results-on-performance-unoptimized)
 
 ## Notice: Configuration validation - 2025-01-06
 
