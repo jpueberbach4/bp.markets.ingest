@@ -195,16 +195,17 @@ class TransformEngine:
             ]
 
             # Assemble final DataFrame and apply price rounding
+            idx = pd.DatetimeIndex(t_f * 1_000_000, name="time")
             full_transformed = pd.DataFrame(
-                {
-                    "time": np.array(t_f * 1_000_000, dtype="datetime64[ns]"),
-                    "open": np.round(o_f, self.config.round_decimals),
-                    "high": np.round(h_f, self.config.round_decimals),
-                    "low": np.round(l_f, self.config.round_decimals),
-                    "close": np.round(c_f, self.config.round_decimals),
+                data={
+                    "open": o_f,
+                    "high": h_f,
+                    "low": l_f,
+                    "close": c_f,
                     "volume": v_f,
-                }
-            )
+                },
+                index=idx
+            ).round(self.config.round_decimals)
 
             # Get symbol specific configuration
             sym_cfg = self.config.symbols.get(self.symbol) if self.config.symbols else None
@@ -350,9 +351,6 @@ class TransformWorker:
             # Transform raw deltas into normalized OHLCV data
             df = self.engine.process_json(data)
 
-            # Make sure we set the time as index
-            df.set_index('time', inplace=True)
-
             # Ensure output directory exists
             target_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -404,7 +402,6 @@ def fork_transform(args: tuple) -> bool:
     """
     try:
 
-        #return profile_transform(args)
         symbol, dt, app_config = args
         # Initialize the worker
         worker = TransformWorker(dt, symbol, app_config)
