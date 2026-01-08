@@ -113,11 +113,14 @@ class MarketDataCache:
         # Get current file size to detect changes
         size = os.path.getsize(file_path)
 
+        # Get current file modified time to detect changes
+        mtime = os.stat(file_path).st_mtime
+
         # Check if this view is already memory-mapped and cached
         cached = self.mmaps.get(view_name)
 
         # Recreate the view if it doesn't exist or the file has grown
-        if not cached or size > cached['size']:
+        if not cached or size > cached['size'] or mtime > cached['mtime']:
             if cached:
                 # Close the existing memory map
                 cached['mm'].close()
@@ -149,7 +152,7 @@ class MarketDataCache:
             self.con.register(view_name, pd.DataFrame(data_dict))
 
             # Cache the file handle, memory map, and size for future reuse
-            self.mmaps[view_name] = {'f': f, 'mm': mm, 'size': size}
+            self.mmaps[view_name] = {'f': f, 'mm': mm, 'size': size, 'mtime': mtime}
             # Track registered view names
             self.registered_views.add(view_name)
 
