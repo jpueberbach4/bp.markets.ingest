@@ -15,6 +15,8 @@ There is a beta release ready under branch release/0.6.5-beta or tag 0.6.5-beta.
 
 **Note:** If you are doing "very high performance"-analysis using the data from this tool, ie for AI purposes, the binary format will be a very welcome update. The format is well documented in a binary.md document inside that beta branch/tag.
 
+**Note:** The infrastructure seems now ok to start building API 1.1 and replay.
+
 ## Notice: Data
 
 The data portion is now (fairly) complete. Naturally, some QA issues remain, particularly in the builder component, which will be addressed over time. Ensuring optimal QA for the ETL process takes priority over the extraction utility itself.
