@@ -9,6 +9,8 @@ Overall performance is now under 150 ms for 1,440 candles on the 1-minute chart,
 
 We are now doing 15 years of 1m candles on 42 symbols in 2 minutes. I think this is near optimal for python. For this architecture.
 
+These latest performance optimization push throughput well over 1 million candles per second (pipeline average). On a laptop.
+
 I am truly amazed on how far you can push things with python and without a complex infrastructure. I know Kafka, RabbitMQ, ZeroQ, Redis, TimeScaleDB etc. The "regular" complexity layers that are used to optimize enterprise solutions. This repo shows that all of that can be easily beaten with `just a laptop`.
 
 There is a beta release ready under branch beta/0.6.5 or tag 0.6.5-beta. It's currently still in testing phase but dont expect any format changes, at most bugfixes will happen.
@@ -16,6 +18,7 @@ There is a beta release ready under branch beta/0.6.5 or tag 0.6.5-beta. It's cu
 **Note:** If you are doing "very high performance"-analysis using the data from this tool, ie for AI purposes, the binary format will be a very welcome update. The format is well documented in a binary.md document inside that beta branch/tag.
 
 **Note:** The infrastructure seems now ok to start building API 1.1 and replay (market simulation).
+
 
 ## Notice: Data
 
