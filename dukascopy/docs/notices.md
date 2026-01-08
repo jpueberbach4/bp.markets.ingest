@@ -9,6 +9,8 @@ Overall performance is now under 150 ms for 1,440 candles on the 1-minute chart,
 
 A few QA passes -especially on the cache part- and additional testing are still required before release. Especially the backward CSV compatibility needs to be tested.
 
+I am truly amazed on how far you can push things with python and without a complex infrastructure. I know Kafka, RabbitMQ, ZeroQ, Redis, TimeScaleDB etc. The "regular" complexity layers that are used to optimize enterprise solutions. This repo shows that all of that can be easily beaten with `just a laptop`.
+
 ## Notice: Data
 
 The data portion is now (fairly) complete. Naturally, some QA issues remain, particularly in the builder component, which will be addressed over time. Ensuring optimal QA for the ETL process takes priority over the extraction utility itself.
