@@ -22,7 +22,7 @@ done
 echo Deleting transform CSV data for last $NUMDAYS
 sleep 0.5
 for ((i=1; i<=NUMDAYS; i++)); do
-    GLOB_PATTERN=$(date -d "-$i days" +data/transform/1m/%Y/%m/*_%Y%m%d.csv)
+    GLOB_PATTERN=$(date -d "-$i days" +data/transform/1m/%Y/%m/*_%Y%m%d.*)
     for file in $GLOB_PATTERN; do
         if [ -f "$file" ]; then
             echo "Deleting $file"
