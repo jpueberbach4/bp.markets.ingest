@@ -228,12 +228,9 @@ Done.
 2 minutes now for 42 symbols with an average history of 15 years of 1m candles per symbol. with custom timeframes, session handling, all-in.
 
 Transform is now almost maximum performance - last optimizations was microseconds stuff, but on 300k files these add up
+
 Aggregate completely saturates the NVMe drive.
+
 Resample is optimal.
 
-I will finalize this binary implementation:
-
-- Adding support for binary files to builder component
-- Adding support for binary files to webservice component
-- Adding MAGIC bytes and version info into the binary file's header
-- Few QA passes
+Will be released soon. 
