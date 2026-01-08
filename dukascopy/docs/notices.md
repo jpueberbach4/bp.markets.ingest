@@ -1,14 +1,35 @@
 <u>MT4 is decoded.</u>
 
+## Notice: Version 0.6.5 is a breaking change version
+
+When you update to this version, it will break the API - [see here](http.md)
+
+What you get from this new version:
+
+- Binary or text mode
+- 11x increased resampling performance on binary mode
+- About 5x increase on performance on API calls on binary mode
+- Cleaner HTTP service code structure
+- Abstracted IO layer
+
+When you change to this version, choose either binary/text mode. Default is still text-mode to try not to break existing installations but i cannot guarantee that it will not happen. The index files now hold 3 fields instead of two. I build in detection for this but it's tricky for backward compatibility. 
+
+If you notice any errors, solution is simple `./rebuild-full.sh`. 
+
+Most users will appreciate the binary version because of its increased performance. If you choose binary, make sure to set all the `fmode` fields to binary-also for transform, aggregate, http and resample. If you are still using the default setup `./setup-dukascopy.sh`, then edit the `config.user.yaml` and CTRL+F fmode and change all `text` values to `binary`. Next, perform a `./rebuild-full.sh`.
+
+## Notice: Performance
+
+The performance branch is largely complete. Memory mapping alone was not sufficient to achieve the desired web service speed improvements, so additional optimizations were implemented.
+
+Overall performance is now under 150 ms for 1,440 candles on the 1-minute chart, well below 100 ms on the 5-minute chart, and between 10–30 ms for the remaining timeframes.
+
+A few QA passes -especially on the cache part- and additional testing are still required before release. Especially the backward CSV compatibility needs to be tested.
+
 ## Notice: Data
 
 The data portion is now (fairly) complete. Naturally, some QA issues remain, particularly in the builder component, which will be addressed over time. Ensuring optimal QA for the ETL process takes priority over the extraction utility itself.
 
-[Replay](replay.md) is next.
-
-Feature pre-testing starts tomorrow. One focus is determining whether a candle’s “state” can be derived deterministically and efficiently using the timestamp, timeframe, symbol, and configuration. Success here would eliminate a major obstacle.
-
-**Update:** Cracked it. Tomorrow actual programming begins.
 
 ## Notice: Configuration validation - 2025-01-06
 

@@ -94,6 +94,7 @@ class ResampleSymbol:
     round_decimals: Optional[int] = None
     batch_size: Optional[int] = None
     fsync: Optional[bool] = None
+    fmode: Optional[str] = None
     skip_timeframes: List[str] = field(default_factory=list)
     timeframes: Dict[str, ResampleTimeframe] = field(default_factory=dict)
     timezone: str = ""
@@ -106,6 +107,7 @@ class ResampleConfig:
     """Root configuration for the resampling stage."""
     round_decimals: int = 8
     batch_size: int = 250_000
+    fmode: str = "text"
     fsync: bool = False
     paths: ResamplePaths = field(default_factory=ResamplePaths)
     timeframes: Dict[str, ResampleTimeframe] = field(default_factory=dict)
@@ -124,6 +126,7 @@ class AggregatePaths:
 class AggregateConfig:
     """Root configuration for the aggregation stage."""
     fsync: bool = False
+    fmode: str = "text"
     paths: AggregatePaths = field(default_factory=AggregatePaths)
 
 
@@ -178,6 +181,7 @@ class TransformConfig:
     """Root configuration for the transform stage."""
     time_shift_ms: int = 0
     round_decimals: int = 10
+    fmode: Optional[str] = None
     fsync: bool = False
     validate: bool = False
     paths: TransformPaths = field(default_factory=TransformPaths)
@@ -445,6 +449,9 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleSy
     # Optional fsync safety feature (forces flushing to disk)
     if symbol_override.fsync is None:
         symbol_override.fsync = merged_config.fsync
+        
+    # fmode (binary or text), inherit from global
+    symbol_override.fmode = merged_config.fmode
 
     def normalize_tf(tf: ResampleTimeframe) -> ResampleTimeframe:
         """Normalize timeframe pre/post processing steps.

@@ -59,32 +59,50 @@
 ===============================================================================
 """
 
+import mmap
+import time
+import numpy as np
+import pandas as pd
+import orjson
+import duckdb
 
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import PlainTextResponse, JSONResponse
 from typing import Dict, Optional
-from helper import parse_uri, generate_sql, load_indicator_plugins, discover_options, generate_output
 from pathlib import Path
-from version import API_VERSION
-import orjson
-import duckdb 
+from functools import lru_cache
+from fastapi import Depends
+
+from api.state import cache
+from api.config.app_config import load_app_config
+from api.v1_0.helper import parse_uri, generate_sql, discover_options, generate_output
+from api.v1_0.plugin import load_indicator_plugins
+from api.v1_0.version import API_VERSION
+
+
+@lru_cache
+def get_config():
+    config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
+    app_config = load_app_config(config_file)
+    return app_config
 
 # Setup router
 router = APIRouter(
-    prefix="/ohlcv",
-    tags=["ohlcv"]
+    prefix=f"/ohlcv/{API_VERSION}",
+    tags=["ohlcv1_0"]
 )
 
 indicator_registry = load_indicator_plugins()
 
-@router.get("/{API_VERSION}/indicator/{name}/{request_uri:path}")
+@router.get("/indicator/{name}/{request_uri:path}")
 async def get_indicator(
     name: str,
     request_uri: str,
     limit: Optional[int] = Query(1440, gt=0, le=1440),
     offset: Optional[int] = Query(0, ge=0, le=1000),
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
-    callback: Optional[str] = "__bp_callback"
+    callback: Optional[str] = "__bp_callback",
+    config = Depends(get_config)
 ):
     """Execute a registered indicator against OHLCV data and return results.
 
@@ -125,7 +143,8 @@ async def get_indicator(
         if name not in indicator_registry:
             raise HTTPException(status_code=404, detail="Indicator not found")
         
-
+        # Wall time
+        time_start = time.time()  
         # Parse options
         options = parse_uri(request_uri)
         
@@ -136,6 +155,7 @@ async def get_indicator(
                 "offset": offset,
                 "order": order,
                 "callback": callback,
+                "fmode": config.http.fmode
             }
         )
 
@@ -145,19 +165,24 @@ async def get_indicator(
         # Generate SQL
         sql = generate_sql(options)
 
+        # In binary mode, we register MMap views            
+        cache.register_views_from_options(options)
+
         # Execute the SQL query in an in-memory DuckDB instance
-        with duckdb.connect(database=":memory:") as con:
-            rel = con.sql(sql)
-            columns = rel.columns
-            results = rel.fetchall()
-            # Zip the data using columns and rows
-            data = [dict(zip(columns, row)) for row in results]
+        rel = cache.get_conn().sql(sql)
+        results = rel.fetchall()
+        columns = rel.columns
+        
+        data = [dict(zip(columns, row)) for row in results]
 
         # Call the indicator
         columns, results = indicator_registry[name](data, options)
 
         # Generate the output
         output = generate_output(options, columns, results)
+
+        # Register wall-time
+        output['options']['wall'] = time.time() - time_start
 
         # If we have output, return the result
         if output:
@@ -166,7 +191,7 @@ async def get_indicator(
         raise Exception(f"{name} had no output")
     except Exception as e:
         # Standardized error response
-        error_payload = {"status": "failure", "exception": f"{e}"}
+        error_payload = {"status": "failure", "exception": f"{e}","options": options}
 
         if options.get("output_type") == "JSONP":
             return PlainTextResponse(
@@ -177,10 +202,11 @@ async def get_indicator(
         return JSONResponse(content=error_payload, status_code=400)        
 
 
-@router.get(f"/{API_VERSION}/list/{{request_uri:path}}")
+@router.get(f"/list/{{request_uri:path}}")
 async def get_ohlcv_list(
     request_uri: str,
-    callback: Optional[str] = "__bp_callback"
+    callback: Optional[str] = "__bp_callback",
+    config = Depends(get_config)
 ):
     """List available OHLCV symbols and timeframes.
 
@@ -249,9 +275,8 @@ async def get_ohlcv_list(
 
     except Exception as e:
         # Standardized error response
-        error_payload = {"status": "failure", "exception": f"{e}"}
-
-        if options.get("output_type") == "JSONP":
+        error_payload = {"status": "failure", "exception": f"{e}","options": options}
+        if options.get("output_type") == "JSONPX":
             return PlainTextResponse(
                 content=f"{callback}({orjson.dumps(error_payload)});",
                 media_type="text/javascript",
@@ -260,13 +285,14 @@ async def get_ohlcv_list(
         return JSONResponse(content=error_payload, status_code=400)
     pass
 
-@router.get(f"/{API_VERSION}/{{request_uri:path}}")
+@router.get(f"/{{request_uri:path}}")
 async def get_ohlcv(
     request_uri: str,
     limit: Optional[int] = Query(1440, gt=0, le=1440),
     offset: Optional[int] = Query(0, ge=0, le=1000),
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
-    callback: Optional[str] = "__bp_callback"
+    callback: Optional[str] = "__bp_callback",
+    config = Depends(get_config)
 ):
     """Resolve a path-based OHLCV query and return time-series market data.
 
@@ -297,6 +323,8 @@ async def get_ohlcv(
             to the requested output type. On failure, an error payload is
             returned with HTTP status code 400.
     """
+    # Wall
+    time_start = time.time()  
     # Parse the path-based request URI into structured query options
     options = parse_uri(request_uri)
 
@@ -307,6 +335,7 @@ async def get_ohlcv(
             "offset": offset,
             "order": order,
             "callback": callback,
+            "fmode": config.http.fmode
         }
     )
 
@@ -324,21 +353,25 @@ async def get_ohlcv(
         # Generate SQL
         sql = generate_sql(options)
 
+        # In binary mode, we register MMap views            
+        cache.register_views_from_options(options)
+
         # Execute the SQL query in an in-memory DuckDB instance
-        with duckdb.connect(database=":memory:") as con:
-            rel = con.sql(sql)
-            results = rel.fetchall()
-            columns = rel.columns
+        rel = cache.get_conn().sql(sql)
+        results = rel.fetchall()
+        columns = rel.columns
 
-            # Generate the output
-            output = generate_output(options, columns, results)
+        # Wall
+        options['wall'] = time.time() - time_start
+        # Generate the output
+        output = generate_output(options, columns, results)
 
-            # If we have output, return the result
-            if output:
-                return output
+        # If we have output, return the result
+        if output:
+            return output
 
-            # Unsupported output type
-            raise Exception("Unsupported content type")
+        # Unsupported output type
+        raise Exception("Unsupported content type")
 
     except Exception as e:
         # Standardized error response

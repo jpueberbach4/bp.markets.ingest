@@ -34,8 +34,11 @@ from pathlib import Path
 from typing import Tuple
 
 from dst import get_symbol_time_shift_ms
-from config.app_config import AppConfig, TransformConfig, TransformSymbolProcessingStep
-from exceptions import *
+from etl.config.app_config import AppConfig, TransformConfig, TransformSymbolProcessingStep
+
+from etl.io.protocols import *
+from etl.io.resample.factory import *
+from etl.exceptions import *
 
 class TransformEngine:
     """
@@ -260,6 +263,8 @@ class TransformWorker:
         # Set properties
         self.app_config = app_config
         self.config = app_config.transform
+        self.fsync = self.config.fsync
+        self.fmode = self.config.fmode
         self.symbol = symbol
         self.dt = dt
         # Create engine instance
@@ -282,6 +287,9 @@ class TransformWorker:
             DataNotFoundError: If neither a historical nor live JSON source file
                 exists for the worker's symbol and date.
         """
+
+        extension = ResampleIOFactory.get_appropriate_extension(self.fmode)
+
         # Historical cache and output paths
         hist_cache = (
             Path(self.config.paths.historic)
@@ -289,7 +297,7 @@ class TransformWorker:
         )
         hist_data = (
             Path(self.config.paths.data)
-            / self.dt.strftime(f"%Y/%m/{self.symbol}_%Y%m%d.csv")
+            / self.dt.strftime(f"%Y/%m/{self.symbol}_%Y%m%d{extension}")
         )
 
         # Live cache and output paths
@@ -299,7 +307,7 @@ class TransformWorker:
         )
         live_data = (
             Path(self.config.paths.live)
-            / self.dt.strftime(f"{self.symbol}_%Y%m%d.csv")
+            / self.dt.strftime(f"{self.symbol}_%Y%m%d{extension}")
         )
 
         # Prefer historical data when available
@@ -348,21 +356,29 @@ class TransformWorker:
             # Transform raw deltas into normalized OHLCV data
             df = self.engine.process_json(data)
 
+            if not isinstance(df.index, pd.DatetimeIndex):
+                if 'time' in df.columns:
+                    df['time'] = pd.to_datetime(df['time'])
+                    df.set_index('time', inplace=True)
+                else:
+                    # Fallback for empty or malformed data
+                    df.index = pd.to_datetime(df.index)
+
             # Ensure output directory exists
             target_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Atomic write: write to temp file, then replace
             temp_path = target_path.with_suffix(".tmp")
 
-            with open(temp_path, "w", encoding="utf-8", newline="") as f:
-                # Write the dataframe to the file handle
-                df.to_csv(f, index=False, header=True, sep=",")
-                # Flush to OS
-                f.flush()
-                # Force flush to disk
-                if self.config.fsync:
-                    os.fsync(f.fileno())
+            writer =  ResampleIOFactory.get_writer(temp_path, self.fmode, fsync=self.config.fsync)
 
+            with writer:
+                # Write the dataframe to the file handle
+                writer.write_batch(df)
+                # Flush to OS (and SSD if fsync is True)
+                writer.flush()
+
+            # Atomic replace
             os.replace(temp_path, target_path)
 
             return True

@@ -2,63 +2,59 @@
 # -*- coding: utf-8 -*-
 """
 ===============================================================================
- File:        helper.py
- Author:      JP Ueberbach
- Created:     2026-01-02
- Description: Core helper utilities for path-based OHLCV query processing.
+helper.py
 
-              This module provides a collection of helper functions used
-              throughout the OHLCV data API and builder pipeline. It is
-              responsible for interpreting a slash-delimited query DSL,
-              resolving filesystem-backed data selections, dynamically
-              loading indicator plugins, generating output payloads, and
-              constructing DuckDB-compatible SQL queries.
+Author:      JP Ueberbach
+Created:     2026-01-02
 
-              Key responsibilities include:
+Core helper utilities for path-based OHLCV query processing.
 
-              - Parsing path-encoded OHLCV query URIs into structured options
-                (symbols, timeframes, temporal filters, output format flags)
-              - Normalizing timestamps and query parameters
-              - Discovering and resolving available OHLCV data sources from
-                the filesystem using builder configuration
-              - Dynamically loading indicator plugins that expose a
-                ``calculate`` interface
-              - Generating formatted output in JSON, JSONP, or CSV form,
-                including MT4-compatible variants
-              - Building DuckDB SQL queries for querying CSV-based OHLCV data,
-                including filtering, ordering, pagination, and modifiers
+This module provides functions for parsing and interpreting a
+slash-delimited OHLCV query DSL, resolving filesystem-backed data
+selections, generating DuckDB-compatible SQL queries, dynamically
+loading indicator plugins, and formatting query output.
 
-              The path-based DSL is intentionally aligned with the internal
-              builder syntax to ensure full compatibility. Users familiar
-              with the builder can reuse the same syntax when accessing the
-              API.
+Key responsibilities:
+    - Parse path-encoded OHLCV query URIs into structured options.
+    - Normalize timestamps and query parameters.
+    - Discover and resolve available OHLCV data sources from the filesystem.
+    - Dynamically load indicator plugins exposing a `calculate` interface.
+    - Generate formatted output in JSON, JSONP, or CSV (including MT4 variants).
+    - Construct DuckDB SQL queries with filtering, ordering, pagination, and modifiers.
 
- Usage:
-     - Use ``parse_uri(uri: str)`` to convert a path-based query string into
-       structured query options.
-     - Use ``discover_options(options)`` to resolve selections against
-       filesystem-backed OHLCV data.
-     - Use ``generate_sql(options)`` to construct a DuckDB SQL query.
-     - Use ``generate_output(options, columns, results)`` to format query
-       results for API responses.
-     - Use ``load_indicator_plugins()`` to discover and register indicator
-       extensions.
+This module is aligned with the internal builder syntax, ensuring
+compatibility with the OHLCV builder pipeline.
 
- Requirements:
-     - Python 3.8+
-     - DuckDB
-     - FastAPI
+Functions:
+    normalize_timestamp(ts: str) -> str
+    parse_uri(uri: str) -> Dict[str, Any]
+    discover_options(options: Dict) -> Dict
+    generate_output(options: Dict, columns: List, results: List)
+    generate_sql(options) -> str
 
- License:
-     MIT License
+Constants:
+    CSV_TIMESTAMP_FORMAT: str
+    CSV_TIMESTAMP_FORMAT_MT4_DATE: str
+    CSV_TIMESTAMP_FORMAT_MT4_TIME: str
+
+Requirements:
+    - Python 3.8+
+    - DuckDB
+    - FastAPI
+
+License:
+    MIT License
 ===============================================================================
 """
-
-import importlib.util
 import csv
 import io
 import os
 import orjson
+import mmap
+import numpy as np
+import pandas as pd
+import duckdb 
+
 from typing import Dict, Any, List
 from urllib.parse import unquote_plus
 from pathlib import Path
@@ -67,8 +63,6 @@ from fastapi.responses import PlainTextResponse, JSONResponse
 CSV_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 CSV_TIMESTAMP_FORMAT_MT4_DATE = "%Y.%m.%d"
 CSV_TIMESTAMP_FORMAT_MT4_TIME = "%H:%M:%S"
-
-PLUGIN_DIR = Path(__file__).parent / "plugins"
 
 def normalize_timestamp(ts: str) -> str:
     if not ts:
@@ -170,40 +164,6 @@ def parse_uri(uri: str) -> Dict[str, Any]:
     return result
 
 
-def load_indicator_plugins():
-    """Dynamically load indicator plugins from the plugin directory.
-
-    This function scans the configured plugin directory for Python files,
-    dynamically imports each valid module, and registers its ``calculate``
-    function if present. Each plugin is keyed by its filename (without the
-    ``.py`` extension).
-
-    Returns:
-        dict[str, callable]: A dictionary mapping plugin names to their
-        corresponding ``calculate`` functions. If the plugin directory does
-        not exist or no valid plugins are found, an empty dictionary is
-        returned.
-
-    """ 
-    plugins = {}
-    if not PLUGIN_DIR.exists():
-        return plugins
-
-    for file in os.listdir(PLUGIN_DIR):
-        if file.endswith(".py") and not file.startswith("__"):
-            plugin_name = file[:-3]
-            file_path = PLUGIN_DIR / file
-            
-            spec = importlib.util.spec_from_file_location(plugin_name, file_path)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            
-            if hasattr(module, "calculate"):
-                plugins[plugin_name] = module.calculate
-
-    return plugins
-
-
 def discover_options(options: Dict):
     """Resolve and enrich data selection options using filesystem-backed sources.
 
@@ -234,7 +194,6 @@ def discover_options(options: Dict):
         # Load builder configuration
         config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
         config = load_app_config(config_file)
-
         # Discover available OHLCV data sources from the filesystem
         available_data = get_available_data_from_fs(config.builder)
 
@@ -246,7 +205,6 @@ def discover_options(options: Dict):
         return options
     except Exception as e:
         raise
-
 
 def generate_output(options: Dict, columns: List, results: List):
     """Generate formatted output based on the requested output type.
@@ -292,6 +250,7 @@ def generate_output(options: Dict, columns: List, results: List):
             "options": options,
             "result": [dict(zip(columns, row)) for row in results],
         }
+
         json_data = orjson.dumps(payload).decode("utf-8")
         return PlainTextResponse(
             content=f"{callback}({json_data});",
@@ -353,22 +312,35 @@ def generate_sql(options):
 
     for item in options['select_data']:
         # Unpack select tuple and append global temporal filters
-        symbol, timeframe, input_filepath, modifiers, after, until = (
-            item + tuple([options.get('after'), options.get('until')])
+        symbol, timeframe, input_filepath, modifiers, after, until, fmode = (
+            item + tuple([options.get('after'), options.get('until'),options.get('fmode')])
         )
 
+        # Security check
+        if not Path(input_filepath).is_absolute():
+            raise ValueError("Invalid file path")
+
         # Columns selected from each CSV file, including normalized metadata
+        if fmode == "binary":
+            time_column = f"""
+                epoch_ms(time_raw::BIGINT) 
+            """
+        else:
+            time_column = "Time"
+
+
         select_columns = f"""
             '{symbol}'::VARCHAR AS symbol,
             '{timeframe}'::VARCHAR AS timeframe,
-            CAST(strftime(Time, '%Y') AS VARCHAR) AS year,
-            strptime(CAST(Time AS VARCHAR), '{CSV_TIMESTAMP_FORMAT}') AS time,
+            CAST(strftime({time_column}, '%Y') AS VARCHAR) AS year,
+            strptime(CAST({time_column} AS VARCHAR), '{CSV_TIMESTAMP_FORMAT}') AS time,
             open,
             high,
             low,
             close,
             volume
         """
+
 
         # Base temporal filter applied to all selections
         where_clause = f"""
@@ -387,12 +359,20 @@ def generate_sql(options):
             )
 
         # Construct SELECT statement for this specific CSV input
-        select_sql = f"""
-            SELECT
-                {select_columns}
-            FROM read_csv_auto('{input_filepath}')
-            {where_clause}
-        """
+        if fmode == "binary":
+            select_sql = f"""
+                SELECT
+                    {select_columns}
+                FROM "{symbol}_{timeframe}_VIEW"  
+                {where_clause}
+            """
+        else:
+            select_sql = f"""
+                SELECT
+                    {select_columns}
+                FROM read_csv_auto('{input_filepath}')
+                {where_clause}
+            """
 
         select_sql_array.append(select_sql)
 

@@ -96,6 +96,7 @@
             "properties": {
                 "round_decimals": { "type": "integer" },
                 "batch_size": { "type": "integer" },
+                "fmode": { "type": "string" },
                 "fsync": { "type": "boolean" },
                 "paths": { "type": "object" },
                 "timeframes": { "type": "object", "additionalProperties": { "$ref": "#/definitions/timeframe_config" } },
