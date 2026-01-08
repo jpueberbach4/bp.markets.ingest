@@ -297,7 +297,10 @@ class ResampleIOWriterBinary(ResampleIOWriter):
         Args:
             size (int): New file size in bytes.
         """
-        self.file.truncate(size)
+        # we do not truncate in binary mode
+        # we just rewrite at the offset, since its fixed length, this works
+        # self.file.truncate(size)
+        pass
 
     def flush(self, fsync: bool = False) -> None:
         """
