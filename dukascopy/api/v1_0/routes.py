@@ -48,8 +48,6 @@
      configuration and should not be executed directly.
 
  TODO: Think of a way to better handle "warmup rows" for indicators
- TODO: API VERSION 1.1 IMPL
- TODO: MARKETDATA CACHE optimization
 
  Requirements:
      - Python 3.8+
@@ -61,23 +59,26 @@
 ===============================================================================
 """
 
-
-from fastapi import APIRouter, HTTPException, Query, status
-from fastapi.responses import PlainTextResponse, JSONResponse
-from typing import Dict, Optional
-from helper import parse_uri, generate_sql, load_indicator_plugins, discover_options, generate_output, generate_mmap_resources
-from pathlib import Path
-from version import API_VERSION
-from config.app_config import load_app_config
-from functools import lru_cache
-from fastapi import Depends
-from state import MARKETDATA_CACHE
 import mmap
 import time
 import numpy as np
 import pandas as pd
 import orjson
-import duckdb 
+import duckdb
+
+from fastapi import APIRouter, HTTPException, Query, status
+from fastapi.responses import PlainTextResponse, JSONResponse
+from typing import Dict, Optional
+from pathlib import Path
+from functools import lru_cache
+from fastapi import Depends
+
+from api.state import cache
+from api.config.app_config import load_app_config
+from api.v1_0.helper import parse_uri, generate_sql, discover_options, generate_output
+from api.v1_0.plugin import load_indicator_plugins
+from api.v1_0.version import API_VERSION
+
 
 @lru_cache
 def get_config():
@@ -87,13 +88,13 @@ def get_config():
 
 # Setup router
 router = APIRouter(
-    prefix="/ohlcv",
-    tags=["ohlcv"]
+    prefix=f"/ohlcv/{API_VERSION}",
+    tags=["ohlcv1_0"]
 )
 
 indicator_registry = load_indicator_plugins()
 
-@router.get("/{API_VERSION}/indicator/{name}/{request_uri:path}")
+@router.get("/indicator/{name}/{request_uri:path}")
 async def get_indicator(
     name: str,
     request_uri: str,
@@ -164,11 +165,11 @@ async def get_indicator(
         # Generate SQL
         sql = generate_sql(options)
 
-        # If binary mode, generate mmap resource for each view
-        generate_mmap_resources(options)
+        # In binary mode, we register MMap views            
+        cache.register_views_from_options(options)
 
         # Execute the SQL query in an in-memory DuckDB instance
-        rel = MARKETDATA_CACHE.con.sql(sql)
+        rel = cache.get_conn().sql(sql)
         results = rel.fetchall()
         columns = rel.columns
         
@@ -201,7 +202,7 @@ async def get_indicator(
         return JSONResponse(content=error_payload, status_code=400)        
 
 
-@router.get(f"/{API_VERSION}/list/{{request_uri:path}}")
+@router.get(f"/list/{{request_uri:path}}")
 async def get_ohlcv_list(
     request_uri: str,
     callback: Optional[str] = "__bp_callback",
@@ -284,7 +285,7 @@ async def get_ohlcv_list(
         return JSONResponse(content=error_payload, status_code=400)
     pass
 
-@router.get(f"/{API_VERSION}/{{request_uri:path}}")
+@router.get(f"/{{request_uri:path}}")
 async def get_ohlcv(
     request_uri: str,
     limit: Optional[int] = Query(1440, gt=0, le=1440),
@@ -352,11 +353,11 @@ async def get_ohlcv(
         # Generate SQL
         sql = generate_sql(options)
 
-        # If binary mode, generate mmap resource for each view
-        generate_mmap_resources(options)
+        # In binary mode, we register MMap views            
+        cache.register_views_from_options(options)
 
         # Execute the SQL query in an in-memory DuckDB instance
-        rel = MARKETDATA_CACHE.con.sql(sql)
+        rel = cache.get_conn().sql(sql)
         results = rel.fetchall()
         columns = rel.columns
 

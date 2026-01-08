@@ -1,7 +1,7 @@
 #!/bin/bash
 
-SERVICE_NAME="http-service/run.py"
-PIDFILE="./data/http-service.pid"
+SERVICE_NAME="api/run.py"
+PIDFILE="./data/http.pid"
 
 start() {
     if [ -f $PIDFILE ] && kill -0 $(cat $PIDFILE) 2>/dev/null; then

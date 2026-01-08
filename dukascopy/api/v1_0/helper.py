@@ -2,59 +2,50 @@
 # -*- coding: utf-8 -*-
 """
 ===============================================================================
- File:        helper.py
- Author:      JP Ueberbach
- Created:     2026-01-02
- Description: Core helper utilities for path-based OHLCV query processing.
+helper.py
 
-              This module provides a collection of helper functions used
-              throughout the OHLCV data API and builder pipeline. It is
-              responsible for interpreting a slash-delimited query DSL,
-              resolving filesystem-backed data selections, dynamically
-              loading indicator plugins, generating output payloads, and
-              constructing DuckDB-compatible SQL queries.
+Author:      JP Ueberbach
+Created:     2026-01-02
 
-              Key responsibilities include:
+Core helper utilities for path-based OHLCV query processing.
 
-              - Parsing path-encoded OHLCV query URIs into structured options
-                (symbols, timeframes, temporal filters, output format flags)
-              - Normalizing timestamps and query parameters
-              - Discovering and resolving available OHLCV data sources from
-                the filesystem using builder configuration
-              - Dynamically loading indicator plugins that expose a
-                ``calculate`` interface
-              - Generating formatted output in JSON, JSONP, or CSV form,
-                including MT4-compatible variants
-              - Building DuckDB SQL queries for querying CSV-based OHLCV data,
-                including filtering, ordering, pagination, and modifiers
+This module provides functions for parsing and interpreting a
+slash-delimited OHLCV query DSL, resolving filesystem-backed data
+selections, generating DuckDB-compatible SQL queries, dynamically
+loading indicator plugins, and formatting query output.
 
-              The path-based DSL is intentionally aligned with the internal
-              builder syntax to ensure full compatibility. Users familiar
-              with the builder can reuse the same syntax when accessing the
-              API.
+Key responsibilities:
+    - Parse path-encoded OHLCV query URIs into structured options.
+    - Normalize timestamps and query parameters.
+    - Discover and resolve available OHLCV data sources from the filesystem.
+    - Dynamically load indicator plugins exposing a `calculate` interface.
+    - Generate formatted output in JSON, JSONP, or CSV (including MT4 variants).
+    - Construct DuckDB SQL queries with filtering, ordering, pagination, and modifiers.
 
- Usage:
-     - Use ``parse_uri(uri: str)`` to convert a path-based query string into
-       structured query options.
-     - Use ``discover_options(options)`` to resolve selections against
-       filesystem-backed OHLCV data.
-     - Use ``generate_sql(options)`` to construct a DuckDB SQL query.
-     - Use ``generate_output(options, columns, results)`` to format query
-       results for API responses.
-     - Use ``load_indicator_plugins()`` to discover and register indicator
-       extensions.
+This module is aligned with the internal builder syntax, ensuring
+compatibility with the OHLCV builder pipeline.
 
- Requirements:
-     - Python 3.8+
-     - DuckDB
-     - FastAPI
+Functions:
+    normalize_timestamp(ts: str) -> str
+    parse_uri(uri: str) -> Dict[str, Any]
+    discover_options(options: Dict) -> Dict
+    generate_output(options: Dict, columns: List, results: List)
+    generate_sql(options) -> str
 
- License:
-     MIT License
+Constants:
+    CSV_TIMESTAMP_FORMAT: str
+    CSV_TIMESTAMP_FORMAT_MT4_DATE: str
+    CSV_TIMESTAMP_FORMAT_MT4_TIME: str
+
+Requirements:
+    - Python 3.8+
+    - DuckDB
+    - FastAPI
+
+License:
+    MIT License
 ===============================================================================
 """
-
-import importlib.util
 import csv
 import io
 import os
@@ -65,29 +56,13 @@ import pandas as pd
 import duckdb 
 
 from typing import Dict, Any, List
-from state import MARKETDATA_CACHE
 from urllib.parse import unquote_plus
 from pathlib import Path
 from fastapi.responses import PlainTextResponse, JSONResponse
 
-
-# Define the C-struct equivalent for numpy
-DTYPE = np.dtype([
-    ('ts', '<u8'),           # Timestamp in milliseconds
-    ('ohlcv', '<f8', (5,)),  # Open, High, Low, Close, Volume
-    ('padding', '<u8', (2,)) # Padding to 64 bytes
-])
-
-RECORD_SIZE = 64  # Fixed size of each record in bytes.
-                  # Aligned to standard x86_64 CPU cache-line size.
-                  # This ensures a single record never spans across two cache lines,
-                  # minimizing memory latency and preventing split-load penalties.
-
 CSV_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 CSV_TIMESTAMP_FORMAT_MT4_DATE = "%Y.%m.%d"
 CSV_TIMESTAMP_FORMAT_MT4_TIME = "%H:%M:%S"
-
-PLUGIN_DIR = Path(__file__).parent / "plugins"
 
 def normalize_timestamp(ts: str) -> str:
     if not ts:
@@ -189,40 +164,6 @@ def parse_uri(uri: str) -> Dict[str, Any]:
     return result
 
 
-def load_indicator_plugins():
-    """Dynamically load indicator plugins from the plugin directory.
-
-    This function scans the configured plugin directory for Python files,
-    dynamically imports each valid module, and registers its ``calculate``
-    function if present. Each plugin is keyed by its filename (without the
-    ``.py`` extension).
-
-    Returns:
-        dict[str, callable]: A dictionary mapping plugin names to their
-        corresponding ``calculate`` functions. If the plugin directory does
-        not exist or no valid plugins are found, an empty dictionary is
-        returned.
-
-    """ 
-    plugins = {}
-    if not PLUGIN_DIR.exists():
-        return plugins
-
-    for file in os.listdir(PLUGIN_DIR):
-        if file.endswith(".py") and not file.startswith("__"):
-            plugin_name = file[:-3]
-            file_path = PLUGIN_DIR / file
-            
-            spec = importlib.util.spec_from_file_location(plugin_name, file_path)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            
-            if hasattr(module, "calculate"):
-                plugins[plugin_name] = module.calculate
-
-    return plugins
-
-
 def discover_options(options: Dict):
     """Resolve and enrich data selection options using filesystem-backed sources.
 
@@ -264,48 +205,6 @@ def discover_options(options: Dict):
         return options
     except Exception as e:
         raise
-
-
-def generate_mmap_resources(options):
-    if options.get('fmode') == "binary":
-        for item in options['select_data']:
-            symbol, tf, file_path, modifiers = item
-
-            view_name = f"{symbol}_{tf}_VIEW"
-
-            current_size = os.path.getsize(file_path)
-            cached_resource = MARKETDATA_CACHE.mmaps.get(view_name)
-
-            # Check if we need to (re)map
-            if not cached_resource or current_size > cached_resource['size']:
-                # Cleanup old mapping if it exists
-                if cached_resource:
-                    cached_resource['mm'].close()
-                    cached_resource['f'].close()
-                    MARKETDATA_CACHE.con.unregister(view_name)
-
-                # Create new mapping
-                f = open(file_path, "rb")
-                mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-                data_view = np.frombuffer(mm, dtype=DTYPE)
-
-                # Map to dict and register (using the epoch_ms optimization)
-                data_dict = {
-                    "time_raw": data_view['ts'],
-                    "open": data_view['ohlcv'][:, 0],
-                    "high": data_view['ohlcv'][:, 1],
-                    "low": data_view['ohlcv'][:, 2],
-                    "close": data_view['ohlcv'][:, 3],
-                    "volume": data_view['ohlcv'][:, 4]
-                }
-        
-                # Re-register with DuckDB
-                MARKETDATA_CACHE.con.register(view_name, pd.DataFrame(data_dict))
-        
-                # Update cache
-                MARKETDATA_CACHE.mmaps[view_name] = {'f': f, 'mm': mm, 'size': current_size}
-                MARKETDATA_CACHE.registered_views.add(view_name)
-
 
 def generate_output(options: Dict, columns: List, results: List):
     """Generate formatted output based on the requested output type.

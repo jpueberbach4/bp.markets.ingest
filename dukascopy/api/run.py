@@ -41,9 +41,18 @@ from pathlib import Path
 import uvicorn
 
 # Import versioned OHLCV routes
-from routes import router as ohlcv_router
-from state import MARKETDATA_CACHE
-from version import API_VERSION
+from api.v1_0.routes import router as ohlcv_router_v1_0
+from api.v1_1.routes import router as ohlcv_router_v1_1
+
+# This is the current main version
+from api.v1_0.version import API_VERSION
+
+# Function to get config
+def get_config():
+    from config.app_config import load_app_config
+    config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
+    app_config = load_app_config(config_file)
+    return app_config.http
 
 # Lifespan context manager for startup/shutdown hooks
 @asynccontextmanager
@@ -52,10 +61,6 @@ async def lifespan(app: FastAPI):
     print("Server starting: Optimizing resources...")
     yield  # Application is running
     print("Server shutting down...")
-    for f, mm in MARKETDATA_CACHE.mmaps.values():
-        mm.close()
-        f.close()
-    MARKETDATA_CACHE.con.close()
 
 # Initialize FastAPI application
 app = FastAPI(
@@ -67,8 +72,10 @@ app = FastAPI(
 # GZIP compression support
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-# Include the OHLCV API router
-app.include_router(ohlcv_router)
+# Include the OHLCV API router v1.0
+app.include_router(ohlcv_router_v1_0)
+app.include_router(ohlcv_router_v1_1)
+
 
 # Health-check endpoint for monitoring or load balancers
 @app.get("/healthz", status_code=200)
@@ -77,10 +84,7 @@ async def health_check():
     return {"status": "online"}
 
 # This we need to do outside of the main routine because of the StaticFiles below
-from config.app_config import load_app_config
-config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
-app_config = load_app_config(config_file)
-config = app_config.http
+config = get_config()
 
 # Resolve the absolute path for docs directory
 docs_path = Path(config.docs).resolve()
