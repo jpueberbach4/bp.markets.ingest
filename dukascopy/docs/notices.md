@@ -1,5 +1,22 @@
 <u>MT4 is decoded.</u>
 
+## Notice: Version 0.6.5 is a breaking change version
+
+When you update to this version, it will break the API - [see here](http.md)
+
+What you get from this new version:
+
+- Binary or text mode
+- 11x increased resampling performance on binary mode
+- About 5x increase on performance on API calls on binary mode
+- Cleaner HTTP service code structure
+- Abstracted IO layer
+
+When you change to this version, choose either binary/text mode. Default is still text-mode to try not to break existing installations but i cannot guarantee that it will not happen. The index files now hold 3 fields instead of two. I build in detection for this but it's tricky for backward compatibility. 
+
+If you notice any errors, solution is simple `./rebuild-full.sh`. 
+
+Most users will appreciate the binary version because of its increased performance. If you choose binary, make sure to set all the `fmode` fields to binary-also for transform, aggregate, http and resample. If you are still using the default setup `./setup-dukascopy.sh`, then edit the `config.user.yaml` and CTRL+F fmode and change all `text` values to `binary`. Next, perform a `./rebuild-full.sh`.
 
 ## Notice: Performance
 
