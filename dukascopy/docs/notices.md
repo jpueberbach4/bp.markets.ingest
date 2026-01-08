@@ -9,7 +9,7 @@ Overall performance is now under 150 ms for 1,440 candles on the 1-minute chart,
 
 We are now doing 15 years of 1m candles on 42 symbols in 2 minutes. I think this is near optimal for python. For this architecture.
 
-These latest performance optimizations push throughput well over 1 million candles per second (pipeline average). On a laptop. We have transitioned from being CPU-bound to being I/O-bound
+These latest performance optimizations push throughput well over 1 million candles per second (pipeline average). On a laptop. We have transitioned from being CPU-bound to being I/O-bound-this is what we wanted to see.
 
 I am truly amazed on how far you can push things with python and without a complex infrastructure. I know Kafka, RabbitMQ, ZeroQ, Redis, TimeScaleDB etc. The "regular" complexity layers that are used to optimize enterprise solutions. This repo shows that all of that can be easily beaten with `just a laptop`.
 
@@ -233,6 +233,7 @@ I think the solution came out really really well.
 "In the intricate tapestry of apparent chaos, true mastery lies not in imposing order upon the unknown, but in patiently decoding its hidden patterns—until one day, with quiet revelation, we declare: the enigma is unveiled, and what was once obscure now illuminates the path for all."
 
 Wishing you all a highly profitable 2026! 🚀
+
 
 
 
