@@ -11,7 +11,7 @@ A few QA passes -especially on the cache part- and additional testing are still 
 
 I am truly amazed on how far you can push things with python and without a complex infrastructure. I know Kafka, RabbitMQ, ZeroQ, Redis, TimeScaleDB etc. The "regular" complexity layers that are used to optimize enterprise solutions. This repo shows that all of that can be easily beaten with `just a laptop`.
 
-There is a beta release ready under branch release/0.6.5-beta or tag 0.6.5-beta. It's currently still in testing phase but dont expect any format changes, at most bugfixes will happen.
+There is a beta release ready under branch beta/0.6.5 or tag 0.6.5-beta. It's currently still in testing phase but dont expect any format changes, at most bugfixes will happen.
 
 **Note:** If you are doing "very high performance"-analysis using the data from this tool, ie for AI purposes, the binary format will be a very welcome update. The format is well documented in a binary.md document inside that beta branch/tag.
 
@@ -230,3 +230,4 @@ I think the solution came out really really well.
 "In the intricate tapestry of apparent chaos, true mastery lies not in imposing order upon the unknown, but in patiently decoding its hidden patterns—until one day, with quiet revelation, we declare: the enigma is unveiled, and what was once obscure now illuminates the path for all."
 
 Wishing you all a highly profitable 2026! 🚀
+
