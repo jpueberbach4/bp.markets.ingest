@@ -350,14 +350,9 @@ class TransformWorker:
             # Transform raw deltas into normalized OHLCV data
             df = self.engine.process_json(data)
 
-            #if not isinstance(df.index, pd.DatetimeIndex):
-            #    if 'time' in df.columns:
-            #        df['time'] = pd.to_datetime(df['time'])
-            #        df.set_index('time', inplace=True)
-            #    else:
-            #        # Fallback for empty or malformed data
-            #        df.index = pd.to_datetime(df.index)
+            # Make sure we set the time as index
             df.set_index('time', inplace=True)
+
             # Ensure output directory exists
             target_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -383,38 +378,6 @@ class TransformWorker:
             raise TransactionError(f"Disk I/O failure writing {self.symbol}: {e}")
         except Exception as e:
             raise TransactionError(f"Unexpected worker failure for {self.symbol}: {e}")
-
-
-
-def profile_transform(args: tuple):
-    # Initialize profiler
-    import cProfile
-    import pstats
-    import io
-    pr = cProfile.Profile()
-    pr.enable()
-
-    # Call the function you want to profile
-    # (Using fork_transform directly so we see exactly what the worker sees)
-
-    symbol, dt, app_config = args
-    # Initialize the worker
-    worker = TransformWorker(dt, symbol, app_config)
-        
-    # Execute the worker
-    result = worker.run()
-
-    pr.disable()
-    
-    # Process and print stats
-    s = io.StringIO()
-    sortby = pstats.SortKey.CUMULATIVE # Can also use SortKey.TIME for "self time"
-    ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-    ps.print_stats(20)  # Print the top 20 functions
-    
-    print(s.getvalue())
-    return result
-
 
 def fork_transform(args: tuple) -> bool:
     """Multiprocessing-safe entry point for running a transformation job.
