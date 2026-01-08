@@ -26,7 +26,7 @@ Brute force is fine. It can handle it.
 
 ## Choosing Binary or Text mode
 
-If you want auditability, inspectability choose text-mode for all components. Text-mode is somewhat slower because of string-parsing overhead. The binary version uses 64-byte CPU-cache aligned files and zero-copy memory maps these files into the API service using np.fromBuffer views. These views are cached. As long as a file does not increase in length-so a 5m in-place candle update doesnt matter- performance is really awesome. When the API detects a file-size increase, it automatically remaps-updates- the view into the cache. For 1m, this happens once every minute, for 5 minutes, once every 5 minutes, for 4h once per 4h and so on. 
+If you want auditability, inspectability choose text-mode for all components. Text-mode is somewhat slower because of string-parsing overhead. The binary version uses 64-byte CPU-cache aligned files and zero-copy memory maps these files into the API service using np.fromBuffer views. These views are cached. As long as a file does not increase in length-so a 5m in-place candle update doesnt matter- performance is really awesome. When the API detects a file-size increase, it automatically remaps-updates- the view into the cache. For 1m, this happens once every minute, for 5 minutes, once every 5 minutes, for 4h once per 4h and so on. Ofcourse this depends on your update schedule. Above assumes your update-crontab-schedule is once per minute.
 
 Performance is cool on binary mode. 
 
