@@ -33,6 +33,9 @@ import duckdb
 from typing import Optional, Tuple, Dict, Any
 from datetime import datetime
 from pathlib import Path
+import numpy as np
+import pandas as pd
+import mmap
 import requests
 import time
 import json
@@ -55,6 +58,18 @@ DUKASCOPY_CSV_SCHEMA = {
 
 # Standard CSV timestamp format for parsing
 CSV_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+# Define the C-struct equivalent for numpy
+DTYPE = np.dtype([
+    ('ts', '<u8'),           # Timestamp in milliseconds
+    ('ohlcv', '<f8', (5,)),  # Open, High, Low, Close, Volume
+    ('padding', '<u8', (2,)) # Padding to 64 bytes
+])
+
+RECORD_SIZE = 64  # Fixed size of each record in bytes.
+                    # Aligned to standard x86_64 CPU cache-line size.
+                    # This ensures a single record never spans across two cache lines,
+                    # minimizing memory latency and preventing split-load penalties.
 
 def normalize_data(data: str, symbol: str) -> Optional[str]:
     """Normalize rollover adjustment data into CSV format.
@@ -217,7 +232,7 @@ def fetch_rollover_data_for_symbol(symbol) -> Optional[str]:
     return None
 
 
-def adjust_symbol(symbol, input_filepath, output_filepath):
+def adjust_symbol(symbol, input_filepath, output_filepath, options):
     """Apply Panama adjustment to a symbol's time series data.
 
     This function adjusts historical price data to account for contract
@@ -251,6 +266,16 @@ def adjust_symbol(symbol, input_filepath, output_filepath):
     print(f"Warning: Panama modifier set for {symbol}. Handling rollover gaps...")
 
     # SQL pipeline to compute cumulative rollover adjustments and apply them
+    if options.get("fmode") == "binary":
+        read_sql = f"""
+                SELECT epoch_ms(time_raw::BIGINT) AS time, 
+                open, high, low, close, volume FROM ohlcv_view
+        """
+    else:
+        read_sql = f"""
+            SELECT * FROM read_csv('{input_filepath}', header=True)
+        """
+
     adjust_sql = f"""
         CREATE OR REPLACE TABLE adjustments AS
         WITH roll_diffs AS (
@@ -278,7 +303,7 @@ def adjust_symbol(symbol, input_filepath, output_filepath):
                     low::DOUBLE AS l,
                     close::DOUBLE AS c,
                     volume::DOUBLE AS v
-                FROM read_csv('{input_filepath}', header=True)
+                FROM ({read_sql})
             )
             SELECT 
                 strftime(raw_data.ts, '{CSV_TIMESTAMP_FORMAT}') AS time,
@@ -296,6 +321,35 @@ def adjust_symbol(symbol, input_filepath, output_filepath):
 
     # Execute the adjustment logic in an in-memory DuckDB instance
     con = duckdb.connect(database=":memory:")
+
+    if options.get("fmode") == "binary":
+        # We are in binary mode, open file as binary
+        f = open(input_filepath,"rb")
+        # Memory map the file
+        mm = mmap.mmap(f.fileno(), length=0, access=mmap.ACCESS_READ)
+        # Create a zero copy view
+        data_view = np.frombuffer(mm, dtype=DTYPE)
+        # map the view to a data dict
+        data_dict = {
+            "time_raw": data_view['ts'],
+            "open": data_view['ohlcv'][:, 0],
+            "high": data_view['ohlcv'][:, 1],
+            "low": data_view['ohlcv'][:, 2],
+            "close": data_view['ohlcv'][:, 3],
+            "volume": data_view['ohlcv'][:, 4]
+        }
+
+        # Register view in duckdb
+        con.register('ohlcv_view', pd.DataFrame(data_dict))
+        con.execute(adjust_sql)
+        con.unregister('ohlcv_view')
+        con.close()
+        del data_dict
+        del data_view
+        mm.close()
+        f.close()
+        return True
+
     con.execute(adjust_sql)
     con.close()
 
@@ -349,12 +403,18 @@ def fork_panama(
             app_config := load_app_config(options["config_file"]),
         )
 
+        # BUG: Currently adjust only works with CSV mode (this is because duckdb cannot export our custom binary format)
+        input_extension = ".bin" if options.get("fmode") == "binary" else ".csv"
+
+        # THIS we need to force to CSV atm
+        extension = ".csv"
+
         # Define all relevant paths used during Panama adjustment
         raw_base_path, adjusted_base_path, lock_path, tf_path = [
-            Path(config.timeframes.get("1m").source) / f"{symbol}.csv",
-            Path(options.get("output_dir")).parent / f"adjust/1m/{symbol}.csv",
+            Path(config.timeframes.get("1m").source) / f"{symbol}{input_extension}",
+            Path(options.get("output_dir")).parent / f"adjust/1m/{symbol}{extension}",
             Path(options.get("output_dir")).parent / f"locks/{symbol}.lck",
-            Path(options.get("output_dir")).parent / f"adjust/{timeframe}/{symbol}.csv",
+            Path(options.get("output_dir")).parent / f"adjust/{timeframe}/{symbol}{extension}",
         ]
 
         # Ensure required directories exist
@@ -388,7 +448,7 @@ def fork_panama(
         # If adjusted base data does not yet exist, generate it and resample
         if not adjusted_base_path.exists():
             # Generate adjusted 1m base data
-            if not adjust_symbol(symbol, raw_base_path, adjusted_base_path):
+            if not adjust_symbol(symbol, raw_base_path, adjusted_base_path, options):
                 return task
 
             # Update app config to use adjusted base data for resampling
@@ -396,6 +456,9 @@ def fork_panama(
                 adjusted_base_path.parent
             )
             app_config.resample.paths.data = str(tf_path.parent.parent)
+
+            # BUG: currently panama can only support text-mode since duckdb cannot export our custom binary format
+            app_config.resample.fmode = "text"
 
             # Perform resampling using the adjusted base data
             print(f"Warning: Panama modifier set for {symbol}. Resampling...")
@@ -407,6 +470,11 @@ def fork_panama(
         # Release the file lock
         lock.release()
 
+        # BUG: we need to force fmode to text because DUCKDB did output CSV, even when binary mode set
+        import copy
+        new_options = copy.deepcopy(options)
+        new_options['fmode'] = "text"
+
         # Rebuild the task tuple with the updated input path
         task = (
             symbol,
@@ -415,7 +483,7 @@ def fork_panama(
             after_str,
             until_str,
             modifiers,
-            options,
+            new_options,
         )
 
     return task
