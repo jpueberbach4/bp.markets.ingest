@@ -221,6 +221,9 @@ List of the most "interesting stuff" encountered, during development of this pro
 - Interesting DST/STD switch logic, based on NY DST state either GMT+2/GMT+3 - resolved
 - 4x DST/STD annual switches per timezone-dependent asset - resolved
 
+**Performance**
+- Never expected Pandas/Numpy, orchestrated by a Python layer, to be able to reach > 1 million bars per second throughput
+
 **AI**
 - AI CANNOT be used for complex logic - it hallucinates and fails on edge cases
 - AI CAN be used for docstring and inline commenting of code - it excels at that
@@ -233,6 +236,7 @@ I think the solution came out really really well.
 "In the intricate tapestry of apparent chaos, true mastery lies not in imposing order upon the unknown, but in patiently decoding its hidden patterns—until one day, with quiet revelation, we declare: the enigma is unveiled, and what was once obscure now illuminates the path for all."
 
 Wishing you all a highly profitable 2026! 🚀
+
 
 
 
