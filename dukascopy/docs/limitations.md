@@ -12,7 +12,6 @@ See [Tests](tests.md)
 - Custom shifting for ASX 2020 anomaly
 - Custom shifting for one-week-leap-year DST lag (affects Nov 2020,2024,2028,etc)
 - Replay functionality
-- IO Layer abstraction
 
 **P2 (Important):**
 - Redesign of HTTP API for version 1.1
@@ -20,7 +19,7 @@ See [Tests](tests.md)
 - Stock split support
 
 **P3 (Nice-to-have):**
-- Performance improvements
+- Further Performance improvements (partitioning of data)
 - Track a live-backadjusted 1m base-including resampling- in a seperate directory (configurable)
 
 **P4 (Architectural):**
@@ -28,3 +27,4 @@ See [Tests](tests.md)
 - Librarization
 
 This is still in an MVP state. Although working very well. It's an MVP.
+
