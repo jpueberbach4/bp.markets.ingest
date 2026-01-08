@@ -227,10 +227,7 @@ Done.
 
 2 minutes now for 42 symbols with an average history of 15 years of 1m candles per symbol. with custom timeframes, session handling, all-in.
 
-Transform is now almost maximum performance - last optimizations was microseconds stuff, but on 300k files these add up
+We are now I/O bound. That was the target of these optimizations. 
 
-Aggregate completely saturates the NVMe drive.
+Will be released soon to main. 
 
-Resample is optimal.
-
-Will be released soon. 
