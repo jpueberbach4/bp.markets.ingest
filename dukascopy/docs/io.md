@@ -162,9 +162,8 @@ Total Records: 524096
 
 Correct.
 
-** Can't wait to see DuckDB performance on this **
-
-I am still optimizing transform and aggregate, but these two saturate the NVMe drive. Don't know if can make faster if hardware says no.
+~~I am still optimizing transform and aggregate, but these two saturate the NVMe drive. Don't know if can make faster if hardware says no.~~
+Hardware says no.
 
 ## Key Takeaways
 
@@ -230,4 +229,5 @@ Done.
 We are now I/O bound. That was the target of these optimizations. 
 
 Will be released soon to main. 
+
 
