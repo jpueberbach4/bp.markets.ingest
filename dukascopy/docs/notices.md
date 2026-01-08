@@ -204,6 +204,8 @@ There will be some exploratory research in January. Low priority.
 
 Engine is capable of this. Creating a second-level aggregate file and then calling the incremental cascade every second. The resampling cascade (binary version), on a single-core, is able to push 20 years of EUR-USD data to 10 timeframes in just over 2 seconds. Speed is there. Incrementality is there. 
 
+Hard number: 7844920 candles in 2.5 seconds = ~ 3 million candles/second
+
 Why is it not there? Beyond scope of what i need this for atm. Perhaps in future version.
 
 ## Hall of Fame
@@ -242,6 +244,7 @@ I think the solution came out really really well.
 "In the intricate tapestry of apparent chaos, true mastery lies not in imposing order upon the unknown, but in patiently decoding its hidden patterns—until one day, with quiet revelation, we declare: the enigma is unveiled, and what was once obscure now illuminates the path for all."
 
 Wishing you all a highly profitable 2026! 🚀
+
 
 
 
