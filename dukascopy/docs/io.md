@@ -37,7 +37,7 @@ To reach near-native performance, every OHLCV record is padded to exactly **64 b
 
 * **Hardware Prefetching**: Since 64 bytes is the standard CPU cache-line size, the CPU’s **linear prefetcher** identifies the fixed-stride pattern. It proactively loads the next records into the L1 cache before the Python code even requests them.
 * **Eliminating Split-Loads**: This ensures a single record never spans across two cache lines, minimizing memory latency and preventing fetch penalties.
-* **SIMD Readiness**: This layout allows NumPy (and future C++ cores) to use vectorized instructions to process multiple bars simultaneously.
+* **[SIMD](https://en.wikipedia.org/wiki/Single_instruction,_multiple_data) Readiness**: This layout allows NumPy (and future C++ cores) to use vectorized instructions to process multiple bars simultaneously.
 
 ---
 
