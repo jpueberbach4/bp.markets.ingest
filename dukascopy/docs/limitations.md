@@ -25,6 +25,7 @@ See [Tests](tests.md)
   builder to generate "indicator-enriched" CSV/Parquet files. Risk: 1.0 API will also support the new select syntax because \
   it also inherits from builder. Make sure backward compat remains. Optional extra DSL-based [..] is not an issue. \
   Means that API 1.0 will automatically transition too. The extra thing the 1.0 API will have is the current indicator support.
+- Support BINARY output from builder tool
 - Profile/Optimize startup time of resample \
   Resample is incredibly fast but in incremental mode it seems to have a startup lag. Profile it. \
   Likely `resample_get_symbol_config` is the issue. One more optimization pass needed here.
