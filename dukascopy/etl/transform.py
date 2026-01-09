@@ -194,6 +194,9 @@ class TransformEngine:
                 arr[mask] for arr in [times, opens, highs, lows, closes, volumes]
             ]
 
+            # Resolving memory bloat
+            del times, opens, highs, lows, closes, volumes
+
             # Assemble final DataFrame and apply price rounding
             idx = pd.DatetimeIndex(t_f * 1_000_000, name="time")
             full_transformed = pd.DataFrame(
@@ -345,8 +348,7 @@ class TransformWorker:
             source_path, target_path = self.resolve_paths()
 
             # Load JSON payload
-            with open(source_path, "rb") as file:
-                data = orjson.loads(file.read())
+            data = orjson.loads(Path(source_path).read_bytes())
 
             # Transform raw deltas into normalized OHLCV data
             df = self.engine.process_json(data)

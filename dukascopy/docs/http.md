@@ -332,4 +332,4 @@ Example:
 }
 ```
 
-The reason to move to a binary append-only solution is becoming more urgent. Gain on performance to counter-act the cost of extension of additional features.
+**Note:** If you need to identify your JSON request with an id, you can use `?callback=id` for that. It will return the callback value in the options.

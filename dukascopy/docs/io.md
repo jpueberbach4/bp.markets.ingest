@@ -35,9 +35,9 @@ The IO logic has been abstracted into a protocol-based hierarchy using Python's 
 
 To reach near-native performance, every OHLCV record is padded to exactly **64 bytes**. This is a common C++ optimization (`alignas(64)`) that aligns our data structure with the physical architecture of modern x86_64 CPUs.
 
-* **Hardware Prefetching**: Since 64 bytes is the standard CPU cache-line size, the CPU’s **linear prefetcher** identifies the fixed-stride pattern. It proactively loads the next records into the L1 cache before the Python code even requests them.
+* **[Hardware Prefetching](https://en.wikipedia.org/wiki/Prefetching)**: Since 64 bytes is the standard CPU cache-line size, the CPU’s **linear prefetcher** identifies the fixed-stride pattern. It proactively loads the next records into the L1 cache before the Python code even requests them.
 * **Eliminating Split-Loads**: This ensures a single record never spans across two cache lines, minimizing memory latency and preventing fetch penalties.
-* **SIMD Readiness**: This layout allows NumPy (and future C++ cores) to use vectorized instructions to process multiple bars simultaneously.
+* **[SIMD](https://en.wikipedia.org/wiki/Single_instruction,_multiple_data) Readiness**: This layout allows NumPy (and future C++ cores) to use vectorized instructions to process multiple bars simultaneously.
 
 ---
 
@@ -219,3 +219,9 @@ ETL pipeline complete!
 Total runtime: 126.00 seconds (2.10 minutes)
 Done.
 ```
+
+**Note:** To make sure thermal throttling does not kick in on your pc/laptop-decreasing speeds, make sure your pc/laptop has enough "breathing space". The above operations heat up your NVMe-silicon quite significantly.
+
+**Note:** Especially the resample step has seen a massive performance increase. It is capable of pushing 3 million bars/second. This is C++ territory performance. I am myself very much amazed by this. Unexpected. 
+
+**Note:** Further optimizations bring almost no gains. Tried eliminating filesystem calls here and there. Performance benefits are marginal. Can't optimize further. This is it. For the ETL part.
