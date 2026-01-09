@@ -8,7 +8,7 @@ What you get from this new version:
 
 - [Binary](binary.md) or text mode
 - 11x increased resampling performance in binary mode
-- About 5x increase on performance on API calls in binary mode
+- About 10x increase on performance on API calls in binary mode
 - Cleaner HTTP service code
 - [Abstracted IO](io.md) layer
 - I/O bound performance in binary mode
