@@ -122,15 +122,11 @@ class MarketDataCache:
         # Recreate the view if it doesn't exist or the file has grown
         if not cached or size > cached['size'] or mtime > cached['mtime']:
             if cached:
-                # Close the existing memory map
-                cached['mm'].close()
-                # Close the underlying file handle
-                cached['f'].close()
-                # Unregister the old view from DuckDB
-                self.con.unregister(view_name)
-
-            # Open the data file in binary read-only mode
-            f = open(file_path, "rb")
+                # Re-use the file-handle
+                f = cached['f']
+            else:
+                # Open the data file in binary read-only mode
+                f = open(file_path, "rb")
 
             # Memory-map the entire file for zero-copy access
             mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
@@ -148,13 +144,21 @@ class MarketDataCache:
                 "volume": data_view['ohlcv'][:, 4]        # Trade volume
             }
 
-            # Register the DataFrame as a view in DuckDB
-            self.con.register(view_name, pd.DataFrame(data_dict))
+            # Unregister the old view in DuckDB
+            if cached: self.con.unregister(view_name)
+
+            # Register the data dictionary as a view in DuckDB
+            self.con.register(view_name, data_dict)
+
+            # Close the old memory map
+            if cached: cached['mm'].close()
 
             # Cache the file handle, memory map, and size for future reuse
             self.mmaps[view_name] = {'f': f, 'mm': mm, 'size': size, 'mtime': mtime}
+            
             # Track registered view names
             self.registered_views.add(view_name)
+            
 
         # Indicate successful registration (or no-op if unchanged)
         return True
