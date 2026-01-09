@@ -16,7 +16,7 @@
 
 **Throughput (stage average):** **> 1 million candles processed per second**
 
-**Throughput (pipeline average):** **> 500 thousand candles processed per second**
+**Throughput (pipeline average):** **> 500 thousand candles processed per second** (`Binary mode` doubles that)
 
 >Excellent for commodity hardware.
 

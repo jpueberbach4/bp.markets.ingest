@@ -1,4 +1,4 @@
-# Architectural Refactor: High-Performance Binary IO for Resampling, Transform and Aggregate
+# Architectural Refactor: High-Performance Binary IO
 
 ## Overview
 
@@ -79,9 +79,7 @@ class MmapWriter:
 
 This is a further optimization that mainly impacts syntax. Not performance.
 
-PS. This is no longer a "toy-project". These kind of optimizations are typically seen in HFT environments.
-
-## First results on performance (unoptimized)
+## Results on performance
 
 * **EUR-USD, CSV-mode, 20 years of data, 10 timeframes, no session rules**
 
@@ -162,26 +160,21 @@ Total Records: 524096
 
 Correct.
 
-** Can't wait to see DuckDB performance on this **
-
-I am still optimizing transform and aggregate, but these two saturate the NVMe drive. Don't know if can make faster if hardware says no.
-
 ## Key Takeaways
 
 | Operation | CSV Mode | Binary Mode | Speedup |
 | :--- | :--- | :--- | :--- |
-| **Transform** | 6.00s | 3.00s | 2.0x faster |
+| **Transform** | 6.00s | 1.20s | 5x faster |
 | **Aggregate** | 2.76s | 3.05s | (Slightly slower - optimizing) |
-| **Resample** | 28.14s | 2.52s | **11.2x FASTER!** 🎉 |
+| **Resample** | 28.14s | 2.52s | **11x FASTER!** 🎉 |
 | --- | --- | --- | --- |
-| **TOTAL** | **38.42s** | **9.69s** | **4.0x FASTER OVERALL** |
+| **TOTAL** | **38.42s** | **6.77s** | **5.0x FASTER OVERALL** |
 
 Total bars: 7,861,440
 
-**Actual throughput: ~810,000 bars/second**
+**Actual throughput: ~1 million bars/second** (single core)
 
 That's astonishing performance for a "python script". On a 2023 laptop.
-
 
 42 symbols, CSV-mode:
 
@@ -224,16 +217,3 @@ ETL pipeline complete!
 Total runtime: 126.00 seconds (2.10 minutes)
 Done.
 ```
-
-2 minutes now for 42 symbols with an average history of 15 years of 1m candles per symbol. with custom timeframes, session handling, all-in.
-
-Transform is now almost maximum performance - last optimizations was microseconds stuff, but on 300k files these add up
-Aggregate completely saturates the NVMe drive.
-Resample is optimal.
-
-I will finalize this binary implementation:
-
-- Adding support for binary files to builder component
-- Adding support for binary files to webservice component
-- Adding MAGIC bytes and version info into the binary file's header
-- Few QA passes

@@ -13,7 +13,7 @@ This directory implements the HTTP-service feature for version 0.6.5.
 - Configuration via central YAML config
 - Text / Binary Memory-mapped version
 
-## Breaking change 
+## Breaking change when switching to 0.6.5
 
 This version is a breaking change version for the API. `http-service` directory name was not a very friendly python name. There were issues with including files that had to be resolved-in order to prepare for the v1.1 API release. After updating, perform:
 
@@ -23,16 +23,6 @@ killall python3
 ```
 
 Brute force is fine. It can handle it.
-
-## Choosing Binary or Text mode
-
-If you want auditability, inspectability choose text-mode for all components. Text-mode is somewhat slower because of string-parsing overhead. The binary version uses 64-byte CPU-cache aligned files and zero-copy memory maps these files into the API service using np.fromBuffer views. These views are cached. As long as a file does not increase in length-so a 5m in-place candle update doesnt matter- performance is really awesome. When the API detects a file-size increase, it automatically remaps-updates- the view into the cache. For 1m, this happens once every minute, for 5 minutes, once every 5 minutes, for 4h once per 4h and so on. Ofcourse this depends on your update schedule. Above assumes your update-crontab-schedule is once per minute.
-
-Performance is cool on binary mode. 
-
-If you change this service to binary mode-default it is set to text because of backward compatibility-make sure you change all the `fmode` settings in the other components as well, to prevent mismatches and crashes. I didnt create a migration scripts since rebuilding is really fast on binary mode, especially resampling. 
-
-Perform a `./rebuild-full.sh` if you switch `fmodes`.
 
 ## Prerequisites
 

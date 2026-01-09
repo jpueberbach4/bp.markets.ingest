@@ -7,6 +7,7 @@
 - **Cascaded resampling** → Minimizes row processing at each timeframe
 - **Filesystem-native** → No database required
 - **NVMe/SSD Preferred** → High IOPS critical for performance
+- **Binary/CSV Support** → High performance binary format AND CSV support
 
 ## Self describing data
 

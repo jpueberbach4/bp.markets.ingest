@@ -42,6 +42,7 @@
         "aggregate": {
             "type": "object",
             "properties": {
+                "fmode": { "enum": ["text", "binary"] },
                 "fsync": { "type": "boolean" },
                 "paths": {
                     "type": "object",
@@ -62,6 +63,15 @@
                 "paths": { "type": "object" }
             }
         },
+        "http": {
+            "type": "object",
+            "properties": {
+                "fmode": { "enum": ["text", "binary"] },
+                "docs": { "type": "string" },
+                "listen": { "type": "string" },
+                "paths": { "type": "object" }
+            }
+        },
         "orchestrator": {
             "type": "object",
             "properties": {
@@ -76,6 +86,7 @@
             "properties": {
                 "time_shift_ms": { "type": "integer" },
                 "round_decimals": { "type": "integer" },
+                "fmode": { "enum": ["text", "binary"] },
                 "fsync": { "type": "boolean" },
                 "validate": { "type": "boolean" },
                 "paths": { "type": "object" },
@@ -96,7 +107,7 @@
             "properties": {
                 "round_decimals": { "type": "integer" },
                 "batch_size": { "type": "integer" },
-                "fmode": { "type": "string" },
+                "fmode": { "enum": ["text", "binary"] },
                 "fsync": { "type": "boolean" },
                 "paths": { "type": "object" },
                 "timeframes": { "type": "object", "additionalProperties": { "$ref": "#/definitions/timeframe_config" } },

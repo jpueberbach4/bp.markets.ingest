@@ -1,78 +1,46 @@
 <u>MT4 is decoded.</u>
 
-## Notice: Version 0.6.5 is a breaking change version
+## Notice: Version 0.6.5 may be a breaking change version
 
-When you update to this version, it will break the API - [see here](http.md)
+When you update to this version, it will break the API when its running. You need to `./service.sh stop`, then update, then `./service.sh start`.
 
 What you get from this new version:
 
 - Binary or text mode
-- 11x increased resampling performance on binary mode
-- About 5x increase on performance on API calls on binary mode
-- Cleaner HTTP service code structure
+- 11x increased resampling performance in binary mode
+- About 5x increase on performance on API calls in binary mode
+- Cleaner HTTP service code
 - Abstracted IO layer
+- I/O bound performance
+- Very high performance binary format for advanced users
+- Configuration validation using schema
+- Unchanged behavior on builder utility
 
-When you change to this version, choose either binary/text mode. Default is still text-mode to try not to break existing installations but i cannot guarantee that it will not happen. The index files now hold 3 fields instead of two. I build in detection for this but it's tricky for backward compatibility. 
+When you change to this version, choose either `binary/text` mode. Default is still text-mode to try not to break existing installations but i cannot guarantee that it will not happen. The index files now hold 3 fields instead of two. I did build in backward compatibility. 
 
 If you notice any errors, solution is simple `./rebuild-full.sh`. 
 
 Most users will appreciate the binary version because of its increased performance. If you choose binary, make sure to set all the `fmode` fields to binary-also for transform, aggregate, http and resample. If you are still using the default setup `./setup-dukascopy.sh`, then edit the `config.user.yaml` and CTRL+F fmode and change all `text` values to `binary`. Next, perform a `./rebuild-full.sh`.
 
-## Notice: Performance
-
-The performance branch is complete.
-
-Overall performance is now under 150 ms for 1,440 candles on the 1-minute chart, well below 100 ms on the 5-minute chart, and between 10–30 ms for the remaining timeframes.
-
-We are now doing 15 years of 1m candles on 42 symbols in 2 minutes. I think this is near optimal for python. For this architecture.
-
-These latest performance optimization push throughput well over 1 million candles per second (pipeline average). On a laptop.
-
-I am truly amazed on how far you can push things with python and without a complex infrastructure. I know Kafka, RabbitMQ, ZeroQ, Redis, TimeScaleDB etc. The "regular" complexity layers that are used to optimize enterprise solutions. This repo shows that all of that can be easily beaten with `just a laptop`.
-
-There is a beta release ready under branch beta/0.6.5 or tag 0.6.5-beta. It's currently still in testing phase but dont expect any format changes, at most bugfixes will happen.
-
-**Note:** If you are doing "very high performance"-analysis using the data from this tool, ie for AI purposes, the binary format will be a very welcome update. The format is well documented in a binary.md document inside that beta branch/tag.
-
 **Note:** The infrastructure seems now ok to start building API 1.1 and replay (market simulation).
 
+| Operation | CSV Mode | Binary Mode | Speedup |
+| :--- | :--- | :--- | :--- |
+| **Transform** | 6.00s | 1.20s | 5x faster |
+| **Aggregate** | 2.76s | 3.05s | (Slightly slower - optimizing) |
+| **Resample** | 28.14s | 2.52s | **11x FASTER!** 🎉 |
+| --- | --- | --- | --- |
+| **TOTAL** | **38.42s** | **6.77s** | **5.0x FASTER OVERALL** |
+
+Total bars: 7,861,440
+
+**Actual throughput: ~1 million bars/second**
 
 ## Notice: Data
 
 The data portion is now (fairly) complete. Naturally, some QA issues remain, particularly in the builder component, which will be addressed over time. Ensuring optimal QA for the ETL process takes priority over the extraction utility itself.
 
-
-## Notice: Configuration validation - 2025-01-06
-
-Configuration is now checked against the schema defined in `etl/config/schema.json`. When you `git pull`, execute `pip install -r requirements.txt`.
-
-## Notice: Bugfixes - 2025-01-04
-
-Several bugs were fixed today—some from the to-do list, and others discovered during integration testing and manual verification.
-
-- **Severe:** The reference date was set to datetime.now(). Since origins are determined relative to this reference date, a DST/STD transition would shift datetime.now(), causing the origins to lose their offsets. This would corrupt alignment and, consequently, the data. This is a critical fix that must be deployed before March 2026.
-
-- Medium: The API limits were overly restrictive, causing the 1-minute and 5-minute timeframe charts to reach an artificial “end of history” and display gaps. This issue has now been fixed.
-
-- Medium: ApexCharts had certain limitations, so it was replaced with TradingView charts to provide a better user experience.
-
-- Medium: HTTP-docs were not "truly offline capable". Localized the JS files.
-
-- Low: MT4 support has been added, [see here](http.md).
-
-As always: 
-
-```sh
-git pull origin main && ./setup-dukascopy.sh
-```
-
-(only if not using custom configuration settings)
-
-**Note:** I am experimenting with EA's. To see on how to support the MT4 flag on the API URI in a most sensible way.
-
-**Note:** Additional API calls will be added, eg to get a date-range for a specific symbol. To eliminate the initial searching.
-
-## Notice: HTTP service live
+## Notice: HTTP service
 
 [HTTP API](http.md) service is implemented. It follows more or less the same syntax as the builder component. You can also define your own HTML pages, eg to render charts. Example is added to the ```config/dukascopy/http-docs``` directory.
 
@@ -81,18 +49,6 @@ git pull origin main && ./setup-dukascopy.sh
 You can now visually compare your data, example SGD:
 
 ![SGD](../images/visual-compare-sgd.png)
-
-**Note:** Performance is not bad but, in my world, it should be faster. Especially on 1m, 5m charts. Will be taken care of eventually. I think most will think its good performance.
-
-## Notice: New Year Update
-
-Happy New Year! 🎉
-
-Data for all configured indices has now been compared using Beyond Compare.
-
-Configuration files for indices have been updated—run ```./setup-dukascopy.sh``` to apply the changes - only if you dont have custom configuration. The fixes primarily focus on improvements to DST/STD switching.
-
-Aside from the ASX anomaly (see forensics/ASX.MD) and the one-week STD-switch delay on the MT4 side that occurs only in leap years, I’m <u>extremely</u> pleased with the results. The indices are looking really good now.
 
 ## Notice: Panama backadjustment "Public beta" live
 
@@ -137,50 +93,6 @@ Completely different perspective. As you can see.
 
 **Note:** Panama-adjusted data may show negative prices in the distant past. This is normal and expected. Please ensure your backtesting framework can handle such values. If you want to know how to deal with this/when this is a problem, just copy the previous sentence to Gemini and it will guide you.
 
-
-
-## Notice: Pre- and Post Processing steps now "session-bound"
-
-You’re now able to configure pre- and post-processing steps within sessions that are constrained by the session’s logical boundaries (weekdays and date ranges). This is a general code improvement that should have been done anyway, regardless of whether the AUS.IDX issue was the original motivation.
-
-Config example:
-
-```yaml
-AUS.IDX-AUD:
-  timezone: Australia/Sydney
-  skip_timeframes: []
-  sessions:
-    my-very-special-aussie-handler:
-      # This is a special candle-alignment handling for the AUS.IDX. 
-      weekdays: [0] # 0=monday, 1=tuesday, and so on..
-      to_date: "2024-06-22 01:00:00"  # In Australia/Sydney time
-      ranges:
-        day: 
-          from: "09:50"
-          to: "17:09"
-      timeframes:
-        4h:                     
-          origin: "epoch"
-          post:
-            # On Mondays, and up to 2024-06-24, candles must be aligned to 00:00 (epoch).
-            # The 08:00 candle on these Mondays spans 6h10m instead of 4h, due to data
-            # existing between 12:00 and 14:10. This creates a “ghost” H4 candle at 10:10,
-            # which must be merged into the previous candle (the 08:00 H4 candle).
-            # MT4 charts are fragile, but this ensures exact alignment for users who
-            # choose to enable it. When DST has shifted, also a 09:10:00 candle needs to 
-            # get cleaned.
-            merge-step:
-              action: merge
-              ends_with:
-              - "09:10:00"
-              - "10:10:00"
-              offset: -1  
-```
-
-The software is become more and more powerful to handle edge-cases and MT4-anomalies. This is a change for the better.
-
-**Note:** I removed a previous notice, which should have been kept in. The above example can easily be verified. I claim that the 2024-06-17 08:00 H4 candle is actually 6h10m long. I want to show this, because it needs to be very clear what this means. You can load the H4 AUS.IDX and browse to that candle by holding down page-up. When you have found it, look at it's closing price. It's 7691.221. Now open-up the H1 chart. Locate the H1 candle 2024-06-17 13:10, which closes at 14:10, It's close price is 7691.221. Conclusion, this "H4" candle is actually 6h10m long and contains liquidity and price action which falls outside of an regular H4 boundary. I consider this stuff "spooky".
-
 ## Notice: Backfilling
 
 Backfilling is not currently supported, as our pipeline processes data strictly forward. Because of this, historical data—particularly for illiquid pairs and at the highest granularity—may be skewed. Backfilling has been identified as a must-have feature.
@@ -224,9 +136,8 @@ List of the most "interesting stuff" encountered, during development of this pro
 **ASX is record holder**
 - Monday-specific EPOCH-based candles only during day-session - resolved
 - H4 candles spanning 6h10m - resolved
-- 2020 severe DST/STD switch issues MT4-side - unresolved (still debating if should solve) \
-  **The debate is:** our data is actually better, should I replicate a likely bug that will give worse data? \
-  **The decision is:** We are going to replicate the behavior through date-range bound, custom,  timeshift support in transform. There are changes for leap-years needed anyhow. The two complement each other.
+- 2020 severe DST/STD switch issues MT4-side \
+  **The decision is:** We are going to replicate the (bug-) behavior through date-range bound, custom,  timeshift support in transform. There are changes for leap-years needed anyhow. The two complement each other.
 - Sub-hourly intraday candle offsets at HH:51 and HH:10 - resolved
 
 **SGD**
