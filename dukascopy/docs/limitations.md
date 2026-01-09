@@ -20,7 +20,7 @@ See [Tests](tests.md)
 **P2 (Important):**
 - HTTP API for version 1.1 with single-stream indicator support \
   API 1.0 currently has seperate indicator support. We would like to have indicators integrated into the price stream. \
-  Fuerthermore, handle indicator warmup periods internally. Shouldnt be a burden to the user, like how it is in 1.0.
+  Furthermore, handle indicator warmup periods internally. Shouldnt be a burden to the user, like how it is in 1.0.
 - Profile/Optimize startup time of resample \
   Resample is incredibly fast bun in incremental mode it seems to have a startup lag. Profile it. \
   Likely `resample_get_symbol_config` is the issue. One more optimization pass needed here.
