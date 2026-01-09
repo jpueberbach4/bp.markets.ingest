@@ -1,29 +1,5 @@
 <u>MT4 is decoded.</u>
 
-## Notice: bugfix on API indicator CSV output - 2026-01-09
-
-It was not possible to generate indicator output in CSV format because of a bug. This has now been fixed. Additionally, indicator output in MT4 output format is also supported. Note that MT4 CSV output only supports single symbols. 
-
-Eg this works:
-
-```sh
-GET http://localhost:8000/ohlcv/1.0/indicator/sma/select/BTC-USD,1h/select/EUR-USD,1h/period/20/output/CSV?order=desc&limit=500
-```
-
-This does not work-note the MT4 at the end:
-
-```sh
-GET http://localhost:8000/ohlcv/1.0/indicator/sma/select/BTC-USD,1h/select/EUR-USD,1h/period/20/output/CSV/MT4?order=desc&limit=500
-```
-
-But, this does work:
-
-```sh
-GET http://localhost:8000/ohlcv/1.0/indicator/sma/select/BTC-USD,1h/period/20/output/CSV/MT4?order=desc&limit=500
-```
-
-Don't know if it will be used by anyone, but the capability is there. API 1.1 will have an "integrated stream". It's described in [this doc](http.md).
-
 ## Notice: Version 0.6.5 may be a breaking change version - 2026-01-09
 
 When you update to this version, it will break the API when its running. You need to `./service.sh stop`, then update, then `./service.sh start`.
@@ -32,7 +8,7 @@ What you get from this new version:
 
 - [Binary](binary.md) or text mode
 - 11x increased resampling performance in binary mode
-- About 5x increase on performance on API calls in binary mode
+- About 10x increase on performance on API calls in binary mode
 - Cleaner HTTP service code
 - [Abstracted IO](io.md) layer
 - I/O bound performance in binary mode
