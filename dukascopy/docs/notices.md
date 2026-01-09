@@ -19,7 +19,7 @@ GET http://localhost:8000/ohlcv/1.0/indicator/sma/select/BTC-USD,1h/select/EUR-U
 But, this does work:
 
 ```sh
-GET http://localhost:8000/ohlcv/1.0/indicator/sma/select/BTC-USD,1h/period/20/output/CSV?order=desc&limit=500
+GET http://localhost:8000/ohlcv/1.0/indicator/sma/select/BTC-USD,1h/period/20/output/CSV/MT4?order=desc&limit=500
 ```
 
 Don't know if it will be used by anyone, but the capability is there.
