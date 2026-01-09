@@ -41,7 +41,7 @@
 
 ## Notice
 
-- [General notices, latest updates, caveats, etc](docs/notices.md)
+- [General notices, latest updates, caveats, etc](docs/notices.md) **2026-01-09 update**
 - [Limitations](docs/limitations.md)
 
 Don't forget to check the [Tools](docs/tools.md) section. It will ease things even more.
