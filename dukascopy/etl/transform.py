@@ -267,7 +267,6 @@ class TransformWorker:
         self.dt = dt
         # Create engine instance
         self.engine = TransformEngine(dt, symbol, self.config)
-        self.cache = set()
 
     def resolve_paths(self) -> Tuple[Path, Path]:
         """Resolve source JSON and target CSV paths for the worker's symbol and date.
@@ -355,9 +354,7 @@ class TransformWorker:
             df = self.engine.process_json(data)
 
             # Ensure output directory exists
-            if str(target_path.parent) not in self.cache:
-                target_path.parent.mkdir(parents=True, exist_ok=True)
-                self.cache.add(str(target_path.parent))
+            target_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Atomic write: write to temp file, then replace
             temp_path = target_path.with_suffix(".tmp")
