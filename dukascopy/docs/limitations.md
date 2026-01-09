@@ -23,7 +23,10 @@ See [Tests](tests.md)
 - Track a live-backadjusted 1m base-including resampling- in a seperate directory (configurable)
 
 **P4 (Architectural):**
+- Add some LRU caches here and there for processes that are continuously running
 - General QA improvements
 - Librarization
 
 This is still in an MVP state. Although working very well. It's an MVP.
+
+
