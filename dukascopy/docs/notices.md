@@ -1,18 +1,17 @@
 <u>MT4 is decoded.</u>
 
-## Notice: Version 0.6.5 may be a breaking change version
+## Notice: Version 0.6.5 may be a breaking change version - 2025-01-09
 
 When you update to this version, it will break the API when its running. You need to `./service.sh stop`, then update, then `./service.sh start`.
 
 What you get from this new version:
 
-- Binary or text mode
+- [Binary](binary.md) or text mode
 - 11x increased resampling performance in binary mode
 - About 5x increase on performance on API calls in binary mode
 - Cleaner HTTP service code
-- Abstracted IO layer
-- I/O bound performance
-- Very high performance binary format for advanced users
+- [Abstracted IO](io.md) layer
+- I/O bound performance in binary mode
 - Configuration validation using schema
 - Unchanged behavior on builder utility
 
@@ -21,8 +20,6 @@ When you change to this version, choose either `binary/text` mode. Default is st
 If you notice any errors, solution is simple `./rebuild-full.sh`. 
 
 Most users will appreciate the binary version because of its increased performance. If you choose binary, make sure to set all the `fmode` fields to binary-also for transform, aggregate, http and resample. If you are still using the default setup `./setup-dukascopy.sh`, then edit the `config.user.yaml` and CTRL+F fmode and change all `text` values to `binary`. Next, perform a `./rebuild-full.sh`.
-
-**Note:** The infrastructure seems now ok to start building API 1.1 and replay (market simulation).
 
 | Operation | CSV Mode | Binary Mode | Speedup |
 | :--- | :--- | :--- | :--- |
@@ -36,9 +33,7 @@ Total bars: 7,861,440
 
 **Actual throughput: ~1 million bars/second**
 
-## Notice: Data
-
-The data portion is now (fairly) complete. Naturally, some QA issues remain, particularly in the builder component, which will be addressed over time. Ensuring optimal QA for the ETL process takes priority over the extraction utility itself.
+**Note:** The infrastructure seems now ok to start building API 1.1 and replay (market simulation).
 
 ## Notice: HTTP service
 
@@ -148,6 +143,9 @@ List of the most "interesting stuff" encountered, during development of this pro
 - Leap-year only lag of STD switch - unresolved (will solve in boundaries logic)
 - Interesting DST/STD switch logic, based on NY DST state either GMT+2/GMT+3 - resolved
 - 4x DST/STD annual switches per timezone-dependent asset - resolved
+
+**Performance**
+- Unexpected very high performance of Python in binary mode.
 
 **AI**
 - AI CANNOT be used for complex logic - it hallucinates and fails on edge cases

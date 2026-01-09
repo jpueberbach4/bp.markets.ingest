@@ -14,7 +14,7 @@
 
 **Total pipeline time:** **~3.9 minutes**  
 
-**Throughput (stage average):** **> 1 million candles processed per second**
+**Throughput (stage average):** **> 1 million candles processed per second** (`Binary mode` some stages reach 3 million candles per second)
 
 **Throughput (pipeline average):** **> 500 thousand candles processed per second** (`Binary mode` doubles that)
 
