@@ -1,5 +1,6 @@
 <u>MT4 is decoded.</u>
 
+
 ## Notice: Version 0.6.5 may be a breaking change version - 2026-01-09
 
 When you update to this version, it will break the API when its running. You need to `./service.sh stop`, then update, then `./service.sh start`.
@@ -34,6 +35,8 @@ Total bars: 7,861,440
 **Actual throughput: ~1 million bars/second**
 
 **Note:** The infrastructure seems now ok to start building API 1.1 and replay (market simulation).
+
+**Note:** DuckDB with Numpy memory-mapped views is a `golden technology`.
 
 ## Notice: HTTP service
 
