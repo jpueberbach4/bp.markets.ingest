@@ -36,7 +36,7 @@ Total bars: 7,861,440
 
 **Note:** The infrastructure seems now ok to start building API 1.1 and replay (market simulation).
 
-**Note:** DuckDB with Numpy memory-mapped views is a `golden technology`.
+**Note:** DuckDB with Numpy memory-mapped views is a `golden technology`. Replay is going to flyyyy.
 
 ## Notice: HTTP service
 
