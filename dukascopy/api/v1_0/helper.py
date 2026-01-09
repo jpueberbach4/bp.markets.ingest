@@ -278,172 +278,168 @@ def generate_output(options: Dict, columns: List, results: List):
     return None
 
 def generate_sql(options):
-    """Generate a DuckDB SQL query for retrieving OHLCV data from CSV sources.
+    """
+    Build a DuckDB-compatible SQL query to retrieve OHLCV data from CSV
+    files or pre-created DuckDB views.
 
-    This function constructs a SQL query based on parsed query options,
-    including symbol/timeframe selections, temporal filters, modifiers,
-    ordering, and pagination. Each selection is translated into an
-    individual SELECT statement, which are then combined using
-    `UNION ALL` and wrapped in a final ordered, paginated query.
+    The function supports multiple symbol/timeframe selections, optional
+    time filtering, result modifiers, ordering, and pagination. Each
+    (symbol, timeframe) selection is translated into an individual
+    SELECT statement. These statements are combined using UNION ALL and
+    wrapped by a final outer query that handles ordering, formatting,
+    limits, and offsets.
+
+    The query supports two modes:
+    - CSV mode (default): reads directly from CSV files via read_csv_auto
+    - Binary mode: queries from pre-loaded DuckDB views using millisecond
+      timestamps
 
     Args:
         options (dict):
-            Parsed query options containing:
-            
+            Parsed query options with the following keys:
+
             - select_data (list[tuple]):
-                Tuples of the form
-                (symbol, timeframe, input_filepath, modifiers).
-            - after (str, optional):
-                Inclusive lower timestamp bound (ISO-8601–like).
-            - until (str, optional):
-                Exclusive upper timestamp bound.
+                Tuples of the form:
+                (symbol, timeframe, input_filepath, modifiers)
+
+            - after (str):
+                Inclusive lower time bound (ISO-8601–like string).
+
+            - until (str):
+                Exclusive upper time bound.
+
             - order (str, optional):
-                Sort order, either "asc" or "desc".
+                Sort order for results ("asc" or "desc"). Defaults to "asc".
+
             - limit (int, optional):
-                Maximum number of rows to return.
+                Maximum number of rows to return. Defaults to 1440.
+
             - offset (int, optional):
-                Row offset for pagination.
+                Row offset for pagination. Defaults to 0.
+
+            - fmode (str, optional):
+                If set to "binary", queries DuckDB views instead of CSV files.
+
+            - mt4 (bool, optional):
+                If True, formats output columns for MT4-compatible CSV export.
 
     Returns:
         str:
-            A complete DuckDB-compatible SQL query string.
+            A complete SQL query string ready for execution in DuckDB.
     """
-    # Collect individual SELECT statements (one per symbol/timeframe/file)
+
+    # Holds individual SELECT statements (one per symbol/timeframe)
     select_sql_array = []
 
-    for item in options['select_data']:
-        # Unpack select tuple and append global temporal filters
-        symbol, timeframe, input_filepath, modifiers, after, until, fmode = (
-            item + tuple([options.get('after'), options.get('until'),options.get('fmode')])
-        )
+    # Extract common query options with defaults
+    order = options.get('order', 'asc').lower()
+    limit = options.get('limit', 1440)
+    offset = options.get('offset', 0)
+    after_str = options.get('after')
+    until_str = options.get('until')
 
-        # Security check
+    # Build a SELECT statement for each requested dataset
+    for item in options['select_data']:
+        symbol, timeframe, input_filepath, modifiers = item[:4]
+        fmode = options.get('fmode')
+
+        # View name used when operating in binary mode
+        view_name = f"{symbol}_{timeframe}_VIEW"
+
+        # Enforce absolute paths for safety and consistency
         if not Path(input_filepath).is_absolute():
             raise ValueError("Invalid file path")
 
-        # Columns selected from each CSV file, including normalized metadata
         if fmode == "binary":
-            time_column = f"""
-                epoch_ms(time_raw::BIGINT) 
-            """
-        else:
-            time_column = "Time"
+            # Convert ISO timestamps to UTC milliseconds
+            after_ms = int(
+                datetime.fromisoformat(after_str.replace(' ', 'T'))
+                .replace(tzinfo=timezone.utc)
+                .timestamp() * 1000
+            )
+            until_ms = int(
+                datetime.fromisoformat(until_str.replace(' ', 'T'))
+                .replace(tzinfo=timezone.utc)
+                .timestamp() * 1000
+            )
 
+            # Base time filter on raw millisecond timestamps
+            where_clause = (
+                f"WHERE time_raw >= {after_ms} "
+                f"AND time_raw < {until_ms}"
+            )
 
-        select_columns = f"""
-            '{symbol}'::VARCHAR AS symbol,
-            '{timeframe}'::VARCHAR AS timeframe,
-            CAST(strftime({time_column}, '%Y') AS VARCHAR) AS year,
-            strptime(CAST({time_column} AS VARCHAR), '{CSV_TIMESTAMP_FORMAT}') AS time,
-            open,
-            high,
-            low,
-            close,
-            volume
-        """
-
-        if fmode == "binary":
-            # Huge performance optimization after explaining the query we found out we did a full scan
-            # because of a derived column used in a where clause. We now use the raw time column.
-            # Amazing performance gain. Sometimes the little things.....
-            after_ms = int(datetime.fromisoformat(after).replace(tzinfo=timezone.utc).timestamp() * 1000)
-            until_ms = int(datetime.fromisoformat(until).replace(tzinfo=timezone.utc).timestamp() * 1000)
-            where_clause = f"""
-                WHERE time_raw >= {after_ms}
-                AND time_raw < {until_ms}
-            """
-        else:
-            # Base temporal filter applied to all selections
-            where_clause = f"""
-                WHERE time >= TIMESTAMP '{after}'
-                AND time < TIMESTAMP '{until}'
-            """
-
-        # Optional modifier: exclude the most recent candle
-        # Useful when the latest bar may still be forming
-        if "skiplast" in modifiers:
-            if fmode == "binary":
-                where_clause += f"""
-                    AND time < (SELECT MAX(epoch_ms(time_raw::BIGINT)) FROM "{symbol}_{timeframe}_VIEW")
-                """
-            else:
+            # Optionally exclude the most recent candle
+            if "skiplast" in modifiers:
                 where_clause += (
-                    f" AND time < ("
-                    f"SELECT MAX(time) "
-                    f"FROM read_csv_auto('{input_filepath}')"
-                    f")"
+                    f" AND time_raw < "
+                    f"(SELECT MAX(time_raw) FROM \"{view_name}\")"
                 )
 
-        # Construct SELECT statement for this specific CSV input
-        if fmode == "binary":
+            # Binary-mode SELECT statement (querying from a DuckDB view)
             select_sql = f"""
-                SELECT
-                    {select_columns}
-                FROM "{symbol}_{timeframe}_VIEW"  
+                SELECT 
+                    '{symbol}'::VARCHAR AS symbol,
+                    '{timeframe}'::VARCHAR AS timeframe,
+                    time_raw AS sort_key,
+                    open, high, low, close, volume
+                FROM "{view_name}"
                 {where_clause}
             """
         else:
+            # CSV-mode timestamp filtering
+            where_clause = (
+                f"WHERE Time >= '{after_str}'::TIMESTAMP "
+                f"AND Time < '{until_str}'::TIMESTAMP"
+            )
+
+            # Optionally exclude the most recent candle
+            if "skiplast" in modifiers:
+                where_clause += (
+                    f" AND Time < "
+                    f"(SELECT MAX(Time) FROM read_csv_auto('{input_filepath}'))"
+                )
+
+            # CSV-mode SELECT statement (reads directly from CSV)
             select_sql = f"""
-                SELECT
-                    {select_columns}
+                SELECT 
+                    '{symbol}'::VARCHAR AS symbol,
+                    '{timeframe}'::VARCHAR AS timeframe,
+                    (epoch(Time::TIMESTAMP) * 1000)::BIGINT AS sort_key,
+                    open, high, low, close, volume
                 FROM read_csv_auto('{input_filepath}')
                 {where_clause}
             """
 
+        # Store the generated SELECT statement
         select_sql_array.append(select_sql)
 
-    # Columns selected from the UNIONed result set
-    # (time is formatted back to string form for output)
-    if options['mt4']:
-        # Columns selected from each CSV file, normalized for MT4
-        select_columns = f"""
-            strftime(time, '{CSV_TIMESTAMP_FORMAT_MT4_DATE}') AS date,
-            strftime(time, '{CSV_TIMESTAMP_FORMAT_MT4_TIME}') AS time,
-            open,
-            high,
-            low,
-            close,
-            volume
+    # Define outer SELECT columns depending on output format
+    if options.get('mt4'):
+        # MT4-compatible CSV formatting (date/time split)
+        outer_cols = f"""
+            strftime(epoch_ms(sort_key::BIGINT), '{CSV_TIMESTAMP_FORMAT_MT4_DATE}') AS date,
+            strftime(epoch_ms(sort_key::BIGINT), '{CSV_TIMESTAMP_FORMAT_MT4_TIME}') AS time,
+            open, high, low, close, volume
         """
     else:
-        select_columns = f"""
+        # Standard CSV output with symbol/timeframe metadata
+        outer_cols = f"""
             symbol,
             timeframe,
-            CAST(strftime(Time, '%Y') AS VARCHAR) AS year,
-            strftime(time, '{CSV_TIMESTAMP_FORMAT}') AS time,
-            open,
-            high,
-            low,
-            close,
-            volume
+            CAST(strftime(epoch_ms(sort_key::BIGINT), '%Y') AS VARCHAR) AS year,
+            strftime(epoch_ms(sort_key::BIGINT), '{CSV_TIMESTAMP_FORMAT}') AS time,
+            open, high, low, close, volume
         """
-
-    # Final ordering and pagination parameters with defaults
-    order = options.get('order') if options.get('order') else "asc"
-    limit = options.get('limit') if options.get('limit') else 100
-    offset = options.get('offset') if options.get('offset') else 0
 
     # Combine all SELECTs, apply ordering and pagination
-    # Also here we could potentially optimize with time_raw on binary mode
-    # but because the ordering is currently limited by max 1440 records we skip
-    # this optimization, for now.
-    if options['mt4']:
-        select_sql = f"""
-            SELECT {select_columns}
-            FROM (
-                {''.join(select_sql_array)}
-            )
-            ORDER BY date {order}, time {order} 
-            LIMIT {limit} OFFSET {offset};
-        """
-    else:
-        select_sql = f"""
-            SELECT {select_columns}
-            FROM (
-                {' UNION ALL '.join(select_sql_array)}
-            )
-            ORDER BY time {order}, symbol ASC, timeframe ASC
-            LIMIT {limit} OFFSET {offset};
-        """
+    final_sql = f"""
+        SELECT {outer_cols}
+        FROM (
+            {' UNION ALL '.join(select_sql_array)}
+        )
+        ORDER BY sort_key {order}, symbol ASC
+        LIMIT {limit} OFFSET {offset};
+    """
 
-    return select_sql
+    return final_sql
