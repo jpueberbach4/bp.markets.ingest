@@ -20,11 +20,22 @@ Most users will appreciate the binary version because of its increased performan
 
 ## Notice: Performance
 
-The performance branch is largely complete. Memory mapping alone was not sufficient to achieve the desired web service speed improvements, so additional optimizations were implemented.
+The performance branch is complete.
 
 Overall performance is now under 150 ms for 1,440 candles on the 1-minute chart, well below 100 ms on the 5-minute chart, and between 10–30 ms for the remaining timeframes.
 
-A few QA passes -especially on the cache part- and additional testing are still required before release. Especially the backward CSV compatibility needs to be tested.
+We are now doing 15 years of 1m candles on 42 symbols in 2 minutes. I think this is near optimal for python. For this architecture.
+
+These latest performance optimization push throughput well over 1 million candles per second (pipeline average). On a laptop.
+
+I am truly amazed on how far you can push things with python and without a complex infrastructure. I know Kafka, RabbitMQ, ZeroQ, Redis, TimeScaleDB etc. The "regular" complexity layers that are used to optimize enterprise solutions. This repo shows that all of that can be easily beaten with `just a laptop`.
+
+There is a beta release ready under branch beta/0.6.5 or tag 0.6.5-beta. It's currently still in testing phase but dont expect any format changes, at most bugfixes will happen.
+
+**Note:** If you are doing "very high performance"-analysis using the data from this tool, ie for AI purposes, the binary format will be a very welcome update. The format is well documented in a binary.md document inside that beta branch/tag.
+
+**Note:** The infrastructure seems now ok to start building API 1.1 and replay (market simulation).
+
 
 ## Notice: Data
 
@@ -239,3 +250,5 @@ I think the solution came out really really well.
 "In the intricate tapestry of apparent chaos, true mastery lies not in imposing order upon the unknown, but in patiently decoding its hidden patterns—until one day, with quiet revelation, we declare: the enigma is unveiled, and what was once obscure now illuminates the path for all."
 
 Wishing you all a highly profitable 2026! 🚀
+
+

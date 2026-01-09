@@ -212,22 +212,24 @@ Rebuilding...
 Running Dukascopy ETL pipeline (16 processes)
 Using lockfile data/locks/run.lock
 Step: Download...
-100%|█████████████████████████████████████████| 42/42 [00:02<00:00, 15.50downloads/s]
+100%|███████████████████████████████████████| 42/42 [00:03<00:00, 12.54downloads/s]
 Step: Transform...
-100%|█████████████████████████████████████████| 322434/322434 [01:48<00:00, 2972.85files/s]
+100%|███████████████████████████████████████| 322476/322476 [00:54<00:00, 5955.18files/s]
 Step: Aggregate...
-100%|█████████████████████████████████████████| 42/42 [00:35<00:00,  1.19symbols/s]
+100%|███████████████████████████████████████| 42/42 [00:34<00:00,  1.22symbols/s]
 Step: Resample...
-100%|█████████████████████████████████████████| 42/42 [00:24<00:00,  1.72symbols/s]
+100%|███████████████████████████████████████| 42/42 [00:23<00:00,  1.81symbols/s]
 
 ETL pipeline complete!
-Total runtime: 178.90 seconds (2.98 minutes)
+Total runtime: 126.00 seconds (2.10 minutes)
 Done.
 ```
 
-Another 2 minutes chopped off.
+2 minutes now for 42 symbols with an average history of 15 years of 1m candles per symbol. with custom timeframes, session handling, all-in.
 
-Transform operations require further optimization (next version). Notably, what was previously our most complex computational process—the multi-timeframe resampling cascade—has become our fastest operation. This efficiency stems from the optimized Directed Acyclic Graph (DAG) architecture for timeframe processing: 1m → 5m → 15m → ... → 1Y.
+Transform is now almost maximum performance - last optimizations was microseconds stuff, but on 300k files these add up
+Aggregate completely saturates the NVMe drive.
+Resample is optimal.
 
 I will finalize this binary implementation:
 
