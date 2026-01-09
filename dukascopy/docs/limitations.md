@@ -22,7 +22,7 @@ See [Tests](tests.md)
   API 1.0 currently has seperate indicator support. We would like to have indicators integrated into the price stream. \
   Furthermore, handle indicator warmup periods internally. Shouldnt be a burden to the user, like how it is in 1.0.
 - Profile/Optimize startup time of resample \
-  Resample is incredibly fast bun in incremental mode it seems to have a startup lag. Profile it. \
+  Resample is incredibly fast but in incremental mode it seems to have a startup lag. Profile it. \
   Likely `resample_get_symbol_config` is the issue. One more optimization pass needed here.
 - MIN-MAX date-range API \
   Currently the 1.0 API has "history searching" because it doesnt know the first timestamp of the first available data. \
