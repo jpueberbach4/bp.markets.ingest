@@ -36,6 +36,7 @@ License:
 ===============================================================================
 """
 import mmap
+import weakref
 import numpy as np
 import pandas as pd
 import duckdb
@@ -71,6 +72,9 @@ class MarketDataCache:
         
         # Set to keep track of registered view names
         self.registered_views = set()
+
+        # Set the cleanup finalizer
+        self._finalizer = weakref.finalize(self, self._cleanup, self.mmaps, self.con)
 
 
     def get_conn(self) -> duckdb.DuckDBPyConnection:
@@ -197,8 +201,9 @@ class MarketDataCache:
 
         return True
 
-    def __finalize__(self):
-        """Releases all resources held by the instance.
+    @staticmethod
+    def _cleanup(mmaps: Dict, con: duckdb.DuckDBPyConnection):
+        """Releases all resources in mmaps and close DuckDB.
 
         This method cleans up open memory-mapped files and their associated
         file handles, then closes the active DuckDB connection. It should be
@@ -209,15 +214,19 @@ class MarketDataCache:
             None
         """
         # Iterate over all cached file handles and memory maps
-        for f, mm in self.mmaps.values():
-            # Close the memory-mapped region
-            mm.close()
-            # Close the associated file handle
-            f.close()
-
+        for entry in mmaps.values():
+            try:
+                # Close the memory-mapped region
+                entry['mm'].close()
+                # Close the associated file handle
+                entry['f'].close()
+            except Exception:
+                pass
+        
+        # Clear the memory maps Dictionary
+        mmaps.clear()
         # Close the DuckDB connection
-        self.con.close()
-
+        con.close()
 
 # Setup a global state cache
 cache = MarketDataCache()
