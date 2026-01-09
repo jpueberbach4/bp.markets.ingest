@@ -264,6 +264,7 @@ class TransformWorker:
         self.dt = dt
         # Create engine instance
         self.engine = TransformEngine(dt, symbol, self.config)
+        self.cache = set()
 
     def resolve_paths(self) -> Tuple[Path, Path]:
         """Resolve source JSON and target CSV paths for the worker's symbol and date.
@@ -345,14 +346,15 @@ class TransformWorker:
             source_path, target_path = self.resolve_paths()
 
             # Load JSON payload
-            with open(source_path, "rb") as file:
-                data = orjson.loads(file.read())
+            data = orjson.loads(Path(source_path).read_bytes())
 
             # Transform raw deltas into normalized OHLCV data
             df = self.engine.process_json(data)
 
             # Ensure output directory exists
-            target_path.parent.mkdir(parents=True, exist_ok=True)
+            if str(target_path.parent) not in self.cache:
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                self.cache.add(str(target_path.parent))
 
             # Atomic write: write to temp file, then replace
             temp_path = target_path.with_suffix(".tmp")
