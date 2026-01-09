@@ -163,7 +163,7 @@ async def get_indicator(
         options = discover_options(options)
 
         if options.get('mt4') and len(options['select_data'])>1:
-            raise Exception("Multi-symbol or multi-timeframe is not support with MT4 flag")
+            raise Exception("Multi-symbol or multi-timeframe is not supported with MT4 flag")
 
         # Generate SQL
         sql = generate_sql(options)
