@@ -223,3 +223,5 @@ Done.
 **Note:** To make sure thermal throttling does not kick in on your pc/laptop-decreasing speeds, make sure your pc/laptop has enough "breathing space". The above operations heat up your NVMe-silicon quite significantly.
 
 **Note:** Especially the resample step has seen a massive performance increase. It is capable of pushing 3 million bars/second. This is C++ territory performance. I am myself very much amazed by this. Unexpected. 
+
+**Note:** Further optimizations bring almost no gains. Tried eliminating system filesystem calls here and there. Performance benefits are marginal. Can's optimize further. This is it. For the ETL part.
