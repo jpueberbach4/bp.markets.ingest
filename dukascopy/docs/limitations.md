@@ -36,7 +36,8 @@ See [Tests](tests.md)
   100 percent satisfied with it.
 - Track a live-backadjusted 1m base-including resampling- in a seperate directory (configurable) \
   This is a personal "must-have". Currently i build the backadjusted data via a cronjob and its CSV \
-  I need a backadjusted BINARY version. It's a format mismatch for my "other code".
+  I need a backadjusted BINARY version. It's a format mismatch for my "other code". \
+  Backadjusted base gets automatically rebuild once a month (on rollover)
 
 **P4 (Architectural):**
 - Add some LRU caches here and there for processes that are continuously running \
