@@ -36,9 +36,6 @@ See [Tests](tests.md)
   This was an external request. Provide configuration support to "level-out" stock splits.
 
 **P3 (Nice-to-have):**
-- Further performance improvements (eg. partitioning of data) \
-  This is mainly to increase performance of the web-service by a huge factor. It's already blazing but i am still not \
-  100 percent satisfied with it.
 - Track a live-backadjusted 1m base-including resampling- in a seperate directory (configurable) \
   This is a personal "must-have". Currently i build the backadjusted data via a cronjob and its CSV \
   I need a backadjusted BINARY version. It's a format mismatch for my "other code". \

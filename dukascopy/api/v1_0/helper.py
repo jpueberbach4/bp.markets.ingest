@@ -344,8 +344,8 @@ def generate_sql(options):
 
         if fmode == "binary":
             # Huge performance optimization after explaining the query we found out we did a full scan
-            # because a derived value. We now use the raw time column. Amazing performance gain.
-            # Sometimes the little things.....
+            # because of a derived column used in a where clause. We now use the raw time column.
+            # Amazing performance gain. Sometimes the little things.....
             after_ms = int(datetime.fromisoformat(after).replace(tzinfo=timezone.utc).timestamp() * 1000)
             until_ms = int(datetime.fromisoformat(until).replace(tzinfo=timezone.utc).timestamp() * 1000)
             where_clause = f"""
@@ -424,6 +424,9 @@ def generate_sql(options):
     offset = options.get('offset') if options.get('offset') else 0
 
     # Combine all SELECTs, apply ordering and pagination
+    # Also here we could potentially optimize with time_raw on binary mode
+    # but because the ordering is currently limited by max 1440 records we skip
+    # this optimization, for now.
     if options['mt4']:
         select_sql = f"""
             SELECT {select_columns}
