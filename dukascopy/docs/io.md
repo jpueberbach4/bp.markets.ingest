@@ -224,4 +224,4 @@ Done.
 
 **Note:** Especially the resample step has seen a massive performance increase. It is capable of pushing 3 million bars/second. This is C++ territory performance. I am myself very much amazed by this. Unexpected. 
 
-**Note:** Further optimizations bring almost no gains. Tried eliminating system filesystem calls here and there. Performance benefits are marginal. Can's optimize further. This is it. For the ETL part.
+**Note:** Further optimizations bring almost no gains. Tried eliminating filesystem calls here and there. Performance benefits are marginal. Can't optimize further. This is it. For the ETL part.
