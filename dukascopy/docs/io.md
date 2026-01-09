@@ -125,7 +125,7 @@ Total runtime: 9.69 seconds (0.16 minutes)
 Done.
 ```
 
-**Note:** After this statistic generation, transform was profiles and optimized as well. Leading to stats below.
+**Note:** After this statistic generation, transform was profiled and optimized as well. Leading to stats below.
 
 * **EUR-USD, BINARY-mode, verification of 15m data:**
 
