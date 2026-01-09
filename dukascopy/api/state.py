@@ -131,6 +131,10 @@ class MarketDataCache:
             # Memory-map the entire file for zero-copy access
             mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
 
+            # Since this is an API, and we might query many symbols, 
+            # do not trigger the kernel to preload too much
+            mm.madvise(mmap.MADV_RANDOM) 
+
             # Interpret the memory-mapped bytes as a NumPy structured array
             data_view = np.frombuffer(mm, dtype=DTYPE)
 
@@ -155,7 +159,7 @@ class MarketDataCache:
 
             # Cache the file handle, memory map, and size for future reuse
             self.mmaps[view_name] = {'f': f, 'mm': mm, 'size': size, 'mtime': mtime}
-            
+
             # Track registered view names
             self.registered_views.add(view_name)
             
