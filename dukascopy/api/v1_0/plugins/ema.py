@@ -3,9 +3,10 @@ import pandas as pd
 def calculate(data, options):
     """
     Calculates Exponential Moving Average (EMA) per unique Symbol and Timeframe pair.
+    Supports standard OHLCV and MT4 (split date/time) formats.
     """
 
-    # Parse and validate period
+    # 1. Parse and validate period
     raw_period = options.get('period', 14)
     try:
         period = int(raw_period)
@@ -17,33 +18,53 @@ def calculate(data, options):
     if not data:
         return [[], []]
 
-    # Prepare DataFrame
+    # 2. Prepare DataFrame
     df = pd.DataFrame(data)
-    df['close'] = pd.to_numeric(df['close'])
     
-    output_cols = ['symbol', 'timeframe', 'time', 'ema']
+    # Detect MT4 mode
+    is_mt4 = options.get('mt4') is True
+    
+    # 3. Dynamic Column Mapping
+    # MT4 mode uses 'date' and 'time' separately instead of 'symbol', 'timeframe', 'time'
+    if is_mt4:
+        output_cols = ['date', 'time', 'ema']
+        sort_cols = ['date', 'time']
+    else:
+        output_cols = ['symbol', 'timeframe', 'time', 'ema']
+        sort_cols = ['time']
+
+    # Ensure numeric types for calculation
+    df['close'] = pd.to_numeric(df['close'], errors='coerce')
+    
     all_results = []
 
-    # Group and Calculate
-    grouped = df.groupby(['symbol', 'timeframe'])
+    # 4. Group and Calculate
+    # MT4 queries are restricted to a single symbol/timeframe in routes.py
+    group_keys = ['symbol', 'timeframe'] if not is_mt4 else None
 
-    for (symbol, timeframe), group in grouped:
-        group = group.sort_values('time')
+    if group_keys:
+        grouped = df.groupby(group_keys)
+    else:
+        grouped = [(None, df)]
+
+    for _, group in grouped:
+        # Sort by the appropriate time columns for the format
+        group = group.sort_values(sort_cols)
         
         # EMA Calculation using span
-        # span=period is the standard way to define EMA period in pandas
         group['ema'] = group['close'].ewm(span=period, adjust=False).mean()
         
-        # Unlike SMA, EMA technically starts from the first row, 
-        # but we drop the first 'period' rows to ensure stability
+        # Filter columns and drop the warm-up period
         all_results.append(group[output_cols].iloc[period:])
 
     if not all_results:
         return [output_cols, []]
 
-    # Final Formatting
+    # 5. Final Formatting
     final_df = pd.concat(all_results)
+    
+    # Apply user-requested sort order
     is_asc = options.get('order', 'asc').lower() == 'asc'
-    final_df = final_df.sort_values(by='time', ascending=is_asc)
+    final_df = final_df.sort_values(by=sort_cols, ascending=is_asc)
     
     return [output_cols, final_df.values.tolist()]

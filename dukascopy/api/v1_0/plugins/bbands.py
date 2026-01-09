@@ -4,6 +4,7 @@ import numpy as np
 def calculate(data, options):
     """
     Calculates Bollinger Bands (Upper, Middle, Lower) per Symbol/Timeframe.
+    Supports standard OHLCV and MT4 (split date/time) formats.
     Default: 20 period, 2 Standard Deviations.
     """
 
@@ -20,18 +21,38 @@ def calculate(data, options):
     if not data:
         return [[], []]
 
-    # Prepare DataFrame
+    # 2. Prepare DataFrame
     df = pd.DataFrame(data)
-    df['close'] = pd.to_numeric(df['close'])
     
-    # We return the middle band (SMA), upper band, and lower band
-    output_cols = ['symbol', 'timeframe', 'time', 'upper', 'mid', 'lower']
+    # Detect MT4 mode
+    is_mt4 = options.get('mt4') is True
+    
+    # 3. Dynamic Column Mapping
+    # MT4 mode uses 'date' and 'time' separately
+    if is_mt4:
+        output_cols = ['date', 'time', 'upper', 'mid', 'lower']
+        sort_cols = ['date', 'time']
+    else:
+        output_cols = ['symbol', 'timeframe', 'time', 'upper', 'mid', 'lower']
+        sort_cols = ['time']
+
+    # Ensure numeric type for calculations
+    df['close'] = pd.to_numeric(df['close'], errors='coerce')
+    
     all_results = []
 
-    grouped = df.groupby(['symbol', 'timeframe'])
+    # 4. Group and Calculate
+    # MT4 queries are restricted to a single selection in routes.py
+    group_keys = ['symbol', 'timeframe'] if not is_mt4 else None
 
-    for (symbol, timeframe), group in grouped:
-        group = group.sort_values('time')
+    if group_keys:
+        grouped = df.groupby(group_keys)
+    else:
+        grouped = [(None, df)]
+
+    for _, group in grouped:
+        # Sort using the correct temporal columns
+        group = group.sort_values(sort_cols)
         
         # Middle Band (Simple Moving Average)
         group['mid'] = group['close'].rolling(window=period).mean()
@@ -43,15 +64,17 @@ def calculate(data, options):
         group['upper'] = group['mid'] + (rolling_std * std_dev)
         group['lower'] = group['mid'] - (rolling_std * std_dev)
         
-        # Remove the 'NaN' rows from the start
+        # Remove the 'NaN' rows from the warm-up period
         all_results.append(group[output_cols].dropna(subset=['mid']))
 
     if not all_results:
         return [output_cols, []]
 
-    # 3. Final Formatting
+    # 5. Final Formatting
     final_df = pd.concat(all_results)
+    
+    # Apply user-requested sort order
     is_asc = options.get('order', 'asc').lower() == 'asc'
-    final_df = final_df.sort_values(by='time', ascending=is_asc)
+    final_df = final_df.sort_values(by=sort_cols, ascending=is_asc)
     
     return [output_cols, final_df.values.tolist()]
