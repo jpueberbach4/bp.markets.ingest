@@ -11,7 +11,8 @@ See [Tests](tests.md)
 **P1 (Critical):**
 - Replay/Market simulation via "event streaming" \
   This has top-priority. Building an event-stream that handles the anomalous candles and is fully \
-  deterministic by design. Pipe-able through default UNIX pipes. This is why this project exists.
+  deterministic by design. Pipe-able through default UNIX pipes. This is why this project exists. \
+  Building my own, high-performance, backtester that is not a monolith.
 - Custom shifting for ASX 2020 anomaly \
   Planned end of this month
 - Custom shifting for one-week-leap-year DST lag (affects Nov 2020,2024,2028,etc) \
