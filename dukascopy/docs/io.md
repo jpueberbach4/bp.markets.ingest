@@ -219,3 +219,5 @@ ETL pipeline complete!
 Total runtime: 126.00 seconds (2.10 minutes)
 Done.
 ```
+
+**Note:** To make sure thermal throttling does not kick in on your pc/laptop-decreasing speeds, make sure your pc/laptop has enough "breathing space". The above operations heat up your NVMe-silicon quite significantly.
