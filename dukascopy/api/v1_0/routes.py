@@ -162,6 +162,9 @@ async def get_indicator(
         # Discover options
         options = discover_options(options)
 
+        if options.get('mt4') and len(options['select_data'])>1:
+            raise Exception("Multi-symbol or multi-timeframe is not support with MT4 flag")
+
         # Generate SQL
         sql = generate_sql(options)
 
@@ -178,11 +181,11 @@ async def get_indicator(
         # Call the indicator
         columns, results = indicator_registry[name](data, options)
 
+        # Register wall-time
+        options['wall'] = time.time() - time_start
+
         # Generate the output
         output = generate_output(options, columns, results)
-
-        # Register wall-time
-        output['options']['wall'] = time.time() - time_start
 
         # If we have output, return the result
         if output:

@@ -1,14 +1,13 @@
-# config/plugins/rsi.py
 import pandas as pd
 
 def calculate(data, options):
     """
-    Calculates RSI per unique Symbol and Timeframe pair, 
-    returning results ordered by time ASC.
+    Calculates RSI per unique Symbol and Timeframe pair.
+    Supports standard OHLCV and MT4 (split date/time) formats.
     """
 
+    # 1. Parse and validate period
     raw_period = options.get('period', 14)
-    
     try:
         period = int(raw_period)
     except (ValueError, TypeError):
@@ -19,27 +18,45 @@ def calculate(data, options):
     if not data:
         return [[], []]
 
-    # Convert to DataFrame and ensure numeric types
+    # 2. Prepare DataFrame
     df = pd.DataFrame(data)
-    df['close'] = pd.to_numeric(df['close'])
     
-    # Define columns to return
-    output_cols = ['symbol', 'timeframe', 'time', 'rsi']
+    # Detect MT4 mode
+    is_mt4 = options.get('mt4') is True
+    
+    # 3. Dynamic Column Mapping
+    # If MT4 is True, system returns 'date' and 'time' strings separately
+    if is_mt4:
+        output_cols = ['date', 'time', 'rsi']
+        sort_cols = ['date', 'time']
+    else:
+        output_cols = ['symbol', 'timeframe', 'time', 'rsi']
+        sort_cols = ['time']
+
+    # Ensure numeric types for calculation
+    df['close'] = pd.to_numeric(df['close'], errors='coerce')
+    
     all_results = []
 
-    # Group by both symbol and timeframe to isolate calculations
-    grouped = df.groupby(['symbol', 'timeframe'])
+    # 4. Group and Calculate
+    # MT4 queries are restricted to a single symbol/timeframe pair in routes.py
+    group_keys = ['symbol', 'timeframe'] if not is_mt4 else None
 
-    for (symbol, timeframe), group in grouped:
-        # Sort by time within the group to ensure chronological RSI calculation
-        group = group.sort_values('time')
+    if group_keys:
+        grouped = df.groupby(group_keys)
+    else:
+        grouped = [(None, df)]
+
+    for _, group in grouped:
+        # Sort by the appropriate time columns to ensure chronological RSI calculation
+        group = group.sort_values(sort_cols)
         
         # RSI Calculation Logic
         delta = group['close'].diff()
         gain = (delta.where(delta > 0, 0))
         loss = (-delta.where(delta < 0, 0))
 
-        # Wilder's Smoothing / EMA
+        # Wilder's Smoothing / EMA (alpha = 1/period)
         avg_gain = gain.ewm(com=period - 1, min_periods=period).mean()
         avg_loss = loss.ewm(com=period - 1, min_periods=period).mean()
 
@@ -52,9 +69,12 @@ def calculate(data, options):
     if not all_results:
         return [output_cols, []]
 
-    # Combine all individual group results back into one DataFrame
+    # 5. Final Formatting
     final_df = pd.concat(all_results)
-    final_df = final_df.sort_values(by='time', ascending=options.get('order')=="asc")
+    
+    # Apply user-requested sort order
+    is_asc = options.get('order', 'asc').lower() == 'asc'
+    final_df = final_df.sort_values(by=sort_cols, ascending=is_asc)
     
     # Return formatted as [columns, records] for generate_output compatibility
     return [output_cols, final_df.values.tolist()]
