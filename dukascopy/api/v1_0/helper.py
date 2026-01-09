@@ -351,12 +351,17 @@ def generate_sql(options):
         # Optional modifier: exclude the most recent candle
         # Useful when the latest bar may still be forming
         if "skiplast" in modifiers:
-            where_clause += (
-                f" AND time < ("
-                f"SELECT MAX(time) "
-                f"FROM read_csv_auto('{input_filepath}')"
-                f")"
-            )
+            if fmode == "binary":
+                where_clause += f"""
+                    AND time < (SELECT MAX(epoch_ms(time_raw::BIGINT)) FROM "{symbol}_{timeframe}_VIEW")
+                """
+            else:
+                where_clause += (
+                    f" AND time < ("
+                    f"SELECT MAX(time) "
+                    f"FROM read_csv_auto('{input_filepath}')"
+                    f")"
+                )
 
         # Construct SELECT statement for this specific CSV input
         if fmode == "binary":
