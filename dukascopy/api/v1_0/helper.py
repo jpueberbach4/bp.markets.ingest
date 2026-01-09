@@ -55,6 +55,7 @@ import numpy as np
 import pandas as pd
 import duckdb 
 
+from datetime import datetime, timezone
 from typing import Dict, Any, List
 from urllib.parse import unquote_plus
 from pathlib import Path
@@ -341,12 +342,22 @@ def generate_sql(options):
             volume
         """
 
-
-        # Base temporal filter applied to all selections
-        where_clause = f"""
-            WHERE time >= TIMESTAMP '{after}'
-            AND time < TIMESTAMP '{until}'
-        """
+        if fmode == "binary":
+            # Huge performance optimization after explaining the query we found out we did a full scan
+            # because a derived value. We now use the raw time column. Amazing performance gain.
+            # Sometimes the little things.....
+            after_ms = int(datetime.fromisoformat(after).replace(tzinfo=timezone.utc).timestamp() * 1000)
+            until_ms = int(datetime.fromisoformat(until).replace(tzinfo=timezone.utc).timestamp() * 1000)
+            where_clause = f"""
+                WHERE time_raw >= {after_ms}
+                AND time_raw < {until_ms}
+            """
+        else:
+            # Base temporal filter applied to all selections
+            where_clause = f"""
+                WHERE time >= TIMESTAMP '{after}'
+                AND time < TIMESTAMP '{until}'
+            """
 
         # Optional modifier: exclude the most recent candle
         # Useful when the latest bar may still be forming
