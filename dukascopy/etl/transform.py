@@ -194,9 +194,6 @@ class TransformEngine:
                 arr[mask] for arr in [times, opens, highs, lows, closes, volumes]
             ]
 
-            # Resolving memory bloat
-            del times, opens, highs, lows, closes, volumes
-
             # Assemble final DataFrame and apply price rounding
             idx = pd.DatetimeIndex(t_f * 1_000_000, name="time")
             full_transformed = pd.DataFrame(
