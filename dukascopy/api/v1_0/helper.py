@@ -236,23 +236,19 @@ def generate_output(options: Dict, columns: List, results: List):
 
     """
     callback = options.get('callback')
+    # Construct payload
+    payload = {
+        "status": "ok",
+        "options": options,
+        "result": [dict(zip(columns, row)) for row in results],
+    }
     # Default JSON output
     if options.get("output_type") == "JSON" or options.get("output_type") is None:
-        return {
-            "status": "ok",
-            "options": options,
-            "result": [dict(zip(columns, row)) for row in results],
-        }
+        return payload
 
     # JSONP output for browser-based consumption
     if options.get("output_type") == "JSONP":
-        payload = {
-            "status": "ok",
-            "options": options,
-            "result": [dict(zip(columns, row)) for row in results],
-        }
-
-        json_data = orjson.dumps(payload).decode("utf-8")
+        json_data = orjson.dumps(payload, option=orjson.OPT_SERIALIZE_NUMPY).decode("utf-8")
         return PlainTextResponse(
             content=f"{callback}({json_data});",
             media_type="text/javascript",
