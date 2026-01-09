@@ -181,6 +181,9 @@ async def get_indicator(
         # Call the indicator
         columns, results = indicator_registry[name](data, options)
 
+        # Set back the indicator name
+        options['indicator'] = name
+
         # Register wall-time
         options['wall'] = time.time() - time_start
 
