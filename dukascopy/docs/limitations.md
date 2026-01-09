@@ -20,7 +20,10 @@ See [Tests](tests.md)
 **P2 (Important):**
 - HTTP API for version 1.1 with single-stream indicator support \
   API 1.0 currently has seperate indicator support. We would like to have indicators integrated into the price stream. \
-  Furthermore, handle indicator warmup periods internally. Shouldnt be a burden to the user, like how it is in 1.0.
+  **Note:** Best to do this in the builder component and import that to HTTP-API. Benefit is that a user can also use the \
+  builder to generate "indicator-enriched" CSV/Parquet files. Risk: 1.0 API will also support the new select syntax because \
+  it also inherits from builder. Make sure backward compat remains. Optional extra DSL-based [..] is not an issue. \
+  Means that API 1.0 will automatically transition too. The extra thing the 1.0 API will have is the current indicator support.
 - Profile/Optimize startup time of resample \
   Resample is incredibly fast but in incremental mode it seems to have a startup lag. Profile it. \
   Likely `resample_get_symbol_config` is the issue. One more optimization pass needed here.
