@@ -22,7 +22,7 @@ But, this does work:
 GET http://localhost:8000/ohlcv/1.0/indicator/sma/select/BTC-USD,1h/period/20/output/CSV/MT4?order=desc&limit=500
 ```
 
-Don't know if it will be used by anyone, but the capability is there.
+Don't know if it will be used by anyone, but the capability is there. API 1.1 will have an "integrated stream". It's described in [this doc](http.md).
 
 ## Notice: Version 0.6.5 may be a breaking change version - 2026-01-09
 
