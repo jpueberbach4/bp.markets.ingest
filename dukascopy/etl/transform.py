@@ -194,23 +194,18 @@ class TransformEngine:
                 arr[mask] for arr in [times, opens, highs, lows, closes, volumes]
             ]
 
-            # Convert UNIX milliseconds to ISO datetime strings in batch
-            time_strings = [
-                str(t).replace("T", " ")[:19]
-                for t in np.array(t_f * 1_000_000, dtype="datetime64[ns]")
-            ]
-
             # Assemble final DataFrame and apply price rounding
+            idx = pd.DatetimeIndex(t_f * 1_000_000, name="time")
             full_transformed = pd.DataFrame(
-                {
-                    "time": time_strings,
-                    "open": np.round(o_f, self.config.round_decimals),
-                    "high": np.round(h_f, self.config.round_decimals),
-                    "low": np.round(l_f, self.config.round_decimals),
-                    "close": np.round(c_f, self.config.round_decimals),
+                data={
+                    "open": o_f,
+                    "high": h_f,
+                    "low": l_f,
+                    "close": c_f,
                     "volume": v_f,
-                }
-            )
+                },
+                index=idx
+            ).round(self.config.round_decimals)
 
             # Get symbol specific configuration
             sym_cfg = self.config.symbols.get(self.symbol) if self.config.symbols else None
@@ -356,14 +351,6 @@ class TransformWorker:
             # Transform raw deltas into normalized OHLCV data
             df = self.engine.process_json(data)
 
-            if not isinstance(df.index, pd.DatetimeIndex):
-                if 'time' in df.columns:
-                    df['time'] = pd.to_datetime(df['time'])
-                    df.set_index('time', inplace=True)
-                else:
-                    # Fallback for empty or malformed data
-                    df.index = pd.to_datetime(df.index)
-
             # Ensure output directory exists
             target_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -390,7 +377,6 @@ class TransformWorker:
         except Exception as e:
             raise TransactionError(f"Unexpected worker failure for {self.symbol}: {e}")
 
-
 def fork_transform(args: tuple) -> bool:
     """Multiprocessing-safe entry point for running a transformation job.
 
@@ -415,6 +401,7 @@ def fork_transform(args: tuple) -> bool:
             is printed before raising this exception.
     """
     try:
+
         symbol, dt, app_config = args
         # Initialize the worker
         worker = TransformWorker(dt, symbol, app_config)

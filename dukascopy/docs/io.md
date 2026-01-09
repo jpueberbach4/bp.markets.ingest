@@ -1,4 +1,4 @@
-# Architectural Refactor: High-Performance Binary IO for Resampling, Transform and Aggregate
+# Architectural Refactor: High-Performance Binary IO
 
 ## Overview
 
@@ -79,9 +79,7 @@ class MmapWriter:
 
 This is a further optimization that mainly impacts syntax. Not performance.
 
-PS. This is no longer a "toy-project". These kind of optimizations are typically seen in HFT environments.
-
-## First results on performance (unoptimized)
+## Results on performance
 
 * **EUR-USD, CSV-mode, 20 years of data, 10 timeframes, no session rules**
 
@@ -127,6 +125,8 @@ Total runtime: 9.69 seconds (0.16 minutes)
 Done.
 ```
 
+**Note:** After this statistic generation, transform was profiled and optimized as well. Leading to stats below.
+
 * **EUR-USD, BINARY-mode, verification of 15m data:**
 
 ```sh
@@ -162,26 +162,21 @@ Total Records: 524096
 
 Correct.
 
-** Can't wait to see DuckDB performance on this **
-
-I am still optimizing transform and aggregate, but these two saturate the NVMe drive. Don't know if can make faster if hardware says no.
-
 ## Key Takeaways
 
 | Operation | CSV Mode | Binary Mode | Speedup |
 | :--- | :--- | :--- | :--- |
-| **Transform** | 6.00s | 3.00s | 2.0x faster |
+| **Transform** | 6.00s | 1.20s | 5x faster |
 | **Aggregate** | 2.76s | 3.05s | (Slightly slower - optimizing) |
-| **Resample** | 28.14s | 2.52s | **11.2x FASTER!** 🎉 |
+| **Resample** | 28.14s | 2.52s | **11x FASTER!** 🎉 |
 | --- | --- | --- | --- |
-| **TOTAL** | **38.42s** | **9.69s** | **4.0x FASTER OVERALL** |
+| **TOTAL** | **38.42s** | **6.77s** | **5.0x FASTER OVERALL** |
 
 Total bars: 7,861,440
 
-**Actual throughput: ~810,000 bars/second**
+**Actual throughput: ~1 million bars/second** (single core)
 
 That's astonishing performance for a "python script". On a 2023 laptop.
-
 
 42 symbols, CSV-mode:
 
@@ -212,26 +207,15 @@ Rebuilding...
 Running Dukascopy ETL pipeline (16 processes)
 Using lockfile data/locks/run.lock
 Step: Download...
-100%|█████████████████████████████████████████| 42/42 [00:02<00:00, 15.50downloads/s]
+100%|███████████████████████████████████████| 42/42 [00:03<00:00, 12.54downloads/s]
 Step: Transform...
-100%|█████████████████████████████████████████| 322434/322434 [01:48<00:00, 2972.85files/s]
+100%|███████████████████████████████████████| 322476/322476 [00:54<00:00, 5955.18files/s]
 Step: Aggregate...
-100%|█████████████████████████████████████████| 42/42 [00:35<00:00,  1.19symbols/s]
+100%|███████████████████████████████████████| 42/42 [00:34<00:00,  1.22symbols/s]
 Step: Resample...
-100%|█████████████████████████████████████████| 42/42 [00:24<00:00,  1.72symbols/s]
+100%|███████████████████████████████████████| 42/42 [00:23<00:00,  1.81symbols/s]
 
 ETL pipeline complete!
-Total runtime: 178.90 seconds (2.98 minutes)
+Total runtime: 126.00 seconds (2.10 minutes)
 Done.
 ```
-
-Another 2 minutes chopped off.
-
-Transform operations require further optimization (next version). Notably, what was previously our most complex computational process—the multi-timeframe resampling cascade—has become our fastest operation. This efficiency stems from the optimized Directed Acyclic Graph (DAG) architecture for timeframe processing: 1m → 5m → 15m → ... → 1Y.
-
-I will finalize this binary implementation:
-
-- Adding support for binary files to builder component
-- Adding support for binary files to webservice component
-- Adding MAGIC bytes and version info into the binary file's header
-- Few QA passes

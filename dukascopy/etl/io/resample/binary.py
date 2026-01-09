@@ -265,7 +265,7 @@ class ResampleIOWriterBinary(ResampleIOWriter):
         count = len(df)
         buf = np.zeros(count, dtype=ResampleIOReaderBinary.DTYPE)
         buf['ts'] = df.index.values.astype('datetime64[ms]').astype('uint64')
-        buf['ohlcv'] = df[['open', 'high', 'low', 'close', 'volume']].values
+        buf['ohlcv'] = df.values
 
         # Write all records at once
         written = self.file.write(buf.tobytes())

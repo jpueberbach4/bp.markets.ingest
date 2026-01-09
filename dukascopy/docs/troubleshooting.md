@@ -41,6 +41,7 @@ When you have applied changes to the resample step only:
 - **Slow incremental?** Check if NVMe/SSD. HDDs will be 10-50x slower
 - **High CPU?** Reduce `NUM_PROCESSES` in scripts
 - **Out of memory?** Reduce `BATCH_SIZE` in resample.py (default: 500K)
+- **Text mode?** Switch `fmode` to `binary` for all components
 
 ### Alignment, candles "don't exactly match your broker"
 
