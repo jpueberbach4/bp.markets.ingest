@@ -1,5 +1,12 @@
 <u>MT4 is decoded.</u>
 
+## Announcement: deprecation of the CSV format
+
+The CSV format is now in a deprecated state. CSV will continue to be supported until the release of version 0.7, but new features—such as replay—will not support CSV. This is because CSV lacks the performance required for high-speed processing.
+
+The default CSV reader and writer will remain available for existing features. If you do not require the new functionality, you can safely ignore this notice and continue using the current version (tag 0.6.5).
+
+The builder component, of course, will continue to support CSV and Parquet generation. This also means that the newly proposed selection syntax, including indicator generation support, will be compatible with CSV.
 
 ## Notice: Version 0.6.5 may be a breaking change version - 2026-01-09
 
