@@ -141,3 +141,36 @@ If we are going to support second-level updates will be decided after these talk
 This is, by far, the most-complex part of this engine. There are quite a few advanced calculations needed to determine "market-state" at any given moment. The implementation of the binary format has tremendously  extended my options to be able to determine state, efficiently.
 
 I am guessing that the `CSV` format will become `deprecated`. I will announce this soon.
+
+## High level overview
+
+```sh
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Binary Files  │───▶│   Zero-Copy     │───▶│  Time Merge &  │
+│   (Immutable)   │    │   Memory Views  │    │   Sort Engine   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                                       │
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  External Data  │───▶│  Event Merger   │◀───│  State Machine │
+│   (CSV/JSON)    │    │                 │    │  Reconstruction │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                                       │
+                      ┌─────────────────┐     ┌─────────────────┐
+                      │  Watcher        │◀───│  Live/Hist      │
+                      │                 │     │  Transition     │
+                      └─────────────────┘     └─────────────────┘
+                                                       │
+                                                 ┌─────▼─────┐
+                                                 │  Boundary │
+                                                 │  Aligned  │
+                                                 │  Emission │
+                                                 └─────┬─────┘
+                                                       │
+                                                 ┌─────▼─────┐
+                                                 │   UNIX    │
+                                                 │   Pipe    │
+                                                 │   Stream  │
+                                                 └───────────┘
+```
+
+All downstream components receive an append-only, strictly time-ordered stream where no candle (partial or final) is emitted before its actual boundary close time — eliminating lookahead bias by construction.
