@@ -333,3 +333,7 @@ Example:
 ```
 
 **Note:** If you need to identify your JSON request with an id, you can use `?callback=id` for that. It will return the callback value in the options.
+
+## Thread safety
+
+Currently, we are running the API requests in a single-threaded event-loop. This is sufficient for most use-cases. We have not programmed for a high-concurrency, ludacrous, online enterprise environment. If you want the API to handle such environments. You can contact me on the e-mail adres shown in the commit messages.
