@@ -135,3 +135,9 @@ In short: reaches "now" → automatically switches to live-watch behavior
 I will, eventually, reach out to the dataprovider in order to see if we can get a reliable lower-granularity live feed-paid or unpaid-to further streamline the integration with the dataprovider. Aka making it ready for the `second-level` market while being able to use the same chaining methodology.
 
 If we are going to support second-level updates will be decided after these talks. The engines are capable.
+
+## Complexity
+
+This is, by far, the most-complex part of this engine. There are quite a few advanced calculations needed to determine "market-state" at any given moment. The implementation of the binary format has tremendously  extended my options to be able to determine state, efficiently.
+
+I am guessing that the `CSV` format will become `deprecated`. I will announce this soon.
