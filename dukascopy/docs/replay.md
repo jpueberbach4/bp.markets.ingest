@@ -126,7 +126,7 @@ State is a function of (timestamp, symbol, timeframe, config). If we can make th
 
 ## Live
 
-The first version will have semi-live support if you dont specify `--until`. When replay reaches a final higher-tf candle, it waits until it is completed, then emits it. So it will be able to replay history and automatically enter a `live-modus`. The switch to this modus will be announced to downstream script by publishing an identifyable event.
+The first version will have semi-live support if you dont specify `--until`. When replay reaches a final higher-tf candle, it waits until it is completed, then emits it. So it will be able to replay history and automatically enter a `live-modus`. The switch to this modus will be announced to downstream scripts by publishing an identifiable event.
 
 In short: reaches "now" → automatically switches to live-watch behavior
 
