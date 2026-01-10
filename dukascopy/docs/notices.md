@@ -1,6 +1,22 @@
 <u>MT4 is decoded.</u>
 
-It has been quite a journey but the "grand finale" is now. I have now been mapping and testing some stuff and yes, this last piece, can be build. Exactly as specified. I need a bit of private/recharge time before I go fully at it again. The development velocity has been very high lately, time for a tiny cool-down period.
+It has been quite a journey, and we’ve now reached the grand finale. After extensive mapping and testing, I can confirm that the final missing piece can indeed be built—exactly as originally specified.
+
+Before diving into the next phase, I’m taking a short period to recharge. Development velocity has been exceptionally high lately, and a brief cool-down will help ensure the next steps are approached with clarity and precision.
+
+What’s next?
+
+- Selection handling \
+Decoupling selection logic from the builder component.
+
+- Indicator support in selectors \
+Implemented in a manner consistent with existing modifiers—symbol-wide by default, with timeframe-specific overrides.
+
+- Builder upgrade and HTTP API upgrade to v1.1 \
+Introducing indicator-integrated outputs.
+
+- Feature-rich market simulation \
+Full high-performance replay functionality.
 
 ## Announcement: deprecation of the CSV format
 
