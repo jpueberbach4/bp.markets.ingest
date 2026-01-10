@@ -144,6 +144,8 @@ I am guessing that the `CSV` format will become `deprecated`. I will announce th
 
 What if the state-function(timestamp, symbol, timeframe, config) is not deterministic enough? Then we will just replay from the 1 minute candles and use the resampling logic for emission. This is a fallback scenario. Either way, i will get it done. I want it.
 
+Perhaps i will support both, toggleable by a flag - just for fun.
+
 ## High level overview
 
 ```sh
