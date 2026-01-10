@@ -10,24 +10,34 @@ At a high level, the replay pipeline consists of two stages:
 
 2. Replay – emitting candles in correct chronological order, aligned to their effective close times, and streaming them through an arbitrary analysis chain.
 
-## Mixed-Timeframe CSV Generation
+## Revised Vision
 
-The build-(csv|parquet).sh script produces a unified CSV/Parquet containing candles from multiple assets and timeframes (e.g. 1m, 5m, 15m, 1h). All candles are sorted in ascending time order, forming the canonical input for replay.
+The introduction of the new binary format has prompted a shift in our vision. Previously, the plan was to first build a dataset and then use that dataset for replay. This approach is changing.
 
-Example:
+Instead, replay will use the same select syntax as the builder and the HTTP component.
+
+As we are extending the selection syntax to include indicator generation—for example:
 
 ```sh
-build-csv.sh \
-  --select EUR-USD/1m,5m,15m \
-  --select GBP-USD/1m,5m,15m,1h \
-  --output replay.csv
+--select EUR-USD,1h[ema(20),ema(50),ema(200),macd(12,26,9)]:skiplast --select ...
 ```
+—we have decided to support this exact syntax for replay as well. Replay will therefore operate directly on these select statements.
 
-This CSV becomes the single source of truth for downstream replay and analysis.
+This approach provides several benefits:
+
+- High-speed binary formats can be used directly as input
+
+- Internal indicator engines can be use the high-speed format
+
+- A consistent and familiar command syntax across the entire platform
+
+As a result, we also avoid chaining default-supported indicator scripts through UNIX pipes. This significantly shortens analysis pipelines and allows analysis scripts to be chained together more directly and efficiently.
+
+The engine does not lose its deterministic input behavior since the binary input files are immutable, except for the last record, which can be excluded by using `:skiplast` or `--until`.
 
 ## Deterministic Replay Engine
 
-The replay.sh script reads the mixed-timeframe CSV and emits candles as a continuous stream in correct chronological order. Each candle is aligned to its right boundary (close time):
+The replay.sh script selects mixed-timeframes and mixed-symbols and emits candles as a continuous stream in correct chronological order. Each candle is aligned to its right boundary (close time):
 
 - A 15-minute candle starting at 13:00:00 is emitted at 13:14:59
 - A 1-minute candle starting at 13:00:00 is emitted at 13:00:59
@@ -37,10 +47,12 @@ This alignment guarantees that higher-timeframe candles appear after all constit
 Example:
 
 ```sh
-replay.sh --input replay.csv | analyse.sh
+replay.sh --select EUR-USD,1h[ema(20),ema(50),ema(200),macd(12,26,9)]:skiplast | analyse.sh
 ```
 
-Internally, replay leverages in-memory DuckDB to efficiently merge, sort, and stream data while maintaining strict temporal correctness.
+Internally, replay leverages zero-copy views and in-memory DuckDB to efficiently merge, sort, and stream data while maintaining strict temporal correctness.
+
+One of the main goals, as always, is to achieve extreme performance. I am a performance enthusiast. I don't want to wait long for a historical analysis result. It should be near-instantaneous.
 
 ## Streaming, Chaining, and Plugins
 
@@ -50,12 +62,10 @@ All components are fully chainable:
 
 ```sh
 replay.sh --speed 10 \
-  --input replay.csv \
+  ---select EUR-USD,1h[ema(20),ema(50),ema(200),macd(12,26,9)]:skiplast \
   --mix-with calendar-events.csv \
   --mix-with FOMC-5-minutes-before.csv | \
   tee raw.txt | \
-  indicator.sh | \
-  tee indicator.txt | \
   analyse.sh | \
   tee analyse.txt | \
   imagine.sh > output.txt
@@ -63,13 +73,13 @@ replay.sh --speed 10 \
 
 Plugins operate by appending new columns to the incoming stream (e.g. indicators, events, derived signals). Because the stream is append-only and strictly ordered, correctness is easy to validate.
 
-For example, indicator output can be live-tailed during replay:
+For example, intermediate output can be live-tailed during replay:
 
 ```sh
-tail --follow indicator.txt
+tail --follow analyse.txt
 ```
 
-This makes it trivial to confirm that indicators are computed incrementally and aligned correctly in time.
+This makes it trivial to confirm that intermediate data is computed incrementally and aligned correctly in time.
 
 ## Design Philosophy
 
@@ -106,18 +116,16 @@ State is a function of (timestamp, symbol, timeframe, config). If we can make th
 
 ## Ideas
 
-- When replaying, display replayed charts with a layover indicating current positions on charts
-
-- When replaying, use STDERR to indicate progress while STDOUT for main pipeline comms
-
+- Exposing statistics and logging through HTTP API
+- STDERR to indicate progress, STDOUT for main pipeline streaming
 - Support --pause, --resume, --restart, --stop, --speed with id to alter runtime state
-
 - "Job"-files
-
-- Visualization through a dashboard, leveraging HTTP API extensions
-
-- Concrete examples eg using AWK for indicator calculations
-
+- Concrete examples eg using AWK for analysis
 - Code examples
-
 - Extensive basic set of plugins
+
+## Live
+
+I will, eventually, reach out to the dataprovider in order to see if we can get a reliable real-time feed  to data-paid or unpaid-to further streamline the integration with the dataprovider. Aka making it ready for the live market while being able to use the same chaining methodology.
+
+If we are going to support second-level updates will be decided after these talks. The engines are capable.
