@@ -8,6 +8,8 @@ The default CSV reader and writer will remain available for existing features. I
 
 The builder component, of course, will continue to support CSV and Parquet generation. This also means that the newly proposed selection syntax, including indicator generation support, will be compatible with CSV.
 
+[Replay](https://github.com/jpueberbach4/bp.markets.ingest/blob/feature/021-replay/dukascopy/docs/replay.md)
+
 ## Notice: Version 0.6.5 may be a breaking change version - 2026-01-09
 
 When you update to this version, it will break the API when its running. You need to `./service.sh stop`, then update, then `./service.sh start`.
