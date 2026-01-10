@@ -10,6 +10,8 @@ The builder component, of course, will continue to support CSV and Parquet gener
 
 [Replay](https://github.com/jpueberbach4/bp.markets.ingest/blob/feature/021-replay/dukascopy/docs/replay.md)
 
+**Note**: I want to re-emphasize that all of this was, likely, impossible without [Dukascopy](http://www.dukascopy.com) free and open API's. If you find this tool useful, consider trying their platform.
+
 ## Notice: Version 0.6.5 may be a breaking change version - 2026-01-09
 
 When you update to this version, it will break the API when its running. You need to `./service.sh stop`, then update, then `./service.sh start`.
