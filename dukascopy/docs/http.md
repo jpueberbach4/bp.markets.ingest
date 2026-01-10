@@ -336,4 +336,4 @@ Example:
 
 ## Thread safety
 
-Currently, we are running the API requests in a single-threaded event-loop. This is sufficient for most use-cases. We have not programmed for a high-concurrency, ludacrous, online enterprise environment. If you want the API to handle such environments. You can contact me on the e-mail adres shown in the commit messages.
+Currently, we are running the API requests in a single-threaded event-loop. This is sufficient for most use-cases. We have not programmed for a high-concurrency, ludacrous, online enterprise environment. If you want the API to handle such environments. You can contact me on the e-mail adres shown in the commit messages. Note that i will not support "distributive" environments, paid or unpaid. High performance research environments requiring an HTTP API that scales ONLY.
