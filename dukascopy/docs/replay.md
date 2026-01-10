@@ -130,6 +130,8 @@ The first version will have semi-live support if you dont specify `--until`. Whe
 
 In short: reaches "now" → automatically switches to live-watch behavior
 
+>In live-watch mode, the current developing candle(s) are emitted on every incoming lower-timeframe update in case a certain commandline-flag is set, eg `--emit-open-candle-updates`.
+
 I will, eventually, reach out to the dataprovider in order to see if we can get a reliable lower-granularity live feed-paid or unpaid-to further streamline the integration with the dataprovider. Aka making it ready for the `second-level` market while being able to use the same chaining methodology.
 
 If we are going to support second-level updates will be decided after these talks. The engines are capable.
