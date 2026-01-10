@@ -27,7 +27,7 @@ This approach provides several benefits:
 
 - High-speed binary formats can be used directly as input
 
-- Internal indicator engines can be use the high-speed format
+- Internal indicator engines can use the high-speed format
 
 - A consistent and familiar command syntax across the entire platform
 
