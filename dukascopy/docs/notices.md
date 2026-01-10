@@ -1,6 +1,6 @@
 <u>MT4 is decoded.</u>
 
-It has been quite a journey but the "grand finale" is now. I have now been mapping and testing some stuff and yes, this last piece, can be build. Exactly as specified.
+It has been quite a journey but the "grand finale" is now. I have now been mapping and testing some stuff and yes, this last piece, can be build. Exactly as specified. I need a bit of private/recharge time before I go fully at it again. The development velocity has been very high lately, time for a tiny cool-down period.
 
 ## Announcement: deprecation of the CSV format
 
