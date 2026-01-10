@@ -24,6 +24,7 @@
 import argparse
 import random
 import sys
+import os
 import re
 from pathlib import Path
 from typing import List, Tuple, Dict, Optional, Set
@@ -58,32 +59,38 @@ def get_available_data_from_fs(
     List[Tuple[str, str, str]]
         Sorted list of tuples containing (symbol, timeframe, file_path).
     """
-    data_dir = Path(config.paths.data)
-    if not data_dir.is_dir():
+    data_dir_str = config.paths.data
+    if not os.path.isdir(data_dir_str):
         return []
 
-    # Base scan directories
-    scan_dirs: Dict[str, Path] = {"1m": data_dir / "aggregate" / "1m"}
+    scan_dirs: Dict[str, str] = {
+        "1m": os.path.join(data_dir_str, "aggregate", "1m")
+    }
 
-    # Add resampled timeframes
-    resample_dir = data_dir / "resample"
-    if resample_dir.is_dir():
-        for tf_dir in resample_dir.iterdir():
-            if tf_dir.is_dir():
-                scan_dirs[tf_dir.name] = tf_dir
+    resample_dir = os.path.join(data_dir_str, "resample")
+    if os.path.isdir(resample_dir):
+        with os.scandir(resample_dir) as it:
+            for entry in it:
+                if entry.is_dir():
+                    scan_dirs[entry.name] = entry.path
 
     available_data: Set[Tuple[str, str, str]] = set()
-
-    # Fmode support
     extension = ".bin" if config.fmode == "binary" else ".csv"
-    # Iterate through directories and collect CSV files
+    ext_len = len(extension)
+
     for timeframe, dir_path in scan_dirs.items():
-        if not dir_path.is_dir():
+        if not os.path.isdir(dir_path):
             continue
-        for data_file in dir_path.glob(f"*{extension}"):
-            available_data.add(
-                (data_file.stem, timeframe, str(data_file.resolve()))
-            )
+        
+        base_dir_str = os.path.abspath(dir_path)
+        
+        with os.scandir(dir_path) as it:
+            for entry in it:
+                if entry.is_file() and entry.name.endswith(extension):
+                    symbol = entry.name[:-ext_len]
+                    file_path = os.path.join(base_dir_str, entry.name)
+                    
+                    available_data.add((symbol, timeframe, file_path))
 
     return sorted(available_data)
 

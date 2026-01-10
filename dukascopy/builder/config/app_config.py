@@ -1,5 +1,6 @@
 import yaml
 from dataclasses import dataclass, fields, field
+from yaml import CSafeLoader as SafeLoader
 from typing import Dict, List, Optional, Type, TypeVar, Any
 
 @dataclass
@@ -74,7 +75,7 @@ def load_app_config(file_path: str = 'config.yaml') -> AppConfig:
     """Loads configuration from a YAML file into the AppConfig dataclass."""
     try:
         with open(file_path, 'r') as f:
-            yaml_data = yaml.safe_load(f)
+            yaml_data = yaml.load(f, Loader=SafeLoader)
     except FileNotFoundError:
         print(f"Error: Configuration file not found at {file_path}")
         return AppConfig() # Return default config if file is missing
