@@ -18,6 +18,8 @@ Introducing indicator-integrated outputs.
 - Feature-rich market simulation \
 Full high-performance replay functionality.
 
+PS Just a weekend off for once.
+
 ## Announcement: deprecation of the CSV format
 
 The CSV format is now in a deprecated state. CSV will continue to be supported until the release of version 0.7, but new features—such as replay—will not support CSV. This is because CSV lacks the performance required for high-speed processing.
