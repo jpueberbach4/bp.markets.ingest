@@ -150,33 +150,6 @@ Perhaps i will support both, toggleable by a flag - just for fun.
 
 ## High level overview
 
-```sh
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Binary Files  │───▶│   Zero-Copy     │───▶│  Time Merge &  │
-│   (Immutable)   │    │   Memory Views  │    │   Sort Engine   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                                       │
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  External Data  │───▶│  Event Merger   │◀───│  State Machine │
-│   (CSV/JSON)    │    │                 │    │  Reconstruction │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                                       │
-                      ┌─────────────────┐     ┌─────────────────┐
-                      │  Watcher        │◀───│  Live/Hist      │
-                      │                 │     │  Transition     │
-                      └─────────────────┘     └─────────────────┘
-                                                       │
-                                                 ┌─────▼─────┐
-                                                 │  Boundary │
-                                                 │  Aligned  │
-                                                 │  Emission │
-                                                 └─────┬─────┘
-                                                       │
-                                                 ┌─────▼─────┐
-                                                 │   UNIX    │
-                                                 │   Pipe    │
-                                                 │   Stream  │
-                                                 └───────────┘
-```
+![HL](../images/replay-hl.png)
 
 All downstream components receive an append-only, strictly time-ordered stream where no candle (partial or final) is emitted before its actual boundary close time — eliminating lookahead bias by construction.
