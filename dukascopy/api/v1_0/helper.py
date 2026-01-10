@@ -61,6 +61,10 @@ from urllib.parse import unquote_plus
 from pathlib import Path
 from fastapi.responses import PlainTextResponse, JSONResponse
 
+# Import builder utilities for resolving file-backed OHLCV selections
+from builder.helper import resolve_selections, get_available_data_from_fs
+from builder.config.app_config import load_app_config
+
 CSV_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 CSV_TIMESTAMP_FORMAT_MT4_DATE = "%Y.%m.%d"
 CSV_TIMESTAMP_FORMAT_MT4_TIME = "%H:%M:%S"
@@ -187,9 +191,6 @@ def discover_options(options: Dict):
         discovering available data, or resolving selections.
 
     """
-    # Import builder utilities for resolving file-backed OHLCV selections
-    from builder.helper import resolve_selections, get_available_data_from_fs
-    from builder.config.app_config import load_app_config
 
     try:
         # Load builder configuration
