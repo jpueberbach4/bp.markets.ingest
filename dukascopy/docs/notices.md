@@ -1,5 +1,7 @@
 <u>MT4 is decoded.</u>
 
+It has been quite a journey but the "grand finale" is now. I have now been mapping and testing some stuff and yes, this last piece, can be build. Exactly as specified.
+
 ## Announcement: deprecation of the CSV format
 
 The CSV format is now in a deprecated state. CSV will continue to be supported until the release of version 0.7, but new features—such as replay—will not support CSV. This is because CSV lacks the performance required for high-speed processing.
