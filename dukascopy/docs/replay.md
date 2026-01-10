@@ -119,6 +119,8 @@ State is a function of (timestamp, symbol, timeframe, config). If we can make th
 - Exposing statistics and logging through HTTP API
 - STDERR to indicate progress, STDOUT for main pipeline streaming
 - Support --pause, --resume, --restart, --stop, --speed with id to alter runtime state
+- Support --pause-at <timestamp> eg to replay full history at highspeed and pause at <timestamp>
+- Support --speed-at <timestamp>:<speed> to replay full history at highspeed and slowdown at <timestamp>
 - "Job"-files
 - Concrete examples eg using AWK for analysis
 - Code examples
