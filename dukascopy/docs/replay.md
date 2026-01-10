@@ -142,6 +142,8 @@ This is, by far, the most-complex part of this engine. There are quite a few adv
 
 I am guessing that the `CSV` format will become `deprecated`. I will announce this soon.
 
+What if the state-function(timestamp, symbol, timeframe, config) is not deterministic enough? Then we will just replay from the 1 minute candles and use the resampling logic for emission. This is a fallback scenario. Either way, i will get it done. I want it.
+
 ## High level overview
 
 ```sh
