@@ -126,6 +126,10 @@ State is a function of (timestamp, symbol, timeframe, config). If we can make th
 
 ## Live
 
-I will, eventually, reach out to the dataprovider in order to see if we can get a reliable real-time feed  to data-paid or unpaid-to further streamline the integration with the dataprovider. Aka making it ready for the live market while being able to use the same chaining methodology.
+The first version will have semi-live support if you dont specify `--until`. When replay reaches a final higher-tf candle, it waits until it is completed, then emits it. So it will be able to replay history and automatically enter a `live-modus`. The switch to this modus will be announced to downstream script by publishing an identifyable event.
+
+In short: reaches "now" → automatically switches to live-watch behavior
+
+I will, eventually, reach out to the dataprovider in order to see if we can get a reliable lower-granularity live feed-paid or unpaid-to further streamline the integration with the dataprovider. Aka making it ready for the `second-level` market while being able to use the same chaining methodology.
 
 If we are going to support second-level updates will be decided after these talks. The engines are capable.
