@@ -98,7 +98,7 @@ indicator_registry = load_indicator_plugins()
 async def get_indicator(
     name: str,
     request_uri: str,
-    limit: Optional[int] = Query(1440, gt=0, le=1440),
+    limit: Optional[int] = Query(1440, gt=0, le=5000),
     offset: Optional[int] = Query(0, ge=0, le=1000),
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
     callback: Optional[str] = "__bp_callback",
