@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Indicator API - Query Builder</title>
+    <style>
+        :root {
+            --bg-main: #f0f3fa;
+            --sidebar-dark: #131722;
+            --accent-blue: #2962ff;
+            --text-gray: #787b86;
+            --white: #ffffff;
+            --border-color: #e0e3eb;
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif; 
+            background: var(--bg-main); 
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 340px;
+            background: var(--white);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        header { background: var(--sidebar-dark); color: white; padding: 15px 20px; }
+        header h2 { margin: 0; font-size: 16px; font-weight: 500; }
+
+        .sidebar-content { padding: 20px; overflow-y: auto; flex-grow: 1; }
+        .control-group { margin-bottom: 20px; }
+        
+        label { 
+            display: block; font-size: 11px; color: var(--text-gray); 
+            text-transform: uppercase; font-weight: 700; margin-bottom: 8px;
+        }
+
+        select, input {
+            width: 100%; padding: 8px 10px; border: 1px solid var(--border-color);
+            border-radius: 4px; background: #fff; font-size: 13px; outline: none;
+            box-sizing: border-box;
+        }
+
+        .param-box {
+            background: #f8f9fd; padding: 12px; border-radius: 6px;
+            border: 1px dashed var(--border-color); margin-top: 10px;
+        }
+
+        .main-view {
+            flex-grow: 1; padding: 40px; display: flex;
+            flex-direction: column; align-items: center; justify-content: center;
+        }
+
+        .preview-card {
+            background: var(--white); width: 100%; max-width: 900px;
+            padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        .url-display {
+            background: #1e222d; color: #d1d4dc; padding: 15px;
+            border-radius: 4px; font-family: monospace; font-size: 12px;
+            word-break: break-all; margin: 20px 0; border-left: 4px solid var(--accent-blue);
+        }
+
+        button {
+            width: 100%; padding: 12px; background: var(--accent-blue);
+            color: white; border: none; border-radius: 4px; cursor: pointer;
+            font-size: 14px; font-weight: 600;
+        }
+
+        button:hover { background: #1e53e5; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <header><h2>API Query Builder</h2></header>
+        <div class="sidebar-content">
+            <div class="control-group">
+                <label>Symbol</label>
+                <select id="symbolSelect" onchange="updateTimeframeOptions();"></select>
+            </div>
+            <div class="control-group">
+                <label>Timeframe</label>
+                <select id="tfSelect" onchange="updateUrl()"></select>
+            </div>
+            <div class="control-group">
+                <label>Indicator</label>
+                <select id="indicatorSelect" onchange="toggleIndicatorParams()">
+                    <option value="rsi">RSI</option>
+                    <option value="sma">SMA</option>
+                    <option value="ema">EMA</option>
+                    <option value="macd">MACD</option>
+                    <option value="bbands">Bollinger Bands</option>
+                    <option value="atr">ATR</option>
+                    <option value="stochastic">Stochastic</option>
+                    <option value="adx">ADX</option>
+                    <option value="vwap">VWAP</option>
+                    <option value="psar">Parabolic SAR</option>
+                    <option value="keltner">Keltner Channels</option>
+                    <option value="mfi">Money Flow Index</option>
+                    <option value="hma">Hull Moving Average</option>
+                    <option value="supertrend">Supertrend</option>
+                    <option value="stc">Schaff Trend Cycle</option>
+                    <option value="fibonacci">Fibonacci</option>
+                    <option value="cci">CCI</option>
+                    <option value="pivot">Pivot Points</option>
+                    <option value="williamsr">Williams %R</option>
+                    <option value="stddev">Standard Deviation</option>
+                    <option value="donchian">Donchian Channels</option>
+                    <option value="ichimoku">Ichimoku Cloud</option>
+                    <option value="roc">Rate of Change</option>
+                    <option value="obv">On-Balance Volume</option>
+                    <option value="cmo">Chande Momentum</option>
+                    <option value="elderray">Elder Ray Index</option>
+                    <option value="dpo">Detrended Price Osc</option>
+                    <option value="kdj">KDJ</option>
+                    <option value="aroon">Aroon</option>
+                    <option value="uo">Ultimate Oscillator</option>
+                    <option value="chaikin">Chaikin Oscillator</option>
+                    <option value="adl">Accumulation/Distribution</option>
+                </select>
+                <div id="dynamic-params" class="param-box"></div>
+            </div>
+            <div class="control-group">
+                <label>After Date</label>
+                <input type="text" id="afterDate" value="2026-01-01 00:00:00" oninput="updateUrl()">
+            </div>
+            <div class="control-group">
+                <label>Until Date</label>
+                <input type="text" id="untilDate" value="3000-01-01 00:00:00" oninput="updateUrl()">
+            </div>
+            <div class="control-group">
+                <label>Limit</label>
+                <input type="number" id="limit" value="400" oninput="updateUrl()">
+            </div>
+        </div>
+    </div>
+
+    <div class="main-view">
+        <div class="preview-card">
+            <label>Path-Based URL Preview</label>
+            <div id="urlPreview" class="url-display">Building...</div>
+            <button onclick="downloadCSV()">Download CSV</button>
+        </div>
+    </div>
+
+    <script>
+        let symbolData = {};
+        
+        // Configuration mapping to positional URL segments
+        const indicatorConfig = {
+            rsi: [{ id: 'period', label: 'Period', default: 14 }],
+            sma: [{ id: 'period', label: 'Period', default: 20 }],
+            ema: [{ id: 'period', label: 'Period', default: 50 }],
+            macd: [{ id: 'fast', label: 'Fast', default: 12 }, { id: 'slow', label: 'Slow', default: 26 }, { id: 'signal', label: 'Signal', default: 9 }],
+            bbands: [{ id: 'period', label: 'Period', default: 14 }, { id: 'std', label: 'Std', default: 2.0 }],
+            atr: [{ id: 'period', label: 'Period', default: 14 }],
+            stochastic: [{ id: 'k_period', label: 'K Period', default: 14 }, { id: 'd_period', label: 'D Period', default: 3 }],
+            adx: [{ id: 'period', label: 'Period', default: 14 }],
+            vwap: [],
+            psar: [{ id: 'step', label: 'Step', default: 0.01 }, { id: 'max_step', label: 'Max Step', default: 0.1 }],
+            keltner: [{ id: 'period', label: 'Period', default: 20 }, { id: 'multiplier', label: 'Multiplier', default: 2.5 }],
+            mfi: [{ id: 'period', label: 'Period', default: 21 }],
+            hma: [{ id: 'period', label: 'Period', default: 14 }],
+            supertrend: [{ id: 'period', label: 'Period', default: 10 }, { id: 'multiplier', label: 'Multiplier', default: 2.0 }],
+            stc: [{ id: 'cycle', label: 'Cycle', default: 10 }, { id: 'fast', label: 'Fast', default: 23 }, { id: 'slow', label: 'Slow', default: 50 }],
+            fibonacci: [{ id: 'period', label: 'Lookback', default: 100 }],
+            cci: [{ id: 'period', label: 'Period', default: 20 }],
+            pivot: [{ id: 'lookback', label: 'Lookback', default: 1 }],
+            williamsr: [{ id: 'period', label: 'Period', default: 14 }],
+            stddev: [{ id: 'period', label: 'Period', default: 20 }],
+            donchian: [{ id: 'period', label: 'Period', default: 20 }],
+            ichimoku: [{ id: 'tenkan', label: 'Tenkan', default: 9 }, { id: 'kijun', label: 'Kijun', default: 26 }, { id: 'senkou_b', label: 'Senkou B', default: 52 }, { id: 'displacement', label: 'Displacement', default: 26 }],
+            roc: [{ id: 'period', label: 'Period', default: 12 }],
+            obv: [],
+            cmo: [{ id: 'period', label: 'Period', default: 14 }],
+            elderray: [{ id: 'period', label: 'Period', default: 13 }],
+            dpo: [{ id: 'period', label: 'Period', default: 20 }],
+            kdj: [{ id: 'n', label: 'N', default: 9 }, { id: 'm1', label: 'M1', default: 3 }, { id: 'm2', label: 'M2', default: 3 }],
+            aroon: [{ id: 'period', label: 'Period', default: 25 }],
+            uo: [{ id: 'p1', label: 'P1', default: 7 }, { id: 'p2', label: 'P2', default: 14 }, { id: 'p3', label: 'P3', default: 28 }],
+            chaikin: [{ id: 'short', label: 'Short', default: 3 }, { id: 'long', label: 'Long', default: 10 }],
+            adl: []
+        };
+
+        window.__callbackList = function(response) {
+            if (response.status === "ok") {
+                symbolData = response.result;
+                const symbols = Object.keys(symbolData).sort();
+                const sel = document.getElementById('symbolSelect');
+                sel.innerHTML = "";
+                symbols.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s; opt.innerHTML = s;
+                    sel.appendChild(opt);
+                });
+                updateTimeframeOptions();
+            }
+        };
+
+        function updateTimeframeOptions() {
+            const sym = document.getElementById('symbolSelect').value;
+            const tfS = document.getElementById('tfSelect');
+            const prev = tfS.value;
+            tfS.innerHTML = "";
+            if (symbolData[sym]) {
+                symbolData[sym].forEach(tf => {
+                    const opt = document.createElement('option');
+                    opt.value = tf; opt.innerHTML = tf;
+                    tfS.appendChild(opt);
+                });
+                tfS.value = symbolData[sym].includes(prev) ? prev : symbolData[sym][0];
+            }
+            updateUrl();
+        }
+
+        function toggleIndicatorParams() {
+            const ind = document.getElementById('indicatorSelect').value;
+            const container = document.getElementById('dynamic-params');
+            container.innerHTML = '';
+            indicatorConfig[ind].forEach(param => {
+                const div = document.createElement('div');
+                div.style.marginBottom = '10px';
+                div.innerHTML = `<label style="font-size:10px">${param.label}</label>
+                                 <input type="text" id="p_${param.id}" value="${param.default}" oninput="updateUrl()">`;
+                container.appendChild(div);
+            });
+            updateUrl();
+        }
+
+        function buildFinalUrl() {
+            const sym = document.getElementById('symbolSelect').value;
+            const tf = document.getElementById('tfSelect').value;
+            const ind = document.getElementById('indicatorSelect').value;
+            const after = document.getElementById('afterDate').value.replace(/ /g, '+');
+            const until = document.getElementById('untilDate').value.replace(/ /g, '+');
+            const limit = document.getElementById('limit').value;
+
+            if(!sym || !tf) return "...";
+
+            // Build positional segments: /indicator/{type}/{param_name}/{value}/...
+            let pathSegments = `/ohlcv/1.0/indicator/${ind}`;
+            indicatorConfig[ind].forEach(p => {
+                const val = document.getElementById(`p_${p.id}`).value;
+                pathSegments += `/${p.id}/${val}`;
+            });
+
+            // Rest of positional DSL
+            pathSegments += `/after/${after}/until/${until}/select/${sym},${tf}/output/CSV`;
+            
+            return `http://localhost:8000${pathSegments}?order=desc&limit=${limit}`;
+        }
+
+        function updateUrl() { document.getElementById('urlPreview').innerText = buildFinalUrl(); }
+        function downloadCSV() { window.location.href = buildFinalUrl(); }
+
+        const sList = document.createElement('script');
+        sList.src = "http://localhost:8000/ohlcv/1.0/list/output/JSONP?callback=__callbackList";
+        document.body.appendChild(sList);
+        toggleIndicatorParams();
+    </script>
+</body>
+</html>
