@@ -16,6 +16,8 @@ Full high-performance replay functionality.
 
 Low profile work-weekend.
 
+**Note:** Added a small utility for "the less technical users" among us. Update and then copy over `config/ukascopy/http-docs/indicator.html` to your `config.user/dukascopy/http-docs` directory. Then open `http://localhost:8000/indicator.html`. It allows you to get your data more easily (as CSV).
+
 ## Announcement: deprecation of the CSV format
 
 The CSV format is now in a deprecated state. CSV will continue to be supported until the release of version 0.7, but new features—such as replay—will not support CSV. This is because CSV lacks the performance required for high-speed processing.
