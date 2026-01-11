@@ -31,10 +31,10 @@ def calculate(data, options):
     
     # 4. Dynamic Column Mapping
     if is_mt4:
-        output_cols = ['date', 'time', 'fib_0', 'fib_382', 'fib_50', 'fib_618', 'fib_100']
+        output_cols = ['date', 'time', 'fib_0', 'fib_236', 'fib_382', 'fib_50', 'fib_618', 'fib_786', 'fib_100']
         sort_cols = ['date', 'time']
     else:
-        output_cols = ['symbol', 'timeframe', 'time', 'fib_0', 'fib_382', 'fib_50', 'fib_618', 'fib_100']
+        output_cols = ['symbol', 'timeframe', 'time', 'fib_0', 'fib_236', 'fib_382', 'fib_50', 'fib_618', 'fib_786', 'fib_100']
         sort_cols = ['time']
 
     # Convert numeric columns for calculation
