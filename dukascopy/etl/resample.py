@@ -592,20 +592,3 @@ def fork_resample(args) -> bool:
 
     return True
 
-
-
-if __name__ == "__main__":
-    from etl.config.app_config import *
-
-    import cProfile
-    import pstats
-    profiler = cProfile.Profile()
-    profiler.enable()
-
-    app_config = load_app_config('config.user.yaml')
-
-    fork_resample(["EUR-USD", app_config])
-
-    profiler.disable()
-    stats = pstats.Stats(profiler).sort_stats('cumulative')
-    stats.print_stats(60)
