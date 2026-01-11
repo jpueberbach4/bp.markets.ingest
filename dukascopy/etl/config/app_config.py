@@ -41,6 +41,16 @@ try:
 except ImportError:
     from yaml import SafeLoader, SafeDumper
 
+import fastjsonschema
+def _get_validator():
+    schema_path = Path(__file__).parent.resolve() / "schema.json"
+    with open(schema_path, "rb") as f:
+        schema = orjson.loads(f.read())
+    return fastjsonschema.compile(schema)
+
+VALIDATE_CONFIG = _get_validator()
+
+
 @dataclass
 class ResampleTimeRange:
     """Defines the 'from' and 'to' times for a single time range."""
@@ -611,9 +621,9 @@ def load_app_config(file_path: str = "config.yaml") -> AppConfig:
             schema = orjson.loads(f.read())
 
         try:
-            # Validate against JSON schema
-            validate(instance=yaml_data, schema=schema)
-        except jsonschema.exceptions.ValidationError as e:
+            # Use the pre-compiled fast validator
+            VALIDATE_CONFIG(yaml_data) 
+        except fastjsonschema.JsonSchemaException as e:
             raise ConfigurationError(f"Configuration invalid {list(e.path)}: {e.message}")
 
     except (FileNotFoundError, yaml.YAMLError):
