@@ -447,6 +447,40 @@ The KDJ Indicator is a trend-following and momentum oscillator consisting of thr
 GET http://localhost:8000/ohlcv/1.0/indicator/kdj/n/9/m1/3/m2/3/after/2026-01-01+00:00:00/select/BTC-USD,15m/output/JSON?order=desc&limit=400
 ```
 
+**Aroon**
+
+The Aroon Indicator measures the time between highs and lows over a specific period to determine if a trend is starting, ending, or consolidating. Aroon Up tracks the strength of the uptrend by looking at how long it has been since the last 25-period high, while Aroon Down tracks the downtrend by measuring the time since the last 25-period low. When Aroon Up is near 100 and Aroon Down is near 0, a strong uptrend is confirmed, whereas crossovers between the two lines often signal potential trend reversals.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/aroon/period/25/after/2026-01-01+00:00:00/select/BTC-USD,15m/output/JSON?order=desc&limit=400
+```
+
+**Ultimate Oscillator**
+
+The Ultimate Oscillator uses a weighted sum of three different timeframes (typically 7, 14, and 28 periods) to measure buying pressure relative to the true range of price movement. It oscillates between 0 and 100, where values above 70 indicate overbought conditions and values below 30 suggest the market is oversold. Traders primarily look for bullish or bearish divergences between the oscillator and the price action to identify potential trend reversals.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/uo/p1/7/p2/14/p3/28/after/2026-01-01+00:00:00/select/BTC-USD,15m/output/JSON?order=desc&limit=400
+```
+
+**Chaikin Oscillator**
+
+The Chaikin Oscillator applies the MACD concept to the Accumulation Distribution Line by calculating the difference between a 3-day EMA and a 10-day EMA of the ADL. It helps traders identify shifts in market momentum and buying/selling pressure before those changes are reflected in the asset's price. A reading above zero indicates accumulation and positive momentum, while a reading below zero suggests distribution and negative momentum.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/chaikin/short/3/long/10/after/2024-01-01+00:00:00/select/BTC-USD,1d/output/JSON?order=desc&limit=400
+```
+
+**Accumulation/Distribution Line**
+
+The Accumulation/Distribution Line is a cumulative indicator that uses price and volume to assess whether an asset is being accumulated or distributed. It calculates a Money Flow Multiplier based on where the price closes within its daily range and multiplies this by volume to create a running total. Traders primarily use the ADL to confirm trends or identify potential reversals through divergences, such as when price makes a new high but the ADL fails to follow.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/adl/after/2026-01-01+00:00:00/select/BTC-USD,1d/output/JSON?order=desc&limit=400
+```
+
+
+
 
 **Note:** These are AI generated. Check them thoroughly before you use them. I will check them as soon as V1.1 lands-i can then visualize them more easily.
 
