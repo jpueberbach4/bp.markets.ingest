@@ -63,13 +63,14 @@ def calculate(data, options):
             denom = (high_max - low_min).replace(0, np.nan)
             return 100 * (series - low_min) / denom
 
+        smooth_span = max(1, int(cycle / 2))
         # B. First Smoothing (Stochastic of MACD)
         stoch_1 = get_stoch(macd, cycle).fillna(0)
-        smooth_1 = stoch_1.ewm(span=cycle/2, adjust=False).mean()
+        smooth_1 = stoch_1.ewm(span=smooth_span, adjust=False).mean()
 
         # C. Second Smoothing (Stochastic of first smooth)
         stoch_2 = get_stoch(smooth_1, cycle).fillna(0)
-        group['stc'] = stoch_2.ewm(span=cycle/2, adjust=False).mean()
+        group['stc'] = stoch_2.ewm(span=smooth_span, adjust=False).mean()
 
         # 6. Apply Dynamic Rounding
         group['stc'] = group['stc'].round(precision)
