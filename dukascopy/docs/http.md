@@ -350,4 +350,5 @@ Currently, we are running the API requests in a single-threaded event-loop. This
 *Note: Performance may vary based on hardware and concurrent load*
 
 *Note: 3-5ms overhead in config loading. Could benefit from a cache*
+
 *Note: 8.37ms base overhead cost. Give or take. Meaning data access is lightning.*
