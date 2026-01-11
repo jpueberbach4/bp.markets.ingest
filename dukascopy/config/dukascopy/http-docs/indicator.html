@@ -257,14 +257,14 @@
             // Rest of positional DSL
             pathSegments += `/after/${after}/until/${until}/select/${sym},${tf}/output/CSV`;
             
-            return `http://localhost:8000${pathSegments}?order=desc&limit=${limit}`;
+            return `${pathSegments}?order=desc&limit=${limit}`;
         }
 
         function updateUrl() { document.getElementById('urlPreview').innerText = buildFinalUrl(); }
         function downloadCSV() { window.location.href = buildFinalUrl(); }
 
         const sList = document.createElement('script');
-        sList.src = "http://localhost:8000/ohlcv/1.0/list/output/JSONP?callback=__callbackList";
+        sList.src = "/ohlcv/1.0/list/output/JSONP?callback=__callbackList";
         document.body.appendChild(sList);
         toggleIndicatorParams();
     </script>
