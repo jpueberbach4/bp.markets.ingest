@@ -343,6 +343,8 @@ The Schaff Trend Cycle combines the trend-following nature of the MACD with the 
 GET http://localhost:8000/ohlcv/1.0/indicator/stc/cycle/10/fast/23/slow/50/select/EUR-USD,15m/output/JSON
 ```
 
+**Note:** These are AI generated. Check them thoroughly before you use them. I will check them as soon as V1.1 lands-i can then visualize them more easily.
+
 Above will remain in the 1.0 API. You can use it safely, although its not optimal atm.
 
 **Sorting DESCENDING is currently a good practice**
