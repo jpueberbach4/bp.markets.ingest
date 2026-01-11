@@ -5,6 +5,7 @@ def calculate(data, options):
     """
     Calculates Parabolic SAR (Stop and Reverse).
     Defaults: Step (0.02), Max Step (0.2).
+    Supports standard OHLCV and MT4 (split date/time) formats with dynamic rounding.
     """
 
     # 1. Parse Parameters
@@ -17,10 +18,20 @@ def calculate(data, options):
     if not data:
         return [[], []]
 
-    # 2. Prepare DataFrame
+    # 2. Determine Price Precision
+    # Detects decimals from the first available close price to round the PSAR output
+    try:
+        # Note: PSAR usually follows 'high'/'low', but 'close' is used for precision consistency
+        sample_price = str(data[0].get('close', '0.00000'))
+        precision = len(sample_price.split('.')[1]) if '.' in sample_price else 2
+    except (IndexError, AttributeError):
+        precision = 5
+
+    # 3. Prepare DataFrame
     df = pd.DataFrame(data)
     is_mt4 = options.get('mt4') is True
     
+    # 4. Dynamic Column Mapping
     if is_mt4:
         output_cols = ['date', 'time', 'psar']
         sort_cols = ['date', 'time']
@@ -38,21 +49,19 @@ def calculate(data, options):
     for _, group in grouped:
         group = group.sort_values(sort_cols).reset_index(drop=True)
         
-        # Initialize columns
+        # 5. Parabolic SAR Calculation Logic
         highs = group['high'].values
         lows = group['low'].values
         psar = np.zeros(len(group))
         
-        # Initial state (assuming starting with a long position)
+        # Initial values
         bull = True
         af = step
         ep = highs[0]
         psar[0] = lows[0]
 
-        # 3. Recursive Calculation Loop
         for i in range(1, len(group)):
             prev_psar = psar[i-1]
-            
             if bull:
                 psar[i] = prev_psar + af * (ep - prev_psar)
                 # Ensure SAR doesn't enter the range of previous two lows
@@ -85,19 +94,25 @@ def calculate(data, options):
                         af = min(af + step, max_step)
 
         group['psar'] = psar
+        
+        # 6. Apply Dynamic Rounding
+        group['psar'] = group['psar'].round(precision)
+        
         all_results.append(group[output_cols])
 
     if not all_results:
         return [output_cols, []]
 
+    # 7. Final Formatting
     final_df = pd.concat(all_results)
-    
-    # Handle Sort
     is_asc = options.get('order', 'asc').lower() == 'asc'
     final_df = final_df.sort_values(by=sort_cols, ascending=is_asc)
     
-    # 4. JSON Compliance Guard
-    final_df = final_df.replace([np.inf, -np.inf], np.nan)
-    result_list = final_df.where(pd.notnull(final_df), None).values.tolist()
+    # FINAL SAFETY GATE (JSON COMPLIANCE)
+    data_as_list = final_df.values.tolist()
+    clean_data = [
+        [(x if (isinstance(x, (float, np.floating)) and np.isfinite(x)) else x) for x in row]
+        for row in data_as_list
+    ]
     
-    return [output_cols, result_list]
+    return [output_cols, clean_data]

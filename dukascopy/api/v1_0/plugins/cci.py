@@ -5,6 +5,7 @@ def calculate(data, options):
     """
     Calculates the Commodity Channel Index (CCI).
     Formula: (Typical Price - SMA of TP) / (0.015 * Mean Deviation)
+    Supports standard OHLCV and MT4 (split date/time) formats with dynamic rounding.
     """
 
     # 1. Parse Parameters
@@ -16,10 +17,19 @@ def calculate(data, options):
     if not data:
         return [[], []]
 
-    # 2. Prepare DataFrame
+    # 2. Determine Price Precision
+    # Detects decimals from the first available close price to round output
+    try:
+        sample_price = str(data[0].get('close', '0.00000'))
+        precision = len(sample_price.split('.')[1]) if '.' in sample_price else 2
+    except (IndexError, AttributeError):
+        precision = 5
+
+    # 3. Prepare DataFrame
     df = pd.DataFrame(data)
     is_mt4 = options.get('mt4') is True
     
+    # 4. Dynamic Column Mapping
     if is_mt4:
         output_cols = ['date', 'time', 'cci', 'direction']
         sort_cols = ['date', 'time']
@@ -38,36 +48,39 @@ def calculate(data, options):
     for _, group in grouped:
         group = group.sort_values(sort_cols).reset_index(drop=True)
         
-        # 3. Calculate Typical Price (TP)
+        # 5. Calculate Typical Price (TP)
         tp = (group['high'] + group['low'] + group['close']) / 3
         
-        # 4. Calculate SMA of Typical Price
+        # 6. Calculate SMA of Typical Price
         tp_sma = tp.rolling(window=period).mean()
         
-        # 5. Calculate Mean Deviation
+        # 7. Calculate Mean Deviation
         # Standard CCI uses the average of absolute differences from the SMA
         def get_mad(x):
             return np.abs(x - x.mean()).mean()
         
         mad = tp.rolling(window=period).apply(get_mad, raw=True)
 
-        # 6. Calculate CCI
+        # 8. Calculate CCI
         # Constant 0.015 is used to ensure 70-80% of values fall between -100 and +100
         group['cci'] = (tp - tp_sma) / (0.015 * mad)
+        
+        # 9. Apply Dynamic Rounding
+        # Rounds CCI to match price precision
+        group['cci'] = group['cci'].round(precision)
         
         # Directional slope for UI/Logic
         group['direction'] = np.where(group['cci'] > group['cci'].shift(1), 1, -1)
 
-        # 7. Cleanup
+        # 10. Cleanup
         group_clean = group.iloc[period:].copy()
         all_results.append(group_clean[output_cols])
 
     if not all_results:
         return [output_cols, []]
 
+    # 11. Final Formatting
     final_df = pd.concat(all_results)
-    
-    # Sort results
     is_asc = options.get('order', 'asc').lower() == 'asc'
     final_df = final_df.sort_values(by=sort_cols, ascending=is_asc)
     

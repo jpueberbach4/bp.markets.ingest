@@ -4,7 +4,7 @@ import numpy as np
 def calculate(data, options):
     """
     Calculates Average Directional Index (ADX), +DI, and -DI.
-    Supports standard OHLCV and MT4 (split date/time) formats.
+    Supports standard OHLCV and MT4 (split date/time) formats with dynamic rounding.
     """
 
     # 1. Parse Period
@@ -18,14 +18,21 @@ def calculate(data, options):
     if not data:
         return [[], []]
 
-    # 2. Prepare DataFrame
+    # 2. Determine Price Precision
+    # Detects decimals from the first available close price to round output
+    try:
+        sample_price = str(data[0].get('close', '0.00000'))
+        precision = len(sample_price.split('.')[1]) if '.' in sample_price else 2
+    except (IndexError, AttributeError):
+        precision = 5
+
+    # 3. Prepare DataFrame
     df = pd.DataFrame(data)
     
     # Detect MT4 mode based on configuration
     is_mt4 = options.get('mt4') is True
     
-    # 3. Dynamic Column Mapping
-    # When MT4 is active, helper.py selects separate date and time columns
+    # 4. Dynamic Column Mapping
     if is_mt4:
         output_cols = ['date', 'time', 'adx', 'plus_di', 'minus_di']
         sort_cols = ['date', 'time']
@@ -39,18 +46,12 @@ def calculate(data, options):
     
     all_results = []
 
-    # 4. Group and Calculate
-    # routes.py restricts MT4 to single symbol/timeframe selects
+    # 5. Group and Calculate
     group_keys = ['symbol', 'timeframe'] if not is_mt4 else None
-
-    if group_keys:
-        grouped = df.groupby(group_keys)
-    else:
-        grouped = [(None, df)]
+    grouped = df.groupby(group_keys) if group_keys else [(None, df)]
 
     for _, group in grouped:
-        # Sort by the appropriate time columns for the format
-        group = group.sort_values(sort_cols)
+        group = group.sort_values(sort_cols).reset_index(drop=True)
         
         # A. Calculate True Range (TR) and Directional Movement (DM)
         prev_close = group['close'].shift(1)
@@ -77,20 +78,31 @@ def calculate(data, options):
         group['minus_di'] = 100 * (minus_di_smooth / atr_smooth)
         
         # D. Calculate DX and then ADX
-        # Note: Added protection against division by zero
         di_sum = group['plus_di'] + group['minus_di']
         dx = 100 * (group['plus_di'] - group['minus_di']).abs() / di_sum.replace(0, np.nan)
         group['adx'] = dx.ewm(alpha=1/period, min_periods=period).mean()
         
-        # E. Filter and Collect
+        # E. Apply Dynamic Rounding
+        # Rounds ADX, +DI, and -DI to match price precision
+        for col in ['adx', 'plus_di', 'minus_di']:
+            group[col] = group[col].round(precision)
+        
+        # F. Filter and Collect
         all_results.append(group[output_cols].dropna(subset=['adx']))
 
     if not all_results:
         return [output_cols, []]
 
-    # 5. Final Formatting
+    # 6. Final Formatting
     final_df = pd.concat(all_results)
     is_asc = options.get('order', 'asc').lower() == 'asc'
     final_df = final_df.sort_values(by=sort_cols, ascending=is_asc)
     
-    return [output_cols, final_df.values.tolist()]
+    # Final safety gate for JSON compatibility (handles NaN/Inf)
+    data_as_list = final_df.values.tolist()
+    clean_data = [
+        [(x if (isinstance(x, (float, np.floating)) and np.isfinite(x)) else x) for x in row]
+        for row in data_as_list
+    ]
+    
+    return [output_cols, clean_data]

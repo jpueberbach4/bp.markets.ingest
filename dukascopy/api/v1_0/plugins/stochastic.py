@@ -4,7 +4,7 @@ import numpy as np
 def calculate(data, options):
     """
     Calculates Stochastic Oscillator (%K and %D) per Symbol/Timeframe.
-    Supports standard OHLCV and MT4 (split date/time) formats.
+    Supports standard OHLCV and MT4 (split date/time) formats with dynamic rounding.
     Default: 14 period for %K, 3 period smoothing for %D.
     """
 
@@ -21,14 +21,21 @@ def calculate(data, options):
     if not data:
         return [[], []]
 
-    # 2. Prepare DataFrame
+    # 2. Determine Price Precision
+    # Detects decimals from the first available close price to round output levels
+    try:
+        sample_price = str(data[0].get('close', '0.00000'))
+        precision = len(sample_price.split('.')[1]) if '.' in sample_price else 2
+    except (IndexError, AttributeError):
+        precision = 5
+
+    # 3. Prepare DataFrame
     df = pd.DataFrame(data)
     
     # Detect MT4 mode
     is_mt4 = options.get('mt4') is True
     
-    # 3. Dynamic Column Mapping
-    # Adjust schema for MT4 split date/time columns
+    # 4. Dynamic Column Mapping
     if is_mt4:
         output_cols = ['date', 'time', 'stoch_k', 'stoch_d']
         sort_cols = ['date', 'time']
@@ -36,24 +43,19 @@ def calculate(data, options):
         output_cols = ['symbol', 'timeframe', 'time', 'stoch_k', 'stoch_d']
         sort_cols = ['time']
 
-    # Ensure numeric types for calculation
-    for col in ['close', 'high', 'low']:
+    # Ensure numeric type for calculations
+    for col in ['high', 'low', 'close']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
     
     all_results = []
 
-    # 4. Group and Calculate
-    # MT4 flag limits queries to a single symbol/timeframe in routes.py
+    # 5. Group and Calculate
     group_keys = ['symbol', 'timeframe'] if not is_mt4 else None
-
-    if group_keys:
-        grouped = df.groupby(group_keys)
-    else:
-        grouped = [(None, df)]
+    grouped = df.groupby(group_keys) if group_keys else [(None, df)]
 
     for _, group in grouped:
         # Sort by the appropriate temporal columns
-        group = group.sort_values(sort_cols)
+        group = group.sort_values(sort_cols).reset_index(drop=True)
         
         # A. Calculate %K
         # %K = 100 * (Current Close - Lowest Low) / (Highest High - Lowest Low)
@@ -67,17 +69,31 @@ def calculate(data, options):
         # B. Calculate %D (Simple Moving Average of %K)
         group['stoch_d'] = group['stoch_k'].rolling(window=d_period).mean()
         
-        # Filter columns and remove the 'NaN' rows from the start
+        # 6. Apply Dynamic Rounding
+        # Rounds both Stochastic lines to match the asset's price precision
+        for col in ['stoch_k', 'stoch_d']:
+            group[col] = group[col].round(precision)
+        
+        # 7. Filter and Collect
+        # Remove the 'NaN' rows from the start
         all_results.append(group[output_cols].dropna(subset=['stoch_d']))
 
     if not all_results:
         return [output_cols, []]
 
-    # 5. Final Formatting
+    # 8. Final Formatting
     final_df = pd.concat(all_results)
     
     # Apply user-requested sort order
     is_asc = options.get('order', 'asc').lower() == 'asc'
     final_df = final_df.sort_values(by=sort_cols, ascending=is_asc)
     
-    return [output_cols, final_df.values.tolist()]
+    # FINAL SAFETY GATE (JSON COMPLIANCE)
+    # Replaces non-finite numbers like NaN or Inf with None (null)
+    data_as_list = final_df.values.tolist()
+    clean_data = [
+        [(x if (isinstance(x, (float, np.floating)) and np.isfinite(x)) else x) for x in row]
+        for row in data_as_list
+    ]
+    
+    return [output_cols, clean_data]

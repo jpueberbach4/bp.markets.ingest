@@ -4,7 +4,8 @@ import numpy as np
 def calculate(data, options):
     """
     Calculates the Supertrend indicator.
-    Fixed: Initialization seed, direction-based state tracking, and cleanup gaps.
+    Formula: ATR-based trailing stop with trend direction logic.
+    Supports standard OHLCV and MT4 (split date/time) formats with dynamic rounding.
     """
 
     # 1. Parse Parameters
@@ -17,10 +18,18 @@ def calculate(data, options):
     if not data:
         return [[], []]
 
-    # 2. Prepare DataFrame
+    # 2. Determine Price Precision for Rounding
+    try:
+        sample_price = str(data[0].get('close', '0.00000'))
+        precision = len(sample_price.split('.')[1]) if '.' in sample_price else 2
+    except (IndexError, AttributeError):
+        precision = 5
+
+    # 3. Prepare DataFrame
     df = pd.DataFrame(data)
     is_mt4 = options.get('mt4') is True
     
+    # 4. Dynamic Column Mapping
     if is_mt4:
         output_cols = ['date', 'time', 'supertrend', 'direction']
         sort_cols = ['date', 'time']
@@ -37,61 +46,61 @@ def calculate(data, options):
     grouped = df.groupby(group_keys) if group_keys else [(None, df)]
 
     for _, group in grouped:
-        group = group.sort_values(sort_cols).reset_index(drop=True)
+        group = group.sort_values(sort_cols)
         
-        # A. Calculate ATR (Wilder's Smoothing / EWM)
+        # 5. Calculate ATR (Wilder's Smoothing)
         prev_close = group['close'].shift(1)
         tr = pd.concat([
             group['high'] - group['low'],
             (group['high'] - prev_close).abs(),
             (group['low'] - prev_close).abs()
         ], axis=1).max(axis=1)
-        atr = tr.ewm(alpha=1/period, min_periods=period, adjust=False).mean()
+        atr = tr.ewm(alpha=1/period, min_periods=period).mean()
 
-        # B. Calculate Basic Upper and Lower Bands
+        # 6. Basic Bands
         hl2 = (group['high'] + group['low']) / 2
         basic_ub = hl2 + (multiplier * atr)
         basic_lb = hl2 - (multiplier * atr)
 
-        # C. Initialize arrays
-        size = len(group)
-        final_ub = np.zeros(size)
-        final_lb = np.zeros(size)
-        st = np.zeros(size)
-        direction = np.zeros(size)
+        # 7. Final Upper and Lower Bands (Directional Logic)
+        final_ub = np.zeros(len(group))
+        final_lb = np.zeros(len(group))
+        
+        # FIX: Seed initial values to prevent 0.0/null on first reversal
+        final_ub[0] = basic_ub.fillna(0).iloc[0]
+        final_lb[0] = basic_lb.fillna(0).iloc[0]
 
-        # D. Recursive State Machine
-        for i in range(size):
-            if i < period:
-                # Warmup: Populate basics so i-1 logic doesn't break
-                final_ub[i] = basic_ub[i]
-                final_lb[i] = basic_lb[i]
-                st[i] = 0.0 # Will be cleaned later
-                direction[i] = 1
-                continue
-            
-            # Calculate Final Upper Band
-            if basic_ub[i] < final_ub[i-1] or group['close'][i-1] > final_ub[i-1]:
-                final_ub[i] = basic_ub[i]
+        close_prices = group['close'].values
+        bub = basic_ub.fillna(0).values
+        blb = basic_lb.fillna(0).values
+
+        for i in range(1, len(group)):
+            # Final Upper Band logic
+            if bub[i] < final_ub[i-1] or close_prices[i-1] > final_ub[i-1]:
+                final_ub[i] = bub[i]
             else:
                 final_ub[i] = final_ub[i-1]
-
-            # Calculate Final Lower Band
-            if basic_lb[i] > final_lb[i-1] or group['close'][i-1] < final_lb[i-1]:
-                final_lb[i] = basic_lb[i]
+                
+            # Final Lower Band logic
+            if blb[i] > final_lb[i-1] or close_prices[i-1] < final_lb[i-1]:
+                final_lb[i] = blb[i]
             else:
                 final_lb[i] = final_lb[i-1]
-            
-            # Determine Trend Direction using explicit direction state
+
+        # 8. Supertrend and Direction Tracking
+        st = np.zeros(len(group))
+        direction = np.ones(len(group)) # Default to 1 (Long)
+
+        for i in range(1, len(group)):
             if direction[i-1] == -1: # Previously Short
-                if group['close'][i] > final_ub[i]:
+                if close_prices[i] > final_ub[i]:
                     direction[i] = 1
                     st[i] = final_lb[i]
                 else:
                     direction[i] = -1
                     st[i] = final_ub[i]
             else: # Previously Long
-                if group['close'][i] < final_lb[i]:
+                if close_prices[i] < final_lb[i]:
                     direction[i] = -1
                     st[i] = final_ub[i]
                 else:
@@ -101,28 +110,30 @@ def calculate(data, options):
         group['supertrend'] = st
         group['direction'] = direction
         
-        # E. Cleanup: Only drop the ATR warmup period
-        # This prevents the middle-of-series gaps you were seeing
+        # FIX: Replace any remaining 0.0 values with close price to ensure no nulls
+        group.loc[group['supertrend'] == 0, 'supertrend'] = group['close']
+        
+        # 9. Apply Dynamic Rounding
+        group['supertrend'] = group['supertrend'].round(precision)
+        
+        # 10. Cleanup: Skip ATR warmup period
         group_clean = group.iloc[period:].copy()
         all_results.append(group_clean[output_cols])
 
     if not all_results:
         return [output_cols, []]
 
+    # 11. Final Formatting for JSON Compliance
     final_df = pd.concat(all_results)
-    
-    # Sort results
     is_asc = options.get('order', 'asc').lower() == 'asc'
     final_df = final_df.sort_values(by=sort_cols, ascending=is_asc)
     
-    # F. FINAL SAFETY GATE (JSON COMPLIANCE)
+    # FINAL SAFETY GATE (JSON COMPLIANCE)
+    # Replaces any stray NaN/Inf with None (null in JSON)
     data_as_list = final_df.values.tolist()
     clean_data = [
-        [ (x if (isinstance(x, (float, np.floating)) and np.isfinite(x)) else x) for x in row ]
+        [ (x if (not isinstance(x, (float, np.floating)) or np.isfinite(x)) else None) for x in row ]
         for row in data_as_list
     ]
-    
-    # Ensure None is used for any remaining NaNs (for JSON null)
-    clean_data = [[(None if (isinstance(val, float) and not np.isfinite(val)) else val) for val in row] for row in clean_data]
-    
+
     return [output_cols, clean_data]
