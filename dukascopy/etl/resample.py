@@ -608,4 +608,4 @@ if __name__ == "__main__":
 
     profiler.disable()
     stats = pstats.Stats(profiler).sort_stats('cumulative')
-    stats.print_stats(20)
+    stats.print_stats(60)

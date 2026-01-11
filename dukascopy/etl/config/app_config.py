@@ -611,6 +611,16 @@ def load_app_config(file_path: str = "config.yaml") -> AppConfig:
     """
     # Resolve YAML includes and load the merged YAML content as a string
     try:
+        cache_enable = False
+
+        yaml_cache_path = Path(f"{file_path}.cache") 
+
+        if cache_enable and yaml_cache_path.exists():
+            with open(yaml_cache_path, "r") as f:
+                yaml_data = yaml.load(f, Loader=SafeLoader)
+                return load_config_data(AppConfig, yaml_data)
+
+
         yaml_str = resolve_yaml_includes_to_string(file_path)
         # Parse the resolved YAML string into a Python dictionary
         yaml_data = yaml.load(yaml_str, Loader=SafeLoader)
@@ -631,5 +641,9 @@ def load_app_config(file_path: str = "config.yaml") -> AppConfig:
         return AppConfig()
 
     # Map the parsed configuration dictionary into the AppConfig dataclass
+    if cache_enable:
+        with open(yaml_cache_path, "w") as f:
+            f.write(yaml_str)
+
     return load_config_data(AppConfig, yaml_data)
 
