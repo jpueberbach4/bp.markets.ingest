@@ -348,3 +348,5 @@ Currently, we are running the API requests in a single-threaded event-loop. This
 | 1-minute  | 45-50ms             | ~23 hours of data       |
 
 *Note: Performance may vary based on hardware and concurrent load*
+
+*Note: 3-5ms overhead in config loading. Could benefit from a cache*
