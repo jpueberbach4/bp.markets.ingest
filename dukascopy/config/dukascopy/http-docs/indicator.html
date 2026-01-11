@@ -22,7 +22,6 @@
             overflow: hidden;
         }
 
-        /* Sidebar Styling */
         .sidebar {
             width: 350px;
             background: var(--white);
@@ -32,120 +31,66 @@
             z-index: 10;
         }
 
-        header {
-            background: var(--sidebar-dark);
-            color: white;
-            padding: 15px 20px;
-        }
-
+        header { background: var(--sidebar-dark); color: white; padding: 15px 20px; }
         header h2 { margin: 0; font-size: 16px; font-weight: 500; }
 
-        .sidebar-content {
-            padding: 20px;
-            overflow-y: auto;
-            flex-grow: 1;
-        }
-
+        .sidebar-content { padding: 20px; overflow-y: auto; flex-grow: 1; }
         .control-group { margin-bottom: 20px; }
         
         label { 
-            display: block;
-            font-size: 11px; 
-            color: var(--text-gray); 
-            text-transform: uppercase; 
-            font-weight: 700;
-            margin-bottom: 8px;
+            display: block; font-size: 11px; color: var(--text-gray); 
+            text-transform: uppercase; font-weight: 700; margin-bottom: 8px;
         }
 
         select, input {
-            width: 100%;
-            padding: 8px 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            background: #fff;
-            font-size: 13px;
-            outline: none;
+            width: 100%; padding: 8px 10px; border: 1px solid var(--border-color);
+            border-radius: 4px; background: #fff; font-size: 13px; outline: none;
             box-sizing: border-box;
         }
 
-        /* Mode Toggle Styling */
         .mode-selector {
-            display: flex;
-            background: #f1f3f7;
-            padding: 4px;
-            border-radius: 6px;
-            margin-bottom: 20px;
+            display: flex; background: #f1f3f7; padding: 4px;
+            border-radius: 6px; margin-bottom: 20px;
         }
 
         .mode-btn {
-            flex: 1;
-            padding: 8px;
-            text-align: center;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            border-radius: 4px;
-            color: var(--text-gray);
-            transition: all 0.2s;
+            flex: 1; padding: 8px; text-align: center; font-size: 12px;
+            font-weight: 600; cursor: pointer; border-radius: 4px;
+            color: var(--text-gray); transition: all 0.2s;
         }
 
         .mode-btn.active {
-            background: var(--white);
-            color: var(--accent-blue);
+            background: var(--white); color: var(--accent-blue);
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .param-box {
-            background: #f8f9fd;
-            padding: 12px;
-            border-radius: 6px;
-            border: 1px dashed var(--border-color);
-            margin-top: 10px;
+            background: #f8f9fd; padding: 12px; border-radius: 6px;
+            border: 1px dashed var(--border-color); margin-top: 10px;
         }
 
-        /* Main Preview Area */
         .main-view {
-            flex-grow: 1;
-            padding: 40px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            flex-grow: 1; padding: 40px; display: flex;
+            flex-direction: column; align-items: center; justify-content: center;
         }
 
         .preview-card {
-            background: var(--white);
-            width: 100%;
-            max-width: 900px;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            background: var(--white); width: 100%; max-width: 900px;
+            padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             border: 1px solid var(--border-color);
         }
 
         .url-display {
-            background: #1e222d;
-            color: #d1d4dc;
-            padding: 15px;
-            border-radius: 4px;
-            font-family: 'SFMono-Regular', Consolas, monospace;
-            font-size: 12px;
-            word-break: break-all;
-            margin: 20px 0;
-            min-height: 40px;
-            border-left: 4px solid var(--accent-blue);
+            background: #1e222d; color: #d1d4dc; padding: 15px;
+            border-radius: 4px; font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: 12px; word-break: break-all; margin: 20px 0;
+            min-height: 40px; border-left: 4px solid var(--accent-blue);
         }
 
         button.download-btn {
-            width: 100%;
-            padding: 12px;
-            background: var(--accent-blue);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
+            width: 100%; padding: 12px; background: var(--accent-blue);
+            color: white; border: none; border-radius: 4px; cursor: pointer;
+            font-size: 14px; font-weight: 600;
         }
 
         .hidden { display: none; }
@@ -154,10 +99,7 @@
 <body>
 
     <div class="sidebar">
-        <header>
-            <h2>Data Query Builder</h2>
-        </header>
-        
+        <header><h2>Data Query Builder</h2></header>
         <div class="sidebar-content">
             <label>Request Mode</label>
             <div class="mode-selector">
@@ -195,7 +137,19 @@
                     <option value="stc">Schaff Trend Cycle</option>
                     <option value="fibonacci">Fibonacci</option>
                     <option value="cci">CCI</option>
+                    <option value="pivot">Pivot Points</option>
+                    <option value="williamsr">Williams %R</option>
+                    <option value="stddev">Standard Deviation</option>
+                    <option value="donchian">Donchian Channels</option>
                     <option value="ichimoku">Ichimoku Cloud</option>
+                    <option value="roc">Rate of Change</option>
+                    <option value="obv">On-Balance Volume</option>
+                    <option value="cmo">Chande Momentum</option>
+                    <option value="elderray">Elder Ray Index</option>
+                    <option value="dpo">Detrended Price Osc</option>
+                    <option value="kdj">KDJ</option>
+                    <option value="aroon">Aroon</option>
+                    <option value="uo">Ultimate Oscillator</option>
                     <option value="chaikin">Chaikin Oscillator</option>
                     <option value="adl">Accumulation/Distribution</option>
                 </select>
@@ -207,13 +161,13 @@
                 <input type="text" id="afterDate" value="2026-01-01 00:00:00" oninput="updateUrl()">
             </div>
 
-            <div id="until-container" class="control-group">
+            <div class="control-group">
                 <label>Until Date</label>
                 <input type="text" id="untilDate" value="3000-01-01 00:00:00" oninput="updateUrl()">
             </div>
 
             <div class="control-group">
-                <label>Row Limit</label>
+                <label>Limit</label>
                 <input type="number" id="limit" value="1000" oninput="updateUrl()">
             </div>
         </div>
@@ -221,7 +175,7 @@
 
     <div class="main-view">
         <div class="preview-card">
-            <label id="preview-label">API Endpoint Preview</label>
+            <label>API Endpoint Preview</label>
             <div id="urlPreview" class="url-display">Building...</div>
             <button class="download-btn" onclick="downloadData()">Execute Request</button>
         </div>
@@ -249,7 +203,19 @@
             stc: [{ id: 'cycle', label: 'Cycle', default: 10 }, { id: 'fast', label: 'Fast', default: 23 }, { id: 'slow', label: 'Slow', default: 50 }],
             fibonacci: [{ id: 'period', label: 'Lookback', default: 100 }],
             cci: [{ id: 'period', label: 'Period', default: 20 }],
+            pivot: [{ id: 'lookback', label: 'Lookback', default: 1 }],
+            williamsr: [{ id: 'period', label: 'Period', default: 14 }],
+            stddev: [{ id: 'period', label: 'Period', default: 20 }],
+            donchian: [{ id: 'period', label: 'Period', default: 20 }],
             ichimoku: [{ id: 'tenkan', label: 'Tenkan', default: 9 }, { id: 'kijun', label: 'Kijun', default: 26 }, { id: 'senkou_b', label: 'Senkou B', default: 52 }, { id: 'displacement', label: 'Displacement', default: 26 }],
+            roc: [{ id: 'period', label: 'Period', default: 12 }],
+            obv: [],
+            cmo: [{ id: 'period', label: 'Period', default: 14 }],
+            elderray: [{ id: 'period', label: 'Period', default: 13 }],
+            dpo: [{ id: 'period', label: 'Period', default: 20 }],
+            kdj: [{ id: 'n', label: 'N', default: 9 }, { id: 'm1', label: 'M1', default: 3 }, { id: 'm2', label: 'M2', default: 3 }],
+            aroon: [{ id: 'period', label: 'Period', default: 25 }],
+            uo: [{ id: 'p1', label: 'P1', default: 7 }, { id: 'p2', label: 'P2', default: 14 }, { id: 'p3', label: 'P3', default: 28 }],
             chaikin: [{ id: 'short', label: 'Short', default: 3 }, { id: 'long', label: 'Long', default: 10 }],
             adl: []
         };
@@ -315,34 +281,23 @@
 
             if(!sym || !tf) return "...";
 
-            let url = `/ohlcv/1.0`;
-
             if (currentMode === 'price') {
-                // Price Data URL: /select/{sym,tf}/after/{date}/until/{date}/output/CSV
-                url += `/select/${sym},${tf}/after/${after}/until/${until}/output/CSV?order=desc&limit=${limit}`;
+                return `/ohlcv/1.0/select/${sym},${tf}/after/${after}/until/${until}/output/CSV?order=desc&limit=${limit}`;
             } else {
-                // Indicator Data URL (Path-based params)
                 const ind = document.getElementById('indicatorSelect').value;
-                url += `/indicator/${ind}`;
+                let path = `/ohlcv/1.0/indicator/${ind}`;
                 indicatorConfig[ind].forEach(p => {
                     const val = document.getElementById(`p_${p.id}`).value;
-                    url += `/${p.id}/${val}`;
+                    path += `/${p.id}/${val}`;
                 });
-                url += `/after/${after}/until/${until}/select/${sym},${tf}/output/CSV?order=desc&limit=${limit}`;
+                path += `/after/${after}/until/${until}/select/${sym},${tf}/output/CSV`;
+                return `http://localhost:8000${path}?order=desc&limit=${limit}`;
             }
-            
-            return url;
         }
 
-        function updateUrl() { 
-            document.getElementById('urlPreview').innerText = buildFinalUrl(); 
-        }
+        function updateUrl() { document.getElementById('urlPreview').innerText = buildFinalUrl(); }
+        function downloadData() { window.location.href = buildFinalUrl(); }
 
-        function downloadData() { 
-            window.location.href = buildFinalUrl(); 
-        }
-
-        // Initialize
         const sList = document.createElement('script');
         sList.src = "/ohlcv/1.0/list/output/JSONP?callback=__callbackList";
         document.body.appendChild(sList);
