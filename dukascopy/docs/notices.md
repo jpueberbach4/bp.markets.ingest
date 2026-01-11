@@ -18,7 +18,7 @@ Introducing indicator-integrated outputs.
 - Feature-rich market simulation \
 Full high-performance replay functionality.
 
-PS Just a weekend off for once.
+PS Just a weekend off for once (low profile work).
 
 ## Announcement: deprecation of the CSV format
 
