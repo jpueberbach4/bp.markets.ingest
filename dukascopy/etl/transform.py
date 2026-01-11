@@ -227,6 +227,9 @@ class TransformEngine:
             for step in steps:
                 full_transformed = self._apply_post_processing(full_transformed, step)
 
+            del times, opens, highs, lows, closes, volumes
+            del t_f, o_f, h_f, l_f, c_f, v_f, mask, idx
+
             # Return dataframe
             return full_transformed
 
