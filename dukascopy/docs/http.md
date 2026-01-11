@@ -371,7 +371,7 @@ GET http://localhost:8000/ohlcv/1.0/indicator/pivot/period/1/select/EUR-USD,15m/
 
 **Note:** These are AI generated. Check them thoroughly before you use them. I will check them as soon as V1.1 lands-i can then visualize them more easily.
 
-**Note:** I pushed the indicator files to Deepseek, it found issues on 
+>While asking an other AI about the code-quality of the other AI: The code quality is excellent - these are well-structured, production-ready implementations. The minor issues noted are mostly cosmetic and don't affect core functionality. The consistent architecture makes maintenance easy and adding new indicators straightforward. The indicators should work correctly for their intended purposes with proper financial data input. A third AI also confirms they are correct. However, i like manual verification. Which will happen just before release of API v1.1.
 
 Above will remain in the 1.0 API. You can use it safely, although its not optimal atm.
 
