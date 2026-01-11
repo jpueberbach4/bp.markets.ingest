@@ -343,6 +343,24 @@ The Schaff Trend Cycle combines the trend-following nature of the MACD with the 
 GET http://localhost:8000/ohlcv/1.0/indicator/stc/cycle/10/fast/23/slow/50/select/EUR-USD,15m/output/JSON
 ```
 
+**Fibonacci**
+
+The Fibonacci Retracement indicator identifies potential support and resistance levels by calculating horizontal lines at mathematical ratios—most commonly 23.6%, 38.2%, 50%, 61.8%, and 78.6%—between a significant market high and low. It is based on the theory that after a major price move, the market will frequently "retrace" a predictable portion of that move before resuming its original direction. Traders use these static levels to pinpoint high-probability entry zones, set stop-losses, and establish profit targets.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/fibonacci/period/100/select/EUR-USD,15m/output/JSON
+```
+
+**Commodity Channel Index**
+
+The Commodity Channel Index (CCI) measures the current price level relative to an average price level over a specific time period to identify cyclical trends. It typically oscillates between -100 and +100, where values above +100 indicate a strong uptrend (overbought) and values below -100 indicate a strong downtrend (oversold). Traders use these extremes to identify potential exhaustion points or to confirm momentum breakouts when the indicator crosses these key thresholds.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/cci/period/20/select/EUR-USD,15m/output/JSON
+```
+
+
+
 **Note:** These are AI generated. Check them thoroughly before you use them. I will check them as soon as V1.1 lands-i can then visualize them more easily.
 
 Above will remain in the 1.0 API. You can use it safely, although its not optimal atm.
