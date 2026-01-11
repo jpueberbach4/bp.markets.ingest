@@ -371,6 +371,8 @@ GET http://localhost:8000/ohlcv/1.0/indicator/pivot/period/1/select/EUR-USD,15m/
 
 **Note:** These are AI generated. Check them thoroughly before you use them. I will check them as soon as V1.1 lands-i can then visualize them more easily.
 
+**Note:** I pushed the indicator files to Deepseek, it found issues on 
+
 Above will remain in the 1.0 API. You can use it safely, although its not optimal atm.
 
 **Sorting DESCENDING is currently a good practice**

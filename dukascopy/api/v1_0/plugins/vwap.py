@@ -34,7 +34,7 @@ def calculate(data, options):
 
     # Ensure numeric types for calculation
     # VWAP requires High, Low, Close, and Volume
-    for col in ['high', 'low', 'close', 'volume']:\
+    for col in ['high', 'low', 'close', 'volume']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
     
     all_results = []
