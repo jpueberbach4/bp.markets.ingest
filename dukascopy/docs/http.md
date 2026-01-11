@@ -334,9 +334,15 @@ Example:
 
 **Note:** If you need to identify your JSON request with an id, you can use `?callback=id` for that. It will return the callback value in the options.
 
-## Thread safety
+## Thread Safety & Concurrency
 
-Currently, we are running the API requests in a single-threaded event-loop. This is sufficient for most use-cases. We have not programmed for a high-concurrency, ludacrous, online enterprise environment. If you want the API to handle such environments. You can contact me on the e-mail adres shown in the commit messages. Note that i will not support "distributive" environments, paid or unpaid. High performance research environments requiring an HTTP API that scales ONLY.
+Currently, we are running the API requests in a single-threaded event-loop. This is sufficient for most research use-cases (1-5 concurrent users, 20-120 QPS depending on timeframe complexity).
+
+**Expected throughput per timeframe:**
+- Weekly/Daily: 90-120 requests/second
+- 1-minute data: 20-25 requests/second
+
+We have not programmed for high-concurrency, enterprise-scale environments. If you need the API to handle such environments, you can contact me via the email address shown in commit messages. Note that I will not support data-distribution environments (paid or unpaid). High performance research environments requiring a scalable HTTP API only.
 
 ### Performance Characteristics (typical laptop environment)
 
