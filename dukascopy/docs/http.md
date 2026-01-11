@@ -364,3 +364,13 @@ We have not programmed for high-concurrency, enterprise-scale environments. If y
 - Tested on typical laptop hardware (mobile CPU, SSD storage)
 - Includes Bollinger Bands calculation (period=20, std=2.0)
 - Memory-mapped binary file access for optimal I/O performance
+
+
+**Theoretical performance thread-optimized version (typical laptop environment, 16 cores)**
+
+| Metric | Single-threaded | 16-Core Optimized | Factor |
+| :--- | :--- | :--- | :--- |
+| **Throughput (QPS)** | 22 (1m data) | 300–350 | **15x** |
+| **Concurrent users** | 5 | 50–80 | **10–16x** |
+| **Response time (p95)** | 46ms | 15–20ms | **2–3x faster** |
+| **Memory usage** | 50–100MB | 800MB–1.5GB | 8–15x |
