@@ -54,11 +54,19 @@ What started as a personal project (private use-case) to tackle the intricate pr
 
 ## What Is This Tool Used For?
 
->This tool builds a high-quality historical OHLCV dataset and maintains it automatically with efficient incremental updates. As a bonus you get a completely localized mini-tradingview to observe and inspect your data. For 99 percent of backtesters this is a great add-on. Or even a "game-changer".
+>BP-Markets is a high-performance, local-first data bridge built for indie traders. Unlike cloud-based solutions, it is optimized for zero-latency local execution, allowing your trading terminal and data API to run side by side without resource contention. \
+\
+The system incrementally updates market data every minute, resampling completed 1-minute candles into a set of default higher timeframes that can be customized globally or per symbol. It also tracks open higher-timeframe candles, which can optionally be excluded through modifiers. \
+\
+Data can be queried or constructed directly from a WSL2 terminal or via an HTTP API service. Designed by a trader, for traders, BP-Markets focuses on performance, accuracy, and workflow efficiency. Future releases will introduce high-performance backtesting capabilities that fully eliminate lookahead bias. \
+\
+Any modern laptop having NVMe will do. Storage requirements are about 1 GB per configured symbol. \
+\
+The code-base is small and heavily documented.
 
-Example 20 year chart of GBP-USD:
+Example 20 year chart of EUR-USD:
 
-![Example GBPUSD](images/examplegbpusd.png)
+![Example GBPUSD](images/webservice-example.png)
 
 Historical market data can be leveraged in multiple ways to enhance analysis, decision-making, and trading performance:
 
@@ -73,16 +81,6 @@ Historical market data can be leveraged in multiple ways to enhance analysis, de
 - **Computational Intelligence** → Build machine-learning or statistical models trained on historical price data to forecast potential market movements.
 
 - **Economic Event Impact** → Study how past economic releases, geopolitical events, and news shocks influenced currency pairs — helping you prepare for similar situations in the future.
-
----
-
-## Target audience
-
-This tool was built for independent traders and quants—like myself—who need to analyze market data daily and absolutely hate manually downloading files. It's ideal for laptop users running Windows (and WSL2) with around 32GB of RAM and a Ryzen 7/9 or Intel equivalent, having NVMe storage. Designed for simplicity, it automatically updates your data, so you can open your laptop, grab your coffee, and know you're ready for the day's market without any extra steps.
-
->Storage requirements are about 1 GB per configured symbol.
-
-The code-base is small and heavily documented.
 
 ---
 
@@ -117,26 +115,28 @@ python3 --version
 
 For this Dukascopy Data Pipeline project, the Python dependencies that need to be installed via pip are:
 
-| Package    | Version    | Purpose                                                                      |
-|----------- |----------- |---------------------------------------------------------------------------- |
-| `pyyaml`   | >= 6.0.1   | To work with YAML-alike syntaxes                                            |
-| `zoneinfo` | backport   | To work with timezones efficiently                                          |
-| `duckdb`   | >=1.3.2    | Analytical database layer on top of CSV + parquet building helper           |
-| `pandas`   | >=2.0.3    | CSV I/O, data manipulation, aggregation, and incremental loading           |
-| `numpy`    | >=1.24.4   | Vectorized numeric computations, cumulative OHLC calculations              |
-| `orjson`   | >=3.10.15  | Fast JSON parsing for delta-encoded files                                   |
-| `requests` | >=2.22.0   | Download Dukascopy JSON via HTTP                                            |
-| `tqdm`     | >=4.67.1   | Progress bars for download, transform, and aggregate loops                  |
-| `filelock` | >=3.16.1   | File-based locks to prevent race conditions in parallel processing          |
-
+| Package               | Version      | Purpose                                                                 |
+|:----------------------|:-------------|:------------------------------------------------------------------------|
+| `pyyaml`              | >= 6.0.1     | High-speed YAML configuration parsing (LibYAML)                         |
+| `backports.zoneinfo`  | < 3.9        | Efficient timezone support for Python 3.8 environments                  |
+| `duckdb`              | >= 1.1.0     | Analytical database layer and Parquet building helper                   |
+| `pandas`              | >= 2.0.3     | CSV I/O, data manipulation, and incremental loading                    |
+| `numpy`               | >= 1.24.4    | Vectorized numeric computations and OHLC calculations                   |
+| `orjson`              | >= 3.10.15   | Ultra-fast JSON parsing for delta-encoded data                          |
+| `requests`            | >= 2.22.0    | Reliable download of raw data via HTTP                                  |
+| `tqdm`                | >= 4.67.1    | Low-overhead progress bars for long-running loops                       |
+| `filelock`            | >= 3.16.1    | Process-safe locking to prevent parallel race conditions                |
+| `uvicorn`             | >= 0.33.0    | High-performance ASGI server for the local API                          |
+| `uvloop`              | >= 0.22.1    | C-based asyncio event loop (Linux/macOS speedups)                       |
+| `httptools`           | >= 0.6.4     | High-speed C-based HTTP parser for Uvicorn                              |
+| `fastapi`             | >= 0.124.4   | Modern, fast web framework for the local service                         |
+| `fastjsonschema`      | >= 2.21.2    | Pre-compiled JSON schema validation for config speed                    |
 
 Install with:
 
 ```sh
 ./setup-dukascopy.sh
 ```
-
----
 
 **Permissions**
 
@@ -171,6 +171,15 @@ Add the following line, adjust path accordingly:
 * * * * * sleep 5 && cd /home/repos/bp.markets.ingest/dukascopy && ./run.sh
 ```
 
+In order to get the highest possible performance, I recommend to toggle ALL the `fmode` fields in `config.user.yaml` to `binary`. This is considered as "a custom change". When you make custom changes, you cannot use `./setup-dukascopy.sh` anymore since this script will restore the settings back to "text"-this will change in the future now CSV mode is deprecated.
+
+* For configuration of custom timeframes, sessions etc, [see here](docs/configuration.md)
+* For more information on the binary format, [see here](docs/binary.md)
+* For more information on the HTTP API service, [see here](docs/http.md)
+* For more information on Parquet/CSV building, [see here](docs/tools.md)
+* For data accuracy information, [see here](docs/tests.md)
+* For latest updates, announcements etc, [see here](docs/notices.md)
+
 ---
 
 ## Symbols Configuration
@@ -196,11 +205,7 @@ Please see here for a complete symbol list:
 
 ![Dukascopy download screenshot](images/dukascopysymbols.png)
 
-We stop our crontab service for a moment or comment the line for run.sh in crontab. Next, we add the symbol as a new row in symbols.user.txt. Next, run the pipeline using:
-
-```sh
-START_DATE=2005-01-01 ./run.sh
-```
+We stop our crontab service for a moment or comment the line for `run.sh` in crontab. Next, we add the symbol as a new row in symbols.user.txt. Next, run the pipeline using:
 
 The pipeline will begin downloading the symbol's historical data (this may take some time) and then execute the remaining steps.
 
@@ -214,27 +219,20 @@ The new symbol is now added and will be updated automatically during each increm
 
 For users who are just getting started, or for those who want a quick way to validate their generated data:
 
-**Example**. Suppose you’ve added **EURUSD** to your setup. All processes have run and completed, and now you want a quick look at the daily data it produced—perhaps to compare it against a source like Investing.com.
 
-A simple way to do this is by using [csvplot.com](http://www.csvplot.com).
+Start your localized HTTP API service
 
->In order to open the data directory in your Windows explorer, type ```explorer.exe ./data``` inside WSL.
+```sh
+./service.sh start
+```
 
-Open the site in your browser and drag the daily EURUSD CSV file — found in **data/resample/1d** — into the CSV Plot window.
+Now open in a browser:
 
-On the left side of the interface:
+```sh
+http://localhost:8000
+```
 
-- Drag the **time** column to the x-axis
-
-- Drag the **close** column to the y-axis
-
-The chart will generate immediately. Use the control in the upper-right corner to change the display to a line chart. The result should resemble the following.
-
-![Example-view](images/examplevieweurusd.png)
-
-In the resampled output files, the final candle should be interpreted as an open candle. As new data enters the 1-minute aggregated file, it cascades into the higher-timeframe series, updating their respective open candles. This behavior is intentional, as tracking the open candle can be beneficial for certain trading strategies.
-
-The open candle will always be the last row in the CSV. If you prefer not to include it for backtesting, simply omit this final row from your analysis.
+It will show you your localized data.
 
 ---
 
