@@ -186,6 +186,13 @@
                 <label>Limit</label>
                 <input type="number" id="limit" value="1000" oninput="updateUrl()">
             </div>
+
+            <div class="control-group">
+                <label class="checkbox-group">
+                    <input type="checkbox" id="mt4Mode" onchange="updateUrl()">
+                    <span>MT4 Format (/MT4)</span>
+                </label>
+            </div>
         </div>
     </div>
 
@@ -295,13 +302,15 @@
             const until = document.getElementById('untilDate').value.replace(/ /g, '+');
             const limit = document.getElementById('limit').value;
             const skip = document.getElementById('skipLast').checked;
+            const isMt4 = document.getElementById('mt4Mode').checked;
 
             if(!sym || !tf) return "...";
 
             const timeframeParam = skip ? `${tf}:skiplast` : tf;
+            const outputSuffix = isMt4 ? '/output/CSV/MT4' : '/output/CSV';
 
             if (currentMode === 'price') {
-                return `/ohlcv/1.0/select/${sym},${timeframeParam}/after/${after}/until/${until}/output/CSV?order=desc&limit=${limit}`;
+                return `/ohlcv/1.0/select/${sym},${timeframeParam}/after/${after}/until/${until}${outputSuffix}?order=desc&limit=${limit}`;
             } else {
                 const ind = document.getElementById('indicatorSelect').value;
                 let path = `/ohlcv/1.0/indicator/${ind}`;
@@ -309,7 +318,7 @@
                     const val = document.getElementById(`p_${p.id}`).value;
                     path += `/${p.id}/${val}`;
                 });
-                path += `/after/${after}/until/${until}/select/${sym},${timeframeParam}/output/CSV`;
+                path += `/after/${after}/until/${until}/select/${sym},${timeframeParam}${outputSuffix}`;
                 return `${path}?order=desc&limit=${limit}`;
             }
         }
