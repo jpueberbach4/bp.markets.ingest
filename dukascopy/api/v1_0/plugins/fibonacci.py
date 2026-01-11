@@ -51,7 +51,7 @@ def calculate(data, options):
         # 5. Find Rolling High and Low
         hh = group['high'].rolling(window=period).max()
         ll = group['low'].rolling(window=period).min()
-        diff = hh - ll
+        diff = (hh - ll).replace(0, 0.00000001)
 
         # 6. Calculate Levels
         group['fib_0'] = hh    # 0% level (Top)
