@@ -479,10 +479,9 @@ The Accumulation/Distribution Line is a cumulative indicator that uses price and
 GET http://localhost:8000/ohlcv/1.0/indicator/adl/after/2026-01-01+00:00:00/select/BTC-USD,1d/output/JSON?order=desc&limit=400
 ```
 
-
-
-
 **Note:** These are AI generated. Check them thoroughly before you use them. I will check them as soon as V1.1 lands-i can then visualize them more easily.
+
+**Note:** Added a small helper script to generate indicator output to CSV. `http://localhost:8000/indicator.html`
 
 >While asking an other AI about the code-quality of the other AI: The code quality is excellent - these are well-structured, production-ready implementations. The minor issues noted are mostly cosmetic and don't affect core functionality. The consistent architecture makes maintenance easy and adding new indicators straightforward. The indicators should work correctly for their intended purposes with proper financial data input. A third AI also confirms they are correct. However, i like manual verification. Which will happen just before release of API v1.1.
 
