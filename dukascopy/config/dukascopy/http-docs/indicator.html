@@ -104,6 +104,24 @@
             font-size: 14px; font-weight: 600;
         }
 
+        .sidebar-footer {
+            padding: 15px 20px;
+            border-top: 1px solid var(--border-color);
+            background: #fafbfc;
+        }
+
+        .sidebar-footer a {
+            color: var(--text-gray);
+            font-size: 11px;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .sidebar-footer a:hover { color: var(--accent-blue); }
+
         .hidden { display: none; }
     </style>
 </head>
@@ -193,6 +211,11 @@
                     <span>MT4 Format (/MT4)</span>
                 </label>
             </div>
+        </div>
+        <div class="sidebar-footer">
+            <a href="https://www.dukascopy.com/" target="_blank">
+                Market data by Dukascopy
+            </a>
         </div>
     </div>
 
