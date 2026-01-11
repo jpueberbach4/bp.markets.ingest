@@ -364,7 +364,7 @@ GET http://localhost:8000/ohlcv/1.0/indicator/cci/period/20/select/EUR-USD,15m/o
 The Pivot Points indicator calculates a central "Pivot" level and multiple support and resistance lines (S1-S3, R1-R3) based on the high, low, and close of a lookback period. These levels serve as psychological price floors and ceilings that remain fixed for the duration of the current session, providing clear targets for profit-taking and stop-loss placement. When used with a trend trigger like the Supertrend, they help traders avoid entering "late" into a trend that is already hitting a major resistance level.
 
 ```sh
-GET http://localhost:8000/ohlcv/1.0/indicator/pivot/period/1/select/EUR-USD,15m/output/JSON
+GET http://localhost:8000/ohlcv/1.0/indicator/pivot/lookback/1/select/EUR-USD,15m/output/JSON
 ```
 
 **Williams %r**

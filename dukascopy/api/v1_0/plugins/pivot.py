@@ -9,7 +9,7 @@ def calculate(data, options):
 
     # 1. Parse Parameters
     try:
-        period = int(options.get('period', 1))
+        period = int(options.get('lookback', 1))
     except (ValueError, TypeError):
         period = 1
 
