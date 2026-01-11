@@ -1,9 +1,5 @@
 <u>MT4 is decoded.</u>
 
-It has been quite a journey, and we’ve now reached the grand finale. After extensive mapping and testing, I can confirm that the final missing piece can indeed be built—exactly as originally specified.
-
-Before diving into the next phase, I’m taking a short period to recharge. Development velocity has been exceptionally high lately, and a brief cool-down will help ensure the next steps are approached with clarity and precision.
-
 What’s next?
 
 - Selection handling \
@@ -18,7 +14,7 @@ Introducing indicator-integrated outputs.
 - Feature-rich market simulation \
 Full high-performance replay functionality.
 
-PS Just a weekend off for once (low profile work).
+Low profile work-weekend.
 
 ## Announcement: deprecation of the CSV format
 
