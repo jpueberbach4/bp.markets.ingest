@@ -349,7 +349,7 @@ Currently, we are running the API requests in a single-threaded event-loop. This
 | 1-Minute (1m) | 45-50ms | ~23 hours | Scalping/backtesting |
 
 **Notes:**
-- **Base overhead**: ~8.37ms (HTTP + JSON serialization + event loop)
+- **Base overhead**: ~8.37ms (HTTP + JSON serialization + event loop + config loading)
 - **Config loading**: 3-5ms initial overhead (benefits from caching)
 - **Scaling**: Linear with data density - 1-minute is ~5.5x slower than weekly
 - **Concurrent requests**: Process sequentially in single-threaded event loop
