@@ -342,7 +342,7 @@ Currently, we are running the API requests in a single-threaded event-loop. This
 - Weekly/Daily: 90-120 requests/second
 - 1-minute data: 20-25 requests/second
 
-We have not programmed for high-concurrency, enterprise-scale environments. If you need the API to handle such environments, you can contact me via the email address shown in commit messages. Note that I will not support data-distribution environments (paid or unpaid). High performance research environments requiring a scalable HTTP API only.
+We have not programmed for high-concurrency, enterprise-scale environments. If you need the API to handle such environments-NUMA aware, you can contact me via the email address shown in commit messages. Note that I will not support data-distribution environments (paid or unpaid). High performance research environments requiring a scalable HTTP API only.
 
 ### Performance Characteristics (typical laptop environment)
 
