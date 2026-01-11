@@ -287,6 +287,62 @@ The Average Directional Index (ADX) is a non-directional technical indicator use
 GET http://localhost:8000/ohlcv/1.0/indicator/adx/select/BTC-USD,1h:skiplast/period/14/output/JSON?order=desc
 ```
 
+**VWAP**
+
+The Volume-Weighted Average Price (VWAP) is a technical indicator that calculates the average price of an asset based on both its trading volume and price throughout a specific period. It serves as a benchmark for institutional traders to determine if they are buying or selling at a price better or worse than the market average, helping to minimize market impact. Unlike a simple moving average, VWAP is usually "anchored" to a specific start time, such as the market open, and provides a true reflection of price levels where the most significant trading activity occurred.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/vwap/select/EUR-USD,1h/after/2025.01.01,00:00:00/output/JSON?order=desc
+```
+
+**Parabolic SAR**
+
+The Parabolic SAR (Stop and Reverse) is a trend-following indicator used to identify potential market reversals and determine optimal exit points. It appears as a series of dots placed above or below price bars, where a position below the price suggests a bullish trend and a position above indicates a bearish trend. The indicator is unique for its "acceleration factor," which causes the dots to move closer to the price as a trend strengthens, automatically tightening trailing stop-losses to lock in profits.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/psar/step/0.01/max_step/0.1/select/EUR-USD,1h/after/2025.01.01/output/JSON
+```
+
+**Keltner Channels**
+
+Keltner Channels are a volatility-based envelope indicator consisting of a central exponential moving average and two bands derived from the Average True Range (ATR). Unlike Bollinger Bands, which use standard deviation, Keltner Channels provide a smoother boundary that is less sensitive to extreme price outliers, making them highly effective for identifying trend breakouts. Traders typically look for price staying above the upper band to confirm strong bullish momentum or using the bands as dynamic support and resistance levels.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/keltner/period/20/multiplier/2.5/select/EUR-USD,1h/output/JSON
+```
+
+**Money Flow Index**
+
+The Money Flow Index (MFI) is a technical oscillator that uses both price and volume data to identify overbought or oversold signals in an asset. It oscillates between 0 and 100, typically using levels above 80 to indicate a market top and levels below 20 to indicate a market bottom. Because it incorporates volume, MFI is often considered more reliable than the RSI for spotting "hollow" price moves that lack significant capital backing.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/mfi/period/21/select/BTC-USD,1h/output/JSON
+```
+
+**Hull Moving Average**
+
+The Hull Moving Average (HMA) is a high-speed technical indicator designed to eliminate the inherent lag of traditional moving averages while maintaining a smooth, trackable curve. It achieves this by combining multiple Weighted Moving Averages (WMA) and a square root period calculation to stay more closely "glued" to the current price action. Because of its responsiveness, it is highly valued by scalpers and day traders for identifying trend pivots significantly faster than a standard SMA or EMA.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/hma/period/14/select/EUR-USD,1h/output/JSON
+```
+
+**Supertrend**
+
+The Supertrend is a trend-following indicator that uses the Average True Range (ATR) to create dynamic support and resistance levels. It simplifies market analysis by providing a single line that flips above or below the price, signaling a change from a bullish to a bearish trend when the candle closes on the opposite side. Because of its mathematical stability, it is widely used as an automated trailing stop-loss that adjusts only in the direction of the trade.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/supertrend/period/10/multiplier/2.0/select/EUR-USD,15m/output/JSON
+```
+
+**Schaff trend cycle**
+
+The Schaff Trend Cycle combines the trend-following nature of the MACD with the cyclical accuracy of Stochastics to identify market shifts with minimal lag. It is particularly effective at catching the beginning of a new trend after a period of consolidation, as it remains at 0 or 100 during strong moves and flips quickly when momentum shifts. Traders typically enter long when the STC crosses above 25 and exit or go short when it drops below 75.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/stc/cycle/10/fast/23/slow/50/select/EUR-USD,15m/output/JSON
+```
+
 Above will remain in the 1.0 API. You can use it safely, although its not optimal atm.
 
 **Sorting DESCENDING is currently a good practice**
