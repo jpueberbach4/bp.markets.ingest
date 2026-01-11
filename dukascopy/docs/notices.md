@@ -16,7 +16,7 @@ Full high-performance replay functionality.
 
 Low profile work-weekend.
 
-**Note:** Added a small utility for "the less technical users" among us. Update and then copy over `config/ukascopy/http-docs/indicator.html` to your `config.user/dukascopy/http-docs` directory. Then open `http://localhost:8000/indicator.html`. It allows you to get your data more easily (as CSV).
+**Note:** Added a small utility for "the less technical users" among us. Update and then copy over `config/dukascopy/http-docs/indicator.html` to your `config.user/dukascopy/http-docs` directory. Then open `http://localhost:8000/indicator.html`. It allows you to get your data more easily (as CSV).
 
 ## Announcement: deprecation of the CSV format
 
