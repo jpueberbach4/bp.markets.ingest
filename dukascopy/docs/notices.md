@@ -2,9 +2,6 @@
 
 What’s next?
 
-- Selection handling \
-Decoupling selection logic from the builder component.
-
 - Indicator support in selectors \
 Implemented in a manner consistent with existing modifiers—symbol-wide by default, with timeframe-specific overrides.
 
