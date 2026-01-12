@@ -24,8 +24,12 @@ Low profile work-weekend.
 
 **Note:** How on earth is this so fast, on a laptop? We are leveraging the OS page cache and CPU cache. OS does all the work. CPU gets fed in the right way. We could potentially notch it up even more, using GPU's. 
 
+## Notice: API 1.0 is now locked - 2026-01-12
 
-## Announcement: deprecation of the CSV format
+API Version 1.0 is now locked and can be considered stable. It will not change in URL syntax, functionality. Only critical bugfixes-also when encountered in indicators-will be fixed. API 1.1 will become the new version. 1.0 will remain supported, indefinately. You can build on it safely.
+
+
+## Announcement: deprecation of the CSV format - 2026-01-10
 
 The CSV format is now in a deprecated state. CSV will continue to be supported until the release of version 0.7, but new features—such as replay—will not support CSV. This is because CSV lacks the performance required for high-speed processing.
 
