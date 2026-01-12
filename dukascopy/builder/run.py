@@ -186,8 +186,8 @@ def main():
 
         # Build extraction tasks: (symbol, timeframe, file, after, until, modifier, options)
         extract_tasks = [
-            (sym, tf, filename, options['after'], options['until'], modifier, options)
-            for sym, tf, filename, modifier in options['select_data']
+            (sym, tf, filename, options['after'], options['until'], modifier, indicators, options)
+            for sym, tf, filename, modifier, indicators in options['select_data']
         ]
 
         # Since we may resample because of adjusted flag, give unique symbol:adjusted priority

@@ -385,7 +385,7 @@ def fork_panama(
     """
 
     # Unpack the task tuple
-    symbol, timeframe, input_filepath, after_str, until_str, modifiers, options = task
+    symbol, timeframe, input_filepath, after_str, until_str, modifiers, indicators, options = task
 
     # Only apply logic when the Panama modifier is present
     if "panama" in modifiers:
