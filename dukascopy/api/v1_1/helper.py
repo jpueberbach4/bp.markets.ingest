@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 ===============================================================================
 helper.py
@@ -7,45 +5,72 @@ helper.py
 Author:      JP Ueberbach
 Created:     2026-01-02
 
-Core helper utilities for path-based OHLCV query processing.
+Core helper utilities for path-based OHLCV query parsing, resolution,
+execution, and output formatting.
 
-This module provides functions for parsing and interpreting a
-slash-delimited OHLCV query DSL, resolving filesystem-backed data
-selections, generating DuckDB-compatible SQL queries, dynamically
-loading indicator plugins, and formatting query output.
+This module implements the backbone of a filesystem-backed OHLCV query
+pipeline. It parses a slash-delimited query DSL embedded in request paths,
+resolves symbol/timeframe selections against discovered datasets, executes
+DuckDB queries with indicator-aware warmup handling, and formats results
+for API delivery.
 
-Key responsibilities:
-    - Parse path-encoded OHLCV query URIs into structured options.
-    - Normalize timestamps and query parameters.
-    - Discover and resolve available OHLCV data sources from the filesystem.
-    - Dynamically load indicator plugins exposing a `calculate` interface.
-    - Generate formatted output in JSON, JSONP, or CSV (including MT4 variants).
-    - Construct DuckDB SQL queries with filtering, ordering, pagination, and modifiers.
+Primary capabilities:
+    - Parse path-encoded OHLCV query URIs into structured option dictionaries.
+    - Normalize and validate timestamp inputs.
+    - Discover OHLCV datasets from the filesystem using builder configuration.
+    - Resolve user selections into concrete DuckDB-backed views.
+    - Dynamically inspect indicator plugins to determine warmup requirements.
+    - Execute parameterized DuckDB SQL queries with filtering, ordering,
+      pagination, and modifiers (e.g., skiplast).
+    - Merge and sort multi-symbol, multi-timeframe query results.
+    - Generate API responses in JSON, JSONP, or CSV (including MT4-compatible
+      formats).
 
-This module is aligned with the internal builder syntax, ensuring
-compatibility with the OHLCV builder pipeline.
+The module is designed to integrate tightly with the internal OHLCV builder
+pipeline and DuckDB execution layer, ensuring consistent behavior between
+path-based queries and programmatic query construction.
 
 Functions:
     normalize_timestamp(ts: str) -> str
+        Normalize timestamp strings for consistent parsing.
+
     parse_uri(uri: str) -> Dict[str, Any]
+        Parse a path-based OHLCV query DSL into structured options.
+
+    discover_all(options: Dict) -> List[Dataset]
+        Discover all available OHLCV datasets from the filesystem.
+
     discover_options(options: Dict) -> Dict
-    generate_output(options: Dict, columns: List, results: List)
-    generate_sql(options) -> str
+        Resolve user-requested selections against discovered datasets.
+
+    generate_output(options: Dict, columns: List[str], results: List[tuple])
+        Format query results as JSON, JSONP, or CSV.
+
+    execute_sql(options: Dict) -> pandas.DataFrame
+        Execute indicator-aware DuckDB queries and return merged results.
+
+Internal helpers:
+    _get_warmup_rows(...)
+        Determine indicator warmup requirements.
+    _get_warmup_timestamp(...)
+        Resolve warmup-adjusted query start times.
 
 Constants:
-    CSV_TIMESTAMP_FORMAT: str
-    CSV_TIMESTAMP_FORMAT_MT4_DATE: str
-    CSV_TIMESTAMP_FORMAT_MT4_TIME: str
+    CSV_TIMESTAMP_FORMAT
+    CSV_TIMESTAMP_FORMAT_MT4_DATE
+    CSV_TIMESTAMP_FORMAT_MT4_TIME
 
 Requirements:
     - Python 3.8+
     - DuckDB
+    - Pandas
     - FastAPI
 
 License:
     MIT License
 ===============================================================================
 """
+
 import csv
 import io
 import os
@@ -318,69 +343,137 @@ def generate_output(options: Dict, columns: List, results: List):
     return None
 
 
-from datetime import datetime, timezone, timedelta
+def _get_warmup_timestamp(symbol: str, tf: str, after_str: str, warmup_rows: int) -> str:
+    """Returns the timestamp required to satisfy indicator warmup periods.
 
+    This function queries DuckDB for the timestamp that is `warmup_rows`
+    records prior to the provided `after_str` timestamp. It is typically used
+    to ensure sufficient historical data is available before computing
+    indicators that require lookback windows.
 
-def _get_warmup_timestamp(symbol:str, tf:str, after_str:str, warmup_rows: int) -> str:
-    """Queries DuckDB to find the timestamp N rows before the 'after' date."""
+    Args:
+        symbol (str): Trading symbol used to identify the DuckDB view.
+        tf (str): Timeframe identifier used to identify the DuckDB view.
+        after_str (str): ISO-formatted timestamp string representing the
+            starting point for the query.
+        warmup_rows (int): Number of rows to step backwards from `after_str`
+            to determine the warmup timestamp.
+
+    Returns:
+        str: ISO-formatted timestamp string representing the warmup start
+            time. Falls back to `after_str` if no earlier timestamp is found
+            or if an error occurs.
+    """
+    # If no warmup is required, return the original timestamp
     if warmup_rows <= 0:
         return after_str
 
+    # Construct the DuckDB view name for the symbol and timeframe
     view_name = f"{symbol}_{tf}_VIEW"
 
+    # Convert the provided timestamp to UTC milliseconds
     after_ms = int(
         datetime.fromisoformat(after_str.replace(' ', 'T'))
         .replace(tzinfo=timezone.utc)
         .timestamp() * 1000
     )
 
+    # Query for the timestamp `warmup_rows` before the given time
     query = f"""
-        SELECT strftime(epoch_ms(time_raw::BIGINT), '{CSV_TIMESTAMP_FORMAT}') AS time 
+        SELECT strftime(epoch_ms(time_raw::BIGINT), '{CSV_TIMESTAMP_FORMAT}') AS time
         FROM "{view_name}"
         WHERE time_raw < {after_ms}
         ORDER BY time_raw DESC
         LIMIT 1 OFFSET {warmup_rows - 1}
     """
-    
+
     try:
+        # Execute the query against the cached DuckDB connection
         from api.state import cache
         res = cache.get_conn().execute(query).fetchone()
+
+        # Update the timestamp if a result is found
         if res:
             after_str = res[0]
-    except Exception as e:
-        print(f"exception {e}")
+    except Exception:
+        # Silently fall back to the original timestamp on any error
         pass
-    
-    return after_str # Fallback
+
+    return after_str
 
 
-def _get_warmup_rows(symbol:str, timeframe:str, after_str:str, indicators: List[str]) -> str:
-    """Calculates the maximum number of rows needed for warmup."""
+
+def _get_warmup_rows(symbol: str, timeframe: str, after_str: str, indicators: List[str]) -> int:
+    """Determine the maximum warmup row count required by a set of indicators.
+
+    This function inspects each requested indicator plugin to determine how many
+    historical rows are required before the `after_str` timestamp in order to
+    correctly compute indicator values (e.g., rolling windows). The maximum
+    warmup requirement across all indicators is returned.
+
+    Args:
+        symbol (str): Trading symbol (e.g., "EURUSD"). Included for interface
+            consistency and future extensibility.
+        timeframe (str): Timeframe identifier (e.g., "5m", "1h"). Included for
+            interface consistency and future extensibility.
+        after_str (str): ISO-formatted timestamp string representing the starting
+            point of the query. Not modified by this function.
+        indicators (List[str]): List of indicator strings (e.g., ["sma_20", "bbands_20_2"]).
+
+    Returns:
+        int: The maximum number of warmup rows required across all indicators.
+    """
+    # Track the largest warmup requirement found
     max_rows = 0
 
+    # Iterate through all requested indicators
     for ind_str in indicators:
         parts = ind_str.split('_')
         name = parts[0]
-        if name in indicator_registry:
-            plugin_func = indicator_registry[name]
-            ind_opts = {"params": parts[1:]} 
 
-            if hasattr(plugin_func, "__globals__") and "position_args" in plugin_func.__globals__:
-                ind_opts.update(plugin_func.__globals__["position_args"](parts[1:]))
+        # Skip indicators that are not registered
+        if name not in indicator_registry:
+            continue
 
-            if hasattr(plugin_func, "__globals__") and "warmup_count" in plugin_func.__globals__:
-                print("jolly")
-                warmup_rows = plugin_func.__globals__["warmup_count"](ind_opts)
-                max_rows = max(max_rows, warmup_rows)
+        plugin_func = indicator_registry[name]
+
+        # Initialize indicator options with raw positional parameters
+        ind_opts = {"params": parts[1:]}
+
+        # Map positional arguments if the plugin defines a mapper
+        if hasattr(plugin_func, "__globals__") and "position_args" in plugin_func.__globals__:
+            ind_opts.update(plugin_func.__globals__["position_args"](parts[1:]))
+
+        # Query the plugin for its warmup row requirement, if defined
+        if hasattr(plugin_func, "__globals__") and "warmup_count" in plugin_func.__globals__:
+            warmup_rows = plugin_func.__globals__["warmup_count"](ind_opts)
+            max_rows = max(max_rows, warmup_rows)
 
     return max_rows
-            
-
 
 def execute_sql(options):
-    # this generates the sql per part, executes everypart, then pd.concats
-    # sorts by index
-    # Holds individual SELECT statements (one per symbol/timeframe)
+    """Executes parameterized SQL queries against DuckDB to retrieve market data.
+
+    This function builds and executes one SQL SELECT statement per requested
+    symbol/timeframe pair. It accounts for indicator warmup requirements by
+    extending the query window, optionally excludes the most recent candle,
+    and merges all results into a single, time-sorted DataFrame.
+
+    Args:
+        options (dict): Query configuration dictionary. Expected keys include:
+            - select_data: List of selections in the form
+              [symbol, timeframe, input_filepath, modifiers, indicators].
+            - order: Optional; 'asc' or 'desc' ordering by time (default: 'asc').
+            - limit: Optional; number of rows to return per selection (default: 1440).
+            - offset: Optional; row offset (currently unused).
+            - after: ISO timestamp string indicating the start time.
+            - until: ISO timestamp string indicating the end time.
+
+    Returns:
+        pd.DataFrame: Concatenated DataFrame containing market data for all
+        requested symbol/timeframe combinations, sorted by time.
+    """
+    # Containers for generated SQL statements and resulting DataFrames
     select_sql_array = []
     select_df = []
 
@@ -391,30 +484,37 @@ def execute_sql(options):
     after_str = options.get('after')
     until_str = options.get('until')
 
-
-    # Build a SELECT statement for each requested dataset
+    # Build and execute a SELECT statement for each requested dataset
     for item in options['select_data']:
         symbol, timeframe, input_filepath, modifiers, indicators = item
-        # we only support binary
+
+        # Determine required warmup rows for indicators
         warmup_rows = _get_warmup_rows(symbol, timeframe, after_str, indicators)
-        warmup_after_str = _get_warmup_timestamp(symbol, timeframe, after_str,warmup_rows)
+        warmup_after_str = _get_warmup_timestamp(
+            symbol, timeframe, after_str, warmup_rows
+        )
         warmup_limit = limit + warmup_rows
-        # construct the sql
+
+        # Convert ISO timestamps to epoch milliseconds
         after_ms = int(
-                datetime.fromisoformat(warmup_after_str.replace(' ', 'T'))
-                .replace(tzinfo=timezone.utc)
-                .timestamp() * 1000
+            datetime.fromisoformat(warmup_after_str.replace(' ', 'T'))
+            .replace(tzinfo=timezone.utc)
+            .timestamp() * 1000
         )
         until_ms = int(
-                datetime.fromisoformat(until_str.replace(' ', 'T'))
-                .replace(tzinfo=timezone.utc)
-                .timestamp() * 1000
+            datetime.fromisoformat(until_str.replace(' ', 'T'))
+            .replace(tzinfo=timezone.utc)
+            .timestamp() * 1000
         )
-        # Base time filter on raw millisecond timestamps
+
+        # Base WHERE clause filtering by raw millisecond timestamps
         where_clause = (
             f"WHERE time_raw >= {after_ms} "
             f"AND time_raw < {until_ms}"
         )
+
+        # Resolve DuckDB view name for the symbol/timeframe
+        view_name = f"{symbol}_{timeframe}_VIEW"
 
         # Optionally exclude the most recent candle
         if "skiplast" in modifiers:
@@ -423,8 +523,7 @@ def execute_sql(options):
                 f"(SELECT MAX(time_raw) FROM \"{view_name}\")"
             )
 
-        view_name = f"{symbol}_{timeframe}_VIEW"
-        # Binary-mode SELECT statement (querying from a DuckDB view)
+        # Construct the final SQL query
         sql = f"""
             SELECT 
                 '{symbol}'::VARCHAR AS symbol,
@@ -436,12 +535,18 @@ def execute_sql(options):
             {where_clause}
             ORDER BY time_raw {order} LIMIT {warmup_limit}
         """
+
+        # Execute query and collect the resulting DataFrame
         select_df.append(cache.get_conn().sql(sql).df())
 
+    # Concatenate all result sets into a single DataFrame
     df = pd.concat(select_df)
+
+    # Apply final sorting order
     is_asc = options.get('order', 'desc').lower() == 'asc'
     df = df.sort_values(by='time', ascending=is_asc).reset_index(drop=True)
 
     return df
+
 
 

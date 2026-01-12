@@ -224,7 +224,6 @@ class SelectionResolver:
             # Normalize and collect each indicator
             for ind in raw_inds_list:
                 clean = ind.strip().replace('(', '_').replace(')', '').replace(',', '_').replace('/', '_')
-                print(clean)
                 if clean:
                     indicators.append(clean)
 
