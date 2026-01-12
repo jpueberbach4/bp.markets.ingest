@@ -1,0 +1,56 @@
+import pandas as pd
+import numpy as np
+from typing import List, Dict, Any
+
+def position_args(args: List[str]) -> Dict[str, Any]:
+    """
+    Maps positional URL arguments to dictionary keys.
+    Example: rsi_14 -> {'period': '14'}
+    """
+    return {
+        "period": args[0] if len(args) > 0 else "14"
+    }
+
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    High-performance vectorized Relative Strength Index (RSI) calculation.
+    Uses Wilder's Smoothing (alpha = 1/period).
+    """
+    # 1. Parse Parameters
+    try:
+        period = int(options.get('period', 14))
+    except (ValueError, TypeError):
+        period = 14
+
+    # 2. Determine Precision
+    # RSI is typically an oscillator rounded to 2 decimals
+    precision = 2 
+
+    # 3. Calculation Logic
+    # Calculate price changes
+    delta = df['close'].diff()
+
+    # Separate gains and losses (Vectorized)
+    gain = delta.where(delta > 0, 0)
+    loss = -delta.where(delta < 0, 0)
+
+    # Wilder's Smoothing (EMA with alpha = 1/period)
+    # In Pandas EWM, com = (1/alpha) - 1. For Wilder's: com = period - 1
+    avg_gain = gain.ewm(com=period - 1, adjust=False).mean()
+    avg_loss = loss.ewm(com=period - 1, adjust=False).mean()
+
+    # Calculate RS and RSI
+    rs = avg_gain / avg_loss.replace(0, np.nan)
+    rsi = 100 - (100 / (1 + rs))
+    
+    # Handle the case where avg_loss is 0 (RSI would be 100)
+    rsi = rsi.fillna(100)
+
+    # 4. Final Formatting and Rounding
+    # Preserving the original index for O(1) merging in parallel.py
+    res = pd.DataFrame({
+        'rsi': rsi.round(precision)
+    }, index=df.index)
+    
+    # Drop the first row (NaN from .diff()) and return
+    return res.dropna(subset=['rsi'])

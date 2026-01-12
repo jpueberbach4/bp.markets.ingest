@@ -1,0 +1,100 @@
+import pandas as pd
+import numpy as np
+from typing import List, Dict, Any
+
+def position_args(args: List[str]) -> Dict[str, Any]:
+    """
+    Maps positional URL arguments to dictionary keys.
+    Example: supertrend_10_3 -> {'period': '10', 'multiplier': '3'}
+    """
+    return {
+        "period": args[0] if len(args) > 0 else "10",
+        "multiplier": args[1] if len(args) > 1 else "3.0"
+    }
+
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    High-performance Supertrend calculation.
+    Uses ATR and price extremes to determine trend direction and trailing stops.
+    """
+    # 1. Parse Parameters
+    try:
+        period = int(options.get('period', 10))
+        multiplier = float(options.get('multiplier', 3.0))
+    except (ValueError, TypeError):
+        period, multiplier = 10, 3.0
+
+    # 2. Determine Price Precision
+    try:
+        sample_price = str(df['close'].iloc[0])
+        precision = len(sample_price.split('.')[1]) if '.' in sample_price else 2
+    except (IndexError, AttributeError):
+        precision = 5
+
+    # 3. Vectorized Pre-calculations
+    high = df['high'].values
+    low = df['low'].values
+    close = df['close'].values
+    
+    # ATR Calculation (Vectorized)
+    tr1 = high - low
+    tr2 = np.abs(high - np.roll(close, 1))
+    tr3 = np.abs(low - np.roll(close, 1))
+    tr = np.maximum.reduce([tr1, tr2, tr3])
+    tr[0] = tr1[0] # Fix first element shifted by roll
+    
+    # Simple Moving Average for ATR
+    atr = pd.Series(tr).rolling(window=period).mean().values
+    
+    # Basic Bands
+    hl2 = (high + low) / 2
+    basic_ub = hl2 + (multiplier * atr)
+    basic_lb = hl2 - (multiplier * atr)
+
+    # 4. Path-Dependent Logic (NumPy Accelerated)
+    n = len(df)
+    final_ub = np.zeros(n)
+    final_lb = np.zeros(n)
+    st = np.zeros(n)
+    direction = np.ones(n) # 1 for bull, -1 for bear
+
+    for i in range(1, n):
+        # Calculate Final Upper Band
+        if basic_ub[i] < final_ub[i-1] or close[i-1] > final_ub[i-1]:
+            final_ub[i] = basic_ub[i]
+        else:
+            final_ub[i] = final_ub[i-1]
+            
+        # Calculate Final Lower Band
+        if basic_lb[i] > final_lb[i-1] or close[i-1] < final_lb[i-1]:
+            final_lb[i] = basic_lb[i]
+        else:
+            final_lb[i] = final_lb[i-1]
+            
+        # Determine Trend Direction and Supertrend value
+        if direction[i-1] == 1:
+            if close[i] <= final_lb[i]:
+                direction[i] = -1
+                st[i] = final_ub[i]
+            else:
+                direction[i] = 1
+                st[i] = final_lb[i]
+        else:
+            if close[i] >= final_ub[i]:
+                direction[i] = 1
+                st[i] = final_lb[i]
+            else:
+                direction[i] = -1
+                st[i] = final_ub[i]
+
+    # 5. Final Formatting
+    # Preserving the original index for O(1) merging in parallel.py
+    res = pd.DataFrame({
+        'supertrend': st,
+        'direction': direction
+    }, index=df.index)
+    
+    # Warm-up period cleanup (ATR requires 'period' bars)
+    res.iloc[:period, res.columns.get_loc('supertrend')] = np.nan
+    
+    return res.round(precision).dropna(subset=['supertrend'])

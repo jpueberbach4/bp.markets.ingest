@@ -1,0 +1,50 @@
+import pandas as pd
+import numpy as np
+from typing import List, Dict, Any
+
+def position_args(args: List[str]) -> Dict[str, Any]:
+    """
+    Maps positional URL arguments to dictionary keys.
+    Example: donchian_20 -> {'period': '20'}
+    """
+    return {
+        "period": args[0] if len(args) > 0 else "20"
+    }
+
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    High-performance vectorized Donchian Channels calculation.
+    Formula:
+    - Upper: Highest High over N periods
+    - Lower: Lowest Low over N periods
+    - Mid:   (Upper + Lower) / 2
+    """
+    # 1. Parse Parameters
+    try:
+        period = int(options.get('period', 20))
+    except (ValueError, TypeError):
+        period = 20
+
+    # 2. Determine Price Precision for rounding
+    try:
+        sample_price = str(df['close'].iloc[0])
+        precision = len(sample_price.split('.')[1]) if '.' in sample_price else 2
+    except (IndexError, AttributeError):
+        precision = 5
+
+    # 3. Vectorized Calculation
+    # We use a rolling window to find the extremes
+    upper = df['high'].rolling(window=period).max()
+    lower = df['low'].rolling(window=period).min()
+    mid = (upper + lower) / 2
+
+    # 4. Final Formatting and Rounding
+    # We return a DataFrame with the same index as the input for O(1) merging
+    res = pd.DataFrame({
+        'upper': upper.round(precision),
+        'mid': mid.round(precision),
+        'lower': lower.round(precision)
+    }, index=df.index)
+    
+    # Drop rows where the rolling window hasn't filled (warmup period)
+    return res.dropna(subset=['upper'])

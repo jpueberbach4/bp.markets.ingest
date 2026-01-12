@@ -1,33 +1,88 @@
 import pandas as pd
 import numpy as np
-from typing import List, Dict, Any
 
-def position_args(args: List[str]) -> Dict[str, Any]:
-    return {
-        "period": args[0] if len(args) > 0 else "20",
-        "std": args[1] if len(args) > 1 else "2.0"
-    }
+def calculate(data, options):
+    """
+    Calculates Chaikin Oscillator.
+    Handles zero-volume or flat-bar scenarios to prevent constant zero output.
+    """
 
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    # 1. Parse Parameters
     try:
-        period = int(options.get('period', 20))
-        std_dev = float(options.get('std', 2.0))
+        short_period = int(options.get('short', 3))
+        long_period = int(options.get('long', 10))
     except (ValueError, TypeError):
-        period, std_dev = 20, 2.0
+        short_period, long_period = 3, 10
 
-    mid = df['close'].rolling(window=period).mean()
-    rolling_std = df['close'].rolling(window=period).std()
-    
-    upper = mid + (rolling_std * std_dev)
-    lower = mid - (rolling_std * std_dev)
+    if not data:
+        return [[], []]
 
-    sample_price = str(df['close'].iloc[0])
-    precision = len(sample_price.split('.')[1]) if '.' in sample_price else 5
+    # 2. Determine Price Precision
+    try:
+        sample_price = str(data[0].get('close', '0.00000'))
+        precision = len(sample_price.split('.')[1]) if '.' in sample_price else 2
+    except (IndexError, AttributeError):
+        precision = 2
+
+    # 3. Prepare DataFrame
+    df = pd.DataFrame(data)
+    is_mt4 = options.get('mt4') is True
     
-    res = pd.DataFrame({
-        'upper': upper.round(precision),
-        'mid': mid.round(precision),
-        'lower': lower.round(precision)
-    }, index=df.index)
+    # 4. Dynamic Column Mapping
+    if is_mt4:
+        output_cols = ['date', 'time', 'chaikin']
+        sort_cols = ['date', 'time']
+    else:
+        output_cols = ['symbol', 'timeframe', 'time', 'chaikin']
+        sort_cols = ['time']
+
+    # 5. Calculation Logic
+    all_results = []
+    group_keys = ['symbol', 'timeframe'] if not is_mt4 else ['symbol']
     
-    return res.dropna()
+    if 'symbol' not in df.columns: df['symbol'] = 'N/A'
+    if 'timeframe' not in df.columns and not is_mt4: df['timeframe'] = 'N/A'
+
+    grouped = df.groupby(group_keys)
+
+    for _, group in grouped:
+        group = group.sort_values(sort_cols).reset_index(drop=True)
+        
+        # A. Calculate Money Flow Multiplier
+        # Use replace to avoid division by zero on flat bars
+        range_high_low = (group['high'] - group['low']).replace(0, np.nan)
+        mfm = ((group['close'] - group['low']) - (group['high'] - group['close'])) / range_high_low
+        
+        # Fill NaN values from flat bars with 0
+        mfm = mfm.fillna(0)
+        
+        # B. Calculate Money Flow Volume
+        mfv = mfm * group['volume']
+        
+        # C. Calculate ADL (Accumulation Distribution Line)
+        adl = mfv.cumsum()
+        
+        # D. Chaikin Oscillator = EMA(ADL, short) - EMA(ADL, long)
+        ema_short = adl.ewm(span=short_period, adjust=False).mean()
+        ema_long = adl.ewm(span=long_period, adjust=False).mean()
+        
+        group['chaikin'] = ema_short - ema_long
+
+        # 6. Apply Dynamic Rounding
+        group['chaikin'] = group['chaikin'].round(precision)
+        
+        # 7. Collect Results
+        all_results.append(group[output_cols])
+
+    if not all_results:
+        return [output_cols, []]
+
+    # 8. Final Formatting
+    final_df = pd.concat(all_results)
+    is_asc = options.get('order', 'asc').lower() == 'asc'
+    final_df = final_df.sort_values(by=sort_cols, ascending=is_asc)
+
+    columns = list(final_df.columns)
+    values = final_df.replace({np.nan: None, np.inf: None, -np.inf: None}).values.tolist()
+
+    return [columns, values]

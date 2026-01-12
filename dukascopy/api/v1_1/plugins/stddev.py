@@ -1,0 +1,43 @@
+import pandas as pd
+import numpy as np
+from typing import List, Dict, Any
+
+def position_args(args: List[str]) -> Dict[str, Any]:
+    """
+    Maps positional URL arguments to dictionary keys.
+    Example: stddev_20 -> {'period': '20'}
+    """
+    return {
+        "period": args[0] if len(args) > 0 else "20"
+    }
+
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    High-performance vectorized Standard Deviation calculation.
+    Measures the dispersion of prices from their moving average.
+    """
+    # 1. Parse Parameters
+    try:
+        period = int(options.get('period', 20))
+    except (ValueError, TypeError):
+        period = 20
+
+    # 2. Determine Price Precision
+    try:
+        sample_price = str(df['close'].iloc[0])
+        precision = len(sample_price.split('.')[1]) if '.' in sample_price else 2
+    except (IndexError, AttributeError):
+        precision = 5
+
+    # 3. Vectorized Calculation Logic
+    # Calculates rolling standard deviation using C-level optimizations
+    std_dev = df['close'].rolling(window=period).std()
+
+    # 4. Final Formatting and Rounding
+    # Preserving the original index for O(1) merging in parallel.py
+    res = pd.DataFrame({
+        'std_dev': std_dev.round(precision)
+    }, index=df.index)
+    
+    # Drop rows where the window hasn't filled (warm-up period)
+    return res.dropna(subset=['std_dev'])

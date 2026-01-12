@@ -1,0 +1,55 @@
+import pandas as pd
+import numpy as np
+from typing import List, Dict, Any
+
+def position_args(args: List[str]) -> Dict[str, Any]:
+    """
+    Maps positional URL arguments to dictionary keys.
+    VWAP typically calculates on the full session.
+    """
+    return {}
+
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    High-performance vectorized Volume Weighted Average Price (VWAP).
+    Formula: Cumulative(Typical Price * Volume) / Cumulative(Volume)
+    """
+    
+    # 1. Determine Price Precision
+    try:
+        sample_val = df['close'].iloc[0]
+        sample_price = f"{sample_val:.10f}".rstrip('0')
+        precision = len(sample_price.split('.')[1]) if '.' in sample_price else 2
+        precision = min(max(precision, 2), 8) 
+    except (IndexError, AttributeError, ValueError):
+        precision = 2
+
+    # 2. Calculation Logic
+    # Typical Price = (High + Low + Close) / 3
+    tp = (df['high'] + df['low'] + df['close']) / 3
+    pv = tp * df['volume']
+
+    # 3. Session Reset Logic (Vectorized)
+    # VWAP usually resets every day. We detect date changes in the index.
+    if isinstance(df.index, pd.DatetimeIndex):
+        day_changed = df.index.normalize() != df.index.to_series().shift(1).dt.normalize()
+        group_id = day_changed.cumsum()
+        
+        # Cumulative sums per session
+        cum_pv = pv.groupby(group_id).cumsum()
+        cum_vol = df['volume'].groupby(group_id).cumsum()
+    else:
+        # Fallback to global cumulative sum if no datetime index
+        cum_pv = pv.cumsum()
+        cum_vol = df['volume'].cumsum()
+
+    # Calculate VWAP
+    vwap = cum_pv / cum_vol.replace(0, np.nan)
+
+    # 4. Final Formatting and Rounding
+    # Preserving the original index for O(1) merging in parallel.py
+    res = pd.DataFrame({
+        'vwap': vwap.round(precision)
+    }, index=df.index)
+    
+    return res.fillna(method='ffill')
