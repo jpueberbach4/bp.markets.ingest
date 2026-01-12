@@ -3,9 +3,9 @@ import numpy as np
 
 def calculate(data, options):
     """
-    Calculates Renko Bricks.
+    Calculates Renko Bricks with a sequence column for proper sorting.
     Renko charts filter out noise by only plotting price changes of a fixed size.
-    Output includes: open, high, low, close (of the brick), and direction.
+    Output includes: open, high, low, close (of the brick), direction, and sequence.
     """
 
     # 1. Parse Parameters
@@ -30,13 +30,13 @@ def calculate(data, options):
     is_mt4 = options.get('mt4') is True
     
     # 4. Dynamic Column Mapping
-    # Note: Renko creates new 'bars', so we track the original time it was formed
+    # Added 'seq' to output and sort columns to maintain order within the same timestamp
     if is_mt4:
-        output_cols = ['date', 'time', 'open', 'high', 'low', 'close', 'direction']
-        sort_cols = ['date', 'time']
+        output_cols = ['date', 'time', 'open', 'high', 'low', 'close', 'direction', 'seq']
+        sort_cols = ['date', 'time', 'seq']
     else:
-        output_cols = ['symbol', 'timeframe', 'time', 'open', 'high', 'low', 'close', 'direction']
-        sort_cols = ['time']
+        output_cols = ['symbol', 'timeframe', 'time', 'open', 'high', 'low', 'close', 'direction', 'seq']
+        sort_cols = ['time', 'seq']
 
     for col in ['close']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -46,13 +46,15 @@ def calculate(data, options):
     grouped = df.groupby(group_keys) if group_keys else [(None, df)]
 
     for _, group in grouped:
-        group = group.sort_values(sort_cols).reset_index(drop=True)
+        # Sort initial data by time to process sequentially
+        group = group.sort_values(sort_cols[:-1]).reset_index(drop=True)
         
         bricks = []
         if group.empty:
             continue
 
-        # Initialize first brick
+        # Initialize sequence counter and first brick
+        brick_sequence = 0
         first_close = group.loc[0, 'close']
         # Round to nearest brick level
         prev_close = np.round(first_close / brick_size) * brick_size
@@ -63,6 +65,7 @@ def calculate(data, options):
             
             # Upward Movement
             while price >= prev_close + brick_size:
+                brick_sequence += 1
                 new_open = prev_close
                 new_close = prev_close + brick_size
                 
@@ -72,13 +75,15 @@ def calculate(data, options):
                     'high': new_close,
                     'low': new_open,
                     'close': new_close,
-                    'direction': 1
+                    'direction': 1,
+                    'seq': brick_sequence  # Assign unique sequence ID
                 })
                 bricks.append(brick)
                 prev_open, prev_close = new_open, new_close
 
             # Downward Movement
             while price <= prev_close - brick_size:
+                brick_sequence += 1
                 new_open = prev_close
                 new_close = prev_close - brick_size
                 
@@ -88,7 +93,8 @@ def calculate(data, options):
                     'high': new_open,
                     'low': new_close,
                     'close': new_close,
-                    'direction': -1
+                    'direction': -1,
+                    'seq': brick_sequence  # Assign unique sequence ID
                 })
                 bricks.append(brick)
                 prev_open, prev_close = new_open, new_close
@@ -107,6 +113,7 @@ def calculate(data, options):
     # 6. Final Formatting
     final_df = pd.concat(all_results)
     is_asc = options.get('order', 'asc').lower() == 'asc'
+    # Sort by time and seq to ensure bricks within the same candle are ordered correctly
     final_df = final_df.sort_values(by=sort_cols, ascending=is_asc)
     
     # Final safety gate for JSON compliance
