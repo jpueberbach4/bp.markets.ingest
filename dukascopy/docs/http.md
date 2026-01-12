@@ -479,6 +479,87 @@ The Accumulation/Distribution Line is a cumulative indicator that uses price and
 GET http://localhost:8000/ohlcv/1.0/indicator/adl/after/2026-01-01+00:00:00/select/BTC-USD,1d/output/JSON?order=desc&limit=400
 ```
 
+**Renko**
+
+Renko charts are a unique technical analysis tool that ignores time entirely and focuses exclusively on significant price movements. They are constructed using "bricks" of a fixed size, where a new brick is only added at a 45-degree angle if the price moves a predetermined amount (the Brick Size) from the previous brick's close. This method effectively filters out market noise and minor fluctuations, making it significantly easier for traders to identify clear trends, support/resistance levels, and major reversals.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/renko/after/2026-01-01+00:00:00/select/BTC-USD,1m/brick_size/50/output/JSON?order=desc&limit=400
+```
+
+**Heikin Ashi**
+
+Heikin Ashi (meaning "average bar" in Japanese) is a modified candlestick technique that smooths price action by averaging current data with the previous candle's values. It eliminates the "gaps" found in traditional charts and helps traders stay in trends longer by coloring candles consistently during bullish or bearish runs. While easier to read for trend identification, it is a lagging indicator and does not show exact market execution prices.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/heikinashi/after/2026-01-01+00:00:00/select/BTC-USD,1m/output/JSON?order=desc&limit=5000
+```
+
+**Point & Figure**
+
+Point & Figure (P&F) charting is a technical analysis technique that filters out "noise" by only recording price changes and ignoring time and volume. It consists of columns of X's (rising prices) and O's (falling prices), where a new column is only started when the price reverses by a specific number of boxes—most commonly three. This allows traders to clearly visualize long-term trend lines, identify break-out patterns, and determine precise price targets regardless of how long it takes for the market to move.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/pointfigure/after/2026-01-01+00:00:00/select/BTC-USD,1m/box_size/100/reversal/3/output/JSON?order=desc&limit=5000
+```
+
+**Kagi Chart**
+
+A Kagi chart is a time-independent technical analysis tool that uses a single continuous line to track price movements and filter out minor market noise. The line shifts between "Yang" (thick) and "Yin" (thin) states to signal trend changes: a thick Yang line appears when the price breaks above a previous peak (shoulder), while a thin Yin line appears when it breaks below a previous trough (waist). Traders primarily use Kagi charts to identify the underlying supply-and-demand balance, entering long positions when the line turns thick and exiting when it turns thin.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/kagi/after/2026-01-01+00:00:00/select/BTC-USD,1m/reversal/100/mode/fixed/output/JSON?order=desc&limit=5000
+```
+
+**The Three Line Break**
+
+The Three Line Break (TLB) chart is a trend-following technique that filters out minor price fluctuations by only adding lines when the market reaches new highs or lows. Its defining characteristic is the reversal rule: if the current trend has produced three or more consecutive lines in the same direction, the price must close beyond the extreme high or low of those last three lines to trigger a reversal in the opposite direction. This delay in signaling reversals makes TLB charts excellent for identifying high-conviction trend changes while keeping traders away from "choppy" lateral markets.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/threelinebreak/after/2026-01-01+00:00:00/select/BTC-USD,1m/break/3/output/JSON?order=desc&limit=5000
+```
+
+**Z-score**
+
+The Z-Score is a statistical momentum indicator that quantifies how "extreme" a price move is by measuring its distance from the mean in units of standard deviation. In a normal distribution, approximately 95% of price action stays within a Z-Score range of -2.0 to +2.0; therefore, when the score exceeds these levels, it often signals a high probability of a mean-reversion trade. Unlike the RSI, which is bound between 0 and 100, the Z-Score is "unbound," allowing it to show the true intensity of a trend or a volatility spike without being dampened by a fixed scale.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/zscore/after/2026-01-01+00:00:00/select/BTC-USD,1m/period/20/output/JSON?order=desc&limit=5000
+```
+
+**Hurst Exponent**
+
+The Hurst Exponent is a statistical measure used to quantify the "long-term memory" of a time series, helping traders determine the hidden nature of market volatility. It produces a value between 0 and 1: a value of 0.5 indicates a completely random market (Brownian motion), while values above 0.5 indicate a persistent, trending market where price increases are likely to follow price increases. Conversely, a value below 0.5 indicates an anti-persistent or mean-reverting market, where the price is likely to reverse its current direction, making it an essential tool for choosing between trend-following or mean-reversion strategies.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/hurst/after/2026-01-01+00:00:00/select/BTC-USD,1m/period/100/output/JSON?order=desc&limit=1000
+```
+
+**Fractal Dimension**
+
+The Fractal Dimension (D) is a measure of the geometric complexity of a price chart, describing how "fragmented" the price movement is across a given period. In trading, a value near 1.0 suggests a highly efficient, linear trend where price is moving directly toward a target, while a value approaching 2.0 indicates extreme "choppiness" or noise where the price path is essentially filling a 2D area. By monitoring the Fractal Dimension, traders can identify when a trend is beginning to break down into chaos (D increases) or when a period of consolidation is beginning to organize into a new, efficient trend (D decreases).
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/fractaldimension/after/2026-01-01+00:00:00/select/BTC-USD,1m/period/30/output/JSON?order=desc&limit=1000
+```
+
+**Shannon Entropy**
+
+Shannon Entropy is a mathematical concept from information theory that quantifies the "information density" or degree of randomness within a dataset. In financial markets, it is used to measure the complexity of price action: low entropy values indicate that the market is in a highly structured state, such as a strong trend where price movements are predictable and "orderly." Conversely, high entropy values suggest that the market is in a state of maximum uncertainty or "noise," typical of sideways consolidation or volatile "choppiness" where the next price move is statistically harder to predict.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/shannonentropy/after/2026-01-01+00:00:00/select/BTC-USD,1m/period/20/bins/10/output/JSON?order=desc&limit=1000
+```
+
+**Linear Regression Channel**
+
+The Linear Regression Channel is a three-line technical indicator that uses statistical analysis to determine the trend and volatility of an asset over a specific period. The middle line, known as the Linear Regression Line, is the "best fit" path that minimizes the distance between itself and all price points in the window. The Upper and Lower Channels are drawn parallel to this line, usually based on the maximum distance price has deviated from the trend (or a multiple of standard deviation). When price hits the outer bands, it is often considered "overextended" and statistically likely to revert back toward the middle regression line, making it a powerful tool for identifying both the trend direction and potential reversal points.
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/indicator/linregchannel/after/2026-01-01+00:00:00/select/BTC-USD,1m/period/50/output/JSON?order=desc&limit=1000
+```
+
+
 **Note:** These are AI generated. Check them thoroughly before you use them. I will check them as soon as V1.1 lands-i can then visualize them more easily.
 
 **Note:** Added a small helper script to generate indicator output to CSV. `http://localhost:8000/indicator.html`

@@ -48,7 +48,6 @@
             box-sizing: border-box;
         }
 
-        /* Checkbox Styling */
         .checkbox-group {
             display: flex;
             align-items: center;
@@ -186,6 +185,16 @@
                     <option value="uo">Ultimate Oscillator</option>
                     <option value="chaikin">Chaikin Oscillator</option>
                     <option value="adl">Accumulation/Distribution</option>
+                    <option value="renko">Renko</option>
+                    <option value="heikinashi">Heikin Ashi</option>
+                    <option value="pointfigure">Point & Figure</option>
+                    <option value="kagi">Kagi Chart</option>
+                    <option value="threelinebreak">Three Line Break</option>
+                    <option value="zscore">Z-score</option>
+                    <option value="hurst">Hurst Exponent</option>
+                    <option value="fractaldimension">Fractal Dimension</option>
+                    <option value="shannonentropy">Shannon Entropy</option>
+                    <option value="linregchannel">Linear Regression Channel</option>
                 </select>
                 <div id="dynamic-params" class="param-box"></div>
             </div>
@@ -263,7 +272,17 @@
             aroon: [{ id: 'period', label: 'Period', default: 25 }],
             uo: [{ id: 'p1', label: 'P1', default: 7 }, { id: 'p2', label: 'P2', default: 14 }, { id: 'p3', label: 'P3', default: 28 }],
             chaikin: [{ id: 'short', label: 'Short', default: 3 }, { id: 'long', label: 'Long', default: 10 }],
-            adl: []
+            adl: [],
+            renko: [{ id: 'brick_size', label: 'Brick Size', default: 50 }],
+            heikinashi: [],
+            pointfigure: [{ id: 'box_size', label: 'Box Size', default: 100 }, { id: 'reversal', label: 'Reversal', default: 3 }],
+            kagi: [{ id: 'reversal', label: 'Reversal', default: 100 }, { id: 'mode', label: 'Mode', default: 'fixed' }],
+            threelinebreak: [{ id: 'break', label: 'Break', default: 3 }],
+            zscore: [{ id: 'period', label: 'Period', default: 20 }],
+            hurst: [{ id: 'period', label: 'Period', default: 100 }],
+            fractaldimension: [{ id: 'period', label: 'Period', default: 30 }],
+            shannonentropy: [{ id: 'period', label: 'Period', default: 20 }, { id: 'bins', label: 'Bins', default: 10 }],
+            linregchannel: [{ id: 'period', label: 'Period', default: 50 }]
         };
 
         function setMode(mode) {
