@@ -62,8 +62,10 @@ from pathlib import Path
 from fastapi.responses import PlainTextResponse, JSONResponse
 
 # Import builder utilities for resolving file-backed OHLCV selections
-from builder.helper import resolve_selections, get_available_data_from_fs
 from builder.config.app_config import load_app_config
+from util.dataclass import *
+from util.discovery import *
+from util.resolver import *
 
 CSV_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 CSV_TIMESTAMP_FORMAT_MT4_DATE = "%Y.%m.%d"
@@ -169,6 +171,14 @@ def parse_uri(uri: str) -> Dict[str, Any]:
     return result
 
 
+def discover_all(options:Dict):
+    # Load builder configuration
+    config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
+    config = load_app_config(config_file)
+    discovery = DataDiscovery(config.builder)
+    return discovery.scan()
+
+
 def discover_options(options: Dict):
     """Resolve and enrich data selection options using filesystem-backed sources.
 
@@ -197,13 +207,14 @@ def discover_options(options: Dict):
         config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
         config = load_app_config(config_file)
 
-        # Discover available OHLCV data sources from the filesystem
-        available_data = get_available_data_from_fs(config.builder)
+        # Initialize discovery
+        discovery = DataDiscovery(config.builder)
+        available = discovery.scan()
+        resolver = SelectionResolver(available)
 
-        # Resolve requested selections against available data
-        options["select_data"] = resolve_selections(
-            options["select_data"], available_data, False
-        )[0]
+        # Resolve selections
+        resolver = SelectionResolver(available)
+        options["select_data"], _ = resolver.resolve(options["select_data"])
 
         return options
     except Exception as e:

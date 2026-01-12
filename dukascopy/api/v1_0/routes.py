@@ -75,7 +75,7 @@ from fastapi import Depends
 
 from api.state import cache
 from api.config.app_config import load_app_config
-from api.v1_0.helper import parse_uri, generate_sql, discover_options, generate_output
+from api.v1_0.helper import parse_uri, generate_sql, discover_options, generate_output, discover_all
 from api.v1_0.plugin import load_indicator_plugins
 from api.v1_0.version import API_VERSION
 
@@ -246,17 +246,13 @@ async def get_ohlcv_list(
     options = parse_uri(request_uri)
 
     try:
-        from builder.helper import resolve_selections, get_available_data_from_fs
-        from builder.config.app_config import load_app_config
-        config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
-        config = load_app_config(config_file)
-
         # Discover available OHLCV data sources from the filesystem
-        available_data = get_available_data_from_fs(config.builder)
+        available_data = discover_all(options)
 
+        # Group timeframes by symbol name
         symbols = {}
-        for symbol, timeframe, _ in available_data:
-            symbols.setdefault(symbol, []).append(timeframe)
+        for ds in available_data:
+            symbols.setdefault(ds.symbol, []).append(ds.timeframe)
 
         # Default JSON output
         if options.get("output_type") == "JSON" or options.get("output_type") is None:
