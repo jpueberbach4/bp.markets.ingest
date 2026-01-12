@@ -106,6 +106,8 @@ def calculate(data, options):
 
     # 6. Final Formatting
     final_df = pd.concat(all_results)
+    is_asc = options.get('order', 'asc').lower() == 'asc'
+    final_df = final_df.sort_values(by=sort_cols, ascending=is_asc)
     
     # Final safety gate for JSON compliance
     data_as_list = final_df.values.tolist()
