@@ -32,7 +32,12 @@ import uuid
 import textwrap
 from datetime import datetime
 from config.app_config import BuilderConfig 
-from helper import CustomArgumentParser, resolve_selections, get_available_data_from_fs
+from helper import CustomArgumentParser, print_available_datasets
+
+from util.dataclass import *
+from util.discovery import *
+from util.resolver import *
+
 
 # Default date range for extraction
 DEFAULT_AFTER = "1970-01-01 00:00:00"
@@ -239,28 +244,21 @@ def parse_args(config: BuilderConfig):
     if args.output_type == "parquet" and args.mt4:
         parser.error("--parquet incompatible with --mt4")
 
-    # Discover available datasets from filesystem
-    all_available_data = get_available_data_from_fs(config)
+
+    # Initialize discovery
+    discovery = DataDiscovery(config)
+    available = discovery.scan()
+    resolver = SelectionResolver(available)
 
     # List available symbols and timeframes
     if args.list:
-        symbols = {}
-        for symbol, timeframe, _ in all_available_data:
-            symbols.setdefault(symbol, []).append(timeframe)
-
-        print("\n--- Available Symbols and Timeframes" + "-" * 43)
-        for symbol in sorted(symbols):
-            print(f"{symbol:<20} timeframes: [{', '.join(sorted(symbols[symbol]))}]")
-        print("-" * 80)
+        print_available_datasets(available)
         sys.exit(0)
 
-    # Resolve selections to actual CSV files
+    # Resolve selections
     try:
-        final_selections, _ = resolve_selections(
-            select_args=args.select,
-            all_available_data=all_available_data,
-            force=args.force,
-        )
+        resolver = SelectionResolver(available)
+        final_selections, _ = resolver.resolve(args.select)
     except Exception as e:
         parser.error(e)
 

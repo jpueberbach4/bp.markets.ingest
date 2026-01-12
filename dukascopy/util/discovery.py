@@ -32,7 +32,7 @@ import os
 import re
 from typing import List, Set, Dict
 
-from etl.util.dataclass import Dataset
+from util.dataclass import Dataset
 
 class DataDiscovery:
     def __init__(self, config: 'BuilderConfig'): # TODO: change builderconfig

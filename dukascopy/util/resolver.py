@@ -31,7 +31,7 @@ import os
 import re
 from typing import List, Tuple, Set, Dict
 
-from etl.util.dataclass import Dataset
+from util.dataclass import Dataset
 
 class SelectionResolver:
     def __init__(self, available_data: List[Dataset]):

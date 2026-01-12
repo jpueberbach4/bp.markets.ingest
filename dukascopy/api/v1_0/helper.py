@@ -196,6 +196,7 @@ def discover_options(options: Dict):
         # Load builder configuration
         config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
         config = load_app_config(config_file)
+
         # Discover available OHLCV data sources from the filesystem
         available_data = get_available_data_from_fs(config.builder)
 
