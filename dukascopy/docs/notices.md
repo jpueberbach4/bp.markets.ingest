@@ -51,6 +51,8 @@ What you get from this new version:
 - I/O bound performance in binary mode
 - Configuration validation using schema
 - Unchanged behavior on builder utility
+- 40+ indicators
+- 2 UI, 1 for charts, 1 to build queries
 
 When you change to this version, choose either `binary/text` mode. Default is still text-mode to try not to break existing installations but i cannot guarantee that it will not happen. The index files now hold 3 fields instead of two. I did build in backward compatibility. 
 
