@@ -24,8 +24,8 @@ Full high-performance replay functionality.
 Teaser:
 
 ```sh
-GET http://localhost:8000/ohlcv/1.1/select/EUR-USD[sma(10):sma(20):macd(12,6,9):rsi(13):rsi(14)],1m/ \
-after/2025-01-01+00:00:00/output/JSON?page=1&order=desc&limit=500
+GET http://localhost:8000/ohlcv/1.1/select/EUR-USD[sma(10):sma(20):macd(12,6,9):rsi(13):rsi(14)],1m[bbands(12,3)] \
+/after/2026-01-01+00:00:00/output/JSON?page=1&order=desc&limit=1000
 ```
 
 Result:
@@ -38,49 +38,55 @@ Result:
       [
         "EUR-USD",
         "1m",
-        "/home/jpueberb/repos2/bp.markets.ingest/dukascopy/data/aggregate/1m/EUR-USD.bin",
+        "data/aggregate/1m/EUR-USD.bin",
         [],
         [
           "sma_10",
           "sma_20",
           "macd_12_6_9",
           "rsi_13",
-          "rsi_14"
+          "rsi_14",
+          "bbands_12_3"
         ]
       ]
     ],
-    "after": "2025-01-01 00:00:00",
+    "after": "2026-01-01 00:00:00",
     "until": "3000-01-01 00:00:00",
     "output_type": "JSON",
     "mt4": null,
-    "limit": 500,
+    "limit": 1000,
     "offset": 0,
     "order": "desc",
     "callback": "__bp_callback",
     "fmode": "binary",
-    "wall": 0.0791974067687988
+    "wall": 0.0672287940979004
   },
   "result": [
     {
       "symbol": "EUR-USD",
       "timeframe": "1m",
-      "time": "2026-01-12 20:01:00",
+      "time": "2026-01-12 20:08:00",
       "year": "2026",
-      "open": 1.16677,
-      "high": 1.16683,
-      "low": 1.16669,
-      "close": 1.16683,
-      "volume": 41.43,
+      "open": 1.16659,
+      "high": 1.16669,
+      "low": 1.16658,
+      "close": 1.1666,
+      "volume": 23.13,
       "indicators": {
-        "macd_12_6_9": {
-          "hist": -0.00001,
-          "macd": 0.00001,
-          "signal": 0.00002
+        "bbands_12_3": {
+          "lower": 1.1664,
+          "mid": 1.1668,
+          "upper": 1.1671
         },
-        "rsi_13": 48.15,
-        "rsi_14": 48,
-        "sma_10": 1.16678,
-        "sma_20": 1.1669
+        "macd_12_6_9": {
+          "hist": 0,
+          "macd": 0.0001,
+          "signal": 0
+        },
+        "rsi_13": 38.94,
+        "rsi_14": 39.42,
+        "sma_10": 1.1667,
+        "sma_20": 1.1668
       }
     },
 ```
