@@ -396,7 +396,7 @@ def _get_warmup_after_ms(symbol: str, tf: str, after_ms: str, warmup_rows: int) 
 
     # Query for the timestamp `warmup_rows` before the given time
     query = f"""
-        SELECT raw_ts
+        SELECT time_raw
         FROM "{view_name}"
         WHERE time_raw < {after_ms}
         ORDER BY time_raw DESC
@@ -411,8 +411,9 @@ def _get_warmup_after_ms(symbol: str, tf: str, after_ms: str, warmup_rows: int) 
         # Update the timestamp if a result is found
         if res:
             after_ms = res[0]
-    except Exception:
+    except Exception as e:
         # Silently fall back to the original timestamp on any error
+        print(f"exception: {e}")
         pass
 
     return after_ms
