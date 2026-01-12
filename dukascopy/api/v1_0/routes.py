@@ -376,15 +376,11 @@ async def get_ohlcv(
 
         # Execute the SQL query in an in-memory DuckDB instance
         rel = cache.get_conn().sql(sql)
-        results = rel.fetchall()
-        columns = rel.columns
+        df = rel.df()  # This is much faster than fetchall() + dict zip
 
-        # Zip the DuckDB results
-        data = [dict(zip(columns, row)) for row in results]
-
-        # Call indicator extensions in parallel
         from api.v1_0.parallel import parallel_indicators
-        enriched_df = parallel_indicators(data, options, indicator_registry)
+        enriched_df = parallel_indicators(df, options, indicator_registry)
+
         columns = enriched_df.columns.tolist()
         results = enriched_df.values.tolist()
 

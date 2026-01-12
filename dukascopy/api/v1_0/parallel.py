@@ -4,24 +4,28 @@
 ===============================================================================
  File:        parallel.py
  Author:      JP Ueberbach
- Created:     2026-01-07
- Description: Provides high-performance parallel execution of technical 
-              analysis indicators against OHLCV datasets.
+ Created:     2026-01-12
+ Description: Provides parallel computation of technical indicators for market data.
 
-              This module leverages concurrent.futures for thread-based 
-              parallelism, allowing multiple indicators (potentially across 
-              different symbols and timeframes) to be calculated 
-              simultaneously. It handles the complex merging logic required 
-              to consolidate multi-timeframe results and nests them into 
-              a JSON-compliant, sorted dictionary structure.
+              This module defines the `parallel_indicators` function, which:
+                - Accepts market data as a pandas DataFrame.
+                - Applies user-defined indicator plugins (e.g., SMA, BBANDS) in parallel
+                  across symbol/timeframe slices.
+                - Handles multi-column indicators and nests them in a structured
+                  'indicators' dictionary per row.
+                - Maintains the original dataset alongside calculated indicators.
+                - Ensures correct chronological ordering and optional sorting.
+                - Handles missing or NaN values gracefully.
 
  Requirements:
      - Python 3.8+
      - pandas
      - numpy
+     - concurrent.futures
 
  License:
      MIT License
+
 ===============================================================================
 """
 
@@ -30,175 +34,126 @@ import numpy as np
 import concurrent.futures
 from typing import List, Dict, Any
 
-def parallel_indicators(
-    data: List[Dict],
-    options: Dict[str, Any],
-    plugins: Dict[str, callable]
-):
-    """Calculates technical indicators in parallel and nests results per row.
+def parallel_indicators(df: pd.DataFrame, options: Dict[str, Any], plugins: Dict[str, callable]):
+    """Calculates technical indicators directly on a provided DataFrame in parallel.
 
-    This function processes indicator requests defined in `options['select_data']`
-    by applying indicator plugins to matching symbol/timeframe subsets of the input
-    data. Indicator calculations are executed concurrently using a thread pool.
-    Results are merged back into the original dataset and nested into a structured
-    `indicators` dictionary per row, supporting both single- and multi-column
-    indicator outputs.
+    This function applies user-specified indicator plugins to grouped slices of
+    the DataFrame (by symbol and timeframe). Multi-column indicators are
+    nested into dictionaries under a single key, and missing or NaN values
+    are handled gracefully. The final DataFrame includes an 'indicators'
+    column containing these nested dictionaries.
 
     Args:
-        data (List[Dict]): Raw market data records. Each record is expected to
-            include at least `symbol`, `timeframe`, and time-based join keys.
-        options (Dict[str, Any]): Global processing options, including
-            `select_data`, ordering preferences, and plugin-specific arguments.
-        plugins (Dict[str, callable]): Mapping of indicator names to callable
-            plugin functions.
+        df (pd.DataFrame): Input DataFrame containing market data. Must include
+            columns like 'symbol', 'timeframe', 'date', 'time', and optionally 'close'.
+        options (Dict[str, Any]): User configuration dictionary. Expected keys:
+            - 'select_data': List of selections in the form [symbol, timeframe, _, _, indicators]
+            - 'order': Optional, 'asc' or 'desc' for sorting the final DataFrame
+        plugins (Dict[str, callable]): Mapping of indicator names to functions that
+            accept a DataFrame slice and options dictionary, returning a DataFrame.
 
     Returns:
-        pd.DataFrame: A DataFrame containing the original data augmented with
-        a nested `indicators` column holding computed indicator values.
+        pd.DataFrame: DataFrame containing the original data and an 'indicators' column,
+            where multi-column indicators are nested as dictionaries, e.g.,
+            {"bbands_20_2": {"upper": val, "middle": val, "lower": val}}.
+
     """
-    # Return an empty DataFrame early if there is no input data
-    if not data:
-        return pd.DataFrame()
+    if df.empty:
+        return df
+
+    # Determine multi-index keys for symbol, timeframe, date, time
+    join_keys = [k for k in ['symbol', 'timeframe', 'date', 'time'] if k in df.columns]
+
+    # Determine chronological sort order
+    temp_sort = ['date', 'time'] if 'date' in df.columns else ['time']
+    df.sort_values(by=temp_sort, ascending=True, inplace=True)
+
+    # Ensure numeric type for 'close' column if it exists
+    if 'close' in df.columns:
+        df['close'] = pd.to_numeric(df['close'], errors='coerce')
+
+    # Set multi-index for efficient slicing by symbol/timeframe
+    df.set_index(join_keys, inplace=True)
 
     tasks = []
     select_data = options.get('select_data', [])
-    
-    # Execute indicator calculations concurrently
+
+    # Process each selection in parallel using a thread pool
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        for selection in select_data:
-            symbol, timeframe, _, _, indicators = selection
-            
-            # Filter data for the current symbol/timeframe pair
-            symbol_tf_data = [
-                row for row in data
-                if row.get('symbol') == symbol and row.get('timeframe') == timeframe
-            ]
+        for symbol, timeframe, _, _, indicators in select_data:
+            try:
+                # Slice the DataFrame for the specific symbol/timeframe
+                sub_df = df.xs((symbol, timeframe), level=('symbol', 'timeframe'), drop_level=False)
+            except KeyError:
+                continue  # Skip if no data for this symbol/timeframe
 
-            # Skip if no matching data exists
-            if not symbol_tf_data:
-                continue
-
-            for indicator_str in indicators:
-                # Parse indicator name and positional arguments
-                parts = indicator_str.split('_')
+            for ind_str in indicators:
+                parts = ind_str.split('_')
                 name = parts[0]
-                arguments = parts[1:]
 
-                # Skip indicators without a registered plugin
+                # Skip unknown plugins
                 if name not in plugins:
                     continue
 
                 plugin_func = plugins[name]
-                indicator_options = options.copy()
-                
-                # Map positional arguments to keyword options if supported
-                if hasattr(plugin_func, "__globals__") and "position_args" in plugin_func.__globals__:
-                    mapped_args = plugin_func.__globals__["position_args"](arguments)
-                    indicator_options.update(mapped_args)
+                ind_opts = options.copy()
 
-                # Worker function executed in a thread
-                def worker(proc_data, proc_opts, full_name, p_func):
-                    cols, rows = p_func(proc_data, proc_opts)
-                    if not rows:
+                # Map positional arguments if plugin defines them
+                if hasattr(plugin_func, "__globals__") and "position_args" in plugin_func.__globals__:
+                    ind_opts.update(plugin_func.__globals__["position_args"](parts[1:]))
+
+                # Worker function to compute indicator and rename columns
+                def worker(df_slice, p_func, full_name, p_opts):
+                    res_df = p_func(df_slice, p_opts)
+                    if res_df.empty:
                         return None
 
-                    df = pd.DataFrame(rows, columns=cols)
-                    
-                    # Identify join keys and indicator value columns
-                    join_keys = [
-                        c for c in ['symbol', 'timeframe', 'date', 'time']
-                        if c in df.columns
-                    ]
-                    val_cols = [c for c in df.columns if c not in join_keys]
-                    
-                    # Rename indicator output columns
-                    rename_map = {}
-                    if len(val_cols) == 1:
-                        rename_map[val_cols[0]] = full_name
+                    # Prefix multi-column results with '__', single-column gets full name
+                    if len(res_df.columns) > 1:
+                        res_df.columns = [f"{full_name}__{c}" for c in res_df.columns]
                     else:
-                        for vc in val_cols:
-                            rename_map[vc] = f"{full_name}__{vc}"
-                    
-                    return df.rename(columns=rename_map)
+                        res_df.columns = [full_name]
+                    return res_df
 
-                # Submit indicator computation task
-                tasks.append(executor.submit(
-                    worker, symbol_tf_data, indicator_options, indicator_str, plugin_func
-                ))
+                tasks.append(executor.submit(worker, df_slice=sub_df, p_func=plugin_func,
+                                             full_name=ind_str, p_opts=ind_opts))
 
-    # Collect completed indicator DataFrames
-    indicator_dfs = []
-    for future in concurrent.futures.as_completed(tasks):
-        res = future.result()
-        if res is not None:
-            indicator_dfs.append(res)
+    # Collect completed results
+    results = [f.result() for f in concurrent.futures.as_completed(tasks) if f.result() is not None]
 
-    final_df = pd.DataFrame(data)
+    # If no results, initialize empty indicator dicts
+    if not results:
+        df['indicators'] = [{} for _ in range(len(df))]
+        is_asc = options.get('order', 'asc').lower() == 'asc'
+        return df.reset_index().sort_values(by=temp_sort, ascending=is_asc)
 
-    # If no indicators were computed, attach empty indicator dicts
-    if not indicator_dfs:
-        final_df['indicators'] = [{} for _ in range(len(final_df))]
-        return final_df
+    # Combine all indicator DataFrames and handle duplicate columns
+    indicator_matrix = pd.concat(results, axis=1)
+    indicator_matrix = indicator_matrix.groupby(level=0, axis=1).first()
 
-    merged_cols = set()
-
-    # Merge each indicator DataFrame into the final DataFrame
-    for ind_df in indicator_dfs:
-        join_keys = [
-            c for c in ['symbol', 'timeframe', 'date', 'time']
-            if c in ind_df.columns and c in final_df.columns
-        ]
-        new_cols = [c for c in ind_df.columns if c not in join_keys]
-        
-        for nc in new_cols:
-            merged_cols.add(nc)
-            if nc in final_df.columns:
-                temp_df = pd.merge(
-                    final_df[join_keys],
-                    ind_df[[*join_keys, nc]],
-                    on=join_keys,
-                    how='left'
-                )
-                final_df[nc] = final_df[nc].fillna(temp_df[nc])
-            else:
-                final_df = pd.merge(
-                    final_df,
-                    ind_df[[*join_keys, nc]],
-                    on=join_keys,
-                    how='left'
-                )
-
-    # Convert flat indicator columns into nested dictionaries
-    actual_indicator_cols = [c for c in merged_cols if c in final_df.columns]
-    indicator_records = final_df[actual_indicator_cols].to_dict(orient='records')
-    
-    nested_indicators = []
-    for row in indicator_records:
+    # Vectorized nesting of multi-column indicators into dictionaries
+    records = indicator_matrix.to_dict(orient='records')
+    nested_list = []
+    for rec in records:
         row_dict = {}
-        for k in sorted(row.keys()):
-            val = row[k]
-            if pd.isnull(val):
+        for k, v in rec.items():
+            if pd.isna(v):
                 continue
-            
             if "__" in k:
-                group_name, sub_name = k.split("__", 1)
-                if group_name not in row_dict:
-                    row_dict[group_name] = {}
-                row_dict[group_name][sub_name] = val
+                grp, sub = k.split("__", 1)
+                if grp not in row_dict:
+                    row_dict[grp] = {}
+                row_dict[grp][sub] = v
             else:
-                row_dict[k] = val
-        nested_indicators.append(row_dict)
+                row_dict[k] = v
+        nested_list.append(row_dict)
 
-    # Attach nested indicators to the final DataFrame
-    final_df['indicators'] = nested_indicators
+    # Attach nested indicators to the main DataFrame
+    indicator_matrix['indicators'] = nested_list
+    df = df.join(indicator_matrix[['indicators']], how='left')
+    df['indicators'] = df['indicators'].apply(lambda x: x if isinstance(x, dict) else {})
 
-    # Remove intermediate indicator columns and normalize invalid values
-    final_df.drop(columns=actual_indicator_cols, inplace=True)
-    final_df = final_df.replace({np.nan: None, np.inf: None, -np.inf: None})
-
-    # Apply final sorting
-    sort_cols = ['date', 'time'] if options.get('mt4') else ['time']
+    # Restore requested sort order
     is_asc = options.get('order', 'asc').lower() == 'asc'
-    final_df = final_df.sort_values(by=sort_cols, ascending=is_asc)
+    return df.reset_index().sort_values(by=temp_sort, ascending=is_asc)
 
-    return final_df
