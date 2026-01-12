@@ -35,12 +35,6 @@ import os
 import concurrent.futures
 from typing import List, Dict, Any
 
-def set_realtime_priority():
-    try:
-        os.nice(-20)
-    except PermissionError:
-        print("Run as root to increase priority via os.nice")
-
 def parallel_indicators(df: pd.DataFrame, options: Dict[str, Any], plugins: Dict[str, callable]):
     """Calculates technical indicators directly on a provided DataFrame in parallel.
 
@@ -86,7 +80,7 @@ def parallel_indicators(df: pd.DataFrame, options: Dict[str, Any], plugins: Dict
     select_data = options.get('select_data', [])
 
     # Process each selection in parallel using a thread pool
-    with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count(), initializer=set_realtime_priority) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
         for symbol, timeframe, _, _, indicators in select_data:
             try:
                 # Slice the DataFrame for the specific symbol/timeframe
