@@ -20,6 +20,8 @@ Full high-performance replay functionality.
 
 **Note:** How on earth is this so fast, on a laptop? We are leveraging the OS page cache and CPU cache. OS does all the work. CPU gets fed in the right way. We could potentially notch it up even more, using GPU's. Currently, my system is saturated on IO-the NVMe. So locally, on my system, a GPU implementation is not beneficial. Only those with NVMe arrays would benefit. Not many indie traders have raid NVMe. Perhaps in the cloud, but not at home.
 
+**Note:** Expect v1.1 to land, latest Wednesday.
+
 ## Notice: API 1.0 is now locked - 2026-01-12
 
 API Version 1.0 is now locked and can be considered stable. It will not change in URL syntax, functionality. Only critical bugfixes-also when encountered in indicators-will be fixed. API 1.1 will become the new version. 1.0 will remain supported, indefinately. You can build on it safely.
