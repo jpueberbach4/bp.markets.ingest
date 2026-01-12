@@ -2,6 +2,22 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Calculates the required warmup rows for the Aroon Indicator.
+    Aroon is based on a rolling window of (period + 1) to determine
+    the number of days since a high or low.
+    """
+    try:
+        period = int(options.get('period', 25))
+    except (ValueError, TypeError):
+        period = 25
+
+    # We need the full window plus a small buffer to ensure 
+    # the first row after the warmup has stable values.
+    # window = period + 1
+    return period + 2
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

@@ -2,6 +2,16 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Renko charts are path-dependent and ignore time.
+    A warmup is required to establish the 'last brick' price 
+    so that the first visible brick is accurately placed.
+    """
+    # 250 bars is standard for Renko to ensure the brick 
+    # levels have stabilized relative to the price trend.
+    return 250
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

@@ -2,6 +2,16 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Kagi charts are path-dependent and recursive.
+    A warmup is required to establish the initial shoulders/waists 
+    so that the 'thickness' (trend) is accurate at the start date.
+    """
+    # 200 bars is generally sufficient to establish a stable Kagi trend
+    # for most assets and reversal amounts.
+    return 200
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

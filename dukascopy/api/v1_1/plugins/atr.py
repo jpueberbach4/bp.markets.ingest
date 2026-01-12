@@ -2,6 +2,21 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Calculates the required warmup rows for ATR.
+    ATR uses Wilder's Smoothing (EWM) and requires roughly 3x the period 
+    to provide stabilized values compared to standard charting platforms.
+    """
+    # 1. Parse the period from options (default to 14)
+    try:
+        period = int(options.get('period', 14))
+    except (ValueError, TypeError):
+        period = 14
+
+    # Wilder's smoothing needs a longer tail (memory) to converge accurately.
+    return period * 3
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

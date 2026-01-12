@@ -2,6 +2,21 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Calculates the required warmup rows for KDJ.
+    KDJ requires 'n' rows for the initial RSV calculation, plus 
+    stabilization for the K and D exponential moving averages.
+    We use 3x 'n' for consistency and mathematical convergence.
+    """
+    try:
+        n = int(options.get('n', 9))
+    except (ValueError, TypeError):
+        n = 9
+
+    # Consistent with EMA and other oscillator stabilization buffers
+    return n * 3
+    
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

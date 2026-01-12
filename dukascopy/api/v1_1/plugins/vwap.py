@@ -2,6 +2,16 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    VWAP is session-based. To be accurate, it must calculate from 
+    the very first bar of the current trading session.
+    A buffer of 500 bars is a safe default for intraday charts 
+    to capture the session start.
+    """
+    # 500 bars covers a full standard equity session on 1m/2m timeframes.
+    return 500
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

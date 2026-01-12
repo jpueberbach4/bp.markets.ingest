@@ -2,6 +2,20 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Calculates the required warmup rows for Fractal Dimension.
+    Requires a full 'period' to calculate the Sevcik dimension.
+    We use 3x period for stability and consistency across the engine.
+    """
+    try:
+        period = int(options.get('period', 30))
+    except (ValueError, TypeError):
+        period = 30
+
+    # Consistent with other rolling-window stabilization buffers
+    return period * 3
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

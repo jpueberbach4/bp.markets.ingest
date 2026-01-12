@@ -2,6 +2,21 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Calculates the required warmup rows for Supertrend.
+    Supertrend uses ATR (Wilder's Smoothing) and a recursive state 
+    machine for the final bands. We use 3x period for stabilization.
+    """
+    try:
+        period = int(options.get('period', 10))
+    except (ValueError, TypeError):
+        period = 10
+
+    # 3x period ensures the ATR has converged and the 
+    # trend direction logic has stabilized.
+    return period * 3
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

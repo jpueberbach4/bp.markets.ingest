@@ -2,6 +2,25 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Calculates the required warmup rows for DPO.
+    DPO requires a full SMA period PLUS a shift of (period/2 + 1).
+    We use a 3x multiplier on the total logic to ensure stability.
+    """
+    try:
+        period = int(options.get('period', 20))
+    except (ValueError, TypeError):
+        period = 20
+
+    # Mathematical requirements:
+    # 1. The SMA needs 'period' rows.
+    # 2. The shift needs 'period/2 + 1' rows.
+    base_requirement = period + int((period / 2) + 1)
+    
+    # We apply a buffer to stay consistent with other indicators
+    return base_requirement + period
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

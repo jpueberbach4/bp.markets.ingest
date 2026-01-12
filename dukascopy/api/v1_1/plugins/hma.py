@@ -2,6 +2,22 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Calculates the required warmup rows for the Hull Moving Average.
+    HMA requires a full 'period' for the initial WMA components, 
+    plus additional rows for the final sqrt(period) smoothing.
+    We use a 3x multiplier to ensure total stability.
+    """
+    try:
+        period = int(options.get('period', 14))
+    except (ValueError, TypeError):
+        period = 14
+
+    # The mathematical minimum is (period + sqrt(period)).
+    # We use the 3x period standard to match SMA and EMA for visual consistency.
+    return period * 3
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

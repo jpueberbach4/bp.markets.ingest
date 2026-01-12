@@ -2,6 +2,25 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Calculates the required warmup rows for the Ultimate Oscillator.
+    UO uses three periods (p1, p2, p3). We use 3x the longest period
+    to ensure the rolling sums and the weighted average are stable.
+    """
+    try:
+        p1 = int(options.get('p1', 7))
+        p2 = int(options.get('p2', 14))
+        p3 = int(options.get('p3', 28))
+    except (ValueError, TypeError):
+        p1, p2, p3 = 7, 14, 28
+
+    # Determine the longest lookback
+    max_period = max(p1, p2, p3)
+
+    # 3x the longest period for statistical and engine-wide consistency
+    return max_period * 3
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

@@ -2,6 +2,24 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Calculates the required warmup rows for Keltner Channels.
+    Keltner Channels use an EMA for the Mid Line and Wilder's Smoothing 
+    for the ATR. We use 3x the largest period to ensure both converge.
+    """
+    try:
+        ema_period = int(options.get('period', 20))
+        atr_period = int(options.get('atr_period', 10))
+    except (ValueError, TypeError):
+        ema_period, atr_period = 20, 10
+
+    # Determine the limiting factor
+    max_period = max(ema_period, atr_period)
+
+    # 3x multiplier ensures EMA and Wilder's smoothing are accurate
+    return max_period * 3
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

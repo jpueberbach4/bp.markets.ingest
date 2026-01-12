@@ -2,6 +2,20 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Calculates the required warmup rows for the Elder Ray Index.
+    Elder Ray uses an EMA (Exponential Moving Average) for its baseline.
+    We use 3x the period to ensure the EMA has converged.
+    """
+    try:
+        period = int(options.get('period', 13))
+    except (ValueError, TypeError):
+        period = 13
+
+    # Consistent with EMA-based indicators (3x period)
+    return period * 3
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

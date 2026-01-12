@@ -2,6 +2,15 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    OBV is a cumulative indicator. 
+    A warmup period ensures the volume trend is established 
+    before the user's requested start date.
+    """
+    # 100 bars is a standard buffer to establish a stable volume trend
+    return 100
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

@@ -2,6 +2,20 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Calculates the required warmup rows for Rate of Change (ROC).
+    Requires 'period' rows to find the historical price comparison.
+    We use 3x period for stability and engine consistency.
+    """
+    try:
+        period = int(options.get('period', 12))
+    except (ValueError, TypeError):
+        period = 12
+
+    # Consistent with other rolling-window stabilization buffers
+    return period * 3
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

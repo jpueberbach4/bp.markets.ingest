@@ -2,6 +2,20 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Calculates the required warmup rows for MACD.
+    MACD uses two recursive EMAs (Fast/Slow) and then a third (Signal).
+    We use 3x the slow_period to ensure all three have converged.
+    """
+    try:
+        slow_period = int(options.get('slow', 26))
+    except (ValueError, TypeError):
+        slow_period = 26
+
+    # 3x the longest period (slow) is the standard for EMA convergence
+    return slow_period * 3
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

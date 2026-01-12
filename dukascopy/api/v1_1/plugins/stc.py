@@ -2,6 +2,22 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Calculates the required warmup rows for the Schaff Trend Cycle.
+    STC is highly sensitive as it involves MACD EMAs, two rolling 
+    stochastic windows, and final EMA smoothing.
+    We use 3x the slow MACD period to ensure all layers converge.
+    """
+    try:
+        slow = int(options.get('slow', 50))
+    except (ValueError, TypeError):
+        slow = 50
+
+    # 3x the longest recursive component (slow MACD) provides
+    # the necessary runway for the double-stochastic to stabilize.
+    return slow * 3
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

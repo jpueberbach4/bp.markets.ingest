@@ -2,6 +2,20 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Calculates the required warmup rows for CMO.
+    CMO requires a full 'period' to calculate rolling sums of gains/losses.
+    We use 3x period for stabilization and consistency.
+    """
+    try:
+        period = int(options.get('period', 14))
+    except (ValueError, TypeError):
+        period = 14
+
+    # Consistent with SMA/RSI stabilization buffers
+    return period * 3
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

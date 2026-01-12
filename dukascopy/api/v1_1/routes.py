@@ -15,9 +15,9 @@ from fastapi import Depends
 
 from api.state import cache
 from api.config.app_config import load_app_config
-from api.v1_1.helper import parse_uri, generate_sql, discover_options, generate_output, discover_all
+from api.v1_1.helper import parse_uri, discover_options, generate_output, discover_all, execute_sql
 from api.v1_1.parallel import parallel_indicators
-from api.v1_1.plugin import load_indicator_plugins
+from api.v1_1.plugin import load_indicator_plugins, indicator_registry
 from api.v1_1.version import API_VERSION
 
 @lru_cache
@@ -31,8 +31,6 @@ router = APIRouter(
     prefix=f"/ohlcv/{API_VERSION}",
     tags=["ohlcv1_0"]
 )
-
-indicator_registry = load_indicator_plugins()
 
 @router.get(f"/{{request_uri:path}}")
 async def get_ohlcv(
@@ -99,17 +97,22 @@ async def get_ohlcv(
         if options.get("mt4") and options.get("output_type") != "CSV":
             raise Exception("MT4 flag requires output/CSV")
 
-        # Generate SQL
-        sql = generate_sql(options)
 
         # In binary mode, we register MMap views            
         cache.register_views_from_options(options)
 
-        # Execute the SQL query in an in-memory DuckDB instance
-        rel = cache.get_conn().sql(sql)
-        df = rel.df()  # This is much faster than fetchall() + dict zip
+        df = execute_sql(options)
 
         enriched_df = parallel_indicators(df, options, indicator_registry)
+
+        if options.get('after'):
+            # Filter to keep only rows >= requested start time
+            enriched_df = enriched_df[enriched_df['time'] >= options['after']]
+
+        if options.get('limit'):
+            # Limit rows
+            enriched_df = enriched_df.iloc[:options['limit']]
+        
 
         columns = enriched_df.columns.tolist()
         results = enriched_df.values.tolist()

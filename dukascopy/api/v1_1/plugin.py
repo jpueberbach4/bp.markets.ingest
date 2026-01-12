@@ -53,3 +53,6 @@ def load_indicator_plugins():
                 plugins[plugin_name] = module.calculate
 
     return plugins
+
+
+indicator_registry = load_indicator_plugins()

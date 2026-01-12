@@ -2,6 +2,20 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Calculates the required warmup rows for Williams %R.
+    Requires a full 'period' to identify rolling highs and lows.
+    We use 3x period for stability and engine-wide consistency.
+    """
+    try:
+        period = int(options.get('period', 14))
+    except (ValueError, TypeError):
+        period = 14
+
+    # 3x period ensures the rolling extremes are well-established
+    return period * 3
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

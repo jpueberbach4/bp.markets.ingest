@@ -2,6 +2,22 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Calculates the required warmup rows for the Chaikin Oscillator.
+    Formula: EMA(ADL, short) - EMA(ADL, long).
+    We use 3x the long_period to ensure both EMAs and the cumulative
+    ADL trend have stabilized.
+    """
+    try:
+        # Default periods are usually 3 and 10
+        long_period = int(options.get('long', 10))
+    except (ValueError, TypeError):
+        long_period = 10
+
+    # 3x the longest window is the standard for EMA convergence
+    return long_period * 3
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

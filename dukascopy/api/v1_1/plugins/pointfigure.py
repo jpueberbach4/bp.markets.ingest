@@ -2,6 +2,16 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    P&F charts are path-dependent and ignore time.
+    A warmup is required to establish the initial price base and 
+    ensure the first visible column matches the preceding market context.
+    """
+    # 250 bars is recommended for P&F to ensure enough 'box' 
+    # movements have occurred to stabilize the trend direction.
+    return 250
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

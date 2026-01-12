@@ -2,6 +2,19 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Calculates the required warmup time in seconds based on the SMA period
+    and a wide range of timeframe strings (1m to 1Y).
+    """
+    # 1. Parse the period from options
+    try:
+        period = int(options.get('period', 14))
+    except (ValueError, TypeError):
+        period = 14
+
+    return period*3
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

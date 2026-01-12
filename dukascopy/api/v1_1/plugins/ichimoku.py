@@ -2,6 +2,25 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Calculates the required warmup rows for Ichimoku Cloud.
+    Requires the largest window (senkou_p) plus the displacement 
+    to ensure the cloud is fully formed at the start date.
+    """
+    try:
+        kijun_p = int(options.get('kijun', 26))
+        senkou_p = int(options.get('senkou', 52))
+        displace = int(options.get('displacement', kijun_p))
+    except (ValueError, TypeError):
+        senkou_p, displace = 52, 26
+
+    # Mathematical Requirement:
+    # We need senkou_p rows to calculate Span B, 
+    # then it is shifted by 'displace' rows.
+    # We use a 2x buffer on the total to ensure trend stability.
+    return (senkou_p + displace) * 2
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

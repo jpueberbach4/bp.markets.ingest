@@ -67,6 +67,9 @@ from builder.config.app_config import load_app_config
 from util.dataclass import *
 from util.discovery import *
 from util.resolver import *
+from api.state import *
+
+from api.v1_1.plugin import indicator_registry
 
 CSV_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 CSV_TIMESTAMP_FORMAT_MT4_DATE = "%Y.%m.%d"
@@ -314,59 +317,72 @@ def generate_output(options: Dict, columns: List, results: List):
 
     return None
 
-def generate_sql(options):
+
+from datetime import datetime, timezone, timedelta
+
+
+def _get_warmup_timestamp(symbol:str, tf:str, after_str:str, warmup_rows: int) -> str:
+    """Queries DuckDB to find the timestamp N rows before the 'after' date."""
+    if warmup_rows <= 0:
+        return after_str
+
+    view_name = f"{symbol}_{tf}_VIEW"
+
+    after_ms = int(
+        datetime.fromisoformat(after_str.replace(' ', 'T'))
+        .replace(tzinfo=timezone.utc)
+        .timestamp() * 1000
+    )
+
+    query = f"""
+        SELECT strftime(epoch_ms(time_raw::BIGINT), '{CSV_TIMESTAMP_FORMAT}') AS time 
+        FROM "{view_name}"
+        WHERE time_raw < {after_ms}
+        ORDER BY time_raw DESC
+        LIMIT 1 OFFSET {warmup_rows - 1}
     """
-    Build a DuckDB-compatible SQL query to retrieve OHLCV data from CSV
-    files or pre-created DuckDB views.
+    
+    try:
+        from api.state import cache
+        res = cache.get_conn().execute(query).fetchone()
+        if res:
+            after_str = res[0]
+    except Exception as e:
+        print(f"exception {e}")
+        pass
+    
+    return after_str # Fallback
 
-    The function supports multiple symbol/timeframe selections, optional
-    time filtering, result modifiers, ordering, and pagination. Each
-    (symbol, timeframe) selection is translated into an individual
-    SELECT statement. These statements are combined using UNION ALL and
-    wrapped by a final outer query that handles ordering, formatting,
-    limits, and offsets.
 
-    The query supports two modes:
-    - CSV mode (default): reads directly from CSV files via read_csv_auto
-    - Binary mode: queries from pre-loaded DuckDB views using millisecond
-      timestamps
+def _get_warmup_rows(symbol:str, timeframe:str, after_str:str, indicators: List[str]) -> str:
+    """Calculates the maximum number of rows needed for warmup."""
+    max_rows = 0
 
-    Args:
-        options (dict):
-            Parsed query options with the following keys:
+    for ind_str in indicators:
+        parts = ind_str.split('_')
+        name = parts[0]
+        if name in indicator_registry:
+            plugin_func = indicator_registry[name]
+            ind_opts = {"params": parts[1:]} 
 
-            - select_data (list[tuple]):
-                Tuples of the form:
-                (symbol, timeframe, input_filepath, modifiers)
+            if hasattr(plugin_func, "__globals__") and "position_args" in plugin_func.__globals__:
+                ind_opts.update(plugin_func.__globals__["position_args"](parts[1:]))
 
-            - after (str):
-                Inclusive lower time bound (ISO-8601–like string).
+            if hasattr(plugin_func, "__globals__") and "warmup_count" in plugin_func.__globals__:
+                print("jolly")
+                warmup_rows = plugin_func.__globals__["warmup_count"](ind_opts)
+                max_rows = max(max_rows, warmup_rows)
 
-            - until (str):
-                Exclusive upper time bound.
+    return max_rows
+            
 
-            - order (str, optional):
-                Sort order for results ("asc" or "desc"). Defaults to "asc".
 
-            - limit (int, optional):
-                Maximum number of rows to return. Defaults to 1440.
-
-            - offset (int, optional):
-                Row offset for pagination. Defaults to 0.
-
-            - fmode (str, optional):
-                If set to "binary", queries DuckDB views instead of CSV files.
-
-            - mt4 (bool, optional):
-                If True, formats output columns for MT4-compatible CSV export.
-
-    Returns:
-        str:
-            A complete SQL query string ready for execution in DuckDB.
-    """
-
+def execute_sql(options):
+    # this generates the sql per part, executes everypart, then pd.concats
+    # sorts by index
     # Holds individual SELECT statements (one per symbol/timeframe)
     select_sql_array = []
+    select_df = []
 
     # Extract common query options with defaults
     order = options.get('order', 'asc').lower()
@@ -375,108 +391,57 @@ def generate_sql(options):
     after_str = options.get('after')
     until_str = options.get('until')
 
+
     # Build a SELECT statement for each requested dataset
     for item in options['select_data']:
-        symbol, timeframe, input_filepath, modifiers = item[:4]
-        fmode = options.get('fmode')
-
-        # View name used when operating in binary mode
-        view_name = f"{symbol}_{timeframe}_VIEW"
-
-        # Enforce absolute paths for safety and consistency
-        if not Path(input_filepath).is_absolute():
-            raise ValueError("Invalid file path")
-
-        if fmode == "binary":
-            # Convert ISO timestamps to UTC milliseconds
-            after_ms = int(
-                datetime.fromisoformat(after_str.replace(' ', 'T'))
+        symbol, timeframe, input_filepath, modifiers, indicators = item
+        # we only support binary
+        warmup_rows = _get_warmup_rows(symbol, timeframe, after_str, indicators)
+        warmup_after_str = _get_warmup_timestamp(symbol, timeframe, after_str,warmup_rows)
+        warmup_limit = limit + warmup_rows
+        # construct the sql
+        after_ms = int(
+                datetime.fromisoformat(warmup_after_str.replace(' ', 'T'))
                 .replace(tzinfo=timezone.utc)
                 .timestamp() * 1000
-            )
-            until_ms = int(
+        )
+        until_ms = int(
                 datetime.fromisoformat(until_str.replace(' ', 'T'))
                 .replace(tzinfo=timezone.utc)
                 .timestamp() * 1000
-            )
-
-            # Base time filter on raw millisecond timestamps
-            where_clause = (
-                f"WHERE time_raw >= {after_ms} "
-                f"AND time_raw < {until_ms}"
-            )
-
-            # Optionally exclude the most recent candle
-            if "skiplast" in modifiers:
-                where_clause += (
-                    f" AND time_raw < "
-                    f"(SELECT MAX(time_raw) FROM \"{view_name}\")"
-                )
-
-            # Binary-mode SELECT statement (querying from a DuckDB view)
-            select_sql = f"""
-                SELECT 
-                    '{symbol}'::VARCHAR AS symbol,
-                    '{timeframe}'::VARCHAR AS timeframe,
-                    time_raw AS sort_key,
-                    open, high, low, close, volume
-                FROM "{view_name}"
-                {where_clause}
-            """
-        else:
-            # CSV-mode timestamp filtering
-            where_clause = (
-                f"WHERE Time >= '{after_str}'::TIMESTAMP "
-                f"AND Time < '{until_str}'::TIMESTAMP"
-            )
-
-            # Optionally exclude the most recent candle
-            if "skiplast" in modifiers:
-                where_clause += (
-                    f" AND Time < "
-                    f"(SELECT MAX(Time) FROM read_csv_auto('{input_filepath}'))"
-                )
-
-            # CSV-mode SELECT statement (reads directly from CSV)
-            select_sql = f"""
-                SELECT 
-                    '{symbol}'::VARCHAR AS symbol,
-                    '{timeframe}'::VARCHAR AS timeframe,
-                    (epoch(Time::TIMESTAMP) * 1000)::BIGINT AS sort_key,
-                    open, high, low, close, volume
-                FROM read_csv_auto('{input_filepath}')
-                {where_clause}
-            """
-
-        # Store the generated SELECT statement
-        select_sql_array.append(select_sql)
-
-    # Define outer SELECT columns depending on output format
-    if options.get('mt4'):
-        # MT4-compatible CSV formatting (date/time split)
-        outer_cols = f"""
-            strftime(epoch_ms(sort_key::BIGINT), '{CSV_TIMESTAMP_FORMAT_MT4_DATE}') AS date,
-            strftime(epoch_ms(sort_key::BIGINT), '{CSV_TIMESTAMP_FORMAT_MT4_TIME}') AS time,
-            open, high, low, close, volume
-        """
-    else:
-        # Standard CSV output with symbol/timeframe metadata
-        outer_cols = f"""
-            symbol,
-            timeframe,
-            CAST(strftime(epoch_ms(sort_key::BIGINT), '%Y') AS VARCHAR) AS year,
-            strftime(epoch_ms(sort_key::BIGINT), '{CSV_TIMESTAMP_FORMAT}') AS time,
-            open, high, low, close, volume
-        """
-
-    # Combine all SELECTs, apply ordering and pagination
-    final_sql = f"""
-        SELECT {outer_cols}
-        FROM (
-            {' UNION ALL '.join(select_sql_array)}
         )
-        ORDER BY sort_key {order}, symbol ASC
-        LIMIT {limit} OFFSET {offset};
-    """
+        # Base time filter on raw millisecond timestamps
+        where_clause = (
+            f"WHERE time_raw >= {after_ms} "
+            f"AND time_raw < {until_ms}"
+        )
 
-    return final_sql
+        # Optionally exclude the most recent candle
+        if "skiplast" in modifiers:
+            where_clause += (
+                f" AND time_raw < "
+                f"(SELECT MAX(time_raw) FROM \"{view_name}\")"
+            )
+
+        view_name = f"{symbol}_{timeframe}_VIEW"
+        # Binary-mode SELECT statement (querying from a DuckDB view)
+        sql = f"""
+            SELECT 
+                '{symbol}'::VARCHAR AS symbol,
+                '{timeframe}'::VARCHAR AS timeframe,
+                CAST(strftime(epoch_ms(time_raw::BIGINT), '%Y') AS VARCHAR) AS year,
+                strftime(epoch_ms(time_raw::BIGINT), '{CSV_TIMESTAMP_FORMAT}') AS time,
+                open, high, low, close, volume
+            FROM "{view_name}"
+            {where_clause}
+            ORDER BY time_raw {order} LIMIT {warmup_limit}
+        """
+        select_df.append(cache.get_conn().sql(sql).df())
+
+    df = pd.concat(select_df)
+    is_asc = options.get('order', 'desc').lower() == 'asc'
+    df = df.sort_values(by='time', ascending=is_asc).reset_index(drop=True)
+
+    return df
+
+

@@ -2,6 +2,15 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Heikin Ashi is recursive. While it doesn't have a fixed window,
+    a warmup period ensures the HA_Open prices have converged and 
+    properly reflect the prior trend.
+    """
+    # 50 rows is a standard buffer to stabilize recursive candle calculations
+    return 50
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

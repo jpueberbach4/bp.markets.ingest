@@ -2,6 +2,21 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Calculates the required warmup rows for Pivot Points.
+    Pivot Points use the High, Low, and Close of the previous 'lookback' period.
+    We use 3x lookback for consistency across the indicator engine.
+    """
+    try:
+        lookback = int(options.get('lookback', 1))
+    except (ValueError, TypeError):
+        lookback = 1
+
+    # While mathematically valid at lookback + 1, 
+    # we use 3x for pipeline uniformity.
+    return lookback * 3
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

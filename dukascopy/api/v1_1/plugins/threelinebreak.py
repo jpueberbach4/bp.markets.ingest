@@ -2,6 +2,21 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Three Line Break is a path-dependent charting method.
+    A warmup is required to establish the 'base' lines so that 
+    the break_count logic has historical extremes to reference.
+    """
+    try:
+        break_count = int(options.get('break', 3))
+    except (ValueError, TypeError):
+        break_count = 3
+
+    # We need enough bars to reliably form at least break_count lines.
+    # 200 bars is a safe industry standard for path-dependent charts.
+    return 200
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

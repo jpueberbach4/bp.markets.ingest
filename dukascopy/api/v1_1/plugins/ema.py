@@ -2,6 +2,21 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Calculates the required warmup rows for the EMA.
+    EMA is a recursive calculation that requires history to stabilize.
+    We use 3x the period as the industry standard for convergence.
+    """
+    try:
+        period = int(options.get('period', 14))
+    except (ValueError, TypeError):
+        period = 14
+
+    # 3x period ensures the initial seed value has decayed 
+    # and the EMA is mathematically accurate.
+    return period * 3
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

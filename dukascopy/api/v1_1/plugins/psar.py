@@ -2,6 +2,16 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    PSAR is a recursive state machine. 
+    A warmup is required to establish the correct trend direction (Bull/Bear),
+    the Extreme Point (EP), and the Acceleration Factor (AF).
+    """
+    # 100 bars is the industry standard to ensure the Parabolic SAR 
+    # has locked onto the trend and the acceleration has stabilized.
+    return 100
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.
