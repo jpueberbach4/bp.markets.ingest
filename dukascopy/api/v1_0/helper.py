@@ -230,7 +230,6 @@ def discover_options(options: Dict):
         # Initialize discovery
         discovery = DataDiscovery(config.builder)
         available = discovery.scan()
-        resolver = SelectionResolver(available)
 
         # Resolve selections
         resolver = SelectionResolver(available)

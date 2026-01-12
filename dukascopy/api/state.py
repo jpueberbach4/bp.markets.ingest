@@ -195,7 +195,7 @@ class MarketDataCache:
             # Iterate over all selected data entries
             for item in options['select_data']:
                 # Unpack the resolved selection tuple
-                symbol, tf, file_path, modifiers = item
+                symbol, tf, file_path, modifiers, indicators = item
                 # Register a DuckDB view for the given symbol and timeframe
                 self.register_view(symbol, tf, file_path)
 

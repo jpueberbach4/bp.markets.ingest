@@ -5,28 +5,37 @@
  File:        resolver.py
  Author:      JP Ueberbach
  Created:     2026-01-12
- Description: Provides functionality to resolve user dataset selection
-              strings into actionable tasks for the Dukascopy data pipeline.
+ Description: Resolves user dataset selection strings into executable tasks
+              for the Dukascopy data pipeline.
 
-              The `SelectionResolver` class manages a set of available datasets
-              and supports parsing selection strings in the form
-              `SYMBOL/TF[:modifier]`, including:
+              The `SelectionResolver` class operates on a collection of
+              available Dataset objects and parses selection strings of
+              the form:
+
+                  SYMBOL[mods][indicators]/TF[mods][indicators]
+
+              Supported features include:
                 - Regex-based symbol matching with wildcards (*)
-                - Comma-separated timeframes
-                - Global and local modifiers
+                - Bracket-aware parsing to safely handle nested expressions
+                - Global (symbol-level) and local (timeframe-level) modifiers
+                - Indicator definitions enclosed in square brackets
+                  (e.g., ema(20) → ema_20)
+                - Comma-separated timeframe specifications
+                - Validation of requested symbol/timeframe pairs
 
-              It validates requested selections against available datasets
-              and returns structured task information, including dataset paths
-              and associated modifiers.
+              The resolver returns structured task definitions containing
+              dataset metadata, resolved modifiers, and resolved indicators,
+              suitable for downstream ETL or analysis workflows.
 
  Requirements:
      - Python 3.8+
-     - etl.util.dataclass.Dataset
+     - util.dataclass.Dataset
 
  License:
      MIT License
 ===============================================================================
 """
+
 import os
 import re
 from typing import List, Tuple, Set, Dict
@@ -64,68 +73,77 @@ class SelectionResolver:
         """Resolves user selection strings into executable dataset tasks.
 
         This method parses selection arguments of the form
-        `SYMBOL/TF[:modifier]`, supporting regex-based symbol matching,
-        comma-separated timeframes, and both global and local modifiers.
-        It validates requested datasets against those available and
-        returns a structured list of tasks ready for execution.
+        `SYMBOL/TF[mods][inds]`, supporting:
+        - Regex-based symbol matching with wildcards
+        - Bracket-aware parsing of modifiers and indicators
+        - Comma-separated timeframe specifications
+        - Global (symbol-level) and local (timeframe-level) modifiers
+            and indicators
+
+        It validates requested symbol/timeframe pairs against the available
+        datasets and returns structured task definitions suitable for
+        downstream processing.
 
         Args:
             select_args (List[str]): A list of selection strings specifying
-                symbols, timeframes, and optional modifiers.
+                symbols, timeframes, modifiers, and indicators.
             force (bool): Whether to bypass validation errors for unresolved
                 symbol/timeframe pairs.
 
         Returns:
-            Tuple[List[Tuple[str, str, str, List[str]]], Set[Tuple[str, str]]]:
+            Tuple[List[List[Any]], Set[Tuple[str, str]]]:
                 A sorted list of resolved tasks in the form
-                (symbol, timeframe, path, modifiers), and a set of resolved
-                (symbol, timeframe) pairs.
+                [symbol, timeframe, path, modifiers, indicators], and a set
+                of resolved (symbol, timeframe) pairs.
 
         Raises:
             Exception: If validation fails and `force` is False.
         """
-        # Map of (symbol, timeframe) to the best dataset and its modifiers
-        best_tasks: Dict[Tuple[str, str], Tuple[Dataset, List[str]]] = {}
+        # Map (symbol, timeframe) to dataset, modifiers, and indicators
+        best_tasks: Dict[Tuple[str, str], Tuple[Dataset, List[str], List[str]]] = {}
 
         # Track all requested (symbol, timeframe) pairs for validation
         requested_pairs: Set[Tuple[str, str]] = set()
 
         # Process each user-provided selection argument
         for selection in select_args:
-            # Split the selection into raw symbol and timeframe components
+            # Split the selection into symbol and timeframe portions
             symbol_raw, tf_raw = self._split_selection(selection)
-            
-            # Parse symbol pattern and any global modifiers
-            symbol_pattern, global_mods = self._parse_mods(symbol_raw)
 
-            # Expand comma-separated timeframe specifications
-            tf_specs = [t.strip() for t in tf_raw.split(",")]
+            # Parse global modifiers and indicators from the symbol portion
+            symbol_pattern, global_mods, global_inds = self._parse_indicators(symbol_raw)
 
-            # Resolve symbol pattern to matching symbols (regex-supported)
+            # Split timeframe specs by commas, ignoring commas inside brackets
+            tf_specs = re.split(r',(?![^\[]*\])', tf_raw)
+
+            # Resolve symbol patterns to concrete symbols
             matched_symbols = self._match_symbols(symbol_pattern)
 
-            # Iterate over all resolved symbols and timeframe specs
+            # Iterate over resolved symbols and timeframe specifications
             for symbol in (matched_symbols or [symbol_pattern]):
                 for tf_spec in tf_specs:
-                    # Parse timeframe base and local modifiers
-                    tf_base, local_mods = self._parse_mods(tf_spec)
+                    # Parse local modifiers and indicators from the timeframe portion
+                    tf_base, local_mods, local_inds = self._parse_indicators(tf_spec.strip())
 
-                    # Identify the symbol/timeframe pair
+                    # Track the requested symbol/timeframe pair
                     pair = (symbol, tf_base)
                     requested_pairs.add(pair)
 
-                    # Skip pairs that do not exist in the dataset map
+                    # Skip pairs not present in the dataset map
                     if pair not in self.dataset_map:
                         continue
 
-                    # Merge global and local modifiers, preserving order
+                    # Merge global and local modifiers, preserving order and uniqueness
                     combined_mods = list(dict.fromkeys(global_mods + local_mods))
+
+                    # Merge global and local indicators, preserving order and uniqueness
+                    combined_inds = list(dict.fromkeys(global_inds + local_inds))
                     
-                    # Select the dataset associated with this pair
+                    # Retrieve the dataset associated with this pair
                     dataset = self.dataset_map[pair]
 
-                    # Record or overwrite the best task for this pair
-                    best_tasks[pair] = (dataset, combined_mods)
+                    # Record or overwrite the resolved task for this pair
+                    best_tasks[pair] = (dataset, combined_mods, combined_inds)
 
         # Determine which requested pairs were successfully resolved
         resolved_pairs = set(best_tasks.keys())
@@ -133,35 +151,93 @@ class SelectionResolver:
         # Validate results unless forced
         self._validate_results(requested_pairs, resolved_pairs, force)
 
-        # Return sorted, structured tasks and resolved pairs
+        # Return sorted tasks and resolved symbol/timeframe pairs
         return sorted([
-            (d.symbol, d.timeframe, d.path, mods)
-            for d, mods in best_tasks.values()
+            [d.symbol, d.timeframe, d.path, mods, inds]
+            for d, mods, inds in best_tasks.values()
         ]), resolved_pairs
+
 
 
     def _split_selection(self, selection: str) -> Tuple[str, str]:
         """Splits a selection string into symbol and timeframe components.
 
-        The expected input format is `SYMBOL/TF`. If the delimiter is missing,
-        an exception is raised to signal an invalid selection.
+        This method performs a bracket-aware split on the first `/` character,
+        ensuring that slashes contained within bracketed expressions are ignored.
+        The expected input format is `SYMBOL/TF`.
 
         Args:
-            selection (str): A selection string in the form `SYMBOL/TF`.
+            selection (str): A selection string in the form `SYMBOL/TF`, possibly
+                containing bracketed modifiers or indicators.
 
         Returns:
             Tuple[str, str]: A tuple containing the symbol portion and the
                 timeframe portion of the selection string.
 
         Raises:
-            Exception: If the selection string does not contain a `/` separator.
+            Exception: If the selection string cannot be split into exactly two
+                components.
         """
-        # Ensure the selection string follows the expected SYMBOL/TF format
-        if "/" not in selection:
+        # Split on the first '/' that is not inside brackets
+        parts = re.split(r'/(?![^\[]*\])', selection, 1)
+
+        # Validate that exactly two components were produced
+        if len(parts) != 2:
             raise Exception(f"Invalid format: {selection} (expected SYMBOL/TF)")
 
-        # Split on the first '/' only, allowing '/' in later components if needed
-        return selection.split("/", 1)
+        # Return symbol and timeframe portions
+        return parts[0], parts[1]
+
+
+
+    def _parse_indicators(self, part: str) -> Tuple[str, List[str], List[str]]:
+        """Parses indicators, modifiers, and base value from a selection segment.
+
+        This method extracts indicator definitions enclosed in square brackets,
+        normalizes their format (e.g., `ema(20,10)` → `ema_20_10`), and removes
+        them from the input string. The remaining string is then parsed to
+        extract the base value and any colon-separated modifiers.
+
+        Args:
+            part (str): A selection segment that may contain a base value,
+                optional modifiers separated by colons, and optional indicators
+                enclosed in square brackets.
+
+        Returns:
+            Tuple[str, List[str], List[str]]: A tuple containing:
+                - base (str): The base symbol or timeframe.
+                - modifiers (List[str]): A list of parsed modifier strings.
+                - indicators (List[str]): A list of normalized indicator names.
+        """
+        # Initialize the indicator collection
+        indicators = []
+            
+        # Search for indicator definitions enclosed in square brackets
+        bracket_match = re.search(r'\[(.*?)\]', part)
+        if bracket_match:
+            # Extract the raw indicator content inside the brackets
+            raw_inds_content = bracket_match.group(1)
+
+            # Split indicators by ':' or '|' separators
+            raw_inds_list = re.split(r'[:|]', raw_inds_content)
+                
+            # Normalize and collect each indicator
+            for ind in raw_inds_list:
+                clean = ind.strip().replace('(', '_').replace(')', '').replace(',', '_')
+                if clean:
+                    indicators.append(clean)
+                
+            # Remove the bracketed indicator portion from the input string
+            part = re.sub(r'\[.*?\]', '', part)
+
+        # Split the remaining string into base and colon-separated modifiers
+        bits = part.split(":")
+        base = bits[0]
+        modifiers = [m for m in bits[1:] if m]
+
+        # Return the parsed components
+        return base, modifiers, indicators
+
 
 
     def _parse_mods(self, part: str) -> Tuple[str, List[str]]:
