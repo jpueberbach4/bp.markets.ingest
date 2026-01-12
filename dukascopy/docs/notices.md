@@ -19,6 +19,80 @@ Full high-performance replay functionality.
 
 **Note:** Expect v1.1 to land, latest Wednesday.
 
+**Update:** Yeah it will definately be ready on wednesday
+
+Teaser:
+
+```sh
+GET http://localhost:8000/ohlcv/1.1/select/EUR-USD[sma(10):sma(20):macd(12,6,9)],15m[bbands(12,2):zscore(20)]/after/2020-01-01+00:00:00/output/JSON?page=1&order=desc&limit=1000
+```
+
+Result:
+
+```json
+{
+  "status": "ok",
+  "options": {
+    "select_data": [
+      [
+        "EUR-USD",
+        "15m",
+        "data/resample/15m/EUR-USD.bin",
+        [],
+        [
+          "sma_10",
+          "sma_20",
+          "macd_12_6_9",
+          "bbands_12_2",
+          "zscore_20"
+        ]
+      ]
+    ],
+    "after": "2020-01-01 00:00:00",
+    "until": "3000-01-01 00:00:00",
+    "output_type": "JSON",
+    "mt4": null,
+    "limit": 1000,
+    "offset": 0,
+    "order": "desc",
+    "callback": "__bp_callback",
+    "fmode": "binary",
+    "wall": 0.0678539276123047
+  },
+  "result": [
+    {
+      "symbol": "EUR-USD",
+      "timeframe": "15m",
+      "time": "2026-01-12 19:30:00",
+      "year": "2026",
+      "open": 1.16688,
+      "high": 1.16714,
+      "low": 1.16664,
+      "close": 1.16703,
+      "volume": 1111.51,
+      "indicators": {
+        "bbands_12_2": {
+          "lower": 1.16676,
+          "mid": 1.16757,
+          "upper": 1.16838
+        },
+        "macd_12_6_9": {
+          "hist": 0.00008,
+          "macd": 0.00026,
+          "signal": 0.00019
+        },
+        "sma_10": 1.16754,
+        "sma_20": 1.16795,
+        "zscore_20": {
+          "direction": 1,
+          "z_score": -1.2781
+        }
+      }
+    }
+```
+
+Need to optimize for performance (more) and the warmup is not done yet. But base-station is cemented.
+
 ## Notice: API 1.0 is now locked - 2026-01-12
 
 API Version 1.0 is now locked and can be considered stable. It will not change in URL syntax, functionality. Only critical bugfixes-also when encountered in indicators-will be fixed. API 1.1 will become the new version. 1.0 will remain supported, indefinately. You can build on it safely.
