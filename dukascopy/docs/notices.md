@@ -24,6 +24,7 @@ Full high-performance replay functionality.
 
 API Version 1.0 is now locked and can be considered stable. It will not change in URL syntax, functionality. Only critical bugfixes-also when encountered in indicators-will be fixed. API 1.1 will become the new version. 1.0 will remain supported, indefinately. You can build on it safely.
 
+PS: will there be more indicators added to 1.0? If 1.1 gets more indicators, 1.0 will get more indicators.
 
 ## Announcement: deprecation of the CSV format - 2026-01-10
 
