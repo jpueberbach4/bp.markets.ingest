@@ -379,6 +379,15 @@ async def get_ohlcv(
         results = rel.fetchall()
         columns = rel.columns
 
+        # Zip the DuckDB results
+        data = [dict(zip(columns, row)) for row in results]
+
+        # Call indicator extensions in parallel
+        from api.v1_0.parallel import parallel_indicators
+        enriched_df = parallel_indicators(data, options, indicator_registry)
+        columns = enriched_df.columns.tolist()
+        results = enriched_df.values.tolist()
+
         # Wall
         options['wall'] = time.time() - time_start
         # Generate the output

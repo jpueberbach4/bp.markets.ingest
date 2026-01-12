@@ -1,5 +1,12 @@
 import pandas as pd
 import numpy as np
+from typing import List
+
+def position_args(args: List):
+    return {
+        "period": args[0],
+        "std": args[1]
+    }
 
 def calculate(data, options):
     """

@@ -1,5 +1,13 @@
 import pandas as pd
 import numpy as np
+from typing import List
+
+def position_args(args: List):
+    return {
+        "fast": args[0],
+        "slow": args[1],
+        "signal": args[2]
+    }
 
 def calculate(data, options):
     """

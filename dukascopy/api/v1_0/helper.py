@@ -51,6 +51,7 @@ import io
 import os
 import orjson
 import mmap
+import re
 import numpy as np
 import pandas as pd
 import duckdb 
@@ -136,9 +137,13 @@ def parse_uri(uri: str) -> Dict[str, Any]:
             if val:
                 unquoted_val = unquote_plus(val)
 
-                # Normalize comma-separated symbol/timeframe pairs
-                if "," in val:
-                    symbol_part, tf_part = unquoted_val.split(",", 1)
+                parts = re.split(r',(?![^\[]*\])', unquoted_val)
+
+                if len(parts) >= 2:
+                    symbol_part = parts[0]
+                    # Rejoin the rest in case there were other commas outside brackets
+                    tf_part = ",".join(parts[1:]) 
+                    
                     formatted_selection = f"{symbol_part}/{tf_part}"
                     result["select_data"].append(formatted_selection)
                 else:
