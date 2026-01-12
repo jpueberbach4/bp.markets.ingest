@@ -24,7 +24,7 @@ Full high-performance replay functionality.
 
 API Version 1.0 is now locked and can be considered stable. It will not change in URL syntax, functionality. Only critical bugfixes-also when encountered in indicators-will be fixed. API 1.1 will become the new version. 1.0 will remain supported, indefinately. You can build on it safely.
 
-PS: will there be more indicators added to 1.0? If 1.1 gets more indicators, 1.0 will get more indicators. The main difference between API 1.1 and API 1.0 are it's selection syntax-you can specify indicators per timeframe and/or symbol in the DSL- and its internal handling of the warmup rows. 1.1 just selects more rows for the warmup, then pushes it through the existing indicators logic-multithreaded, then merges and just before output it drops the warmup rows. These are the main differences. The indicators are compatible between 1.0 and 1.1, hence it's easy to "backport" new indicators to 1.0.
+PS: will there be more indicators added to 1.0? If 1.1 gets more indicators, 1.0 will get more indicators. The main difference between API 1.1 and API 1.0 are its selection syntax-you can specify indicators per timeframe and/or symbol in the DSL- and its internal handling of the warmup rows. 1.1 just selects more rows for the warmup, then pushes it through the existing indicators logic-multithreaded, then merges and just before output it drops the warmup rows. These are the main differences. The indicators are compatible between 1.0 and 1.1, hence it's easy to "backport" new indicators to 1.0.
 
 ## Announcement: deprecation of the CSV format - 2026-01-10
 
