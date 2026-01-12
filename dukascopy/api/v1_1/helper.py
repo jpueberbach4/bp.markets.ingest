@@ -343,7 +343,30 @@ def generate_output(options: Dict, columns: List, results: List):
     return None
 
 
-def _get_warmup_timestamp(symbol: str, tf: str, after_str: str, warmup_rows: int) -> str:
+def _get_warmup_timestamp_fast(symbol: str, tf: str, after_ms: int, warmup_rows: int):
+    view_name = f"{symbol}_{tf}_VIEW"
+    # Access the raw NumPy array directly from your cache
+    cached = cache.mmaps.get(view_name)
+    if not cached:
+        return None
+    
+    # This is the NumPy array created in state.py (DTYPE['ts'])
+    # np.frombuffer(mm, dtype=DTYPE)['ts']
+    ts_array = np.frombuffer(cached['mm'], dtype=DTYPE)['ts']
+    
+    # 1. Binary search to find where 'after_ms' would be inserted (O(log n))
+    idx = np.searchsorted(ts_array, after_ms)
+    
+    # 2. Step back by the warmup amount
+    warmup_idx = idx - warmup_rows
+    
+    if warmup_idx < 0:
+        return ts_array[0] # Not enough history, take the oldest
+        
+    return ts_array[warmup_idx]
+
+
+def _get_warmup_after_ms(symbol: str, tf: str, after_ms: str, warmup_rows: int) -> str:
     """Returns the timestamp required to satisfy indicator warmup periods.
 
     This function queries DuckDB for the timestamp that is `warmup_rows`
@@ -371,16 +394,9 @@ def _get_warmup_timestamp(symbol: str, tf: str, after_str: str, warmup_rows: int
     # Construct the DuckDB view name for the symbol and timeframe
     view_name = f"{symbol}_{tf}_VIEW"
 
-    # Convert the provided timestamp to UTC milliseconds
-    after_ms = int(
-        datetime.fromisoformat(after_str.replace(' ', 'T'))
-        .replace(tzinfo=timezone.utc)
-        .timestamp() * 1000
-    )
-
     # Query for the timestamp `warmup_rows` before the given time
     query = f"""
-        SELECT strftime(epoch_ms(time_raw::BIGINT), '{CSV_TIMESTAMP_FORMAT}') AS time
+        SELECT raw_ts
         FROM "{view_name}"
         WHERE time_raw < {after_ms}
         ORDER BY time_raw DESC
@@ -394,12 +410,12 @@ def _get_warmup_timestamp(symbol: str, tf: str, after_str: str, warmup_rows: int
 
         # Update the timestamp if a result is found
         if res:
-            after_str = res[0]
+            after_ms = res[0]
     except Exception:
         # Silently fall back to the original timestamp on any error
         pass
 
-    return after_str
+    return after_ms
 
 
 
@@ -490,17 +506,17 @@ def execute_sql(options):
 
         # Determine required warmup rows for indicators
         warmup_rows = _get_warmup_rows(symbol, timeframe, after_str, indicators)
-        warmup_after_str = _get_warmup_timestamp(
-            symbol, timeframe, after_str, warmup_rows
-        )
         warmup_limit = limit + warmup_rows
 
         # Convert ISO timestamps to epoch milliseconds
         after_ms = int(
-            datetime.fromisoformat(warmup_after_str.replace(' ', 'T'))
+            datetime.fromisoformat(after_str.replace(' ', 'T'))
             .replace(tzinfo=timezone.utc)
             .timestamp() * 1000
         )
+
+        warmump_after_ms =_get_warmup_after_ms(symbol, timeframe, after_ms, warmup_rows)
+
         until_ms = int(
             datetime.fromisoformat(until_str.replace(' ', 'T'))
             .replace(tzinfo=timezone.utc)
@@ -509,7 +525,7 @@ def execute_sql(options):
 
         # Base WHERE clause filtering by raw millisecond timestamps
         where_clause = (
-            f"WHERE time_raw >= {after_ms} "
+            f"WHERE time_raw >= {warmump_after_ms} "
             f"AND time_raw < {until_ms}"
         )
 

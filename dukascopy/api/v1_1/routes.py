@@ -101,6 +101,11 @@ async def get_ohlcv(
         # In binary mode, we register MMap views            
         cache.register_views_from_options(options)
 
+        #import cProfile
+        #import pstats
+        #profiler = cProfile.Profile()
+        #profiler.enable()
+
         df = execute_sql(options)
 
         enriched_df = parallel_indicators(df, options, indicator_registry)
@@ -116,6 +121,14 @@ async def get_ohlcv(
 
         columns = enriched_df.columns.tolist()
         results = enriched_df.values.tolist()
+
+        #profiler.disable()
+        #import io
+        #s = io.StringIO()
+        #ps = pstats.Stats(profiler, stream=s).sort_stats('cumulative')
+        #ps.print_stats(30)
+
+        #return s.getvalue()
 
         # Wall
         options['wall'] = time.time() - time_start
