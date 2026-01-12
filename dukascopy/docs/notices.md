@@ -14,11 +14,7 @@ Introducing indicator-integrated outputs.
 - Feature-rich market simulation \
 Full high-performance replay functionality.
 
-Low profile work-weekend.
-
 **Note:** Added a small utility for "the less technical users" among us. Update and then copy over `config/dukascopy/http-docs/indicator.html` to your `config.user/dukascopy/http-docs` directory. Then open `http://localhost:8000/indicator.html`. It allows you to get your data more easily (as CSV).
-
-**Note:** I am extremely leveraging AI this weekend. Lazy but very effective. This is 0-cognitive load.
 
 **Note:** Now that we are on binary mode, i have updated the API record-limit to 5000. So you can get 5000 minutes, ... 5000 days etc. In one call.
 
