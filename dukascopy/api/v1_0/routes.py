@@ -65,6 +65,7 @@ import numpy as np
 import pandas as pd
 import orjson
 import duckdb
+import re
 
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import PlainTextResponse, JSONResponse
@@ -253,6 +254,21 @@ async def get_ohlcv_list(
         symbols = {}
         for ds in available_data:
             symbols.setdefault(ds.symbol, []).append(ds.timeframe)
+
+        # Define 
+        tf_order = {'m': 1, 'h': 60, 'd': 1440, 'W': 10080, 'M': 43200, 'Y': 525600}
+        
+        # Define sorting function
+        def tf_sort_key(tf):
+            match = re.match(r"(\d+)([a-zA-Z]+)", tf)
+            if match:
+                val, unit = match.groups()
+                return int(val) * tf_order.get(unit, 1)
+            return 0
+
+        # Sort the timeframes for each symbol
+        for symbol in symbols:
+            symbols[symbol].sort(key=tf_sort_key)
 
         # Default JSON output
         if options.get("output_type") == "JSON" or options.get("output_type") is None:
