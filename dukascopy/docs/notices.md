@@ -18,7 +18,11 @@ API Version 1.0 has been upgraded. Both 1.0 and 1.1 are equally as fast on the p
 
 What remains is that i need to support some functionality in 1.1. Eg getting a list of indicators with their descriptions, metadata and default arguments. Also 1.1 needs to get the list symbols API. So, still some stuff to do.
 
+When this release comes in, you will also be able to easily configure your own indicators [see here](https://github.com/jpueberbach4/bp.markets.ingest/blob/staging/0.6.6/dukascopy/config/plugins/indicators/indicators.md).
+
 Tomorrow i will build an interface on top of this new 1.1. Done for today. Cheers.
+
+**Note:** i dont think CSV input mode is anymore supported for this new release (upcoming 0.6.6). I am going to check it but i STRONGLY advice to go binary if you havent done so already.
 
 ## Notice: API 1.1 - 2026-01-12
 
