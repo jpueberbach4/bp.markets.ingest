@@ -447,7 +447,7 @@ async def get_ohlcv(
             df = cache.get_conn().sql(sql).df()
 
         # Determine chronological sort order
-        temp_sort = ['date', 'time'] if 'date' in df.columns else ['time']
+        temp_sort = ['date', 'time','symbol','timeframe'] if 'date' in df.columns else ['time','symbol','timeframe']
         df.sort_values(by=temp_sort, ascending=True, inplace=True)
 
         cols = [c for c in df.columns if c not in ['time','sort_key','index','year']]

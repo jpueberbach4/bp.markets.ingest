@@ -36,23 +36,29 @@ def load_indicator_plugins():
 
     """ 
     plugins = {}
-    plugin_dir = Path(__file__).parent.parent / "plugins/indicators"
-    if not plugin_dir.exists():
-        return plugins
+    
+    core_dir = Path(__file__).parent.parent / "plugins/indicators"
+    user_dir = Path("config.user/plugins/indicators") # Specific user path
+    
+    search_dirs = [core_dir, user_dir]
 
-    for file in os.listdir(plugin_dir):
-        if file.endswith(".py") and not file.startswith("__"):
-            plugin_name = file[:-3]
-            file_path = plugin_dir / file
-            
-            spec = importlib.util.spec_from_file_location(plugin_name, file_path)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            
-            if hasattr(module, "calculate"):
-                plugins[plugin_name] = module.calculate
+    for plugin_dir in search_dirs:
+        if not plugin_dir.exists():
+            continue
+
+        for file in os.listdir(plugin_dir):
+            if file.endswith(".py") and not file.startswith("__"):
+                plugin_name = file[:-3]
+                file_path = plugin_dir / file
+                
+                # Dynamic Import
+                spec = importlib.util.spec_from_file_location(plugin_name, file_path)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                
+                if hasattr(module, "calculate"):
+                    plugins[plugin_name] = module.calculate
 
     return plugins
-
 
 indicator_registry = load_indicator_plugins()
