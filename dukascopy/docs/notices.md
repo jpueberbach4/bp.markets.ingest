@@ -79,6 +79,8 @@ This is the MAXIMUM performance, with profiler disabled. 3 indicators, sma20/50/
 
 Why i removed DuckDB? When the tail updates or changes, i need to refresh a complete mmap view. Now, i am able to just update the tail. I still need to create this part.
 
+Intention of this is to be able to make your own tradingview charts-without drawing atm. If i have time extra i will add functionality to persist your chart settings per symbol/tf combination-save your settings. But this is not a promise. Chart building is part of the integration testing for v1.1. Stability tests and indicator verifications-especially those warmups i need to make sure they are large enough.
+
 ## Notice: API 1.0 is now locked - 2026-01-12
 
 API Version 1.0 is now locked and can be considered stable. It will not change in URL syntax, functionality. Only critical bugfixes-also when encountered in indicators-will be fixed. API 1.1 will become the new version. 1.0 will remain supported, indefinately. You can build on it safely.
