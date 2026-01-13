@@ -2,13 +2,6 @@
 
 What’s next?
 
-- Custom indicator support \
-I’ll add a config.user directory to the plugin loader so you can place your own plugins there. \
-Plugins are easy to write—I was able to add 40 in about half a day total. So if you’re missing \
-any indicator, you can simply add it yourself. I will also make an API call to get a list of \
-available plugins with their respective settings - so adding to HTML page becomes automatic. \
-See [here](https://github.com/jpueberbach4/bp.markets.ingest/blob/staging/0.6.6/dukascopy/docs/indicators.md) for preview.
-
 - Builder upgrade \
 Introducing indicator-integrated outputs.
 
@@ -19,11 +12,15 @@ See if we can remove "beta state".
 Full high-performance replay functionality.
 
 
-## Notice: API 1.0 is now **UN**locked - 2026-01-13
+## Notice: API 1.0 - 2026-01-13
 
-API Version 1.0 is unlocked since performance update and fixes will be applied. Warmup issue on indicators will be fixed PLUS about 50%-60% performance increase. Its functionality/query language will remain unchanged.
+API Version 1.0 has been upgraded. Both 1.0 and 1.1 are equally as fast on the price API. Insane speeds. When i release it, you should hold down page-up key on the 1m chart of EUR-USD. Priceless this performance. 
 
-## Notice: API 1.1
+What remains is that i need to support some functionality in 1.1. Eg getting a list of indicators with their descriptions, metadata and default arguments. Also 1.1 needs to get the list symbols API. So, still some stuff to do.
+
+Tomorrow i will build an interface on top of this new 1.1. Done for today. Cheers.
+
+## Notice: API 1.1 - 2026-01-12
 
 **Note:** Added a small utility for "the less technical users" among us. Update and then copy over `config/dukascopy/http-docs/indicator.html` to your `config.user/dukascopy/http-docs` directory. Then open `http://localhost:8000/indicator.html`. It allows you to get your data more easily (as CSV).
 
