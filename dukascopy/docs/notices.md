@@ -30,6 +30,10 @@ API Version 1.0 is unlocked since performance update and fixes will be applied. 
 
 **One last thing:** I’ve noticed that with the addition of more indicators, the browser is starting to experience increased lag. This is due to the growing amount of data being stored in memory arrays. I’ll address this by keeping only the currently visible data in memory, with one or two pages on either side cached. This approach will keep the interface responsive and performant.
 
+I got a question: why dont you build your own tradingview from this? NO! i will not :) Its about the replay functionality. I was annoyed by the backtesting platforms being around-various reasons-and decided to write my own base, cement a datalayer. Then i needed export capabilities for my "other tools", so the builder was built. Then i published the stuff as opensource-if beneficial for me, perhaps others could benefit as well. Then it got traction and i realized that I was not the only one feeling in a certain way about things. Then I decided to spend more time on this and just go all-the-way. Solve this completely. For everyone. I think coding is fun. This is a fun project too. How much can i squeeze out of a laptop with gigabytes of data. Answer: way above my own expectancy. I was planning a C++ version for extended capabilities. C++ is still important for the high-frequency version. It will be build. But after i have satisfied my primary need. 
+
+Ultimately, this is also a portfolio project too. 
+
 ## Announcement: deprecation of the CSV format - 2026-01-10
 
 The CSV format is now in a deprecated state. CSV will continue to be supported until the release of version 0.7, but new features—such as replay—will not support CSV. This is because CSV lacks the performance required for high-speed processing.
