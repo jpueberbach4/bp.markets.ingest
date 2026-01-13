@@ -457,7 +457,10 @@ async def get_ohlcv(
         cols.insert(2, 'year')
         df = df[cols]
 
-
+        # MT4 output handling
+        if options.get('mt4'):
+            cols = [c for c in df.columns if c not in ['symbol','timeframe','year']]
+            df = df[cols]
 
         # Normalize columns and rows
         columns = df.columns.tolist()
