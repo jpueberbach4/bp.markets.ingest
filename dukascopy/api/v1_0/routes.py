@@ -74,10 +74,12 @@ from pathlib import Path
 from functools import lru_cache
 from fastapi import Depends
 
-from api.state import cache
+from api.state11 import cache # this is update to new high performance mapping for binary mode
 from api.config.app_config import load_app_config
 from api.v1_0.helper import parse_uri, generate_sql, discover_options, generate_output, discover_all
-from api.v1_0.plugin import load_indicator_plugins
+from api.v1_1.helper import execute # this is update to new high performance execution for binary mode
+
+from api.v1_1.plugin import load_indicator_plugins
 from api.v1_0.version import API_VERSION
 
 
@@ -166,26 +168,92 @@ async def get_indicator(
         if options.get('mt4') and len(options['select_data'])>1:
             raise Exception("Multi-symbol or multi-timeframe is not supported with MT4 flag")
 
-        # Generate SQL
-        sql = generate_sql(options)
+        # We need to reconstruct indicator values
+        plugin_func = indicator_registry[name]
 
-        # In binary mode, we register MMap views            
-        cache.register_views_from_options(options)
+        # We feed the position_args with dummy values and get a dict
+        pos_opts = {}
+        default_opts = {}
+        if hasattr(plugin_func, "__globals__") and "position_args" in plugin_func.__globals__:
+            pos_opts.update(plugin_func.__globals__["position_args"]([0,1,2,3,4,5,6,7,8,9]))
+            default_opts.update(plugin_func.__globals__["position_args"]([]))
 
-        # Execute the SQL query in an in-memory DuckDB instance
-        rel = cache.get_conn().sql(sql)
-        results = rel.fetchall()
-        columns = rel.columns
-        
-        data = [dict(zip(columns, row)) for row in results]
+        # Now we start constructing a string like bbands_12_5_9 ie (stupid stuff but oke)
+        # Shouldnt have promised this update :|
+        result = sorted(pos_opts, key=pos_opts.get)
+       
+        # We now have the order of the positional elements
+        positional_opts = [name]
+        for setting_name in result:
+            if options.get(setting_name):
+                positional_opts.append(options.get(setting_name))
+            else:
+                positional_opts.append(default_opts.get(setting_name))
+
+        # we need to set the indicator string for execute to determine warmup rows
+        options['select_data'][0][4].append('_'.join(positional_opts))
+                
+        if options.get("fmode") == "binary":
+            # Get data efficiently in binary mode
+            cache.register_views_from_options(options)
+            df = execute(options)
+        else:
+            # Generate SQL (CSV-mode)
+            sql = generate_sql(options)
+            # Execute the SQL query in an in-memory DuckDB instance
+            df = cache.get_conn().sql(sql).df()
 
         # Call the indicator
-        columns, results = indicator_registry[name](data, options)
+        ind_opts = options.copy()
+
+        # Map positional arguments if plugin defines them
+        if hasattr(plugin_func, "__globals__") and "position_args" in plugin_func.__globals__:
+            ind_opts.update(plugin_func.__globals__["position_args"](positional_opts[1:]))
+
+        # Determine chronological sort order
+        temp_sort = ['date', 'time'] if 'date' in df.columns else ['time']
+        df.sort_values(by=temp_sort, ascending=True, inplace=True)
+
+        # Ensure numeric type for 'close' column if it exists
+        if 'close' in df.columns:
+            df['close'] = pd.to_numeric(df['close'], errors='coerce')
+        
+        # We call the indicator script here
+        calculated_df = indicator_registry[name](df, ind_opts)
+
+        # We join the calculated frame with the incoming dataframe
+        enriched_df = df.join(calculated_df)
+
+        # Sorting shit
+        is_asc = options.get('order', 'asc').lower() == 'asc'
+        enriched_df = enriched_df.reset_index().sort_values(by=temp_sort, ascending=is_asc)
+
+        # I wonder if this still is compatible with CSV. We will find out.
+        if options.get("fmode") == "binary":
+            if options.get('after'):
+                # Filter to keep only rows >= requested start time
+                enriched_df = enriched_df[enriched_df['time'] >= options['after']]
+
+            if options.get('limit'):
+                # Limit rows
+                enriched_df = enriched_df.iloc[:options['limit']]
+
+        enriched_df = enriched_df.drop(columns=['sort_key'])
+
+        # Backward compatability with CSV syntax before upgrade 1.0 API
+        cols = [c for c in enriched_df.columns if c not in ['time','sort_key','year','open','high','low','close','volume','index']]
+        cols.insert(2, 'time')
+        enriched_df = enriched_df[cols]
+
+        # Normalize columns and rows
+        columns = enriched_df.columns.tolist()
+        results = enriched_df.values.tolist()
 
         # Set back the indicator name
         options['indicator'] = name
 
         # Register wall-time
+        options['count'] = len(results)
         options['wall'] = time.time() - time_start
 
         # Generate the output
@@ -198,6 +266,8 @@ async def get_indicator(
         raise Exception(f"{name} had no output")
     except Exception as e:
         # Standardized error response
+        import traceback
+        traceback.print_exc()
         error_payload = {"status": "failure", "exception": f"{e}","options": options}
 
         if options.get("output_type") == "JSONP":

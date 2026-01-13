@@ -36,7 +36,7 @@ def load_indicator_plugins():
 
     """ 
     plugins = {}
-    plugin_dir = Path(__file__).parent / "plugins"
+    plugin_dir = Path(__file__).parent.parent / "plugins/indicators"
     if not plugin_dir.exists():
         return plugins
 

@@ -68,6 +68,8 @@ from util.dataclass import *
 from util.discovery import *
 from util.resolver import *
 
+from api.state11 import cache
+
 CSV_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 CSV_TIMESTAMP_FORMAT_MT4_DATE = "%Y.%m.%d"
 CSV_TIMESTAMP_FORMAT_MT4_TIME = "%H:%M:%S"
@@ -378,7 +380,6 @@ def generate_sql(options):
     # Build a SELECT statement for each requested dataset
     for item in options['select_data']:
         symbol, timeframe, input_filepath, modifiers = item[:4]
-        fmode = options.get('fmode')
 
         # View name used when operating in binary mode
         view_name = f"{symbol}_{timeframe}_VIEW"
@@ -387,66 +388,30 @@ def generate_sql(options):
         if not Path(input_filepath).is_absolute():
             raise ValueError("Invalid file path")
 
-        if fmode == "binary":
-            # Convert ISO timestamps to UTC milliseconds
-            after_ms = int(
-                datetime.fromisoformat(after_str.replace(' ', 'T'))
-                .replace(tzinfo=timezone.utc)
-                .timestamp() * 1000
-            )
-            until_ms = int(
-                datetime.fromisoformat(until_str.replace(' ', 'T'))
-                .replace(tzinfo=timezone.utc)
-                .timestamp() * 1000
-            )
 
-            # Base time filter on raw millisecond timestamps
-            where_clause = (
-                f"WHERE time_raw >= {after_ms} "
-                f"AND time_raw < {until_ms}"
+        # CSV-mode timestamp filtering
+        where_clause = (
+            f"WHERE Time >= '{after_str}'::TIMESTAMP "
+            f"AND Time < '{until_str}'::TIMESTAMP"
+        )
+
+        # Optionally exclude the most recent candle
+        if "skiplast" in modifiers:
+            where_clause += (
+                f" AND Time < "
+                f"(SELECT MAX(Time) FROM read_csv_auto('{input_filepath}'))"
             )
 
-            # Optionally exclude the most recent candle
-            if "skiplast" in modifiers:
-                where_clause += (
-                    f" AND time_raw < "
-                    f"(SELECT MAX(time_raw) FROM \"{view_name}\")"
-                )
-
-            # Binary-mode SELECT statement (querying from a DuckDB view)
-            select_sql = f"""
-                SELECT 
-                    '{symbol}'::VARCHAR AS symbol,
-                    '{timeframe}'::VARCHAR AS timeframe,
-                    time_raw AS sort_key,
-                    open, high, low, close, volume
-                FROM "{view_name}"
-                {where_clause}
-            """
-        else:
-            # CSV-mode timestamp filtering
-            where_clause = (
-                f"WHERE Time >= '{after_str}'::TIMESTAMP "
-                f"AND Time < '{until_str}'::TIMESTAMP"
-            )
-
-            # Optionally exclude the most recent candle
-            if "skiplast" in modifiers:
-                where_clause += (
-                    f" AND Time < "
-                    f"(SELECT MAX(Time) FROM read_csv_auto('{input_filepath}'))"
-                )
-
-            # CSV-mode SELECT statement (reads directly from CSV)
-            select_sql = f"""
-                SELECT 
-                    '{symbol}'::VARCHAR AS symbol,
-                    '{timeframe}'::VARCHAR AS timeframe,
-                    (epoch(Time::TIMESTAMP) * 1000)::BIGINT AS sort_key,
-                    open, high, low, close, volume
-                FROM read_csv_auto('{input_filepath}')
-                {where_clause}
-            """
+        # CSV-mode SELECT statement (reads directly from CSV)
+        select_sql = f"""
+            SELECT 
+                '{symbol}'::VARCHAR AS symbol,
+                '{timeframe}'::VARCHAR AS timeframe,
+                (epoch(Time::TIMESTAMP) * 1000)::BIGINT AS sort_key,
+                open, high, low, close, volume
+            FROM read_csv_auto('{input_filepath}')
+            {where_clause}
+        """
 
         # Store the generated SELECT statement
         select_sql_array.append(select_sql)
@@ -480,3 +445,91 @@ def generate_sql(options):
     """
 
     return final_sql
+
+
+
+def execute(options):
+    """Executes parameterized queries against cached market data and returns
+    a combined DataFrame.
+
+    For each requested (symbol, timeframe) pair, this function determines the
+    required indicator warmup window, converts time boundaries to epoch
+    milliseconds, computes record index ranges, retrieves the corresponding
+    data chunks from cache, and concatenates all results into a single
+    DataFrame.
+
+    Args:
+        options (dict): Query configuration dictionary with the following keys:
+            select_data (list): List of selections in the form
+                [symbol, timeframe, input_filepath, modifiers, indicators].
+            order (str, optional): Sort order, either 'asc' or 'desc'.
+                Defaults to 'asc'.
+            limit (int, optional): Maximum number of rows to return per
+                selection, excluding warmup rows. Defaults to 1440.
+            offset (int, optional): Row offset (currently unused).
+            after (str): ISO-format timestamp indicating the start time.
+            until (str): ISO-format timestamp indicating the end time.
+
+    Returns:
+        pd.DataFrame: Concatenated DataFrame containing all retrieved market
+        data, sorted by time.
+    """
+    # Containers for intermediate DataFrames
+    select_df = []
+
+    # Extract common query options with defaults
+    order = options.get('order', 'asc').lower()
+    limit = options.get('limit', 1440)
+    offset = options.get('offset', 0)
+    after_str = options.get('after')
+    until_str = options.get('until')
+
+    # Process each requested dataset
+    for item in options['select_data']:
+        symbol, timeframe, input_filepath, modifiers, indicators = item
+
+        # Determine how many warmup rows are needed for indicators
+        warmup_rows = _get_warmup_rows(symbol, timeframe, after_str, indicators)
+
+        # Convert ISO timestamps to epoch milliseconds (UTC)
+        after_ms = int(
+            datetime.fromisoformat(after_str.replace(' ', 'T'))
+            .replace(tzinfo=timezone.utc)
+            .timestamp() * 1000
+        )
+        until_ms = int(
+            datetime.fromisoformat(until_str.replace(' ', 'T'))
+            .replace(tzinfo=timezone.utc)
+            .timestamp() * 1000
+        )
+
+        # Total number of rows to retrieve, including warmup
+        total_limit = limit + warmup_rows
+
+        # Find index positions in cache for the requested time range
+        after_idx = cache.find_record(symbol, timeframe, after_ms, "right")
+        until_idx = cache.find_record(symbol, timeframe, until_ms, "right")
+
+        # Extend the start index backward to include warmup rows
+        after_idx = after_idx - warmup_rows
+
+        # Enforce the total row limit depending on sort order
+        if until_idx - after_idx > total_limit:
+            if order == "desc":
+                after_idx = until_idx - total_limit
+            if order == "asc":
+                until_idx = after_idx + total_limit
+
+        # Clamp the start index to zero to avoid negative indexing
+        if after_idx < 0:
+            after_idx = 0
+
+        # Retrieve the data slice from cache
+        chunk_df = cache.get_chunk(symbol, timeframe, after_idx, until_idx)
+
+        # Accumulate results for later concatenation
+        select_df.append(chunk_df)
+
+    # Concatenate all retrieved chunks into a single DataFrame
+    df = pd.concat(select_df)
+    return df
