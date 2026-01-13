@@ -266,8 +266,6 @@ async def get_indicator(
         raise Exception(f"{name} had no output")
     except Exception as e:
         # Standardized error response
-        import traceback
-        traceback.print_exc()
         error_payload = {"status": "failure", "exception": f"{e}","options": options}
 
         if options.get("output_type") == "JSONP":
@@ -438,20 +436,31 @@ async def get_ohlcv(
         if options.get("mt4") and options.get("output_type") != "CSV":
             raise Exception("MT4 flag requires output/CSV")
 
-        # Generate SQL
-        sql = generate_sql(options)
+        if options.get("fmode") == "binary":
+            # Get data efficiently in binary mode
+            cache.register_views_from_options(options)
+            df = execute(options)
+        else:
+            # Generate SQL (CSV-mode)
+            sql = generate_sql(options)
+            # Execute the SQL query in an in-memory DuckDB instance
+            df = cache.get_conn().sql(sql).df()
 
-        # In binary mode, we register MMap views            
-        cache.register_views_from_options(options)
+        # Determine chronological sort order
+        temp_sort = ['date', 'time'] if 'date' in df.columns else ['time']
+        df.sort_values(by=temp_sort, ascending=True, inplace=True)
 
-        # Execute the SQL query in an in-memory DuckDB instance
-        rel = cache.get_conn().sql(sql)
-        results = rel.fetchall()
-        columns = rel.columns
-        
-        data = [dict(zip(columns, row)) for row in results]
+        cols = [c for c in df.columns if c not in ['time','sort_key','index','year']]
+        cols.insert(2, 'time')
+        cols.insert(2, 'year')
+        df = df[cols]
+
+        # Normalize columns and rows
+        columns = df.columns.tolist()
+        results = df.values.tolist()
 
         # Wall
+        options['count'] = len(results)
         options['wall'] = time.time() - time_start
         # Generate the output
         output = generate_output(options, columns, results)
