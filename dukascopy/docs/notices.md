@@ -5,7 +5,8 @@ What’s next?
 - Custom indicator support \
 I’ll add a config.user directory to the plugin loader so you can place your own plugins there. \
 Plugins are easy to write—I was able to add 40 in about half a day total. So if you’re missing \
-any indicator, you can simply add it yourself. 
+any indicator, you can simply add it yourself. I will also make an API call to get a list of \
+available plugins with their respective settings - so adding to HTML page becomes automatic.
 
 - Builder upgrade \
 Introducing indicator-integrated outputs.
