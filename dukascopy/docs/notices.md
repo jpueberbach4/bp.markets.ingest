@@ -14,7 +14,7 @@ Full high-performance replay functionality.
 
 ## Notice: API 1.0 - 2026-01-13
 
-API Version 1.0 has been upgraded. Both 1.0 and 1.1 are equally as fast on the price API. Insane speeds. When i release it, you should hold down page-up key on the 1m chart of EUR-USD. Priceless this performance. 
+API Version 1.0 has been upgraded. Both 1.0 and 1.1 are equally as fast on the price API. Insane speeds. When i release it, you should hold down page-up key on the 1m chart of EUR-USD. Priceless this performance. API 1.0 warmup was fixed. Both 1.1 and 1.0 use the same indicator script format now.
 
 What remains is that i need to support some functionality in 1.1. Eg getting a list of indicators with their descriptions, metadata and default arguments. Also 1.1 needs to get the list symbols API. So, still some stuff to do.
 
