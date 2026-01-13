@@ -101,10 +101,13 @@ async def get_ohlcv(
         # In binary mode, we register MMap views            
         cache.register_views_from_options(options)
 
-        import cProfile
-        import pstats
-        profiler = cProfile.Profile()
-        profiler.enable()
+        profile = False
+
+        if profile:
+            import cProfile
+            import pstats
+            profiler = cProfile.Profile()
+            profiler.enable()
 
         df = execute_sql(options)
 
@@ -122,15 +125,14 @@ async def get_ohlcv(
         columns = enriched_df.columns.tolist()
         results = enriched_df.values.tolist()
 
-        profiler.disable()
-        import io
-        s = io.StringIO()
-        ps = pstats.Stats(profiler, stream=s).sort_stats('cumulative')
-        ps.print_stats(30)
+        if profile:
+            profiler.disable()
+            import io
+            s = io.StringIO()
+            ps = pstats.Stats(profiler, stream=s).sort_stats('cumulative')
+            ps.print_stats(30)
 
-        #print(s.getvalue())
-
-        #return s.getvalue()
+            print(s.getvalue())
 
         # Wall
         options['count'] = len(results)
