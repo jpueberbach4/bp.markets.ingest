@@ -5,8 +5,12 @@ What’s next?
 - Builder upgrade
 Introducing indicator-integrated outputs.
 
+- Pushed in: check panama with other source, minor effort. \
+See if we can remove "beta state".
+
 - Feature-rich market simulation \
 Full high-performance replay functionality.
+
 
 ## Notice: API 1.0 is now **UN**locked - 2026-01-13
 
