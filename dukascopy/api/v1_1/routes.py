@@ -13,7 +13,7 @@ from pathlib import Path
 from functools import lru_cache
 from fastapi import Depends
 
-from api.state import cache
+from api.state11 import cache
 from api.config.app_config import load_app_config
 from api.v1_1.helper import parse_uri, discover_options, generate_output, discover_all, execute_sql
 from api.v1_1.parallel import parallel_indicators
@@ -128,9 +128,12 @@ async def get_ohlcv(
         #ps = pstats.Stats(profiler, stream=s).sort_stats('cumulative')
         #ps.print_stats(30)
 
+        #print(s.getvalue())
+
         #return s.getvalue()
 
         # Wall
+        options['count'] = len(results)
         options['wall'] = time.time() - time_start
         # Generate the output
         output = generate_output(options, columns, results)

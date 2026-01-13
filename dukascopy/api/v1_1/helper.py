@@ -92,7 +92,7 @@ from builder.config.app_config import load_app_config
 from util.dataclass import *
 from util.discovery import *
 from util.resolver import *
-from api.state import *
+from api.state11 import *
 
 from api.v1_1.plugin import indicator_registry
 
@@ -507,7 +507,6 @@ def execute_sql(options):
 
         # Determine required warmup rows for indicators
         warmup_rows = _get_warmup_rows(symbol, timeframe, after_str, indicators)
-        warmup_limit = limit + warmup_rows
 
         # Convert ISO timestamps to epoch milliseconds
         after_ms = int(
@@ -516,50 +515,48 @@ def execute_sql(options):
             .timestamp() * 1000
         )
 
-        warmump_after_ms =_get_warmup_after_ms(symbol, timeframe, after_ms, warmup_rows)
-
         until_ms = int(
             datetime.fromisoformat(until_str.replace(' ', 'T'))
             .replace(tzinfo=timezone.utc)
             .timestamp() * 1000
         )
 
-        # Base WHERE clause filtering by raw millisecond timestamps
-        where_clause = (
-            f"WHERE time_raw >= {warmump_after_ms} "
-            f"AND time_raw < {until_ms}"
+
+        total_limit = limit + warmup_rows
+
+        after_idx = cache.find_record(symbol, timeframe, after_ms, "right")
+        until_idx = cache.find_record(symbol, timeframe, until_ms, "right")
+
+
+        after_ts = pd.to_datetime(np.datetime64(after_ms, 'ms'), unit='ms', utc=True).strftime('%Y-%m-%d %H:%M:%S')
+        until_ts = pd.to_datetime(np.datetime64(until_ms, 'ms'), unit='ms', utc=True).strftime('%Y-%m-%d %H:%M:%S')
+        if False: print(
+            f"""
+                after_idx: {after_idx} ({after_ms}) - {after_ts}
+                until_idx: {until_idx} ({until_ms}) - {until_ts}
+                total_limit: {total_limit}
+                warmup_rows: {warmup_rows}
+
+            """
         )
 
-        # Resolve DuckDB view name for the symbol/timeframe
-        view_name = f"{symbol}_{timeframe}_VIEW"
+        after_idx = after_idx - warmup_rows
 
-        # Optionally exclude the most recent candle
-        if "skiplast" in modifiers:
-            where_clause += (
-                f" AND time_raw < "
-                f"(SELECT MAX(time_raw) FROM \"{view_name}\")"
-            )
+        if after_idx<0:
+            after_idx = 0
 
-        # Construct the final SQL query
-        sql = f"""
-            SELECT 
-                '{symbol}'::VARCHAR AS symbol,
-                '{timeframe}'::VARCHAR AS timeframe,
-                CAST(strftime(epoch_ms(time_raw::BIGINT), '%Y') AS VARCHAR) AS year,
-                strftime(epoch_ms(time_raw::BIGINT), '{CSV_TIMESTAMP_FORMAT}') AS time,
-                open, high, low, close, volume
-            FROM "{view_name}"
-            {where_clause}
-            ORDER BY time_raw {order} LIMIT {warmup_limit}
-        """
+        #if until_idx - after_idx > total_limit:
+         #   until_idx = after_idx + total_limit            
 
-        # Execute query and collect the resulting DataFrame
-        select_df.append(cache.get_conn().sql(sql).df())
+        chunk_df = cache.get_chunk(symbol, timeframe, after_idx, until_idx)
+        select_df.append(chunk_df)
 
     # Concatenate all result sets into a single DataFrame
     df = pd.concat(select_df)
 
+    #print(df)
     # Apply final sorting order
+    #print(df)
     is_asc = options.get('order', 'desc').lower() == 'asc'
     df = df.sort_values(by='time', ascending=is_asc).reset_index(drop=True)
 
