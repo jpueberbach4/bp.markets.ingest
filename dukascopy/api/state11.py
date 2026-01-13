@@ -197,7 +197,7 @@ class MarketDataCache:
 
         return df
 
-    def get_record_count(self):
+    def get_record_count(self, symbol, tf):
         """Return the number of timestamped records available in a cached view.
 
         This method looks up the memory-mapped cache for the current view and
@@ -207,6 +207,9 @@ class MarketDataCache:
         Returns:
             int: Total number of records in the cache.
         """
+        # Construct the cache view name from symbol and timeframe
+        view_name = f"{symbol}_{tf}"
+        
         # Retrieve the cached view from the memory-mapped storage
         cached = self.mmaps.get(view_name)
 

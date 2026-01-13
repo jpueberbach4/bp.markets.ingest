@@ -469,9 +469,21 @@ def execute(options):
             if order == "asc":
                 until_idx = after_idx + total_limit
 
+        max_idx = cache.get_record_count(symbol, timeframe)
+
+        # Never slice beyond last row
+        if until_idx > max_idx:
+            until_idx = max_idx
+
         # Clamp the start index to zero to avoid negative indexing
         if after_idx < 0:
             after_idx = 0
+
+        # Skiplast handling
+        if until_idx == max_idx and "skiplast" in modifiers:
+            until_idx -= 1
+
+
 
         # Retrieve the data slice from cache
         chunk_df = cache.get_chunk(symbol, timeframe, after_idx, until_idx)

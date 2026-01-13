@@ -105,186 +105,201 @@ async def get_indicator(
     offset: Optional[int] = Query(0, ge=0, le=1000),
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
     callback: Optional[str] = "__bp_callback",
-    config = Depends(get_config)
+    config=Depends(get_config),
 ):
-    """Execute a registered indicator against OHLCV data and return results.
+    """
+    Execute a registered indicator against OHLCV data and return the results.
 
-    This endpoint resolves a path-based OHLCV query, executes the corresponding
-    SQL query against CSV-backed data sources, applies a registered indicator
-    function, and returns the computed indicator output. Pagination, ordering,
-    and output formatting are supported.
+    This endpoint resolves an indicator plugin by name, parses request options
+    from the URI, retrieves the required market data, executes the indicator,
+    and formats the output according to the requested mode (e.g., JSON, JSONP,
+    binary, or MT4-compatible output).
 
     Args:
-        name (str): Name of the indicator to execute. Must exist in the
-            ``indicator_registry``.
-        request_uri (str): Path-encoded OHLCV query string specifying symbol
-            selections, timeframes, temporal filters, and output options.
-        limit (Optional[int]): Maximum number of rows to return. Defaults
-            to 1440 and is constrained to the range 1–1440.
-        offset (Optional[int]): Row offset for pagination. Defaults to 0
-            and is constrained to the range 0–1000.
-        order (Optional[str]): Sort order for results, either "asc" or "desc".
-            Defaults to "asc".
-        callback (Optional[str]): JavaScript callback function name used
-            when output_type is "JSONP". Defaults to "__bp_callback".
+        name (str): Name of the registered indicator to execute.
+        request_uri (str): Encoded URI containing data source and indicator options.
+        limit (Optional[int]): Maximum number of rows to return.
+        offset (Optional[int]): Offset into the result set.
+        order (Optional[str]): Sort order for results ("asc" or "desc").
+        callback (Optional[str]): JSONP callback function name.
+        config: Application configuration dependency.
 
     Returns:
-        dict | PlainTextResponse | JSONResponse:
-        - A JSON object or CSV payload containing indicator results.
-        - A PlainTextResponse containing a JSONP payload when output_type
-          is "JSONP".
-        - A JSONResponse with error details and HTTP 400 status code on
-          failure.
+        Any: Formatted indicator output payload.
 
     Raises:
-        HTTPException: If the requested indicator is not found.
-        Exception: If query execution, indicator processing, or output
-        generation fails.
-
+        HTTPException: If the indicator is not found.
+        Exception: If execution fails or no output is produced.
     """
     try:
+        # Ensure the requested indicator exists
         if name not in indicator_registry:
             raise HTTPException(status_code=404, detail="Indicator not found")
-        
-        # Wall time
-        time_start = time.time()  
-        # Parse options
+
+        # Track execution time
+        time_start = time.time()
+
+        # Parse request URI into structured options
         options = parse_uri(request_uri)
-        
-        # Inject pagination, ordering, and callback parameters
+
+        # Inject pagination, ordering, callback, and output mode options
         options.update(
             {
                 "limit": limit,
                 "offset": offset,
                 "order": order,
                 "callback": callback,
-                "fmode": config.http.fmode
+                "fmode": config.http.fmode,
             }
         )
 
-        # Discover options
+        # Expand and normalize derived options
         options = discover_options(options)
 
-        if options.get('mt4') and len(options['select_data'])>1:
-            raise Exception("Multi-symbol or multi-timeframe is not supported with MT4 flag")
+        # MT4 mode does not support multi-symbol or multi-timeframe queries
+        if options.get("mt4") and len(options.get("select_data", [])) > 1:
+            raise Exception(
+                "Multi-symbol or multi-timeframe is not supported with MT4 flag"
+            )
 
-        # We need to reconstruct indicator values
+        # Resolve indicator plugin function
         plugin_func = indicator_registry[name]
-
-        # We feed the position_args with dummy values and get a dict
         pos_opts = {}
         default_opts = {}
+
+        # Extract positional argument mappings from the plugin, if defined
         if hasattr(plugin_func, "__globals__") and "position_args" in plugin_func.__globals__:
-            pos_opts.update(plugin_func.__globals__["position_args"]([0,1,2,3,4,5,6,7,8,9]))
+            pos_opts.update(plugin_func.__globals__["position_args"](list(range(10))))
             default_opts.update(plugin_func.__globals__["position_args"]([]))
 
-        # Now we start constructing a string like bbands_12_5_9 ie (stupid stuff but oke)
-        # Shouldnt have promised this update :|
+        # Build ordered positional argument list
         result = sorted(pos_opts, key=pos_opts.get)
-       
-        # We now have the order of the positional elements
         positional_opts = [name]
         for setting_name in result:
-            if options.get(setting_name):
-                positional_opts.append(options.get(setting_name))
-            else:
-                positional_opts.append(default_opts.get(setting_name))
+            val = options.get(setting_name, default_opts.get(setting_name))
+            positional_opts.append(str(val))
 
-        # we need to set the indicator string for execute to determine warmup rows
-        options['select_data'][0][4].append('_'.join(positional_opts))
-                
+        # Append indicator signature to select_data for cache/view resolution
+        options["select_data"][0][4].append("_".join(positional_opts))
+
+        # Acquire data using binary execution or SQL, depending on mode
         if options.get("fmode") == "binary":
-            # Get data efficiently in binary mode
             cache.register_views_from_options(options)
             df = execute(options)
         else:
-            # Generate SQL (CSV-mode)
-            sql = generate_sql(options)
-            # Execute the SQL query in an in-memory DuckDB instance
-            df = cache.get_conn().sql(sql).df()
+            # I wonder if CSV input mode is still supported. I dont think so......
+            df = cache.get_conn().sql(generate_sql(options)).df()
 
-        # Call the indicator
+        # Prepare indicator options, including positional arguments
         ind_opts = options.copy()
-
-        # Map positional arguments if plugin defines them
         if hasattr(plugin_func, "__globals__") and "position_args" in plugin_func.__globals__:
             ind_opts.update(plugin_func.__globals__["position_args"](positional_opts[1:]))
 
-        # Determine chronological sort order
-        temp_sort = ['date', 'time'] if 'date' in df.columns else ['time']
+        # Determine sort columns and normalize ordering
+        temp_sort = ["date", "time"] if "date" in df.columns else ["time"]
         df.sort_values(by=temp_sort, ascending=True, inplace=True)
 
-        # Ensure numeric type for 'close' column if it exists
-        if 'close' in df.columns:
-            df['close'] = pd.to_numeric(df['close'], errors='coerce')
-        
-        # We call the indicator script here
-        calculated_df = indicator_registry[name](df, ind_opts)
+        # Ensure numeric close values for indicator calculations
+        if "close" in df.columns:
+            df["close"] = pd.to_numeric(df["close"], errors="coerce")
 
-        # We join the calculated frame with the incoming dataframe
+        # Execute indicator logic and merge results with source data
+        calculated_df = indicator_registry[name](df, ind_opts)
         enriched_df = df.join(calculated_df)
 
-        # Sorting shit
-        is_asc = options.get('order', 'asc').lower() == 'asc'
-        enriched_df = enriched_df.reset_index().sort_values(by=temp_sort, ascending=is_asc)
+        # Apply final sorting order
+        is_asc = options.get("order", "asc").lower() == "asc"
+        enriched_df = (
+            enriched_df.reset_index()
+            .sort_values(by=temp_sort, ascending=is_asc)
+        )
 
-        # I wonder if this still is compatible with CSV. We will find out.
+        # Apply binary-mode filters (time window and row limit)
         if options.get("fmode") == "binary":
-            if options.get('after'):
-                # Filter to keep only rows >= requested start time
-                enriched_df = enriched_df[enriched_df['time'] >= options['after']]
+            if options.get("after"):
+                enriched_df = enriched_df[
+                    enriched_df["time"] >= options["after"]
+                ]
+            if options.get("limit"):
+                enriched_df = enriched_df.iloc[: options["limit"]]
 
-            if options.get('limit'):
-                # Limit rows
-                enriched_df = enriched_df.iloc[:options['limit']]
+        # Remove internal sorting column if present
+        enriched_df = enriched_df.drop(columns=["sort_key"], errors="ignore")
 
-        enriched_df = enriched_df.drop(columns=['sort_key'])
-
-        # Backward compatability with CSV syntax before upgrade 1.0 API
-        cols = [c for c in enriched_df.columns if c not in ['time','sort_key','year','open','high','low','close','volume','index']]
-        cols.insert(2, 'time')
+        # Rebuild output columns, preserving indicator columns
+        cols = [
+            c
+            for c in enriched_df.columns
+            if c
+            not in [
+                "time",
+                "sort_key",
+                "year",
+                "open",
+                "high",
+                "low",
+                "close",
+                "volume",
+                "index",
+            ]
+        ]
+        if "time" in enriched_df.columns:
+            cols.insert(2, "time")
         enriched_df = enriched_df[cols]
 
-        # MT4 output handling
-        if options.get('mt4'):
-            enriched_df['time'] = pd.to_datetime(enriched_df['time'])
-            date_col = enriched_df['time'].dt.strftime('%Y.%m.%d')
-            time_col = enriched_df['time'].dt.strftime('%H:%M:%S')
-            enriched_df.insert(0, 'date', date_col)
-            enriched_df['time'] = time_col
-            cols = [c for c in enriched_df.columns if c not in ['symbol','timeframe','year']]
+        # MT4-specific formatting: split datetime into date and time columns
+        if options.get("mt4"):
+            dt_series = pd.to_datetime(enriched_df["time"])
+            enriched_df.insert(0, "date", dt_series.dt.strftime("%Y.%m.%d"))
+            enriched_df["time"] = dt_series.dt.strftime("%H:%M:%S")
+
+            # Remove unsupported MT4 columns
+            cols = [
+                c
+                for c in enriched_df.columns
+                if c not in ["symbol", "timeframe", "year"]
+            ]
             enriched_df = enriched_df[cols]
 
-        # Normalize columns and rows
+        # Convert DataFrame to output payload
         columns = enriched_df.columns.tolist()
         results = enriched_df.values.tolist()
 
-        # Set back the indicator name
-        options['indicator'] = name
+        # Update execution metadata
+        options.update(
+            {
+                "indicator": name,
+                "count": len(results),
+                "wall": time.time() - time_start,
+            }
+        )
 
-        # Register wall-time
-        options['count'] = len(results)
-        options['wall'] = time.time() - time_start
-
-        # Generate the output
+        # Generate final output
         output = generate_output(options, columns, results)
-
-        # If we have output, return the result
         if output:
             return output
 
+        # Indicator produced no output
         raise Exception(f"{name} had no output")
-    except Exception as e:
-        # Standardized error response
-        error_payload = {"status": "failure", "exception": f"{e}","options": options}
 
+    except Exception as e:
+        # Build standardized error payload
+        error_payload = {
+            "status": "failure",
+            "exception": str(e),
+            "options": options,
+        }
+
+        # Return JSONP response if requested
         if options.get("output_type") == "JSONP":
             return PlainTextResponse(
-                content=f"{callback}({orjson.dumps(error_payload)});",
+                content=f"{callback}({orjson.dumps(error_payload).decode()});",
                 media_type="text/javascript",
             )
 
-        return JSONResponse(content=error_payload, status_code=400)        
+        # Default to JSON error response
+        return JSONResponse(content=error_payload, status_code=400)
+     
 
 
 @router.get(f"/list/{{request_uri:path}}")
@@ -388,123 +403,138 @@ async def get_ohlcv(
     offset: Optional[int] = Query(0, ge=0, le=1000),
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
     callback: Optional[str] = "__bp_callback",
-    config = Depends(get_config)
+    config=Depends(get_config),
 ):
-    """Resolve a path-based OHLCV query and return time-series market data.
+    """
+    Resolve a path-based OHLCV query and return time-series market data.
 
-    This endpoint accepts a path-encoded query language describing
-    symbol selections, timeframes, temporal filters, and output format.
-    The request is translated into a DuckDB SQL query executed against
-    CSV-backed OHLCV datasets.
-
-    The response format is determined by the parsed output type and may
-    be returned as JSON, JSONP, or CSV.
+    This endpoint parses an encoded request URI describing symbols, timeframes,
+    and data options, retrieves the corresponding OHLCV data, applies sorting
+    and formatting rules, and returns the result in the requested output format.
+    Special handling is applied for binary execution mode and MT4-compatible
+    output.
 
     Args:
-        request_uri (str):
-            Path-encoded query string defining symbol selections,
-            filters, output format, and platform-specific options.
-        limit (Optional[int]):
-            Maximum number of records to return.
-        offset (Optional[int]):
-            Row offset for pagination.
-        order (Optional[str]):
-            Sort order for results, either `"asc"` or `"desc"`.
-        callback (Optional[str]):
-            JSONP callback function name when output type is JSONP.
+        request_uri (str): Encoded URI describing the OHLCV query.
+        limit (Optional[int]): Maximum number of rows to return.
+        offset (Optional[int]): Offset into the result set.
+        order (Optional[str]): Sort order ("asc" or "desc").
+        callback (Optional[str]): JSONP callback function name.
+        config: Application configuration dependency.
 
     Returns:
-        dict | PlainTextResponse | JSONResponse:
-            A successful response contains OHLCV data formatted according
-            to the requested output type. On failure, an error payload is
-            returned with HTTP status code 400.
+        Any: Formatted OHLCV data payload.
+
+    Raises:
+        Exception: If validation fails or the output type is unsupported.
     """
-    # Wall
-    time_start = time.time()  
-    # Parse the path-based request URI into structured query options
+    # Track request execution time
+    time_start = time.time()
+
+    # Parse the request URI into structured query options
     options = parse_uri(request_uri)
 
-    # Inject pagination, ordering, and callback parameters
+    # Inject pagination, ordering, callback, and output mode options
     options.update(
         {
             "limit": limit,
             "offset": offset,
             "order": order,
             "callback": callback,
-            "fmode": config.http.fmode
+            "fmode": config.http.fmode,
         }
     )
 
     try:
-        # Discover options
+        # Normalize and expand derived options
         options = discover_options(options)
 
-        # Handle MT4 cases
-        if options.get("mt4") and len(options.get("select_data"))>1:
-            raise Exception("MT4 flag cannot handle multi-symbol/multi-timeframe selects")
+        # Validate MT4-specific constraints
+        if options.get("mt4"):
+            if len(options.get("select_data", [])) > 1:
+                raise Exception(
+                    "MT4 flag cannot handle multi-symbol/multi-timeframe selects"
+                )
+            if options.get("output_type") != "CSV":
+                raise Exception("MT4 flag requires output/CSV")
 
-        if options.get("mt4") and options.get("output_type") != "CSV":
-            raise Exception("MT4 flag requires output/CSV")
-
+        # Acquire data using binary execution or SQL, depending on mode
         if options.get("fmode") == "binary":
-            # Get data efficiently in binary mode
             cache.register_views_from_options(options)
             df = execute(options)
         else:
-            # Generate SQL (CSV-mode)
+            # I dont think CSV input mode is still supported... we will find out soon
             sql = generate_sql(options)
-            # Execute the SQL query in an in-memory DuckDB instance
             df = cache.get_conn().sql(sql).df()
 
-        # Determine chronological sort order
-        temp_sort = ['date', 'time','symbol','timeframe'] if 'date' in df.columns else ['time','symbol','timeframe']
-        # Restore requested sort order
-        is_asc = options.get('order', 'asc').lower() == 'asc'
-        df = df.reset_index().sort_values(by=temp_sort, ascending=is_asc)
+        # Determine sort columns based on schema and apply ordering
+        sort_cols = (
+            ["date", "time", "symbol", "timeframe"]
+            if "date" in df.columns
+            else ["time", "symbol", "timeframe"]
+        )
+        is_asc = options.get("order", "asc").lower() == "asc"
+        df = df.reset_index().sort_values(by=sort_cols, ascending=is_asc)
 
-        cols = [c for c in df.columns if c not in ['time','sort_key','index','year']]
-        cols.insert(2, 'time')
-        cols.insert(2, 'year')
+        # Reorder columns for backward compatibility
+        cols = [
+            c for c in df.columns if c not in ["time", "sort_key", "index", "year"]
+        ]
+        cols.insert(2, "time")
+        cols.insert(2, "year")
         df = df[cols]
 
-        # MT4 output handling
-        if options.get('mt4'):
-            df['time'] = pd.to_datetime(df['time'])
-            date_col = df['time'].dt.strftime('%Y.%m.%d')
-            time_col = df['time'].dt.strftime('%H:%M:%S')
-            df.insert(0, 'date', date_col)
-            df['time'] = time_col
-            cols = [c for c in df.columns if c not in ['symbol','timeframe','year']]
+        # Apply MT4-specific output formatting
+        if options.get("mt4"):
+            # Convert time column to datetime for safe splitting
+            df["time"] = pd.to_datetime(df["time"])
+
+            # Split datetime into MT4-compatible date and time columns
+            df.insert(0, "date", df["time"].dt.strftime("%Y.%m.%d"))
+            df["time"] = df["time"].dt.strftime("%H:%M:%S")
+
+            # Drop unsupported MT4 columns
+            cols = [
+                c
+                for c in df.columns
+                if c not in ["symbol", "timeframe", "year"]
+            ]
             df = df[cols]
 
-        # Normalize columns and rows
+        # Prepare output payload
         columns = df.columns.tolist()
         results = df.values.tolist()
 
-        # Wall
-        options['count'] = len(results)
-        options['wall'] = time.time() - time_start
-        # Generate the output
-        output = generate_output(options, columns, results)
+        # Attach metadata
+        options["count"] = len(results)
+        options["wall"] = time.time() - time_start
 
-        # If we have output, return the result
+        # Generate and return formatted output
+        output = generate_output(options, columns, results)
         if output:
             return output
 
-        # Unsupported output type
+        # No compatible output format found
         raise Exception("Unsupported content type")
 
     except Exception as e:
-        # Standardized error response
-        error_payload = {"status": "failure", "exception": f"{e}","options": options}
+        # Build standardized error response
+        error_payload = {
+            "status": "failure",
+            "exception": str(e),
+            "options": options,
+        }
 
+        # Return JSONP error response if requested
         if options.get("output_type") == "JSONP":
             return PlainTextResponse(
-                content=f"{callback}({orjson.dumps(error_payload)});",
+                content=f"{callback}({orjson.dumps(error_payload).decode()});",
                 media_type="text/javascript",
             )
 
+        # Default to JSON error response
         return JSONResponse(content=error_payload, status_code=400)
+
 
 
 
