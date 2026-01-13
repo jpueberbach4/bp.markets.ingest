@@ -123,16 +123,6 @@ class MarketDataCache:
         # Interpret the memory-mapped bytes as a structured NumPy array
         data_view = np.frombuffer(new_mm, dtype=DTYPE)
 
-        # Prepare a dictionary of columns (optional, can be used for DataFrame creation)
-        data_dict = {
-            "time_raw": data_view['ts'],
-            "open": data_view['ohlcv'][:, 0],
-            "high": data_view['ohlcv'][:, 1],
-            "low": data_view['ohlcv'][:, 2],
-            "close": data_view['ohlcv'][:, 3],
-            "volume": data_view['ohlcv'][:, 4]
-        }
-
         # Clean up old cached view if present
         if cached:
             cached['data'] = None
