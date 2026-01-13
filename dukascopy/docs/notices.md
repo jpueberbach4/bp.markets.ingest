@@ -19,81 +19,11 @@ Full high-performance replay functionality.
 
 **Note:** Expect v1.1 to land, latest Wednesday.
 
-**Update:** Yeah it will definately be ready on wednesday
+**Update:** I’ve been working on integrated indicator support. I wasn’t satisfied with the performance in version 1.1, so I decided to remove DuckDB and take a different approach using direct NumPy computations. It’s still heavily under tuning, but the screenshot below shows what you can expect. On Wednesday, I’ll be spending the entire day building an HTML overlay that will allow you to apply indicators directly. We currently have around 40 indicators available, but I’ll focus on supporting those that can be plotted on charts or are most commonly used (SMA, EMA, RSI, MACD, etc. — essentially the top 10).
 
-Teaser:
+![Example indicator integration](../images/integration_test1.png)
 
-```sh
-GET http://localhost:8000/ohlcv/1.1/select/EUR-USD[sma(10):sma(20):macd(12,6,9):rsi(13):rsi(14)],1m[bbands(12,3)] \
-/after/2026-01-01+00:00:00/output/JSON?page=1&order=desc&limit=1000
-```
-
-Result:
-
-```json
-{
-  "status": "ok",
-  "options": {
-    "select_data": [
-      [
-        "EUR-USD",
-        "1m",
-        "data/aggregate/1m/EUR-USD.bin",
-        [],
-        [
-          "sma_10",
-          "sma_20",
-          "macd_12_6_9",
-          "rsi_13",
-          "rsi_14",
-          "bbands_12_3"
-        ]
-      ]
-    ],
-    "after": "2026-01-01 00:00:00",
-    "until": "3000-01-01 00:00:00",
-    "output_type": "JSON",
-    "mt4": null,
-    "limit": 1000,
-    "offset": 0,
-    "order": "desc",
-    "callback": "__bp_callback",
-    "fmode": "binary",
-    "wall": 0.0672287940979004
-  },
-  "result": [
-    {
-      "symbol": "EUR-USD",
-      "timeframe": "1m",
-      "time": "2026-01-12 20:08:00",
-      "year": "2026",
-      "open": 1.16659,
-      "high": 1.16669,
-      "low": 1.16658,
-      "close": 1.1666,
-      "volume": 23.13,
-      "indicators": {
-        "bbands_12_3": {
-          "lower": 1.1664,
-          "mid": 1.1668,
-          "upper": 1.1671
-        },
-        "macd_12_6_9": {
-          "hist": 0,
-          "macd": 0.0001,
-          "signal": 0
-        },
-        "rsi_13": 38.94,
-        "rsi_14": 39.42,
-        "sma_10": 1.1667,
-        "sma_20": 1.1668
-      }
-    },
-```
-
-Need to optimize for performance (more) and the warmup is not done yet. But base-station is cemented.
-
-You will be able to stack multiple indicators with same name but different values in one request (see sma and rsi eg).
+**Note:** API v1.0 will be faster than v1.1 when indicators are included in the query, which is expected due to the additional computations involved. Indicator calculations are performed in parallel, and overall performance remains solid. With three indicators added to a 1-minute chart, response times stay under 80 ms. API v1.0 will remain supported.
 
 ## Notice: API 1.0 is now locked - 2026-01-12
 
