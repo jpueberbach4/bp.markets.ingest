@@ -2,10 +2,7 @@
 
 What’s next?
 
-- Indicator support in selectors \
-Implemented in a manner consistent with existing modifiers—symbol-wide by default, with timeframe-specific overrides.
-
-- Builder upgrade and HTTP API upgrade to v1.1 \
+- Builder upgrade
 Introducing indicator-integrated outputs.
 
 - Feature-rich market simulation \
@@ -17,71 +14,13 @@ Full high-performance replay functionality.
 
 **Note:** How on earth is this so fast, on a laptop? We are leveraging the OS page cache and CPU cache. OS does all the work. CPU gets fed in the right way. We could potentially notch it up even more, using GPU's. Currently, my system is saturated on IO-the NVMe. So locally, on my system, a GPU implementation is not beneficial. Only those with NVMe arrays would benefit. Not many indie traders have raid NVMe. Perhaps in the cloud, but not at home.
 
-**Note:** Expect v1.1 to land, latest Wednesday.
+**Update:** Expect v1.1 to land, latest Wednesday. For data-only queries, eg like in V1.0, V1.1 is MUCH faster. 0.05 (V1.0) -> 0.017 (V1.1). Decision: V1.1 query logic will be migrated to V1.0. It solves the warmup issues and increases speed even more. Speed is ridiculous-in a good way-for data-only queries.
 
 **Update:** I’ve been working on integrated indicator support. I wasn’t satisfied with the performance in version 1.1, so I decided to remove DuckDB and take a different approach using direct NumPy computations. It’s still heavily under tuning, but the screenshot below shows what you can expect. On Wednesday, I’ll be spending the entire day building an HTML overlay that will allow you to apply indicators directly. We currently have around 40 indicators available, but I’ll focus on supporting those that can be plotted on charts or are most commonly used (SMA, EMA, RSI, MACD, etc. — essentially the top 10).
 
 ![Example indicator integration](../images/integration_test1.png)
 
-**Note:** API v1.0 will be faster than v1.1 when indicators are included in the query, which is expected due to the additional computations involved. Indicator calculations are performed in parallel, and overall performance remains solid. With three indicators added to a 1-minute chart, response times stay under 80 ms. API v1.0 will remain supported.
-
-```sh
-{
-  "status": "ok",
-  "options": {
-    "select_data": [
-      [
-        "EUR-USD",
-        "1m",
-        "data/aggregate/1m/EUR-USD.bin",
-        [],
-        [
-          "sma_10",
-          "sma_50",
-          "sma_200"
-        ]
-      ]
-    ],
-    "after": "2025-02-01 00:00:00",
-    "until": "3000-01-01 00:00:00",
-    "output_type": "JSON",
-    "mt4": null,
-    "limit": 1440,
-    "offset": 0,
-    "order": "desc",
-    "callback": "__bp_callback",
-    "fmode": "binary",
-    "count": 1440,
-    "wall": 0.0485472679138184
-  },
-  "result": [
-    {
-      "symbol": "EUR-USD",
-      "timeframe": "1m",
-      "time": "2026-01-13 11:54:00",
-      "sort_key": 1768305240000,
-      "open": 1.16707,
-      "high": 1.16707,
-      "low": 1.16698,
-      "close": 1.16699,
-      "volume": 115.65,
-      "year": "2026",
-      "indicators": {
-        "sma_10": 1.16699,
-        "sma_200": 1.1663,
-        "sma_50": 1.16682
-      }
-    },
-    ...
-```
-
-This is the MAXIMUM performance, with profiler disabled. 3 indicators, sma20/50/100 on EURUSD 1m chart. Single asset-in query.
-
 **Why i removed DuckDB?** It was a refresh thingy but more importantly: for the warmup i had to scan the index for a number of records before a certain timestamp-the "after". DuckDB sucks at this, it quacked at me in a vicious way. I had increased latency of 30-40ms on the API calls because of that search. So i went on trying different things and ultimately found a solution. Now i perform a binary search for the after, retrieve its direct record(index)-id and just substract the fixed amount-the warmup count needed-from that. Then i take a chunk of data, using from-idx to to-idx, and feed that via a dataframe into the multithreaded indicators. This solved the issue. In fact, it is "relatively" much faster. The new overhead of 10-17 ms is now in the threadpool. When this is fixed, i declare API v1.1 beta-ready.
-
-Intention of this is to be able to make your own tradingview charts-without drawing atm. If i have time extra i will add functionality to persist your chart settings per symbol/tf combination-save your settings. But this is not a promise. Chart building is part of the integration testing for v1.1. Stability tests and indicator verifications-especially those warmups i need to make sure they are large enough.
-
-PS i said API v1.0 was locked down. I am debating of i should transfer the Numpy way to that API as well. Fixes warmup and gains 20ms-more or less- on that API for 1m. You wont notice the difference in operation. Only a bit more speed.
 
 **One last thing:** I’ve noticed that with the addition of more indicators, the browser is starting to experience increased lag. This is due to the growing amount of data being stored in memory arrays. I’ll address this by keeping only the currently visible data in memory, with one or two pages on either side cached. This approach will keep the interface responsive and performant.
 
