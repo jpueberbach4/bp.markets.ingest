@@ -3,86 +3,92 @@ import numpy as np
 
 def calculate(data, options):
     """
-    Calculates Chaikin Oscillator.
-    Handles zero-volume or flat-bar scenarios to prevent constant zero output.
+    Calculates Bollinger Bands (Upper, Middle, Lower) per Symbol/Timeframe.
+    Supports standard OHLCV and MT4 (split date/time) formats with dynamic rounding.
+    Default: 20 period, 2 Standard Deviations.
     """
 
     # 1. Parse Parameters
     try:
-        short_period = int(options.get('short', 3))
-        long_period = int(options.get('long', 10))
+        period = int(options.get('period', 20))
+        std_dev = float(options.get('std', 2.0))
     except (ValueError, TypeError):
-        short_period, long_period = 3, 10
+        period, std_dev = 20, 2.0
+
+    options['period'] = str(period)
+    options['std'] = str(std_dev)
 
     if not data:
         return [[], []]
 
     # 2. Determine Price Precision
+    # Detects decimals from the first available close price to round output levels
     try:
         sample_price = str(data[0].get('close', '0.00000'))
         precision = len(sample_price.split('.')[1]) if '.' in sample_price else 2
     except (IndexError, AttributeError):
-        precision = 2
+        precision = 5
 
     # 3. Prepare DataFrame
     df = pd.DataFrame(data)
+    
+    # Detect MT4 mode
     is_mt4 = options.get('mt4') is True
     
     # 4. Dynamic Column Mapping
     if is_mt4:
-        output_cols = ['date', 'time', 'chaikin']
+        output_cols = ['date', 'time', 'upper', 'mid', 'lower']
         sort_cols = ['date', 'time']
     else:
-        output_cols = ['symbol', 'timeframe', 'time', 'chaikin']
+        output_cols = ['symbol', 'timeframe', 'time', 'upper', 'mid', 'lower']
         sort_cols = ['time']
 
-    # 5. Calculation Logic
-    all_results = []
-    group_keys = ['symbol', 'timeframe'] if not is_mt4 else ['symbol']
+    # Ensure numeric type for calculations
+    df['close'] = pd.to_numeric(df['close'], errors='coerce')
     
-    if 'symbol' not in df.columns: df['symbol'] = 'N/A'
-    if 'timeframe' not in df.columns and not is_mt4: df['timeframe'] = 'N/A'
+    all_results = []
 
-    grouped = df.groupby(group_keys)
+    # 5. Group and Calculate
+    group_keys = ['symbol', 'timeframe'] if not is_mt4 else None
+    grouped = df.groupby(group_keys) if group_keys else [(None, df)]
 
     for _, group in grouped:
+        # Sort using the correct temporal columns
         group = group.sort_values(sort_cols).reset_index(drop=True)
         
-        # A. Calculate Money Flow Multiplier
-        # Use replace to avoid division by zero on flat bars
-        range_high_low = (group['high'] - group['low']).replace(0, np.nan)
-        mfm = ((group['close'] - group['low']) - (group['high'] - group['close'])) / range_high_low
+        # Middle Band (Simple Moving Average)
+        group['mid'] = group['close'].rolling(window=period).mean()
         
-        # Fill NaN values from flat bars with 0
-        mfm = mfm.fillna(0)
+        # Calculate Rolling Standard Deviation
+        rolling_std = group['close'].rolling(window=period).std()
         
-        # B. Calculate Money Flow Volume
-        mfv = mfm * group['volume']
+        # Upper and Lower Bands
+        group['upper'] = group['mid'] + (rolling_std * std_dev)
+        group['lower'] = group['mid'] - (rolling_std * std_dev)
         
-        # C. Calculate ADL (Accumulation Distribution Line)
-        adl = mfv.cumsum()
-        
-        # D. Chaikin Oscillator = EMA(ADL, short) - EMA(ADL, long)
-        ema_short = adl.ewm(span=short_period, adjust=False).mean()
-        ema_long = adl.ewm(span=long_period, adjust=False).mean()
-        
-        group['chaikin'] = ema_short - ema_long
-
         # 6. Apply Dynamic Rounding
-        group['chaikin'] = group['chaikin'].round(precision)
+        # Rounds all band levels to match the asset's price precision
+        for col in ['upper', 'mid', 'lower']:
+            group[col] = group[col].round(precision)
         
-        # 7. Collect Results
-        all_results.append(group[output_cols])
+        # 7. Filter and Collect
+        all_results.append(group[output_cols].dropna(subset=['mid']))
 
     if not all_results:
         return [output_cols, []]
 
     # 8. Final Formatting
     final_df = pd.concat(all_results)
+    
+    # Apply user-requested sort order
     is_asc = options.get('order', 'asc').lower() == 'asc'
     final_df = final_df.sort_values(by=sort_cols, ascending=is_asc)
-
-    columns = list(final_df.columns)
-    values = final_df.replace({np.nan: None, np.inf: None, -np.inf: None}).values.tolist()
-
-    return [columns, values]
+    
+    # Final safety gate for JSON compatibility (handles NaN/Inf)
+    data_as_list = final_df.values.tolist()
+    clean_data = [
+        [(x if (isinstance(x, (float, np.floating)) and np.isfinite(x)) else x) for x in row]
+        for row in data_as_list
+    ]
+    
+    return [output_cols, clean_data]
