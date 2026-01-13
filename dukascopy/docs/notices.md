@@ -83,6 +83,8 @@ Intention of this is to be able to make your own tradingview charts-without draw
 
 PS i said API v1.0 was locked down. I am debating of i should transfer the Numpy way to that API as well. Fixes warmup and gains 20ms-more or less- on that API for 1m. You wont notice the difference in operation. Only a bit more speed.
 
+**One last thing:** I notice, now with the additional indicators added, that the browser is getting more lag. This is because more and more data is stored in the memory arrays. I will fix this too by just keeping in memory what is actually visable, with one or two pages on either side cached. This will keep the interface performant.
+
 ## Notice: API 1.0 is now locked - 2026-01-12
 
 API Version 1.0 is now locked and can be considered stable. It will not change in URL syntax, functionality. Only critical bugfixes-also when encountered in indicators-will be fixed. API 1.1 will become the new version. 1.0 will remain supported, indefinately. You can build on it safely.
