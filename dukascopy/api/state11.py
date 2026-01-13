@@ -14,6 +14,8 @@ DTYPE = np.dtype([
     ('padding', '<u8', (2,)) # Padding to 64 bytes
 ])
 
+RECORD_SIZE = 64
+
 class MarketDataCache:
     def __init__(self):
         self.mmaps = {}
@@ -36,12 +38,19 @@ class MarketDataCache:
         
         raw_bytes = np.frombuffer(new_mm, dtype=np.uint8)
         
-        ts_view = as_strided(raw_bytes.view('<u8'), shape=(num_records,), strides=(64,))
+        ts_view = as_strided(raw_bytes.view('<u8'), shape=(num_records,), strides=(RECORD_SIZE,))
 
         ts_index = np.ascontiguousarray(ts_view, dtype='<u8')
 
         # Data View (Zero-copy Structured Array)
         data_view = np.frombuffer(new_mm, dtype=DTYPE)
+
+        # We can now close the old one
+        if cached:
+            # By closing only after we have created the new one, we make sure pages remain "smoking hot"
+            cached['data'] = None
+            cached['ts_index'] = None 
+            cached['mm'].close()
 
         self.mmaps[view_name] = {
             'f': f, 
