@@ -81,6 +81,8 @@ Why i removed DuckDB? When the tail updates or changes, i need to refresh a comp
 
 Intention of this is to be able to make your own tradingview charts-without drawing atm. If i have time extra i will add functionality to persist your chart settings per symbol/tf combination-save your settings. But this is not a promise. Chart building is part of the integration testing for v1.1. Stability tests and indicator verifications-especially those warmups i need to make sure they are large enough.
 
+PS i said API v1.0 was locked down. I am debating of i should transfer the Numpy way to that API as well. Fixes warmup and gains 20ms-more or less- on that API for 1m. You wont notice the difference in operation. Only a bit more speed.
+
 ## Notice: API 1.0 is now locked - 2026-01-12
 
 API Version 1.0 is now locked and can be considered stable. It will not change in URL syntax, functionality. Only critical bugfixes-also when encountered in indicators-will be fixed. API 1.1 will become the new version. 1.0 will remain supported, indefinately. You can build on it safely.
