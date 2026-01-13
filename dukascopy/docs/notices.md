@@ -2,7 +2,13 @@
 
 What’s next?
 
-- Builder upgrade
+- Custom indicator support \
+I will add a config.user directory to the plugin loader so you can \
+put your own plugins in there. Plugins are easy to write. I was \
+able to add 40 of them in half a day-total time. So if you miss any \
+indicator, add it yourself.
+
+- Builder upgrade \
 Introducing indicator-integrated outputs.
 
 - Pushed in: check panama with other source, minor effort. \
