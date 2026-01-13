@@ -8,6 +8,12 @@ Introducing indicator-integrated outputs.
 - Feature-rich market simulation \
 Full high-performance replay functionality.
 
+## Notice: API 1.0 is now **UN**locked - 2026-01-13
+
+API Version 1.0 is unlocked since performance update and fixes will be applied. Warmup issue on indicators will be fixed PLUS about 50%-60% performance increase. Its functionality/query language will remain unchanged.
+
+## Notice: API 1.1
+
 **Note:** Added a small utility for "the less technical users" among us. Update and then copy over `config/dukascopy/http-docs/indicator.html` to your `config.user/dukascopy/http-docs` directory. Then open `http://localhost:8000/indicator.html`. It allows you to get your data more easily (as CSV).
 
 **Note:** Now that we are on binary mode, i have updated the API record-limit to 5000. So you can get 5000 minutes, ... 5000 days etc. In one call.
@@ -23,12 +29,6 @@ Full high-performance replay functionality.
 **Why i removed DuckDB?** It was a refresh thingy but more importantly: for the warmup i had to scan the index for a number of records before a certain timestamp-the "after". DuckDB sucks at this, it quacked at me in a vicious way. I had increased latency of 30-40ms on the API calls because of that search. So i went on trying different things and ultimately found a solution. Now i perform a binary search for the after, retrieve its direct record(index)-id and just substract the fixed amount-the warmup count needed-from that. Then i take a chunk of data, using from-idx to to-idx, and feed that via a dataframe into the multithreaded indicators. This solved the issue. In fact, it is "relatively" much faster. The new overhead of 10-17 ms is now in the threadpool. When this is fixed, i declare API v1.1 beta-ready.
 
 **One last thing:** I’ve noticed that with the addition of more indicators, the browser is starting to experience increased lag. This is due to the growing amount of data being stored in memory arrays. I’ll address this by keeping only the currently visible data in memory, with one or two pages on either side cached. This approach will keep the interface responsive and performant.
-
-## Notice: API 1.0 is now locked - 2026-01-12
-
-API Version 1.0 is now locked and can be considered stable. It will not change in URL syntax, functionality. Only critical bugfixes-also when encountered in indicators-will be fixed. API 1.1 will become the new version. 1.0 will remain supported, indefinately. You can build on it safely.
-
-PS: will there be more indicators added to 1.0? If 1.1 gets more indicators, 1.0 will get more indicators. The main difference between API 1.1 and API 1.0 are its selection syntax-you can specify indicators per timeframe and/or symbol in the DSL- and its internal handling of the warmup rows. 1.1 just selects more rows for the warmup, then pushes it through the existing indicators logic-multithreaded, then merges and just before output it drops the warmup rows. These are the main differences. The indicators are compatible between 1.0 and 1.1, hence it's easy to "backport" new indicators to 1.0.
 
 ## Announcement: deprecation of the CSV format - 2026-01-10
 
