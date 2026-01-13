@@ -31,19 +31,26 @@ class MarketDataCache:
         if cached and size == cached['size'] and mtime == cached['mtime']:
             return # No changes
 
-
         f = cached['f'] if cached else open(file_path, "rb")
         
         new_mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-        
-        raw_bytes = np.frombuffer(new_mm, dtype=np.uint8)
-        
-        ts_view = as_strided(raw_bytes.view('<u8'), shape=(num_records,), strides=(RECORD_SIZE,))
 
-        ts_index = np.ascontiguousarray(ts_view, dtype='<u8')
-
-        # Data View (Zero-copy Structured Array)
+        new_mm.madvise(mmap.MADV_RANDOM)
+        
+        # Interpret the memory-mapped bytes as a NumPy structured array
         data_view = np.frombuffer(new_mm, dtype=DTYPE)
+
+        # Extract columns into a dictionary suitable for DataFrame creation
+        data_dict = {
+            "time_raw": data_view['ts'],              # Raw timestamp values
+            "open": data_view['ohlcv'][:, 0],         # Open prices
+            "high": data_view['ohlcv'][:, 1],         # High prices
+            "low": data_view['ohlcv'][:, 2],          # Low prices
+            "close": data_view['ohlcv'][:, 3],        # Close prices
+            "volume": data_view['ohlcv'][:, 4]        # Trade volume
+        }
+
+        #ts_index = np.ascontiguousarray(ts_view, dtype='<u8')
 
         # We can now close the old one
         if cached:
@@ -55,7 +62,7 @@ class MarketDataCache:
         self.mmaps[view_name] = {
             'f': f, 
             'mm': new_mm, 
-            'ts_index': ts_index, 
+            'ts_index': data_view['ts'], 
             'data': data_view,
             'size': size, 
             'mtime': mtime, 
