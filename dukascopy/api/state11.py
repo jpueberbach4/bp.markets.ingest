@@ -81,8 +81,14 @@ class MarketDataCache:
         fmt = "%Y-%m-%d %H:%M:%S" 
         df['time'] = dt_series.dt.strftime(fmt)
 
+        print(df)
+
         return df
 
+
+    def get_record_count():
+        cached = self.mmaps.get(view_name)    
+        return len(cached['ts_index'])
 
     def find_record(self, symbol, tf, target_ts, side="right"):
         view_name = f"{symbol}_{tf}"

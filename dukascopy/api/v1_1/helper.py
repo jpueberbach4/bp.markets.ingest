@@ -521,44 +521,37 @@ def execute_sql(options):
             .timestamp() * 1000
         )
 
-
+        # the total limit is the query-limit + the number of warmup rows
         total_limit = limit + warmup_rows
-
+        
         after_idx = cache.find_record(symbol, timeframe, after_ms, "right")
         until_idx = cache.find_record(symbol, timeframe, until_ms, "right")
-
-
-        after_ts = pd.to_datetime(np.datetime64(after_ms, 'ms'), unit='ms', utc=True).strftime('%Y-%m-%d %H:%M:%S')
-        until_ts = pd.to_datetime(np.datetime64(until_ms, 'ms'), unit='ms', utc=True).strftime('%Y-%m-%d %H:%M:%S')
-        if False: print(
-            f"""
-                after_idx: {after_idx} ({after_ms}) - {after_ts}
-                until_idx: {until_idx} ({until_ms}) - {until_ts}
-                total_limit: {total_limit}
-                warmup_rows: {warmup_rows}
-
-            """
-        )
-
+        
+        # we want more records from the head for warmup
         after_idx = after_idx - warmup_rows
 
+        if until_idx - after_idx > total_limit:
+            # we may have (way) too many records, limit
+            if order == "desc":
+                # we want maximum number of records from the tail
+                after_idx = until_idx - total_limit
+            if order == "asc":
+                # we want maximum number of records from the head
+                until_idx = after_idx + total_limit
+
         if after_idx<0:
-            after_idx = 0
+            after_idx = 0         
 
-        #if until_idx - after_idx > total_limit:
-         #   until_idx = after_idx + total_limit            
-
+        # retrieve a chunk from - to
         chunk_df = cache.get_chunk(symbol, timeframe, after_idx, until_idx)
+
+        # and append it to the dataframe array
         select_df.append(chunk_df)
 
     # Concatenate all result sets into a single DataFrame
     df = pd.concat(select_df)
 
-    #print(df)
-    # Apply final sorting order
-    #print(df)
-    is_asc = options.get('order', 'desc').lower() == 'asc'
-    df = df.sort_values(by='time', ascending=is_asc).reset_index(drop=True)
+    # Sorting should always be ascending, dataframe should already be sorted
 
     return df
 
