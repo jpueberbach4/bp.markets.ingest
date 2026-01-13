@@ -15,7 +15,7 @@ from fastapi import Depends
 
 from api.state11 import cache
 from api.config.app_config import load_app_config
-from api.v1_1.helper import parse_uri, discover_options, generate_output, discover_all, execute_sql
+from api.v1_1.helper import parse_uri, discover_options, generate_output, discover_all, execute
 from api.v1_1.parallel import parallel_indicators
 from api.v1_1.plugin import load_indicator_plugins, indicator_registry
 from api.v1_1.version import API_VERSION
@@ -113,7 +113,7 @@ async def get_ohlcv(
             profiler = cProfile.Profile()
             profiler.enable()
 
-        df = execute_sql(options)
+        df = execute(options)
 
         enriched_df = parallel_indicators(df, options, indicator_registry)
 

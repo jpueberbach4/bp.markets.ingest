@@ -1,11 +1,68 @@
+"""
+===============================================================================
+File:        state11.py
+
+Author:      JP Ueberbach
+Created:     2026-01-12
+
+Module for managing in-memory OHLCV data views using memory-mapped binary files.
+Provides fast, zero-copy access to time-series market data and utility methods
+for registering, slicing, and querying cached OHLCV datasets.
+
+This module defines the MarketDataCache class, which:
+
+- Maintains a registry of memory-mapped OHLCV views keyed by symbol/timeframe.
+- Registers views from binary OHLCV files using NumPy structured arrays.
+- Provides fast lookup of records by timestamp using binary search.
+- Returns Pandas DataFrames for contiguous slices of OHLCV data.
+- Caches memory-mapped files, file handles, and timestamps for efficient reuse.
+- Supports runtime registration of views based on resolved query options.
+- Ensures safe cleanup of existing memory maps before replacing them.
+
+Classes:
+    MarketDataCache:
+        Core cache manager for OHLCV views. Handles view registration, record
+        indexing, and data extraction as Pandas DataFrames.
+
+Variables:
+    cache (MarketDataCache):
+        Singleton instance of MarketDataCache for global access to OHLCV views.
+
+Key Methods:
+    register_view(symbol, tf, file_path):
+        Register or update a memory-mapped OHLCV view for a symbol/timeframe.
+
+    get_chunk(symbol, tf, from_idx, to_idx):
+        Retrieve a contiguous slice of OHLCV data as a Pandas DataFrame.
+
+    get_record_count():
+        Return the number of records available in a cached view.
+
+    find_record(symbol, tf, target_ts, side="right"):
+        Find the index of the closest record to a target timestamp.
+
+    register_views_from_options(options: Dict):
+        Bulk-register views from resolved runtime options in binary file mode.
+
+Requirements:
+    - Python 3.8+
+    - NumPy
+    - Pandas
+    - FastAPI (optional for integration with API endpoints)
+    - mmap (standard library)
+
+License:
+    MIT License
+===============================================================================
+"""
+
+
 import numpy as np
 import pandas as pd
 import os
 import mmap
 from typing import Dict
 from numpy.lib.stride_tricks import as_strided
-
-import ctypes
 
 # Define the C-struct equivalent for numpy
 DTYPE = np.dtype([
@@ -21,44 +78,66 @@ class MarketDataCache:
         self.mmaps = {}
 
     def register_view(self, symbol, tf, file_path):
+        """Register or update a memory-mapped OHLCV view for a given symbol and timeframe.
+
+        This method maps the binary OHLCV file into memory using `mmap` and
+        stores metadata and structured data in the internal `mmaps` cache.
+        If the file has not changed since the last registration (same size
+        and modification time), the view is left unchanged. Otherwise, the
+        existing memory-mapped view is replaced.
+
+        Args:
+            symbol (str): Trading symbol identifier (e.g., "EURUSD").
+            tf (str): Timeframe identifier (e.g., "1m", "5m").
+            file_path (str): Path to the OHLCV binary file to register.
+
+        Returns:
+            None
+        """
+        # Construct a unique view name based on symbol and timeframe
         view_name = f"{symbol}_{tf}"
+
+        # Get the file size and modification time
         size = os.path.getsize(file_path)
         mtime = os.stat(file_path).st_mtime
+
+        # Estimate number of records assuming 64 bytes per record
         num_records = size // 64
 
+        # Check if a cached view already exists
         cached = self.mmaps.get(view_name)
 
+        # If the cached view exists and file has not changed, do nothing
         if cached and size == cached['size'] and mtime == cached['mtime']:
-            return # No changes
+            return
 
+        # Reuse the file object if cached, otherwise open the file
         f = cached['f'] if cached else open(file_path, "rb")
         
+        # Memory-map the file for fast access
         new_mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+        new_mm.madvise(mmap.MADV_RANDOM)  # Optimize for random access
 
-        new_mm.madvise(mmap.MADV_RANDOM)
-        
-        # Interpret the memory-mapped bytes as a NumPy structured array
+        # Interpret the memory-mapped bytes as a structured NumPy array
         data_view = np.frombuffer(new_mm, dtype=DTYPE)
 
-        # Extract columns into a dictionary suitable for DataFrame creation
+        # Prepare a dictionary of columns (optional, can be used for DataFrame creation)
         data_dict = {
-            "time_raw": data_view['ts'],              # Raw timestamp values
-            "open": data_view['ohlcv'][:, 0],         # Open prices
-            "high": data_view['ohlcv'][:, 1],         # High prices
-            "low": data_view['ohlcv'][:, 2],          # Low prices
-            "close": data_view['ohlcv'][:, 3],        # Close prices
-            "volume": data_view['ohlcv'][:, 4]        # Trade volume
+            "time_raw": data_view['ts'],
+            "open": data_view['ohlcv'][:, 0],
+            "high": data_view['ohlcv'][:, 1],
+            "low": data_view['ohlcv'][:, 2],
+            "close": data_view['ohlcv'][:, 3],
+            "volume": data_view['ohlcv'][:, 4]
         }
 
-        #ts_index = np.ascontiguousarray(ts_view, dtype='<u8')
-
-        # We can now close the old one
+        # Clean up old cached view if present
         if cached:
-            # By closing only after we have created the new one, we make sure pages remain "smoking hot"
             cached['data'] = None
             cached['ts_index'] = None 
             cached['mm'].close()
 
+        # Register the new memory-mapped view in the internal cache
         self.mmaps[view_name] = {
             'f': f, 
             'mm': new_mm, 
@@ -70,58 +149,117 @@ class MarketDataCache:
             'file_path': file_path
         }
 
+
     def get_chunk(self, symbol, tf, from_idx, to_idx):
+        """Retrieve a slice of cached OHLCV data as a Pandas DataFrame.
+
+        This method extracts a contiguous range of records from the in-memory,
+        memory-mapped cache for the specified symbol and timeframe. The returned
+        DataFrame is normalized into columnar OHLCV form and includes derived
+        time fields suitable for downstream sorting and formatting.
+
+        Args:
+            symbol (str): Trading symbol identifier (e.g., "EURUSD").
+            tf (str): Timeframe identifier (e.g., "1m", "5m").
+            from_idx (int): Starting index (inclusive) into the cached dataset.
+            to_idx (int): Ending index (exclusive) into the cached dataset.
+
+        Returns:
+            pandas.DataFrame: A DataFrame containing OHLCV data for the requested
+            index range. If the cache view does not exist, an empty DataFrame is
+            returned.
+        """
+        # Construct the cache view name from symbol and timeframe
         view_name = f"{symbol}_{tf}"
+
+        # Retrieve the cached dataset for this view
         cached = self.mmaps.get(view_name)
-        
+
+        # Return an empty DataFrame if the view is not present in cache
         if not cached:
             return pd.DataFrame()
 
-        subset = cached['data'][from_idx : to_idx]
+        # Slice the structured array to the requested index range
+        subset = cached['data'][from_idx:to_idx]
 
+        # Build a normalized DataFrame from the cached OHLCV structure
         df = pd.DataFrame({
             'symbol': symbol,
             'timeframe': tf,
-            'sort_key': subset['ts'], 
+            'sort_key': subset['ts'],
             'open':   subset['ohlcv'][:, 0],
             'high':   subset['ohlcv'][:, 1],
             'low':    subset['ohlcv'][:, 2],
             'close':  subset['ohlcv'][:, 3],
-            'volume': subset['ohlcv'][:, 4]
+            'volume': subset['ohlcv'][:, 4],
         })
 
+        # Convert epoch milliseconds to timezone-aware UTC datetimes
         dt_series = pd.to_datetime(df['sort_key'], unit='ms', utc=True)
 
+        # Extract the year component for partitioning or grouping
         df['year'] = dt_series.dt.year.astype(str)
 
-        fmt = "%Y-%m-%d %H:%M:%S" 
+        # Format the timestamp into a human-readable string
+        fmt = "%Y-%m-%d %H:%M:%S"
         df['time'] = dt_series.dt.strftime(fmt)
-
-        print(df)
 
         return df
 
+    def get_record_count(self):
+        """Return the number of timestamped records available in a cached view.
 
-    def get_record_count():
-        cached = self.mmaps.get(view_name)    
-        return len(cached['ts_index'])
+        This method looks up the memory-mapped cache for the current view and
+        returns the total number of indexed timestamps available for lookup
+        and retrieval.
 
-    def find_record(self, symbol, tf, target_ts, side="right"):
-        view_name = f"{symbol}_{tf}"
+        Returns:
+            int: Total number of records in the cache.
+        """
+        # Retrieve the cached view from the memory-mapped storage
         cached = self.mmaps.get(view_name)
 
-        # Pulling my hair out on this PERFORMANCE fiX. 
-        # Damn. I didnt understand it at all. The python cast destroys performance.
-        # On lousy cast. From 0.23s to 0.05. This line. Pfff.
+        # Return the number of timestamp entries in the index
+        return len(cached['ts_index'])
+
+
+    def find_record(self, symbol, tf, target_ts, side="right"):
+        """Find the index of a record closest to a target timestamp.
+
+        This method performs a binary search over the cached timestamp index
+        using NumPy's optimized ``searchsorted`` implementation. The lookup
+        returns the insertion position of ``target_ts`` based on the specified
+        search side, enabling efficient range queries on time-ordered data.
+
+        Args:
+            symbol (str): Trading symbol identifier (e.g., "EURUSD").
+            tf (str): Timeframe identifier (e.g., "1m", "5m").
+            target_ts (int): Target timestamp in epoch milliseconds.
+            side (str, optional): Search direction passed to ``np.searchsorted``.
+                Use "right" to return the insertion point after existing entries,
+                or "left" to return the insertion point before. Defaults to "right".
+
+        Returns:
+            int | None: Index position of the matching or insertion record if
+            found, otherwise ``None``.
+        """
+        # Construct the cache view name from symbol and timeframe
+        view_name = f"{symbol}_{tf}"
+
+        # Retrieve the cached data for this view
+        cached = self.mmaps.get(view_name)
+
+        # Cast the target timestamp to uint64 for fast NumPy comparison
         search_key = np.uint64(target_ts)
-        
+
+        # Perform a binary search on the sorted timestamp index
         idx = np.searchsorted(cached['ts_index'], search_key, side=side)
 
+        # Ensure the index is valid before returning
         if idx >= 0:
             return idx
 
         return None
-
 
     def register_views_from_options(self, options: Dict) -> bool:
         """Registers DuckDB views based on resolved option selections.
