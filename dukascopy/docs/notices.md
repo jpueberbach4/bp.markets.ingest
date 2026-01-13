@@ -77,7 +77,7 @@ Full high-performance replay functionality.
 
 This is the MAXIMUM performance, with profiler disabled. 3 indicators, sma20/50/100 on EURUSD 1m chart. Single asset-in query.
 
-Why i removed DuckDB? When the tail updates or changes, i need to refresh a complete mmap view. Now, i am able to just update the tail. I still need to create this part.
+**Why i removed DuckDB?** It was a refresh thingy but more importantly: for the warmup i had to scan the index for a number of records before a certain timestamp-the "after". DuckDB sucks at this, it quacked at me in a vicious way. I had increased latency of 30-40ms on the API calls because of that search. So i went on trying different things and ultimately found a solution. Now i perform a binary search for the after, retrieve its direct record(index)-id and just substract the fixed amount-the warmup count needed-from that. Then i take a chunk of data, using from-idx to to-idx, and feed that via a dataframe into the multithreaded indicators. This solved the issue. In fact, it is "relatively" much faster. The new overhead of 10-17 ms is now in the threadpool. When this is fixed, i declare API v1.1 beta-ready.
 
 Intention of this is to be able to make your own tradingview charts-without drawing atm. If i have time extra i will add functionality to persist your chart settings per symbol/tf combination-save your settings. But this is not a promise. Chart building is part of the integration testing for v1.1. Stability tests and indicator verifications-especially those warmups i need to make sure they are large enough.
 
