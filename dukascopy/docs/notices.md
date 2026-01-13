@@ -25,6 +25,58 @@ Full high-performance replay functionality.
 
 **Note:** API v1.0 will be faster than v1.1 when indicators are included in the query, which is expected due to the additional computations involved. Indicator calculations are performed in parallel, and overall performance remains solid. With three indicators added to a 1-minute chart, response times stay under 80 ms. API v1.0 will remain supported.
 
+```sh
+{
+  "status": "ok",
+  "options": {
+    "select_data": [
+      [
+        "EUR-USD",
+        "1m",
+        "data/aggregate/1m/EUR-USD.bin",
+        [],
+        [
+          "sma_10",
+          "sma_50",
+          "sma_200"
+        ]
+      ]
+    ],
+    "after": "2025-02-01 00:00:00",
+    "until": "3000-01-01 00:00:00",
+    "output_type": "JSON",
+    "mt4": null,
+    "limit": 1440,
+    "offset": 0,
+    "order": "desc",
+    "callback": "__bp_callback",
+    "fmode": "binary",
+    "count": 1440,
+    "wall": 0.0485472679138184
+  },
+  "result": [
+    {
+      "symbol": "EUR-USD",
+      "timeframe": "1m",
+      "time": "2026-01-13 11:54:00",
+      "sort_key": 1768305240000,
+      "open": 1.16707,
+      "high": 1.16707,
+      "low": 1.16698,
+      "close": 1.16699,
+      "volume": 115.65,
+      "year": "2026",
+      "indicators": {
+        "sma_10": 1.16699,
+        "sma_200": 1.1663,
+        "sma_50": 1.16682
+      }
+    },
+    ...
+```
+
+This is the MAXIMUM performance, with profiler disabled. 3 indicators, sma20/50/100 on EURUSD 1m chart. Single asset-in query.
+
 ## Notice: API 1.0 is now locked - 2026-01-12
 
 API Version 1.0 is now locked and can be considered stable. It will not change in URL syntax, functionality. Only critical bugfixes-also when encountered in indicators-will be fixed. API 1.1 will become the new version. 1.0 will remain supported, indefinately. You can build on it safely.
