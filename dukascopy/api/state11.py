@@ -73,6 +73,8 @@ DTYPE = np.dtype([
 
 RECORD_SIZE = 64
 
+TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
+
 class MarketDataCache:
     def __init__(self):
         self.mmaps = {}
@@ -198,11 +200,10 @@ class MarketDataCache:
         dt_series = pd.to_datetime(df['sort_key'], unit='ms', utc=True)
 
         # Extract the year component for partitioning or grouping
-        df['year'] = dt_series.dt.year.astype(str)
+        df['year'] = dt_series.dt.year
 
         # Format the timestamp into a human-readable string
-        fmt = "%Y-%m-%d %H:%M:%S"
-        df['time'] = dt_series.dt.strftime(fmt)
+        df['time'] = dt_series.dt.strftime(TIMESTAMP_FORMAT)
 
         return df
 

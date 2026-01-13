@@ -1,3 +1,64 @@
+"""
+===============================================================================
+File:        routes.py
+
+Author:      JP Ueberbach
+Created:     2026-01-12
+
+FastAPI router implementing a versioned OHLCV and indicator API.
+
+This module defines the public HTTP API for accessing OHLCV
+(Open, High, Low, Close, Volume) time-series data and derived indicators
+via a path-based query DSL. It exposes endpoints under the "/ohlcv/{version}" 
+namespace.
+
+Key Features:
+    - Executes raw OHLCV queries using a slash-delimited query DSL.
+    - Lists available symbols and timeframes discovered from the filesystem.
+    - Executes dynamically loaded indicator plugins on resolved OHLCV data.
+    - Supports pagination, ordering, and platform-specific options (e.g., MT4).
+    - Returns output in multiple formats: JSON, JSONP, and CSV.
+
+Request Processing Pipeline:
+    1. Parse the path-based DSL into structured query options.
+    2. Validate pagination, ordering, and output constraints.
+    3. Resolve requested symbol/timeframe selections against filesystem-backed OHLCV data.
+    4. Register memory-mapped views for selected datasets (binary file mode).
+    5. Execute queries against CSV or binary sources.
+    6. Apply indicator plugins in parallel to the query results.
+    7. Filter, limit, and normalize rows based on user parameters.
+    8. Serialize results into the requested output format.
+
+Indicator System:
+    - Dynamically loads indicator modules at startup.
+    - Modules must expose a `calculate(data, options)` callable.
+    - Supports parallel execution for improved performance.
+
+Special Endpoints:
+    - `/quack`: Provides a playful “DuckDB experience” for demonstration and testing.
+
+Usage:
+    - This module is included in the FastAPI router configuration.
+    - It should not be executed directly as a standalone script.
+
+Classes/Functions:
+    - get_config(): Load the application configuration with caching.
+    - get_ohlcv(): Main path-based OHLCV query endpoint.
+    - quack(): Playful endpoint simulating full-table scan latency.
+
+Requirements:
+    - Python 3.8+
+    - FastAPI
+    - DuckDB
+    - NumPy
+    - Pandas
+    - orjson (for JSON serialization)
+
+License:
+    MIT License
+===============================================================================
+"""
+
 import mmap
 import time
 import numpy as np
@@ -105,16 +166,10 @@ async def get_ohlcv(
         # In binary mode, we register MMap views            
         cache.register_views_from_options(options)
 
-        profile = False
-
-        if profile:
-            import cProfile
-            import pstats
-            profiler = cProfile.Profile()
-            profiler.enable()
-
+        # Execute data-engine
         df = execute(options)
 
+        # Enrich the returned result with the requested indicators (parallelized)
         enriched_df = parallel_indicators(df, options, indicator_registry)
 
         if options.get('after'):
@@ -125,22 +180,14 @@ async def get_ohlcv(
             # Limit rows
             enriched_df = enriched_df.iloc[:options['limit']]
         
-
+        # Normalize columns and rows
         columns = enriched_df.columns.tolist()
         results = enriched_df.values.tolist()
-
-        if profile:
-            profiler.disable()
-            import io
-            s = io.StringIO()
-            ps = pstats.Stats(profiler, stream=s).sort_stats('cumulative')
-            ps.print_stats(30)
-
-            print(s.getvalue())
 
         # Wall
         options['count'] = len(results)
         options['wall'] = time.time() - time_start
+        
         # Generate the output
         output = generate_output(options, columns, results)
 
