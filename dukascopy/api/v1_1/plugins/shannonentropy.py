@@ -2,6 +2,28 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "Shannon Entropy measures the complexity and unpredictability of price "
+        "movements by analyzing the distribution of price returns. A higher entropy "
+        "value suggests a more chaotic or random market state (high uncertainty), "
+        "while lower values indicate more ordered, predictable patterns. The 'Efficiency' "
+        "metric normalizes this value between 0 and 1, where 1 represents a perfectly "
+        "ordered state and 0 represents maximum market chaos."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for Shannon Entropy.

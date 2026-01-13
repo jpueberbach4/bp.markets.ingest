@@ -2,6 +2,27 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "Standard Deviation is a statistical measure of market volatility. It "
+        "quantifies the amount of variation or dispersion of price data points "
+        "from their moving average. High values indicate that prices are spread "
+        "out over a wider range (high volatility), while low values indicate "
+        "that price is consolidating closely around its average (low volatility)."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for Standard Deviation.

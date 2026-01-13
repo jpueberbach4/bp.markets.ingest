@@ -2,6 +2,28 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "Keltner Channels are a volatility-based envelope indicator. They consist of "
+        "three lines: a Middle Line (typically an Exponential Moving Average), and "
+        "Upper and Lower Channels calculated using the Average True Range (ATR). "
+        "Unlike Bollinger Bands which use standard deviation, Keltner Channels use "
+        "ATR to create a smoother, more consistent envelope that helps identify "
+        "trend direction and price breakouts."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for Keltner Channels.

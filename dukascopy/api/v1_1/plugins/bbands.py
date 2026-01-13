@@ -2,6 +2,25 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "Bollinger Bands (BBands) are a volatility indicator consisting of a "
+        "Simple Moving Average (mid) and two standard deviation lines (upper and lower). "
+        "They expand during high volatility and contract during low volatility."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for Bollinger Bands.

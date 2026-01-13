@@ -2,6 +2,29 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "Three Line Break (TLB) charts filter out market noise by focusing on price "
+        "reversals rather than time intervals. New lines are added in the direction "
+        "of the trend if the price exceeds the previous line's close. A reversal "
+        "only occurs if the current price breaks the high or low of the previous "
+        "three lines (or the specified 'break' count). This makes it highly "
+        "effective at identifying major trend changes and ignoring minor price "
+        "fluctuations."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Three Line Break is a path-dependent charting method.

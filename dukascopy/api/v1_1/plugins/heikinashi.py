@@ -2,6 +2,28 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "Heikin Ashi is a modified candlestick charting method that filters market "
+        "noise to provide a clearer view of trend direction and strength. Unlike "
+        "standard candles, each Heikin Ashi candle is calculated using a recursive "
+        "formula that averages the current and previous price data, resulting in "
+        "smoother price action where green candles represent strong uptrends and "
+        "red candles represent strong downtrends."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Heikin Ashi is recursive. While it doesn't have a fixed window,

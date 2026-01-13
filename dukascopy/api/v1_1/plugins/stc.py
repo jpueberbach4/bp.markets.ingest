@@ -2,6 +2,28 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "The Schaff Trend Cycle (STC) is a high-speed oscillator that combines the "
+        "benefits of MACD and slow Stochastics. By applying a double-smoothed "
+        "stochastic process to MACD values, it identifies market trends and "
+        "cyclical turns much faster than traditional indicators. It is designed "
+        "to stay at extreme levels (0 or 100) during strong trends and provide "
+        "early warnings of trend exhaustion through its rapid 'cycle' movement."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for the Schaff Trend Cycle.

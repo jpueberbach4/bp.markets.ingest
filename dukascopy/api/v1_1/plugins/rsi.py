@@ -2,6 +2,28 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "The Relative Strength Index (RSI) is a popular momentum oscillator that "
+        "measures the speed and change of price movements. It oscillates between "
+        "zero and 100, traditionally using a 14-period lookback. RSI is primarily "
+        "used to identify overbought conditions (above 70) and oversold conditions "
+        "(below 30), as well as spotting trend reversals and price-momentum "
+        "divergences."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for RSI.

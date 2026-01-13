@@ -2,6 +2,27 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "Fractal Dimension (Sevcik method) quantifies the complexity and 'jaggedness' "
+        "of price action to distinguish between trending and mean-reverting markets. "
+        "A value near 1.0 indicates a smooth, strong trend, while values approaching "
+        "2.0 suggest high complexity, noise, and turbulent market conditions. It helps "
+        "traders determine whether to use trend-following or range-bound strategies."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for Fractal Dimension.

@@ -2,6 +2,27 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "The Detrended Price Oscillator (DPO) is an indicator designed to remove trend "
+        "from price action and make it easier to identify cycles. Unlike other oscillators, "
+        "it is not momentum-based. Instead, it compares the current price to a displaced "
+        "moving average, effectively filtering out longer-term trends to highlight "
+        "short-term overbought or oversold conditions."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for DPO.

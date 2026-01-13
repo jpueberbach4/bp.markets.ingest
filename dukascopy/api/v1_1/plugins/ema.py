@@ -2,6 +2,27 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "The Exponential Moving Average (EMA) is a type of moving average that "
+        "places a greater weight and significance on the most recent data points. "
+        "Unlike the Simple Moving Average, the EMA reacts more significantly to "
+        "recent price changes, making it a favorite for identifying trend "
+        "reversals and momentum in fast-moving markets."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for the EMA.

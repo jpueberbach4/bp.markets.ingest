@@ -2,6 +2,28 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "The Stochastic Oscillator is a momentum indicator that compares a specific "
+        "closing price of an asset to a range of its prices over a certain period of "
+        "time. It consists of two lines: %K (the fast line) and %D (the 3-period "
+        "moving average of %K). The indicator oscillates between 0 and 100, where "
+        "readings above 80 signal overbought conditions and readings below 20 "
+        "indicate oversold conditions."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for the Stochastic Oscillator.

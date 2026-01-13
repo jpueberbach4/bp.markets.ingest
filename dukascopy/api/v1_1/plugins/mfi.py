@@ -2,6 +2,28 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "The Money Flow Index (MFI) is a technical oscillator that uses both price "
+        "and volume data to identify overbought or oversold conditions in an asset. "
+        "Often described as a volume-weighted RSI, it measures the 'enthusiasm' of "
+        "a trend by looking at the typical price and money flow over a set period. "
+        "Values above 80 are generally considered overbought, while values below 20 "
+        "are considered oversold."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for the Money Flow Index.

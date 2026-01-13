@@ -2,6 +2,28 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "The Rate of Change (ROC) is a pure momentum oscillator that measures the "
+        "percentage change in price between the current period and a specific "
+        "number of periods ago. It fluctuates above and below a Zero Line; "
+        "positive values indicate bullish momentum, while negative values indicate "
+        "bearish momentum. It is widely used to identify trend strength, "
+        "overbought/oversold conditions, and momentum divergences."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for Rate of Change (ROC).

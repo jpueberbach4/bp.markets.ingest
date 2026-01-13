@@ -2,6 +2,28 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "Renko charts are time-independent charts that filter out minor price "
+        "fluctuations by focusing solely on price movement. They are constructed "
+        "using 'bricks' of a fixed size; a new brick is only added when price "
+        "moves a full brick size away from the previous one. This creates a "
+        "cleaner visualization of trends and support/resistance levels, as the "
+        "element of time is removed from the horizontal axis."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Renko charts are path-dependent and ignore time.

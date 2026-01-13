@@ -2,6 +2,27 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "On-Balance Volume (OBV) is a technical indicator that uses volume flow "
+        "to predict changes in stock price. It relates price momentum to trading "
+        "volume, acting as a cumulative total of volume: adding volume on up days "
+        "and subtracting it on down days. It is primarily used to confirm trends "
+        "or spot potential reversals through price-volume divergence."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     OBV is a cumulative indicator. 

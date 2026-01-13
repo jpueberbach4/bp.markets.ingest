@@ -2,6 +2,26 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "Accumulation/Distribution Line (ADL) is a volume-based indicator that "
+        "measures the cumulative flow of money into and out of an asset. It assesses "
+        "buying and selling pressure by looking at where the price closes relative "
+        "to its high-low range for the period."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     ADL is a cumulative indicator. While it doesn't have a fixed window,

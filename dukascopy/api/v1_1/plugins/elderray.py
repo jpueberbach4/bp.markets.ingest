@@ -2,6 +2,27 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "The Elder Ray Index (also known as Bull and Bear Power) measures the amount "
+        "of buying and selling pressure in the market. It uses an Exponential Moving "
+        "Average (EMA) as a baseline for value. Bull Power is calculated by subtracting "
+        "the EMA from the high of each bar, while Bear Power is calculated by "
+        "subtracting the EMA from the low of each bar."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for the Elder Ray Index.

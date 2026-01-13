@@ -2,6 +2,27 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "Commodity Channel Index (CCI) is a versatile indicator that can be used to "
+        "identify a new trend or warn of extreme conditions. It measures the current "
+        "price level relative to an average price level over a given period of time. "
+        "CCI is relatively high when prices are far above their average and relatively "
+        "low when prices are far below their average."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for CCI.

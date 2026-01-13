@@ -2,6 +2,28 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "The KDJ Indicator is a derived version of the Stochastic Oscillator "
+        "used to identify trend strength and entry points. It consists of three "
+        "lines: the K (fast), the D (slow), and the J (divergence). The J line "
+        "represents the divergence of the K value from the D value, often acting "
+        "as a lead indicator to signal overbought or oversold conditions before "
+        "they appear in the standard K and D lines."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for KDJ.
@@ -16,7 +38,7 @@ def warmup_count(options: Dict[str, Any]) -> int:
 
     # Consistent with EMA and other oscillator stabilization buffers
     return n * 3
-    
+
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.

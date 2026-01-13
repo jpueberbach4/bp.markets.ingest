@@ -2,6 +2,28 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "MACD is a trend-following momentum indicator that shows the relationship "
+        "between two moving averages of an asset’s price. It consists of the MACD "
+        "Line (the difference between a fast and slow EMA), a Signal Line (an EMA "
+        "of the MACD Line), and a Histogram which represents the distance between "
+        "the two. Traders use MACD to identify trend direction, momentum shifts, "
+        "and potential crossovers for entry and exit signals."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for MACD.

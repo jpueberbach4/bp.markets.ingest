@@ -2,6 +2,29 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "VWAP (Volume Weighted Average Price) is a technical analysis indicator "
+        "used to measure the average price an asset has traded at throughout the "
+        "day, based on both volume and price. It provides traders with insight "
+        "into both the trend and value of an asset. VWAP is often used as a "
+        "benchmark by institutional traders to ensure they are executing orders "
+        "close to the market average, rather than pushing the price away from "
+        "its established value."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     VWAP is session-based. To be accurate, it must calculate from 

@@ -2,6 +2,27 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "The Simple Moving Average (SMA) is one of the most fundamental technical "
+        "indicators. It calculates the average price of an asset over a specific "
+        "number of periods by adding up the closing prices and dividing by the "
+        "total count. It is primarily used to smooth out price action, identify "
+        "trend direction, and act as dynamic support or resistance levels."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+
 def warmup_count(options: Dict[str, Any]) -> Dict[str, Any]:
     """
     Calculates the required warmup time in seconds based on the SMA period

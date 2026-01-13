@@ -2,6 +2,28 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "Supertrend is a trend-following indicator that provides clear buy and sell "
+        "signals. It is calculated using the Average True Range (ATR) and a "
+        "multiplier to create upper and lower bands. When price closes above the "
+        "upper band, the indicator turns green (bullish), and when it closes below "
+        "the lower band, it turns red (bearish). It is highly effective as a "
+        "trailing stop-loss and for identifying the current market regime."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for Supertrend.

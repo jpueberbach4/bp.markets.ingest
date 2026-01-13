@@ -2,6 +2,29 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "Point & Figure (P&F) charts are unique time-independent charts that focus "
+        "exclusively on price action. They use columns of 'X's to represent rising "
+        "prices and 'O's to represent falling prices. A new box is only added if "
+        "the price moves by a specific 'Box Size', and a column reversal only "
+        "occurs if the price moves in the opposite direction by a multiple of that "
+        "box (the 'Reversal' amount). This effectively filters out minor noise and "
+        "highlights significant support, resistance, and trend breakouts."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     P&F charts are path-dependent and ignore time.

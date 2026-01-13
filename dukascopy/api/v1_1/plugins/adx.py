@@ -2,6 +2,26 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "Average Directional Index (ADX) quantifies trend strength without regard "
+        "to trend direction. It includes the +DI and -DI lines to indicate direction. "
+        "A reading above 25 typically suggests a strong trending market, while "
+        "values below 20 indicate a weak or non-existent trend."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for ADX.

@@ -2,6 +2,29 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "Williams %R (Williams Percent Range) is a momentum indicator that measures "
+        "overbought and oversold levels, similar to a Stochastic Oscillator. It "
+        "compares the current closing price to the high-low range over a specific "
+        "period (typically 14). The scale ranges from 0 to -100; readings from 0 "
+        "to -20 are considered overbought, while readings from -80 to -100 are "
+        "considered oversold. It is particularly effective at identifying "
+        "potential reversals and trend strength."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for Williams %R.

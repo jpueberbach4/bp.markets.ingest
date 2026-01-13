@@ -2,6 +2,28 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "The Parabolic SAR (Stop and Reverse) is a trend-following indicator used to "
+        "identify potential reversals in price movement. It appears as a series of "
+        "dots placed either above or below the price: dots below indicate a bullish "
+        "trend, while dots above indicate a bearish trend. The indicator 'accelerates' "
+        "as the trend continues, moving closer to the price to provide dynamic trailing "
+        "stop-loss levels."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     PSAR is a recursive state machine. 

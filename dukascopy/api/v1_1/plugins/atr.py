@@ -2,6 +2,27 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "Average True Range (ATR) is a technical indicator that measures market "
+        "volatility by decomposing the entire range of an asset price for a given "
+        "period. Unlike directional indicators, ATR solely quantifies the degree "
+        "of price fluctuation, including gaps from previous sessions. It is widely "
+        "used for determining stop-loss distances and position sizing."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for ATR.

@@ -2,6 +2,28 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "The Ultimate Oscillator (UO) is a momentum indicator designed to capture "
+        "the 'buying pressure' across three different timeframes. By combining short, "
+        "medium, and long-term price cycles into a single weighted value, it aims "
+        "to avoid the pitfalls of indicators that are overly sensitive to short-term "
+        "spikes. It oscillates between 0 and 100, with values above 70 indicating "
+        "overbought conditions and values below 30 indicating oversold conditions."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for the Ultimate Oscillator.

@@ -2,6 +2,28 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "The Z-Score (Standard Score) is a statistical indicator that measures how "
+        "many standard deviations a price is from its moving average. It helps "
+        "traders identify extreme price movements and potential mean-reversion "
+        "opportunities. A Z-Score of 0 means the price is exactly at the average, "
+        "while scores above +2.0 or below -2.0 typically indicate overextended "
+        "market conditions that may lead to a price correction."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for the Z-Score.

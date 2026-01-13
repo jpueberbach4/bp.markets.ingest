@@ -2,6 +2,28 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "The Hurst Exponent is a statistical measure used to determine the long-term "
+        "memory of price series. It classifies market regimes: a value of 0.5 suggests "
+        "a random walk (Brownian motion), values above 0.5 indicate a trending "
+        "(persistent) market, and values below 0.5 indicate a mean-reverting "
+        "(anti-persistent) market. It helps traders choose between trend-following "
+        "and mean-reversion strategies."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for the Hurst Exponent.

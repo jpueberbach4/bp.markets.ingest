@@ -2,6 +2,28 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "The Ichimoku Cloud (Ichimoku Kinko Hyo) is a comprehensive indicator that "
+        "defines support and resistance, identifies trend direction, and gauges "
+        "momentum. It consists of five lines: the Tenkan-sen (Conversion), Kijun-sen "
+        "(Base), Senkou Span A and B (which form the 'Cloud'), and the Chikou Span "
+        "(Lagging). A price above the cloud indicates a bullish trend, while price "
+        "below suggests a bearish trend."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for Ichimoku Cloud.

@@ -2,6 +2,28 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "Fibonacci Retracements identify potential support and resistance levels "
+        "based on the golden ratio. It calculates the vertical distance between "
+        "the highest high and lowest low over a set period and plots horizontal "
+        "lines at the key Fibonacci levels (23.6%, 38.2%, 50%, 61.8%, and 78.6%). "
+        "Traders use these levels to identify areas where a price correction might "
+        "reverse and join the primary trend."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for Fibonacci Retracements.

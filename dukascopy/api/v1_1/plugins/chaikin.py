@@ -2,6 +2,26 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "The Chaikin Oscillator measures the momentum of the Accumulation Distribution Line (ADL) "
+        "using the MACD formula. It calculates the difference between a short-term (default 3) "
+        "and a long-term (default 10) Exponential Moving Average of the ADL. It is designed to "
+        "anticipate trend changes in the ADL by measuring the momentum behind money flow."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for the Chaikin Oscillator.

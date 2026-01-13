@@ -2,6 +2,27 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "Chande Momentum Oscillator (CMO) is a technical momentum indicator that "
+        "measures the difference between the sum of all recent gains and the sum "
+        "of all recent losses, then divides the result by the sum of all price "
+        "movement over the period. Unlike RSI, it uses unfiltered data in its "
+        "numerator, making it more sensitive to extreme price movements."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for CMO.

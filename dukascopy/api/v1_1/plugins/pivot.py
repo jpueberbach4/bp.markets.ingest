@@ -2,6 +2,28 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "Pivot Points are significant technical levels used to determine the overall "
+        "trend of the market over different time frames. Based on the 'Floor Pivot' "
+        "method, this indicator calculates a central Pivot Point (PP) using the average "
+        "of the previous period's high, low, and close. It then derives multiple "
+        "levels of support (S1, S2) and resistance (R1, R2) to identify potential "
+        "turning points or breakout targets in price action."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for Pivot Points.

@@ -2,6 +2,28 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
 
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "Kagi Charts are time-independent charts that focus on price action and "
+        "trend reversals. They use vertical lines of varying thickness to track "
+        "movement: a thick line (Yang) signifies a bullish trend breaking above "
+        "a previous high, while a thin line (Yin) signifies a bearish trend "
+        "breaking below a previous low. Reversals only occur when price moves "
+        "by a specific predefined amount, effectively filtering out minor market noise."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0
+    }
+    
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Kagi charts are path-dependent and recursive.
