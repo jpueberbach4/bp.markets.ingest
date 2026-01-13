@@ -245,6 +245,16 @@ async def get_indicator(
         cols.insert(2, 'time')
         enriched_df = enriched_df[cols]
 
+        # MT4 output handling
+        if options.get('mt4'):
+            enriched_df['time'] = pd.to_datetime(enriched_df['time'])
+            date_col = enriched_df['time'].dt.strftime('%Y.%m.%d')
+            time_col = enriched_df['time'].dt.strftime('%H:%M:%S')
+            enriched_df.insert(0, 'date', date_col)
+            enriched_df['time'] = time_col
+            cols = [c for c in enriched_df.columns if c not in ['symbol','timeframe','year']]
+            enriched_df = enriched_df[cols]
+
         # Normalize columns and rows
         columns = enriched_df.columns.tolist()
         results = enriched_df.values.tolist()
@@ -459,6 +469,11 @@ async def get_ohlcv(
 
         # MT4 output handling
         if options.get('mt4'):
+            df['time'] = pd.to_datetime(df['time'])
+            date_col = df['time'].dt.strftime('%Y.%m.%d')
+            time_col = df['time'].dt.strftime('%H:%M:%S')
+            df.insert(0, 'date', date_col)
+            df['time'] = time_col
             cols = [c for c in df.columns if c not in ['symbol','timeframe','year']]
             df = df[cols]
 
