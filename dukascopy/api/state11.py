@@ -250,7 +250,18 @@ class MarketDataCache:
         # Retrieve the cached data for this view
         cached = self.mmaps.get(view_name)
 
-        # Cast the target timestamp to uint64 for fast NumPy comparison
+        # Cast the target timestamp to np.uint64 (search_key is a Python object)
+        # Teaching modus. It caught me completely off-guard.
+        # 
+        # Passing a standard Python integer forces NumPy to perform expensive "Type Promotion" 
+        # and Python-object comparisons at every branch of the binary search tree. Casting to 
+        # np.uint64 keeps the entire operation in high-speed C-memory, eliminating the overhead of 
+        # dropping back into the Python interpreter for every comparison.
+        #
+        # Huge performance benefit 0.25s -> 0.05. This took me 2 hours to unravel. Just couldnt
+        # understand why the profiler said that np.searchsorted took that long. Couldnt see the
+        # internals of that function (the calls it performs). So it was guessing, researching.
+        # Until eventually i found it. Profiling will not show you what exactly is up.
         search_key = np.uint64(target_ts)
 
         # Perform a binary search on the sorted timestamp index
