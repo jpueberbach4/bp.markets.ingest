@@ -77,6 +77,8 @@ Full high-performance replay functionality.
 
 This is the MAXIMUM performance, with profiler disabled. 3 indicators, sma20/50/100 on EURUSD 1m chart. Single asset-in query.
 
+Why i removed DuckDB? When the tail updates or changes, i need to refresh a complete mmap view. Now, i am able to just update the tail. I still need to create this part.
+
 ## Notice: API 1.0 is now locked - 2026-01-12
 
 API Version 1.0 is now locked and can be considered stable. It will not change in URL syntax, functionality. Only critical bugfixes-also when encountered in indicators-will be fixed. API 1.1 will become the new version. 1.0 will remain supported, indefinately. You can build on it safely.
