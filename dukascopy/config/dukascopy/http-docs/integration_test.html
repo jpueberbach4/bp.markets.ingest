@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Trading Interface - OHLC Charts</title>
+    <script src="scripts/lightweight-charts.standalone.production.js"></script>
+    <style>
+        :root {
+            --bg-main: #f0f3fa;
+            --sidebar-dark: #131722;
+            --accent-blue: #2962ff;
+            --text-gray: #787b86;
+            --white: #ffffff;
+            --border-color: #e0e3eb;
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif; 
+            background: var(--bg-main); 
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            background: var(--sidebar-dark);
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        header h2 { margin: 0; font-size: 18px; font-weight: 500; }
+        #dukascopy-link { color: white; text-decoration: none; opacity: 0.9; }
+        #dukascopy-link:hover { opacity: 1; }
+
+        .controls { 
+            background: var(--white);
+            padding: 8px 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .control-group { display: flex; align-items: center; gap: 8px; }
+        
+        label { 
+            font-size: 12px; 
+            color: var(--text-gray); 
+            text-transform: uppercase; 
+            font-weight: 700;
+        }
+
+        select {
+            padding: 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: #fff;
+            font-size: 13px;
+            outline: none;
+        }
+
+        button {
+            padding: 6px 15px;
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        button:hover { background: #1e53e5; }
+
+        #status-indicator { 
+            font-size: 11px; 
+            color: var(--text-gray); 
+            margin-left: auto; 
+            background: #e9eefb;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        #chart-container { 
+            position: relative; 
+            flex-grow: 1;
+            background: white;
+            margin: 15px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        #loader {
+            display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 255, 255, 0.7); z-index: 10;
+            justify-content: center; align-items: center;
+        }
+
+        .floating-tooltip {
+            width: 170px; position: absolute; display: none;
+            padding: 8px; box-sizing: border-box; font-size: 12px;
+            background-color: rgba(255, 255, 255, 0.96);
+            z-index: 1000; pointer-events: none; 
+            border: 1px solid var(--border-color);
+            border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .tooltip-row { display: flex; justify-content: space-between; margin: 2px 0; }
+        .tooltip-row span { font-weight: 600; font-family: monospace; }
+
+        .spinner {
+            width: 24px; height: 24px; border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--accent-blue);
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h2>Interactive Stream</h2>
+        <a id="dukascopy-link" href="https://www.dukascopy.com/" target="_new">Market Data via Dukascopy</a>
+    </header>
+
+    <div class="controls">
+        <div class="control-group">
+            <label>Symbol</label>
+            <select id="symbolSelect" onchange="updateTimeframeOptions(); resetAndLoad(true);"></select>
+        </div>
+        <div class="control-group">
+            <label>Interval</label>
+            <select id="tfSelect" onchange="resetAndLoad(true)"></select>
+        </div>
+        <button onclick="resetAndLoad(false)">Reset View</button>
+        <div id="status-indicator">Initialising...</div>
+    </div>
+    
+    <div id="chart-container">
+        <div id="loader"><div class="spinner"></div></div>
+        <div id="chart" style="width: 100%; height: 100%;"></div>
+        <div id="tooltip" class="floating-tooltip"></div>
+    </div>
+
+    <script>
+        let symbolData = {}; 
+        let currentAfterDate = new Date(); 
+        let currentUntilDate = null; 
+        let masterData = []; 
+        let isFetching = false;
+        let shouldResetZoomOnNextLoad = false;
+        let hasMoreHistory = true;
+        let gapRetryCount = 0; 
+        let isManualReset = false;
+
+        const initialMaxSearches = 100;
+        const normalMaxSearches = 10;
+        let currentMaxSearches = initialMaxSearches;
+
+        const container = document.getElementById('chart-container');
+        const tooltip = document.getElementById('tooltip');
+        const chartElement = document.getElementById('chart');
+
+        const chart = LightweightCharts.createChart(chartElement, {
+            width: chartElement.clientWidth,
+            height: chartElement.clientHeight,
+            layout: { 
+                background: { type: LightweightCharts.ColorType.Solid, color: '#ffffff' }, 
+                textColor: '#131722',
+                fontSize: 12,
+            },
+            grid: {
+                vertLines: { color: '#f0f3fa' },
+                horzLines: { color: '#f0f3fa' },
+            },
+            crosshair: {
+                mode: LightweightCharts.CrosshairMode.Normal,
+                vertLine: { width: 1, color: '#787b86', style: 2 },
+                horzLine: { width: 1, color: '#787b86', style: 2 },
+            },
+            localization: {
+                timeFormatter: (timestamp) => {
+                    const date = new Date(timestamp * 1000);
+                    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                },
+            },
+            timeScale: { 
+                timeVisible: true, 
+                borderColor: '#e0e3eb',
+            },
+        });
+
+        const candleSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {
+            upColor: '#26a69a', downColor: '#ef5350', borderVisible: false,
+            wickUpColor: '#26a69a', wickDownColor: '#ef5350',
+        });
+
+        // Initialize Line Series for SMAs
+        const sma20Series = chart.addSeries(LightweightCharts.LineSeries, { color: '#2962ff', lineWidth: 2, title: 'SMA 20' });
+        const sma50Series = chart.addSeries(LightweightCharts.LineSeries, { color: '#ff9800', lineWidth: 2, title: 'SMA 50' });
+        const sma200Series = chart.addSeries(LightweightCharts.LineSeries, { color: '#f44336', lineWidth: 2, title: 'SMA 200' });
+
+        function formatUnixToLiteral(unix) {
+            const d = new Date(unix * 1000);
+            const pad = (n) => n.toString().padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        }
+
+        function parseLiteralToUnix(dateStr) {
+            const parts = dateStr.split(/[- :]/);
+            const d = new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
+            return Math.floor(d.getTime() / 1000);
+        }
+
+        function resetAndLoad(forceClear = false) {
+            isManualReset = true;
+            if (forceClear) {
+                masterData = [];
+                candleSeries.setData([]);
+                // Clear SMA lines on reset
+                sma20Series.setData([]);
+                sma50Series.setData([]);
+                sma200Series.setData([]);
+                shouldResetZoomOnNextLoad = true;
+                chart.priceScale('right').applyOptions({ autoScale: true });
+            }
+            currentMaxSearches = initialMaxSearches;
+            hasMoreHistory = true; 
+            gapRetryCount = 0;
+            currentUntilDate = null; 
+            const tf = document.getElementById('tfSelect').value;
+            const initialOffset = getTimeframeOffset(tf) / 2;
+            currentAfterDate = new Date(Date.now() - initialOffset);
+            loadData();
+        }
+
+        function paginateBack() {
+            if (isFetching || !hasMoreHistory || masterData.length === 0) return;
+            isManualReset = false;
+            const tf = document.getElementById('tfSelect').value;
+            const referenceTime = masterData[0].time;
+            const untilUnix = referenceTime - 1;
+            currentUntilDate = new Date(untilUnix * 1000);
+            const baseOffset = getTimeframeOffset(tf);
+            const jumpSize = baseOffset * (gapRetryCount + 1); 
+            const afterUnix = untilUnix - (jumpSize / 1000);
+            currentAfterDate = new Date(afterUnix * 1000);
+            loadData();
+        }
+
+        function loadData() {
+            const sym = document.getElementById('symbolSelect').value;
+            const tf = document.getElementById('tfSelect').value;
+            if(!sym || !tf || isFetching) return;
+            isFetching = true;
+            document.getElementById('loader').style.display = 'flex';
+            const afterStr = (formatUnixToLiteral(Math.floor(currentAfterDate.getTime() / 1000)));
+            let url = `/ohlcv/1.1/select/${sym},${tf}[sma(20):sma(50):sma(200)]/after/${afterStr}`;
+            if (currentUntilDate) {
+                const untilStr = (formatUnixToLiteral(Math.floor(currentUntilDate.getTime() / 1000)));
+                url += `/until/${untilStr}`;
+            }
+            url += `/output/JSONP?order=asc&limit=1440&callback=__callbackData`;
+            const old = document.getElementById('jsonp-script');
+            if (old) old.remove();
+            const s = document.createElement('script');
+            s.id = 'jsonp-script'; s.src = url;
+            document.body.appendChild(s);
+        }
+
+        window.__callbackData = function(response) {
+            const statusIndicator = document.getElementById('status-indicator');
+            if (response.result && Array.isArray(response.result) && response.result.length > 0) {
+                currentMaxSearches = normalMaxSearches;
+                gapRetryCount = 0; 
+                const timeScale = chart.timeScale();
+                const visibleRange = timeScale.getVisibleRange();
+                const lastExistingBar = masterData.length > 0 ? masterData[masterData.length - 1].time : null;
+                const isAtLiveEnd = visibleRange && lastExistingBar && (visibleRange.to >= lastExistingBar);
+                
+                // Map indicators from response
+                const incoming = response.result.map(row => ({
+                    time: parseLiteralToUnix(row.time),
+                    open: row.open, high: row.high, low: row.low, close: row.close, volume: row.volume,
+                    sma20: row.indicators ? row.indicators.sma_20 : null,
+                    sma50: row.indicators ? row.indicators.sma_50 : null,
+                    sma200: row.indicators ? row.indicators.sma_200 : null
+                }));
+
+                const combined = [...masterData, ...incoming];
+                const uniqueMap = new Map();
+                combined.forEach(item => { if(item.time) uniqueMap.set(item.time, item); });
+                masterData = Array.from(uniqueMap.values()).sort((a, b) => a.time - b.time);
+                
+                candleSeries.setData(masterData);
+
+                // Set data for SMAs while filtering nulls to prevent chart errors
+                sma20Series.setData(masterData.filter(d => d.sma20 !== null).map(d => ({ time: d.time, value: d.sma20 })));
+                sma50Series.setData(masterData.filter(d => d.sma50 !== null).map(d => ({ time: d.time, value: d.sma50 })));
+                sma200Series.setData(masterData.filter(d => d.sma200 !== null).map(d => ({ time: d.time, value: d.sma200 })));
+
+                if (shouldResetZoomOnNextLoad) {
+                    timeScale.fitContent();
+                    shouldResetZoomOnNextLoad = false;
+                } else if (isManualReset && !isAtLiveEnd && lastExistingBar !== null) {
+                    timeScale.scrollToPosition(0, false);
+                }
+                isManualReset = false;
+                statusIndicator.innerText = `Data Synced: ${masterData.length} candles`;
+                setTimeout(checkIfChartFull, 200); 
+                isFetching = false;
+                document.getElementById('loader').style.display = 'none';
+            } else {
+                if (gapRetryCount < currentMaxSearches) {
+                    gapRetryCount++;
+                    statusIndicator.innerText = `Searching History... (${gapRetryCount}/${currentMaxSearches})`;
+                    isFetching = false; 
+                    if (masterData.length === 0) {
+                        const tf = document.getElementById('tfSelect').value;
+                        const baseOffset = getTimeframeOffset(tf);
+                        currentUntilDate = new Date(currentAfterDate.getTime() - 1000);
+                        currentAfterDate = new Date(currentUntilDate.getTime() - baseOffset);
+                        loadData();
+                    } else {
+                        paginateBack(); 
+                    }
+                } else {
+                    hasMoreHistory = false;
+                    statusIndicator.innerText = `History Limit Reached`;
+                    isFetching = false;
+                    document.getElementById('loader').style.display = 'none';
+                }
+            }
+        };
+
+        chart.subscribeCrosshairMove(param => {
+            if (param.point === undefined || !param.time || param.point.x < 0 || param.point.x > container.clientWidth) {
+                tooltip.style.display = 'none';
+            } else {
+                const data = param.seriesData.get(candleSeries);
+                const s20 = param.seriesData.get(sma20Series);
+                const s50 = param.seriesData.get(sma50Series);
+                const s200 = param.seriesData.get(sma200Series);
+
+                if (data) {
+                    tooltip.style.display = 'block';
+                    const isBullish = data.close >= data.open;
+                    const color = isBullish ? '#26a69a' : '#ef5350';
+
+                    const dateStr = new Date(data.time * 1000).toLocaleString('en-GB', { 
+                        day: '2-digit', month: 'short', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit', hour12: false 
+                    });
+                    
+                    const fullData = masterData.find(d => d.time === data.time);
+                    const volValue = (fullData && fullData.volume !== undefined) ? fullData.volume.toLocaleString() : "N/A";
+
+                    tooltip.innerHTML = `
+                        <div style="font-weight: bold; margin-bottom: 5px; color: #131722; border-bottom: 1px solid #eee; font-size: 11px;">${dateStr}</div>
+                        <div class="tooltip-row">O: <span style="color: ${color}">${data.open.toFixed(4)}</span></div>
+                        <div class="tooltip-row">H: <span style="color: ${color}">${data.high.toFixed(4)}</span></div>
+                        <div class="tooltip-row">L: <span style="color: ${color}">${data.low.toFixed(4)}</span></div>
+                        <div class="tooltip-row">C: <span style="color: ${color}">${data.close.toFixed(4)}</span></div>
+                        <div class="tooltip-row">V: <span style="color: #787b86">${volValue}</span></div>
+                        <div style="border-top: 1px solid #eee; margin-top: 5px; padding-top: 5px;">
+                            <div class="tooltip-row">SMA 20: <span style="color: #2962ff">${s20 ? s20.value.toFixed(4) : 'N/A'}</span></div>
+                            <div class="tooltip-row">SMA 50: <span style="color: #ff9800">${s50 ? s50.value.toFixed(4) : 'N/A'}</span></div>
+                            <div class="tooltip-row">SMA 200: <span style="color: #f44336">${s200 ? s200.value.toFixed(4) : 'N/A'}</span></div>
+                        </div>
+                    `;
+                    let left = param.point.x + 15;
+                    if (left > container.clientWidth - 170) left = param.point.x - 175;
+                    tooltip.style.left = left + 'px';
+                    tooltip.style.top = (param.point.y + 15) + 'px';
+                }
+            }
+        });
+
+        function checkIfChartFull() {
+            if (isFetching || masterData.length === 0 || !hasMoreHistory) return;
+            const timeScale = chart.timeScale();
+            const visibleRange = timeScale.getVisibleRange();
+            if (visibleRange && visibleRange.from <= masterData[0].time) paginateBack();
+        }
+
+        chart.timeScale().subscribeVisibleLogicalRangeChange(() => {
+            requestAnimationFrame(checkIfChartFull);
+        });
+
+        window.__callbackList = function(response) {
+            if (response.status === "ok") {
+                symbolData = response.result;
+                const symbols = Object.keys(symbolData).sort();
+                const sel = document.getElementById('symbolSelect');
+                sel.innerHTML = "";
+                symbols.sort().forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s; opt.innerHTML = s;
+                    sel.appendChild(opt);
+                });
+                if (symbols.length > 0) sel.value = symbols[0];
+                updateTimeframeOptions();
+                resetAndLoad(true);
+            }
+        };
+
+        function updateTimeframeOptions() {
+            const sym = document.getElementById('symbolSelect').value;
+            const tfS = document.getElementById('tfSelect');
+            const prev = tfS.value;
+            tfS.innerHTML = "";
+            if (symbolData[sym]) {
+                symbolData[sym].forEach(tf => {
+                    const opt = document.createElement('option');
+                    opt.value = tf; opt.innerHTML = tf;
+                    tfS.appendChild(opt);
+                });
+                tfS.value = symbolData[sym].includes(prev) ? prev : "1h";
+            }
+        }
+
+        function getTimeframeOffset(tf) {
+            const day = 24 * 60 * 60 * 1000;
+            switch (tf) {
+                case '1Y': return 3650 * day; case '1M': return 3650 * day; case '1W': return 730 * day;
+                case '1d': return 365 * day; case '4h': return 100 * day; case '1h': return 30 * day;
+                case '30m': return 15 * day; case '15m': return 7 * day; case '5m': return 2 * day;
+                case '1m': return 1 * day; 
+                default:
+                    if (tf.includes('M')) return 3650 * day;
+                    if (tf.includes('W')) return 1460 * day;
+                    if (tf.includes('h')) return 60 * day;
+                    if (tf.includes('m')) return 4 * day;
+                    return 4 * day;
+            }
+        }
+
+        const sList = document.createElement('script');
+        sList.src = "/ohlcv/1.0/list/output/JSONP?callback=__callbackList";
+        document.body.appendChild(sList);
+
+        window.addEventListener('resize', () => {
+            chart.applyOptions({ width: chartElement.clientWidth, height: chartElement.clientHeight });
+        });
+
+        window.addEventListener('keydown', (event) => {
+            if (masterData.length === 0) return;
+            const timeScale = chart.timeScale();
+            const visibleRange = timeScale.getVisibleLogicalRange();
+            if (!visibleRange) return;
+            const rangeWidth = visibleRange.to - visibleRange.from;
+            if (event.key === 'PageUp') {
+                event.preventDefault();
+                timeScale.setVisibleLogicalRange({ from: visibleRange.from - rangeWidth, to: visibleRange.to - rangeWidth });
+            } else if (event.key === 'PageDown') {
+                event.preventDefault();
+                timeScale.setVisibleLogicalRange({ from: visibleRange.from + rangeWidth, to: visibleRange.to + rangeWidth });
+            } else if (event.key === 'End') {
+                event.preventDefault();
+                timeScale.scrollToPosition(0, true);
+            }
+        });
+
+    </script>
+</body>
+</html>
