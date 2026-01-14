@@ -64,6 +64,8 @@ Builder example
 
 ![example](../images/builder11.png)
 
+Yeah, i am not playing around. This is insanely powerful.
+
 What remains?
 
 - Web-interface to use the indicator integration (dynamic)
