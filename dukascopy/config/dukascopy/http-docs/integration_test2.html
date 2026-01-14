@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Trading Interface - BP.Markets Hybrid (Upgraded)</title>
+    <title>Trading Interface - Charts</title>
     <script src="scripts/lightweight-charts.standalone.production.js"></script>
     <style>
         :root {
@@ -22,7 +22,6 @@
 
         .main-container { display: flex; flex: 1; overflow: hidden; }
 
-        /* Sidebar Styling */
         .sidebar { 
             width: 300px; background: var(--white); border-right: 1px solid var(--border-color);
             display: flex; flex-direction: column; padding: 15px; overflow-y: auto;
@@ -42,78 +41,101 @@
             padding: 6px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 5px;
         }
 
-div[id^="tv-attr-logo"], 
-.tv-embed-widget-wrapper__attribution,
-#main-chart-container a[href*="tradingview.com"] {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-}
+        div[id^="tv-attr-logo"], 
+        .tv-embed-widget-wrapper__attribution,
+        #main-chart-container a[href*="tradingview.com"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
 
-/* Floating Legend Styling */
-#chart-legend {
-    position: absolute;
-    z-index: 1000;
-    pointer-events: none;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 8px;
-    border-radius: 4px;
-    font-family: monospace;
-    font-size: 12px;
-    color: #131722;
-    border: 1px solid var(--border-color);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    display: none;
-    line-height: 1.4;
-}
-.legend-ohlcv { font-weight: bold; border-bottom: 1px solid #eee; margin-bottom: 6px; padding-bottom: 4px; }
-.legend-item { display: flex; justify-content: space-between; margin-bottom: 2px; gap: 15px; }
+        #chart-legend {
+            position: absolute;
+            z-index: 1000;
+            pointer-events: none;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #131722;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            display: none;
+            line-height: 1.4;
+        }
 
-/* Container for the chart and all indicator panels */
-#content-wrapper { 
-    flex: 1; 
-    display: flex; 
-    flex-direction: column; 
-    overflow: hidden; 
-}
+        .legend-ohlcv { font-weight: bold; border-bottom: 1px solid #eee; margin-bottom: 6px; padding-bottom: 4px; }
+        .legend-item { display: flex; justify-content: space-between; margin-bottom: 2px; gap: 15px; }
 
-/* Main Chart: Fills all remaining space */
-#main-chart-container { 
-    flex: 1 1 auto; 
-    min-height: 0; 
-    position: relative; 
-}
+        #content-wrapper { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+        }
 
-/* Panel Container: Holds multiple panels, scrollable if they exceed space */
-#panel-container { 
-    flex: 0 0 auto; 
-    display: flex; 
-    flex-direction: column;
-    background: #fcfcfc;
-    overflow-y: auto;
-    max-height: 60vh; /* Prevents panels from completely squeezing out the main chart */
-}
+        #main-chart-container { 
+            flex: 1 1 auto; 
+            min-height: 0; 
+            position: relative; 
+        }
 
-/* Individual Panel Styling */
-.indicator-panel { 
-    height: 150px; 
-    flex-shrink: 0;
-    border-top: 1px solid var(--border-color);
-    background: white; 
-}
+        #panel-container { 
+            flex: 0 0 auto; 
+            display: flex; 
+            flex-direction: column;
+            background: #fcfcfc;
+            overflow-y: auto;
+            max-height: 60vh;
+        }
 
+        .indicator-panel { 
+            height: 150px; 
+            flex-shrink: 0;
+            border-top: 1px solid var(--border-color);
+            background: white; 
+        }
+
+        .sidebar-footer { 
+            padding: 15px 20px; 
+            border-top: 1px solid var(--border-color); 
+            background: #fafbfc; 
+            text-align: center; 
+            margin-top: auto;
+        }
+
+        .attribution { 
+            font-size: 11px; 
+            color: var(--text-gray); 
+            text-decoration: none; 
+        }
+
+        .attribution strong { 
+            color: #5d606b; 
+        }
 
         #loader {
             display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(255, 255, 255, 0.7); z-index: 100; justify-content: center; align-items: center;
         }
-        .spinner { width: 24px; height: 24px; border: 3px solid #f3f3f3; border-top: 3px solid var(--accent-blue); border-radius: 50%; animation: spin 0.8s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .spinner {
+            width: 24px; height: 24px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
-
     <header>
         <h2 style="margin:0; font-size: 18px;">Terminal</h2>
         <div id="status-indicator" style="font-size: 11px; opacity: 0.8;">Initialising...</div>
@@ -129,9 +151,9 @@ div[id^="tv-attr-logo"],
                 <label>Interval</label>
                 <select id="tfSelect" onchange="resetAndLoad(true)"></select>
             </div>
-            
+
             <hr style="border:0; border-top:1px solid #eee; margin: 15px 0;">
-            
+
             <div class="control-group">
                 <label>Add Indicator</label>
                 <select id="indicatorSelect" onchange="renderParams()"></select>
@@ -145,6 +167,12 @@ div[id^="tv-attr-logo"],
             </div>
 
             <button onclick="resetAndLoad(false)" style="margin-top:auto; background: var(--accent-blue); color:white; border:none; padding:10px; border-radius:4px; font-weight:600; cursor:pointer;">Update View</button>
+
+            <div class="sidebar-footer">
+                <a href="https://www.dukascopy.com" target="_blank" class="attribution">
+                    Market data by <strong>Dukascopy</strong>
+                </a>
+            </div>
         </div>
 
         <div id="content-wrapper">
@@ -175,8 +203,8 @@ div[id^="tv-attr-logo"],
         let mainChart, candleSeries;
         let overlaySeries = []; 
         let panelCharts = {};
-        let overlaySeriesMap = {}; // Add this to track overlays by ID
-        let volumeSeries; // Add this to your global variables
+        let overlaySeriesMap = {}; 
+        let volumeSeries; 
 
         const mainContainer = document.getElementById('main-chart-container');
 
@@ -184,6 +212,12 @@ div[id^="tv-attr-logo"],
             mainChart = LightweightCharts.createChart(mainContainer, {
                 width: mainContainer.clientWidth,
                 height: mainContainer.clientHeight,
+
+                localization: {
+                            timeFormatter: (unixTimestamp) => {
+                                return formatUnixToLiteral(unixTimestamp);
+                            },
+                        },
                 layout: { background: { color: '#ffffff' }, textColor: '#131722',attributionLogo: false },
                 timeScale: { timeVisible: true, borderColor: '#e0e3eb' }
             });
@@ -200,103 +234,97 @@ div[id^="tv-attr-logo"],
                 wickUpColor: '#26a69a', wickDownColor: '#ef5350',
             });
             
-// Initialize Volume Series
-    volumeSeries = mainChart.addSeries(LightweightCharts.HistogramSeries, {
-        color: '#26a69a',
-        priceFormat: { type: 'volume' },
-        priceScaleId: '', // Overlay on main chart
-    });
-    volumeSeries.priceScale().applyOptions({
-        scaleMargins: { top: 0.8, bottom: 0 }, // Position at bottom 20%
-    });
-
-
-
-const legend = document.getElementById('chart-legend');
-
-mainChart.subscribeCrosshairMove(param => {
-        if (!param.time || param.point === undefined || param.point.x < 0 || param.point.y < 0) {
-            legend.style.display = 'none';
-            return;
-        }
-
-        // Position tooltip near mouse pointer
-        const containerRect = mainContainer.getBoundingClientRect();
-        legend.style.display = 'block';
-        legend.style.left = (param.point.x + 170) + 'px';
-        legend.style.top = (param.point.y + 60) + 'px';
-        
-        const data = param.seriesData.get(candleSeries);
-        const volData = param.seriesData.get(volumeSeries);
-        if (!data) return;
-
-        let html = `<div class="legend-ohlcv">`;
-        html += `O: ${data.open} H: ${data.high}<br>L: ${data.low} C: ${data.close}`;
-        if (volData) html += `<br>Vol: ${volData.value.toLocaleString()}`;
-        html += `</div>`;
-
-        // Add Indicator Values from MasterData
-        const masterPoint = masterData.find(d => d.time === param.time);
-        if (masterPoint && masterPoint.indicators) {
-            chain.forEach(item => {
-                const key = item.params.length ? `${item.name}_${item.params.join('_')}` : `${item.name}_`;
-                const val = masterPoint.indicators[key];
-                if (val !== undefined) {
-                    if (typeof val === 'object') {
-                        Object.entries(val).forEach(([k, v]) => {
-                            html += `<div class="legend-item"><span>${item.name}(${k})</span> <b style="color:${item.color || '#2962ff'}">${v.toFixed(4)}</b></div>`;
-                        });
-                    } else {
-                        html += `<div class="legend-item"><span>${item.name}</span> <b style="color:${item.color || '#7e57c2'}">${val.toFixed(4)}</b></div>`;
-                    }
-                }
+            volumeSeries = mainChart.addSeries(LightweightCharts.HistogramSeries, {
+                color: '#26a69a',
+                priceFormat: { type: 'volume' },
+                priceScaleId: '',
             });
+            volumeSeries.priceScale().applyOptions({
+                scaleMargins: { top: 0.8, bottom: 0 }, 
+            });
+
+            const legend = document.getElementById('chart-legend');
+
+            mainChart.subscribeCrosshairMove(param => {
+                if (!param.time || param.point === undefined || param.point.x < 0 || param.point.y < 0) {
+                    legend.style.display = 'none';
+                    return;
+                }
+
+                const data = param.seriesData.get(candleSeries);
+                const volData = param.seriesData.get(volumeSeries);
+                if (!data) return;
+
+                legend.style.display = 'block';
+                legend.style.left = (param.point.x + 165) + 'px'; 
+                legend.style.top = (param.point.y + 65) + 'px';
+                
+                let html = `<div class="legend-ohlcv">`;
+                html += `<div style="color: var(--text-gray); font-size: 10px; margin-bottom: 4px;">${formatUnixToLiteral(param.time)}</div>`;
+                html += `O: ${data.open} H: ${data.high}<br>L: ${data.low} C: ${data.close}`;
+                if (volData) html += `<br>Vol: ${volData.value.toLocaleString()}`;
+                html += `</div>`;
+                const masterPoint = masterData.find(d => d.time === param.time);
+                if (masterPoint && masterPoint.indicators) {
+                    chain.forEach(item => {
+                        const key = item.params.length ? `${item.name}_${item.params.join('_')}` : `${item.name}_`;
+                        const val = masterPoint.indicators[key];
+                        if (val !== undefined) {
+                            if (typeof val === 'object') {
+                                Object.entries(val).forEach(([k, v]) => {
+                                    html += `<div class="legend-item"><span>${item.name}(${k})</span> <b style="color:${item.color || '#2962ff'}">${v.toFixed(4)}</b></div>`;
+                                });
+                            } else {
+                                html += `<div class="legend-item"><span>${item.name}</span> <b style="color:${item.color || '#7e57c2'}">${val.toFixed(4)}</b></div>`;
+                            }
+                        }
+                    });
+                }
+                legend.innerHTML = html;
+            });
+
+            mainChart.timeScale().subscribeVisibleLogicalRangeChange(() => {
+                requestAnimationFrame(checkIfChartFull);
+            });
+
+
         }
-        legend.innerHTML = html;
-    });
 
-    mainChart.timeScale().subscribeVisibleLogicalRangeChange(() => {
-        requestAnimationFrame(checkIfChartFull);
-    });
+        function resetAndLoad(clear = false) {
+            isManualReset = true;
+            if (clear) {
+                masterData = [];
+                candleSeries.setData([]);
+                if(volumeSeries) volumeSeries.setData([]);
+                overlaySeries.forEach(s => mainChart.removeSeries(s));
+                overlaySeries = [];
+                overlaySeriesMap = {}; // Clear the map
 
+                Object.values(panelCharts).forEach(p => p.chart.remove());
+                document.getElementById('panel-container').innerHTML = '';
+                panelCharts = {};
+                shouldResetZoomOnNextLoad = true;
+            }
 
+            currentMaxSearches = initialMaxSearches;
+            hasMoreHistory = true; 
+            gapRetryCount = 0;
+            currentUntilDate = null; 
+            const tf = document.getElementById('tfSelect').value;
+            const initialOffset = getTimeframeOffset(tf) / 2;
+            currentAfterDate = new Date(Date.now() - initialOffset);
+
+            loadData();
         }
 
-function resetAndLoad(clear = false) {
-    isManualReset = true;
-    if (clear) {
-        masterData = [];
-        candleSeries.setData([]);
-        if(volumeSeries) volumeSeries.setData([]);
-        overlaySeries.forEach(s => mainChart.removeSeries(s));
-        overlaySeries = [];
-        overlaySeriesMap = {}; // Clear the map
-
-        Object.values(panelCharts).forEach(p => p.chart.remove());
-        document.getElementById('panel-container').innerHTML = '';
-        panelCharts = {};
-        shouldResetZoomOnNextLoad = true;
-    }
-
-    currentMaxSearches = initialMaxSearches;
-    hasMoreHistory = true; 
-    gapRetryCount = 0;
-    currentUntilDate = null; 
-    const tf = document.getElementById('tfSelect').value;
-    const initialOffset = getTimeframeOffset(tf) / 2;
-    currentAfterDate = new Date(Date.now() - initialOffset);
-
-    loadData();
-}
-
-function paginateBack() {
-    if (isFetching || !hasMoreHistory || masterData.length === 0) return;
-    isManualReset = false; // Important: tells the system this is an update, not a reset
+        function paginateBack() {
+            if (isFetching || !hasMoreHistory || masterData.length === 0) return;
+            isManualReset = false;
     
-    const tf = document.getElementById('tfSelect').value;
-    const referenceTime = masterData[0].time;
-    const untilUnix = referenceTime - 1;
-    currentUntilDate = new Date(untilUnix * 1000);
+            const tf = document.getElementById('tfSelect').value;
+            const referenceTime = masterData[0].time;
+            const untilUnix = referenceTime - 1;
+            currentUntilDate = new Date(untilUnix * 1000);
             const baseOffset = getTimeframeOffset(tf);
             const jumpSize = baseOffset * (gapRetryCount + 1); 
             const afterUnix = untilUnix - (jumpSize / 1000);
@@ -342,38 +370,35 @@ function paginateBack() {
                 currentMaxSearches = normalMaxSearches;
                 gapRetryCount = 0;
 
-const incoming = response.result.map(row => {
-            const isUp = row.close >= row.open;
-            return {
-                time: parseLiteralToUnix(row.time),
-                open: row.open, high: row.high, low: row.low, close: row.close,
-                value: row.volume,
-                // Bright solid colors for candles
-                candleColor: isUp ? '#26a69a' : '#ef5350', 
-                // Semi-transparent colors for volume overlay
-                volumeColor: isUp ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
-                indicators: row.indicators
-            };
-        });
+                const incoming = response.result.map(row => {
+                    const isUp = row.close >= row.open;
+                    return {
+                        time: parseLiteralToUnix(row.time),
+                        open: row.open, high: row.high, low: row.low, close: row.close,
+                        value: row.volume,
+                        candleColor: isUp ? '#26a69a' : '#ef5350', 
+                        volumeColor: isUp ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
+                        indicators: row.indicators
+                    };
+                });
 
                 const combined = [...masterData, ...incoming];
                 const uniqueMap = new Map();
                 combined.forEach(item => { if(item.time) uniqueMap.set(item.time, item); });
                 masterData = Array.from(uniqueMap.values()).sort((a, b) => a.time - b.time);
 
-candleSeries.setData(masterData.map(d => ({
-            time: d.time, open: d.open, high: d.high, low: d.low, close: d.close,
-            color: d.candleColor,
-            borderColor: d.candleColor,
-            wickColor: d.candleColor
-        })));
+                candleSeries.setData(masterData.map(d => ({
+                    time: d.time, open: d.open, high: d.high, low: d.low, close: d.close,
+                    color: d.candleColor,
+                    borderColor: d.candleColor,
+                    wickColor: d.candleColor
+                })));
 
-        // Apply transparent colors to volume
-        volumeSeries.setData(masterData.map(d => ({ 
-            time: d.time, 
-            value: d.value, 
-            color: d.volumeColor 
-        })));
+                volumeSeries.setData(masterData.map(d => ({ 
+                    time: d.time, 
+                    value: d.value, 
+                    color: d.volumeColor 
+                })));
                 renderIndicators();
 
                 if (shouldResetZoomOnNextLoad) {
@@ -402,129 +427,122 @@ candleSeries.setData(masterData.map(d => ({
             }
         };
 
-function renderIndicators() {
-    // Only remove and recreate overlay series if we are doing a hard reset
-    if (isManualReset) {
-        overlaySeries.forEach(s => mainChart.removeSeries(s));
-        overlaySeries = [];
-    }
-
-    chain.forEach(item => {
-        const meta = indicatorMeta[item.name];
-        const key = item.params.length ? `${item.name}_${item.params.join('_')}` : `${item.name}_`;
-        
-        if (meta && meta.meta && meta.meta.panel === 1) {
-            renderPanel(item, key);
-        } else {
-            renderOverlay(item, key);
-        }
-    });
-}
-
-function renderOverlay(item, key) {
-    const sampleEntry = masterData.find(d => d.indicators && d.indicators[key] !== undefined);
-    const sample = sampleEntry ? sampleEntry.indicators[key] : null;
-
-    if (!item.color) item.color = getRandomColor();
-
-    if (sample !== null && typeof sample === 'object') {
-        // Multi-line Overlays (BBands, Ichimoku, etc.)
-        Object.keys(sample).forEach(lineName => {
-            const seriesId = `${item.id}_${lineName}`;
-            
-            if (!overlaySeriesMap[seriesId]) {
-                const series = mainChart.addSeries(LightweightCharts.LineSeries, { 
-                    title: `${item.name} (${lineName})`, 
-                    lineWidth: 1,
-                    color: getOverlayColor(item.name, lineName, item.color)
-                });
-                overlaySeriesMap[seriesId] = series;
-                overlaySeries.push(series);
+        function renderIndicators() {
+            if (isManualReset) {
+                overlaySeries.forEach(s => mainChart.removeSeries(s));
+                overlaySeries = [];
             }
 
-            const lineData = masterData.map(d => ({
-                time: d.time,
-                value: d.indicators[key] ? d.indicators[key][lineName] : null
-            })).filter(v => v.value !== null && v.value !== undefined);
-            
-            overlaySeriesMap[seriesId].setData(lineData);
-        });
-    } else {
-        // Single-line Overlays (SMA, EMA, etc.)
-        const seriesId = item.id;
-        
-        if (!overlaySeriesMap[seriesId]) {
-            const series = mainChart.addSeries(LightweightCharts.LineSeries, { 
-                title: item.name, 
-                lineWidth: 2,
-                color: item.color
+            chain.forEach(item => {
+                const meta = indicatorMeta[item.name];
+                const key = item.params.length ? `${item.name}_${item.params.join('_')}` : `${item.name}_`;
+                
+                if (meta && meta.meta && meta.meta.panel === 1) {
+                    renderPanel(item, key);
+                } else {
+                    renderOverlay(item, key);
+                }
             });
-            overlaySeriesMap[seriesId] = series;
-            overlaySeries.push(series);
         }
 
-        const data = masterData.map(d => ({
-            time: d.time,
-            value: d.indicators ? d.indicators[key] : null
-        })).filter(p => p.value !== null && p.value !== undefined);
-        
-        overlaySeriesMap[seriesId].setData(data);
-    }
-}
+        function renderOverlay(item, key) {
+            const sampleEntry = masterData.find(d => d.indicators && d.indicators[key] !== undefined);
+            const sample = sampleEntry ? sampleEntry.indicators[key] : null;
 
-// Updated helper to use the persisted base color for variations
-function getOverlayColor(indicatorName, lineName, baseColor) {
-    const name = indicatorName.toLowerCase();
-    const line = lineName.toLowerCase();
+            if (!item.color) item.color = getRandomColor();
 
-    // Specific logic for known multi-line indicators
-    if (name.includes('bbands')) {
-        if (line.includes('upper') || line.includes('lower')) return '#2196F3'; 
-        return '#FF9800'; 
-    }
-    if (name.includes('ichimoku')) {
-        const ichiColors = {
-            'tenkan': '#0496ff', 'kijun': '#991515', 
-            'senkou_a': '#26a69a', 'senkou_b': '#ef5350', 'chikou': '#7e57c2'
-        };
-        return ichiColors[line] || baseColor;
-    }
-    return baseColor;
-}
+            if (sample !== null && typeof sample === 'object') {
+                Object.keys(sample).forEach(lineName => {
+                    const seriesId = `${item.id}_${lineName}`;
+                    
+                    if (!overlaySeriesMap[seriesId]) {
+                        const series = mainChart.addSeries(LightweightCharts.LineSeries, { 
+                            title: `${item.name} (${lineName})`, 
+                            lineWidth: 1,
+                            color: getOverlayColor(item.name, lineName, item.color)
+                        });
+                        overlaySeriesMap[seriesId] = series;
+                        overlaySeries.push(series);
+                    }
+
+                    const lineData = masterData.map(d => ({
+                        time: d.time,
+                        value: d.indicators[key] ? d.indicators[key][lineName] : null
+                    })).filter(v => v.value !== null && v.value !== undefined);
+                    
+                    overlaySeriesMap[seriesId].setData(lineData);
+                });
+            } else {
+                const seriesId = item.id;
+                
+                if (!overlaySeriesMap[seriesId]) {
+                    const series = mainChart.addSeries(LightweightCharts.LineSeries, { 
+                        title: item.name, 
+                        lineWidth: 2,
+                        color: item.color
+                    });
+                    overlaySeriesMap[seriesId] = series;
+                    overlaySeries.push(series);
+                }
+
+                const data = masterData.map(d => ({
+                    time: d.time,
+                    value: d.indicators ? d.indicators[key] : null
+                })).filter(p => p.value !== null && p.value !== undefined);
+                
+                overlaySeriesMap[seriesId].setData(data);
+            }
+        }
+
+        function getOverlayColor(indicatorName, lineName, baseColor) {
+            const name = indicatorName.toLowerCase();
+            const line = lineName.toLowerCase();
+            if (name.includes('bbands')) {
+                if (line.includes('upper') || line.includes('lower')) return '#2196F3'; 
+                return '#FF9800'; 
+            }
+            if (name.includes('ichimoku')) {
+                const ichiColors = {
+                    'tenkan': '#0496ff', 'kijun': '#991515', 
+                    'senkou_a': '#26a69a', 'senkou_b': '#ef5350', 'chikou': '#7e57c2'
+                };
+                return ichiColors[line] || baseColor;
+            }
+            return baseColor;
+        }
 
 
 
-function renderPanel(item, key) {
-    if (!panelCharts[item.id]) {
-        const container = document.getElementById('panel-container');
-        const div = document.createElement('div');
-        div.className = 'indicator-panel';
-        div.id = `panel_${item.id}`;
-        container.appendChild(div);
+        function renderPanel(item, key) {
+            if (!panelCharts[item.id]) {
+                const container = document.getElementById('panel-container');
+                const div = document.createElement('div');
+                div.className = 'indicator-panel';
+                div.id = `panel_${item.id}`;
+                container.appendChild(div);
 
-        const pChart = LightweightCharts.createChart(div, {
-            height: 150, 
-            layout: { background: { color: 'transparent' }, textColor: '#131722', attributionLogo: false},
-            timeScale: { visible: false }, 
-            rightPriceScale: { borderVisible: false },
-        });
+                const pChart = LightweightCharts.createChart(div, {
+                    height: 150, 
+                    layout: { background: { color: 'transparent' }, textColor: '#131722', attributionLogo: false},
+                    timeScale: { visible: false }, 
+                    rightPriceScale: { borderVisible: false },
+                });
 
-        // ADD THIS: Handle resizing for this specific panel
-        const panelResizeObserver = new ResizeObserver(entries => {
-            if (entries.length === 0 || !entries[0].contentRect) return;
-            const { width, height } = entries[0].contentRect;
-            pChart.applyOptions({ width, height });
-        });
-        panelResizeObserver.observe(div);
+                const panelResizeObserver = new ResizeObserver(entries => {
+                    if (entries.length === 0 || !entries[0].contentRect) return;
+                    const { width, height } = entries[0].contentRect;
+                    pChart.applyOptions({ width, height });
+                });
+                panelResizeObserver.observe(div);
 
-        mainChart.timeScale().subscribeVisibleLogicalRangeChange(range => {
-            if (range) pChart.timeScale().setVisibleLogicalRange(range);
-        });
+                mainChart.timeScale().subscribeVisibleLogicalRangeChange(range => {
+                    if (range) pChart.timeScale().setVisibleLogicalRange(range);
+                });
 
-        panelCharts[item.id] = { chart: pChart, series: {} };
-    }
-    updatePanelData(item, key);
-}
+                panelCharts[item.id] = { chart: pChart, series: {} };
+            }
+            updatePanelData(item, key);
+        }
 
         function updatePanelData(item, key) {
             const pObj = panelCharts[item.id];
@@ -608,22 +626,20 @@ function renderPanel(item, key) {
             }
         }
 
-function addToChain() {
-    const name = document.getElementById('indicatorSelect').value;
-    const meta = indicatorMeta[name];
-    const params = meta.defaults ? Object.keys(meta.defaults).map(k => document.getElementById(`p_${k}`).value) : [];
-    
-    // Assign a color IMMEDIATELY when added to the chain
-    chain.push({ 
-        name, 
-        params, 
-        id: `${name}_${Date.now()}`,
-        color: getRandomColor() 
-    });
-    
-    renderChain();
-    resetAndLoad(true);
-}
+        function addToChain() {
+            const name = document.getElementById('indicatorSelect').value;
+            const meta = indicatorMeta[name];
+            const params = meta.defaults ? Object.keys(meta.defaults).map(k => document.getElementById(`p_${k}`).value) : [];
+            chain.push({ 
+                name, 
+                params, 
+                id: `${name}_${Date.now()}`,
+                color: getRandomColor() 
+            });
+            
+            renderChain();
+            resetAndLoad(true);
+        }
 
         function renderChain() {
             document.getElementById('chain-list').innerHTML = chain.map((item, i) => `
@@ -647,7 +663,12 @@ function addToChain() {
         function updateTimeframeOptions() {
             const sym = document.getElementById('symbolSelect').value;
             const tfS = document.getElementById('tfSelect');
-            tfS.innerHTML = (symbolData[sym] || []).map(tf => `<option value="${tf}">${tf}</option>`).join('');
+            const currentTf = tfS.value;
+            const options = (symbolData[sym] || []);
+            tfS.innerHTML = options.map(tf => `<option value="${tf}">${tf}</option>`).join('');
+            if (currentTf && options.includes(currentTf)) {
+                tfS.value = currentTf;
+            }
         }
 
         function getTimeframeOffset(tf) {
