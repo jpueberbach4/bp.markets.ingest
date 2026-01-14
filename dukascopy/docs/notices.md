@@ -80,7 +80,7 @@ You can use this version to play around with custom indicators. The indicator.ht
 
 **Note:** Since performance allows, i will up the API record-limit once more, to like 20000 or something.
 
-**Note:** I tested performance with 20.000 records. Including recursive mapping: 0.27s. CSV mode stays below 0.15s. Its amazing. This binary mode. The recursive mapping is bottleneck. I will numba njit that. Try at least. So the JSON API will become even faster. Later, not now.
+**Note:** I tested performance with 20.000 records. Including recursive mapping: 0.27s. CSV mode stays below 0.15s. Its amazing. This binary mode. The recursive mapping is bottleneck. I will ~~numba njit~~ (need to see other solution) that. Try at least. So the JSON API will become even faster. Later, not now.
 
 **Note:** How do you get this insane performance on the API? [this](https://github.com/jpueberbach4/bp.markets.ingest/blob/beta/0.6.6/dukascopy/api/state11.py) is the secret.
 
