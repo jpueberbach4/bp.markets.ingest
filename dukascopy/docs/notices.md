@@ -37,12 +37,17 @@ GET http://localhost:8000/ohlcv/1.1/select/EUR-USD,1h[sma(20):sma(50):sma(200):m
 Or 
 
 ```sh
-http://localhost:8000/ohlcv/1.1/select/EUR-USD,1m[sma_200:macd_12_6_9]/after/2025-10-31%2023:59:59/output/JSON?order=desc&limit=10
+http://localhost:8000/ohlcv/1.1/select/EUR-USD,1m[sma_200:macd_12_6_9]/after/2025-10-31%2023:59:59/output/JSON \
+?order=desc&limit=10
 ```
 
 Integration test example
 
 ![example](../images/integration_test1.png)
+
+Builder example
+
+![example](../images/builder.png)
 
 What remains?
 
