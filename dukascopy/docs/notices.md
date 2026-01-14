@@ -2,90 +2,62 @@
 
 What’s next?
 
-- Selection handling \
-Decoupling selection logic from the builder component.
-
-- Indicator support in selectors \
-Implemented in a manner consistent with existing modifiers—symbol-wide by default, with timeframe-specific overrides.
-
-- Builder upgrade and HTTP API upgrade to v1.1 \
+- Builder upgrade \
 Introducing indicator-integrated outputs.
+
+- Pushed in: check panama with other source, minor effort. \
+See if we can remove "beta state".
 
 - Feature-rich market simulation \
 Full high-performance replay functionality.
 
-**Note:** Added a small utility for "the less technical users" among us. Update and then copy over `config/dukascopy/http-docs/indicator.html` to your `config.user/dukascopy/http-docs` directory. Then open `http://localhost:8000/indicator.html`. It allows you to get your data more easily (as CSV).
 
-**Note:** Now that we are on binary mode, i have updated the API record-limit to 5000. So you can get 5000 minutes, ... 5000 days etc. In one call.
+## Notice: API 1.1 available beta - 2026-01-14
 
-**Note:** How on earth is this so fast, on a laptop? We are leveraging the OS page cache and CPU cache. OS does all the work. CPU gets fed in the right way. We could potentially notch it up even more, using GPU's. Currently, my system is saturated on IO-the NVMe. So locally, on my system, a GPU implementation is not beneficial. Only those with NVMe arrays would benefit. Not many indie traders have raid NVMe. Perhaps in the cloud, but not at home.
+There is a beta/0.6.6 available. It's the integration-test version, not completed fully functional.
 
-## Notice: API 1.0 is now locked - 2026-01-12
+What is added/modified?
 
-API Version 1.0 is now locked and can be considered stable. It will not change in URL syntax, functionality. Only critical bugfixes-also when encountered in indicators-will be fixed. API 1.1 will become the new version. 1.0 will remain supported, indefinately. You can build on it safely.
+- API 1.1 DATA - with integrated indicator support (JSONP/JSON only atm)
+- DuckDB has been removed
+- Speed gains
+- Demo script-integration_test.html-available in the `config/dukascopy/http-docs` 
+- Normalized plugin architecture
+- Support for custom indicators in directory `config.user/plugins/indicators`
+- Indicator warmup issues on 1.0 have been resolved
+- Various other fixes
 
-PS: will there be more indicators added to 1.0? If 1.1 gets more indicators, 1.0 will get more indicators. The main difference between API 1.1 and API 1.0 are its selection syntax-you can specify indicators per timeframe and/or symbol in the DSL- and its internal handling of the warmup rows. 1.1 just selects more rows for the warmup, then pushes it through the existing indicators logic-multithreaded, then merges and just before output it drops the warmup rows. These are the main differences. The indicators are compatible between 1.0 and 1.1, hence it's easy to "backport" new indicators to 1.0.
+In this version you can do something like
 
-## Announcement: deprecation of the CSV format - 2026-01-10
+```sh
+GET http://localhost:8000/ohlcv/1.1/select/EUR-USD,1h[sma(20):sma(50):sma(200):macd(12,6,9)]/after/2025-10-31%2023:59:59 \
+/until/2025-11-30%2023:59:59/output/JSON?order=asc&limit=1440
+```
 
-The CSV format is now in a deprecated state. CSV will continue to be supported until the release of version 0.7, but new features—such as replay—will not support CSV. This is because CSV lacks the performance required for high-speed processing.
+Or 
 
-The default CSV reader and writer will remain available for existing features. If you do not require the new functionality, you can safely ignore this notice and continue using the current version (tag 0.6.5).
+```sh
+http://localhost:8000/ohlcv/1.1/select/EUR-USD,1m[sma_200:macd_12_6_9]/after/2025-10-31%2023:59:59/output/JSON \
+?order=desc&limit=10
+```
 
-The builder component, of course, will continue to support CSV and Parquet generation. This also means that the newly proposed selection syntax, including indicator generation support, will be compatible with CSV.
+Integration test example
 
-[Replay](https://github.com/jpueberbach4/bp.markets.ingest/blob/feature/021-replay/dukascopy/docs/replay.md)
+![example](../images/integration_test1.png)
 
-**Note**: I want to re-emphasize that all of this was, likely, impossible without [Dukascopy](http://www.dukascopy.com) free and open API's. If you find this tool useful, consider trying their platform.
+Builder example
 
-## Notice: Version 0.6.5 may be a breaking change version - 2026-01-09
+![example](../images/builder.png)
 
-When you update to this version, it will break the API when its running. You need to `./service.sh stop`, then update, then `./service.sh start`.
+What remains?
 
-What you get from this new version:
+- Web-interface to use the indicator integration (dynamic)
+- Builder extension to support output
+- CSV modus on the integrated 1.1 endpoint
 
-- [Binary](binary.md) or text mode
-- 11x increased resampling performance in binary mode
-- About 10x increase on performance on API calls in binary mode
-- Cleaner HTTP service code
-- [Abstracted IO](io.md) layer
-- I/O bound performance in binary mode
-- Configuration validation using schema
-- Unchanged behavior on builder utility
-- 40+ indicators
-- 2 UI, 1 for charts, 1 to build queries
+Performance is great.
 
-When you change to this version, choose either `binary/text` mode. Default is still text-mode to try not to break existing installations but i cannot guarantee that it will not happen. The index files now hold 3 fields instead of two. I did build in backward compatibility. 
-
-If you notice any errors, solution is simple `./rebuild-full.sh`. 
-
-Most users will appreciate the binary version because of its increased performance. If you choose binary, make sure to set all the `fmode` fields to binary-also for transform, aggregate, http and resample. If you are still using the default setup `./setup-dukascopy.sh`, then edit the `config.user.yaml` and CTRL+F fmode and change all `text` values to `binary`. Next, perform a `./rebuild-full.sh`.
-
-| Operation | CSV Mode | Binary Mode | Speedup |
-| :--- | :--- | :--- | :--- |
-| **Transform** | 6.00s | 1.20s | 5x faster |
-| **Aggregate** | 2.76s | 3.05s | (Slightly slower - optimizing) |
-| **Resample** | 28.14s | 2.52s | **11x FASTER!** 🎉 |
-| --- | --- | --- | --- |
-| **TOTAL** | **38.42s** | **6.77s** | **5.0x FASTER OVERALL** |
-
-Total bars: 7,861,440
-
-**Actual throughput: ~1 million bars/second**
-
-**Note:** The infrastructure seems now ok to start building API 1.1 and replay (market simulation).
-
-**Note:** DuckDB with Numpy memory-mapped views is a `golden technology`. Replay is going to flyyyy.
-
-## Notice: HTTP service
-
-[HTTP API](http.md) service is implemented. It follows more or less the same syntax as the builder component. You can also define your own HTML pages, eg to render charts. Example is added to the ```config/dukascopy/http-docs``` directory.
-
-![Example](../images/webservice-example.png)
-
-You can now visually compare your data, example SGD:
-
-![SGD](../images/visual-compare-sgd.png)
+You can use this version to play around with custom indicators. The indicator.html is already dynamic. So if you build one, it's immediately usable in `indicator.html`. So you can immediately export outputs. You can find example plugins in `api/plugins/indicators`, [more info](https://github.com/jpueberbach4/bp.markets.ingest/blob/beta/0.6.6/dukascopy/docs/indicators.md).
 
 ## Notice: Panama backadjustment "Public beta" live
 
