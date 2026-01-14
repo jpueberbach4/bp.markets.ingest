@@ -61,4 +61,44 @@ def load_indicator_plugins():
 
     return plugins
 
+
+def get_indicator_plugins(plugins):
+
+    indicators = {}
+    for name, plugin in plugins.items():
+
+        # Get plugin function
+        plugin_func = indicator_registry[name]
+
+        # Initialize indicator options with raw positional parameters
+        info = {
+            "name": name,
+            "description": "N/A",
+            "warmup": 0,
+            "defaults": {},
+            "meta": {}
+        }
+
+        # Map positional arguments if the plugin defines a mapper
+        if hasattr(plugin_func, "__globals__") and "position_args" in plugin_func.__globals__:
+            info['defaults'].update(plugin_func.__globals__["position_args"]([]))
+
+        # Query the plugin for its warmup row requirement, if defined
+        if hasattr(plugin_func, "__globals__") and "warmup_count" in plugin_func.__globals__:
+            info['warmup'] = plugin_func.__globals__["warmup_count"](info['defaults'])
+
+        # Query the plugin for its description, if defined
+        if hasattr(plugin_func, "__globals__") and "description" in plugin_func.__globals__:
+            info['description'] = plugin_func.__globals__["description"]()
+
+        # Query the plugin for its metadata, if defined
+        if hasattr(plugin_func, "__globals__") and "meta" in plugin_func.__globals__:
+            info['meta'].update(plugin_func.__globals__["meta"]())
+
+        indicators[name] = info
+
+
+    sorted_data = {k: indicators[k] for k in sorted(indicators)}
+    return sorted_data
+
 indicator_registry = load_indicator_plugins()

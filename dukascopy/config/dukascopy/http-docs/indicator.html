@@ -81,14 +81,25 @@
 
         .main-view {
             flex-grow: 1; padding: 40px; display: flex;
-            flex-direction: column; align-items: center; justify-content: center;
+            flex-direction: column; align-items: center; justify-content: flex-start;
+            overflow-y: auto;
         }
 
         .preview-card {
             background: var(--white); width: 100%; max-width: 900px;
             padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             border: 1px solid var(--border-color);
+            margin-bottom: 20px;
         }
+
+        .info-card {
+            background: var(--white); width: 100%; max-width: 900px;
+            padding: 25px; border-radius: 8px; border: 1px solid var(--border-color);
+        }
+
+        .info-card h3 { margin: 0 0 10px 0; font-size: 18px; color: var(--sidebar-dark); text-transform: capitalize; }
+        .info-card p { margin: 0 0 15px 0; font-size: 14px; color: var(--text-gray); line-height: 1.5; }
+        .meta-tag { display: inline-block; background: #eee; padding: 4px 8px; border-radius: 4px; font-size: 11px; margin-right: 10px; font-weight: 600; }
 
         .url-display {
             background: #1e222d; color: #d1d4dc; padding: 15px;
@@ -103,24 +114,8 @@
             font-size: 14px; font-weight: 600;
         }
 
-        .sidebar-footer {
-            padding: 15px 20px;
-            border-top: 1px solid var(--border-color);
-            background: #fafbfc;
-        }
-
-        .sidebar-footer a {
-            color: var(--text-gray);
-            font-size: 11px;
-            text-decoration: none;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .sidebar-footer a:hover { color: var(--accent-blue); }
-
+        .sidebar-footer { padding: 15px 20px; border-top: 1px solid var(--border-color); background: #fafbfc; }
+        .sidebar-footer a { color: var(--text-gray); font-size: 11px; text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 5px; }
         .hidden { display: none; }
     </style>
 </head>
@@ -152,50 +147,8 @@
 
             <div id="indicator-group" class="control-group hidden">
                 <label>Indicator</label>
-                <select id="indicatorSelect" onchange="toggleIndicatorParams()">
-                    <option value="rsi">RSI</option>
-                    <option value="sma">SMA</option>
-                    <option value="ema">EMA</option>
-                    <option value="macd">MACD</option>
-                    <option value="bbands">Bollinger Bands</option>
-                    <option value="atr">ATR</option>
-                    <option value="stochastic">Stochastic</option>
-                    <option value="adx">ADX</option>
-                    <option value="vwap">VWAP</option>
-                    <option value="psar">Parabolic SAR</option>
-                    <option value="keltner">Keltner Channels</option>
-                    <option value="mfi">Money Flow Index</option>
-                    <option value="hma">Hull Moving Average</option>
-                    <option value="supertrend">Supertrend</option>
-                    <option value="stc">Schaff Trend Cycle</option>
-                    <option value="fibonacci">Fibonacci</option>
-                    <option value="cci">CCI</option>
-                    <option value="pivot">Pivot Points</option>
-                    <option value="williamsr">Williams %R</option>
-                    <option value="stddev">Standard Deviation</option>
-                    <option value="donchian">Donchian Channels</option>
-                    <option value="ichimoku">Ichimoku Cloud</option>
-                    <option value="roc">Rate of Change</option>
-                    <option value="obv">On-Balance Volume</option>
-                    <option value="cmo">Chande Momentum</option>
-                    <option value="elderray">Elder Ray Index</option>
-                    <option value="dpo">Detrended Price Osc</option>
-                    <option value="kdj">KDJ</option>
-                    <option value="aroon">Aroon</option>
-                    <option value="uo">Ultimate Oscillator</option>
-                    <option value="chaikin">Chaikin Oscillator</option>
-                    <option value="adl">Accumulation/Distribution</option>
-                    <option value="renko">Renko</option>
-                    <option value="heikinashi">Heikin Ashi</option>
-                    <option value="pointfigure">Point & Figure</option>
-                    <option value="kagi">Kagi Chart</option>
-                    <option value="threelinebreak">Three Line Break</option>
-                    <option value="zscore">Z-score</option>
-                    <option value="hurst">Hurst Exponent</option>
-                    <option value="fractaldimension">Fractal Dimension</option>
-                    <option value="shannonentropy">Shannon Entropy</option>
-                    <option value="linregchannel">Linear Regression Channel</option>
-                </select>
+                <select id="indicatorSelect" onchange="renderIndicatorParams()">
+                    </select>
                 <div id="dynamic-params" class="param-box"></div>
             </div>
 
@@ -206,7 +159,7 @@
 
             <div class="control-group">
                 <label>Until Date</label>
-                <input type="text" id="untilDate" value="3000-01-01 00:00:00" oninput="updateUrl()">
+                <input type="text" id="untilDate" value="3000-01-01 00:00:00" oninput="inputHandler()">
             </div>
 
             <div class="control-group">
@@ -222,9 +175,7 @@
             </div>
         </div>
         <div class="sidebar-footer">
-            <a href="https://www.dukascopy.com/" target="_blank">
-                Market data by Dukascopy
-            </a>
+            <a href="https://www.dukascopy.com/" target="_blank">Market data by Dukascopy</a>
         </div>
     </div>
 
@@ -234,63 +185,48 @@
             <div id="urlPreview" class="url-display">Building...</div>
             <button class="download-btn" onclick="downloadData()">Execute Request</button>
         </div>
+
+        <div id="info-display" class="info-card hidden">
+            <h3 id="info-name">Indicator</h3>
+            <p id="info-desc">Description will appear here.</p>
+            <div>
+                <span class="meta-tag" id="info-author">Author: -</span>
+                <span class="meta-tag" id="info-version">Version: -</span>
+                <span class="meta-tag" id="info-warmup">Warmup: -</span>
+            </div>
+        </div>
     </div>
 
     <script>
         let currentMode = 'price';
         let symbolData = {};
-        
-        const indicatorConfig = {
-            rsi: [{ id: 'period', label: 'Period', default: 14 }],
-            sma: [{ id: 'period', label: 'Period', default: 20 }],
-            ema: [{ id: 'period', label: 'Period', default: 50 }],
-            macd: [{ id: 'fast', label: 'Fast', default: 12 }, { id: 'slow', label: 'Slow', default: 26 }, { id: 'signal', label: 'Signal', default: 9 }],
-            bbands: [{ id: 'period', label: 'Period', default: 14 }, { id: 'std', label: 'Std', default: 2.0 }],
-            atr: [{ id: 'period', label: 'Period', default: 14 }],
-            stochastic: [{ id: 'k_period', label: 'K Period', default: 14 }, { id: 'd_period', label: 'D Period', default: 3 }],
-            adx: [{ id: 'period', label: 'Period', default: 14 }],
-            vwap: [],
-            psar: [{ id: 'step', label: 'Step', default: 0.01 }, { id: 'max_step', label: 'Max Step', default: 0.1 }],
-            keltner: [{ id: 'period', label: 'Period', default: 20 }, { id: 'multiplier', label: 'Multiplier', default: 2.5 }],
-            mfi: [{ id: 'period', label: 'Period', default: 21 }],
-            hma: [{ id: 'period', label: 'Period', default: 14 }],
-            supertrend: [{ id: 'period', label: 'Period', default: 10 }, { id: 'multiplier', label: 'Multiplier', default: 2.0 }],
-            stc: [{ id: 'cycle', label: 'Cycle', default: 10 }, { id: 'fast', label: 'Fast', default: 23 }, { id: 'slow', label: 'Slow', default: 50 }],
-            fibonacci: [{ id: 'period', label: 'Lookback', default: 100 }],
-            cci: [{ id: 'period', label: 'Period', default: 20 }],
-            pivot: [{ id: 'lookback', label: 'Lookback', default: 1 }],
-            williamsr: [{ id: 'period', label: 'Period', default: 14 }],
-            stddev: [{ id: 'period', label: 'Period', default: 20 }],
-            donchian: [{ id: 'period', label: 'Period', default: 20 }],
-            ichimoku: [{ id: 'tenkan', label: 'Tenkan', default: 9 }, { id: 'kijun', label: 'Kijun', default: 26 }, { id: 'senkou_b', label: 'Senkou B', default: 52 }, { id: 'displacement', label: 'Displacement', default: 26 }],
-            roc: [{ id: 'period', label: 'Period', default: 12 }],
-            obv: [],
-            cmo: [{ id: 'period', label: 'Period', default: 14 }],
-            elderray: [{ id: 'period', label: 'Period', default: 13 }],
-            dpo: [{ id: 'period', label: 'Period', default: 20 }],
-            kdj: [{ id: 'n', label: 'N', default: 9 }, { id: 'm1', label: 'M1', default: 3 }, { id: 'm2', label: 'M2', default: 3 }],
-            aroon: [{ id: 'period', label: 'Period', default: 25 }],
-            uo: [{ id: 'p1', label: 'P1', default: 7 }, { id: 'p2', label: 'P2', default: 14 }, { id: 'p3', label: 'P3', default: 28 }],
-            chaikin: [{ id: 'short', label: 'Short', default: 3 }, { id: 'long', label: 'Long', default: 10 }],
-            adl: [],
-            renko: [{ id: 'brick_size', label: 'Brick Size', default: 50 }],
-            heikinashi: [],
-            pointfigure: [{ id: 'box_size', label: 'Box Size', default: 100 }, { id: 'reversal', label: 'Reversal', default: 3 }],
-            kagi: [{ id: 'reversal', label: 'Reversal', default: 100 }, { id: 'mode', label: 'Mode', default: 'fixed' }],
-            threelinebreak: [{ id: 'break', label: 'Break', default: 3 }],
-            zscore: [{ id: 'period', label: 'Period', default: 20 }],
-            hurst: [{ id: 'period', label: 'Period', default: 100 }],
-            fractaldimension: [{ id: 'period', label: 'Period', default: 30 }],
-            shannonentropy: [{ id: 'period', label: 'Period', default: 20 }, { id: 'bins', label: 'Bins', default: 10 }],
-            linregchannel: [{ id: 'period', label: 'Period', default: 50 }]
-        };
+        let indicators = {};
+        let userSettings = {}; // Simple session cache for user inputs
 
-        function setMode(mode) {
-            currentMode = mode;
-            document.getElementById('mode-price').classList.toggle('active', mode === 'price');
-            document.getElementById('mode-indicator').classList.toggle('active', mode === 'indicator');
-            document.getElementById('indicator-group').classList.toggle('hidden', mode === 'price');
-            updateUrl();
+        async function init() {
+            // Load Indicators from URL
+            try {
+                const response = await fetch('/ohlcv/1.1/list/indicators');
+                indicators = await response.json();
+                populateIndicatorSelect();
+            } catch (e) { console.error("Failed to fetch indicators", e); }
+
+            // Load Symbols via JSONP (as in original)
+            const sList = document.createElement('script');
+            sList.src = "/ohlcv/1.0/list/output/JSONP?callback=__callbackList";
+            document.body.appendChild(sList);
+        }
+
+        function populateIndicatorSelect() {
+            const sel = document.getElementById('indicatorSelect');
+            sel.innerHTML = "";
+            Object.keys(indicators).sort().forEach(key => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = key.toUpperCase();
+                sel.appendChild(opt);
+            });
+            renderIndicatorParams();
         }
 
         window.__callbackList = function(response) {
@@ -307,6 +243,53 @@
             }
         };
 
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('mode-price').classList.toggle('active', mode === 'price');
+            document.getElementById('mode-indicator').classList.toggle('active', mode === 'indicator');
+            document.getElementById('indicator-group').classList.toggle('hidden', mode === 'price');
+            document.getElementById('info-display').classList.toggle('hidden', mode === 'price');
+            updateUrl();
+        }
+
+        function renderIndicatorParams() {
+            const indKey = document.getElementById('indicatorSelect').value;
+            const config = indicators[indKey];
+            const container = document.getElementById('dynamic-params');
+            container.innerHTML = '';
+
+            if (config && config.defaults) {
+                Object.keys(config.defaults).forEach(paramId => {
+                    const div = document.createElement('div');
+                    div.style.marginBottom = '8px';
+                    
+                    // Check if we have a session-cached value, otherwise use default
+                    const cacheKey = `${indKey}_${paramId}`;
+                    const val = userSettings[cacheKey] !== undefined ? userSettings[cacheKey] : config.defaults[paramId];
+                    
+                    div.innerHTML = `<label style="font-size:10px">${paramId}</label>
+                                     <input type="text" id="p_${paramId}" data-param="${paramId}" data-ind="${indKey}" value="${val}" oninput="inputHandler(this)">`;
+                    container.appendChild(div);
+                });
+
+                // Update right-hand info panel
+                document.getElementById('info-name').innerText = config.name;
+                document.getElementById('info-desc').innerText = config.description;
+                document.getElementById('info-author').innerText = `Author: ${config.meta.author}`;
+                document.getElementById('info-version').innerText = `v${config.meta.version}`;
+                document.getElementById('info-warmup').innerText = `Warmup: ${config.warmup} rows`;
+            }
+            updateUrl();
+        }
+
+        function inputHandler(el) {
+            if (el && el.dataset.ind) {
+                // Save to session cache
+                userSettings[`${el.dataset.ind}_${el.dataset.param}`] = el.value;
+            }
+            updateUrl();
+        }
+
         function updateTimeframeOptions() {
             const sym = document.getElementById('symbolSelect').value;
             const tfS = document.getElementById('tfSelect');
@@ -320,20 +303,6 @@
                 });
                 tfS.value = symbolData[sym].includes(prev) ? prev : symbolData[sym][0];
             }
-            updateUrl();
-        }
-
-        function toggleIndicatorParams() {
-            const ind = document.getElementById('indicatorSelect').value;
-            const container = document.getElementById('dynamic-params');
-            container.innerHTML = '';
-            indicatorConfig[ind].forEach(param => {
-                const div = document.createElement('div');
-                div.style.marginBottom = '8px';
-                div.innerHTML = `<label style="font-size:10px">${param.label}</label>
-                                 <input type="text" id="p_${param.id}" value="${param.default}" oninput="updateUrl()">`;
-                container.appendChild(div);
-            });
             updateUrl();
         }
 
@@ -354,12 +323,17 @@
             if (currentMode === 'price') {
                 return `/ohlcv/1.0/select/${sym},${timeframeParam}/after/${after}/until/${until}${outputSuffix}?order=desc&limit=${limit}`;
             } else {
-                const ind = document.getElementById('indicatorSelect').value;
-                let path = `/ohlcv/1.0/indicator/${ind}`;
-                indicatorConfig[ind].forEach(p => {
-                    const val = document.getElementById(`p_${p.id}`).value;
-                    path += `/${p.id}/${val}`;
-                });
+                const indKey = document.getElementById('indicatorSelect').value;
+                const config = indicators[indKey];
+                let path = `/ohlcv/1.0/indicator/${indKey}`;
+                
+                if(config && config.defaults) {
+                    Object.keys(config.defaults).forEach(paramId => {
+                        const val = document.getElementById(`p_${paramId}`).value;
+                        path += `/${paramId}/${val}`;
+                    });
+                }
+                
                 path += `/after/${after}/until/${until}/select/${sym},${timeframeParam}${outputSuffix}`;
                 return `${path}?order=desc&limit=${limit}`;
             }
@@ -368,10 +342,8 @@
         function updateUrl() { document.getElementById('urlPreview').innerText = buildFinalUrl(); }
         function downloadData() { window.location.href = buildFinalUrl(); }
 
-        const sList = document.createElement('script');
-        sList.src = "/ohlcv/1.0/list/output/JSONP?callback=__callbackList";
-        document.body.appendChild(sList);
-        toggleIndicatorParams();
+        // Start initialization
+        init();
     </script>
 </body>
 </html>

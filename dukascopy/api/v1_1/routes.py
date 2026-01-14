@@ -78,7 +78,7 @@ from api.state11 import cache
 from api.config.app_config import load_app_config
 from api.v1_1.helper import parse_uri, discover_options, generate_output, discover_all, execute
 from api.v1_1.parallel import parallel_indicators
-from api.v1_1.plugin import load_indicator_plugins, indicator_registry
+from api.v1_1.plugin import load_indicator_plugins, indicator_registry, get_indicator_plugins
 from api.v1_1.version import API_VERSION
 
 @lru_cache
@@ -96,6 +96,11 @@ router = APIRouter(
 @router.get(f"/quack")
 async def quack_at_me():
     return quack()
+
+@router.get(f"/list/indicators")
+async def list_indicators():
+    return get_indicator_plugins(indicator_registry)
+
 
 @router.get(f"/{{request_uri:path}}")
 async def get_ohlcv(
