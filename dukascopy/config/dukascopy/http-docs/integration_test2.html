@@ -42,6 +42,15 @@
             padding: 6px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 5px;
         }
 
+div[id^="tv-attr-logo"], 
+.tv-embed-widget-wrapper__attribution,
+#main-chart-container a[href*="tradingview.com"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
 /* Floating Legend Styling */
 #chart-legend {
     position: absolute;
@@ -175,8 +184,8 @@
             mainChart = LightweightCharts.createChart(mainContainer, {
                 width: mainContainer.clientWidth,
                 height: mainContainer.clientHeight,
-                layout: { background: { color: '#ffffff' }, textColor: '#131722' },
-                timeScale: { timeVisible: true, borderColor: '#e0e3eb' },
+                layout: { background: { color: '#ffffff' }, textColor: '#131722',attributionLogo: false },
+                timeScale: { timeVisible: true, borderColor: '#e0e3eb' }
             });
 
             const resizeObserver = new ResizeObserver(entries => {
@@ -495,9 +504,9 @@ function renderPanel(item, key) {
 
         const pChart = LightweightCharts.createChart(div, {
             height: 150, 
-            layout: { background: { color: 'transparent' }, textColor: '#131722' },
+            layout: { background: { color: 'transparent' }, textColor: '#131722', attributionLogo: false},
             timeScale: { visible: false }, 
-            rightPriceScale: { borderVisible: false }
+            rightPriceScale: { borderVisible: false },
         });
 
         // ADD THIS: Handle resizing for this specific panel
