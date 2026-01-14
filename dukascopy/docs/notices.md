@@ -14,13 +14,7 @@ Full high-performance replay functionality.
 
 ## Notice: API 1.1 available beta - 2026-01-14
 
-**Update:** Maybe i was too harsh about AI for this. It came actually pretty far. With a few manual edits, i got this:
-
-![example](../images/terminal2.png)
-
-Preliminary conclusion: API 1.1 works beautifully and can be perfectly integrated to a charting library.
-
-I don't think i will have it done today but getting there.
+**Update:** Can't get the interface finished today. Tomorrow. Likely. No evening work today.
 
 **Important:** CSV input mode is dead from this version onward. It's too much work to keep that compatibility modus in and tbh, it slows down everything by a factor of 100+.
 
@@ -64,9 +58,9 @@ Latest url gives (CSV modus 1.1 API), for example:
 
 So you are able to stack indicators and export them together with price data into one single CSV file. All within milliseconds. Note, this also works with your custom indicators. Obviously. I could show, but trust me, it works.
 
-Integration test example
+![example](../images/terminal2.png)
 
-![example](../images/integration_test1.png)
+Preliminary conclusion: API 1.1 works beautifully and can be perfectly integrated to a charting library.
 
 Builder example
 
@@ -76,8 +70,8 @@ Yeah, i am not playing around. This is insanely powerful.
 
 What remains?
 
-- Web-interface to use the indicator integration (dynamic)
-- Built-in indicator verification - need visualization for that. Working on that atm.
+- Web-interface (50-60 percent done)
+- Built-in indicator verification - need visualization for that. Getting there.
 - Builder extension to support output
 
 Performance is great (understatement).
