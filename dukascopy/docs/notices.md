@@ -12,100 +12,39 @@ See if we can remove "beta state".
 Full high-performance replay functionality.
 
 
-## Notice: API 1.0 - 2026-01-13
+## Notice: API 1.0 and available beta - 2026-01-14
 
-API Version 1.0 has been upgraded. Both 1.0 and 1.1 are equally as fast on the price API. Insane speeds. When i release it, you should hold down page-up key on the 1m chart of EUR-USD. Priceless this performance. API 1.0 warmup was fixed. Both 1.1 and 1.0 use the same indicator script format now.
+There is a beta/0.6.6 available. It's the integration-test version, not completed fully functional.
 
-What remains is that i need to support some functionality in 1.1. Eg getting a list of indicators with their descriptions, metadata and default arguments. Also 1.1 needs to get the list symbols API. So, still some stuff to do.
+What is added/modified?
 
-When this release comes in, you will also be able to easily configure your own indicators [see here](https://github.com/jpueberbach4/bp.markets.ingest/blob/staging/0.6.6/dukascopy/config/plugins/indicators/indicators.md).
+- API 1.1 DATA - with integrated indicator support (JSONP/JSON only atm)
+- DuckDB has been removed
+- Speed gains
+- Demo script-integration_test.html-available in the `config/dukascopy/http-docs` 
+- Normalized plugin architecture
+- Support for custom indicators in directory `config.user/plugins/indicators`
+- Indicator warmup issues on 1.0 have been resolved
+- Various other fixes
 
-Tomorrow i will build an interface on top of this new 1.1. Done for today. Cheers.
+In this version you can do something like
 
-**Note:** i dont think CSV input mode is anymore supported for this new release (upcoming 0.6.6). I am going to check it but i STRONGLY advice to go binary if you havent done so already.
+```sh
+GET http://localhost:8000/ohlcv/1.1/select/EUR-USD,1h[sma(20):sma(50):sma(200)]/after/2025-10-31%2023:59:59 \
+/until/2025-11-30%2023:59:59/output/JSON?order=asc&limit=1440
+```
 
-## Notice: API 1.1 - 2026-01-12
+Integration test example
 
-**Note:** Added a small utility for "the less technical users" among us. Update and then copy over `config/dukascopy/http-docs/indicator.html` to your `config.user/dukascopy/http-docs` directory. Then open `http://localhost:8000/indicator.html`. It allows you to get your data more easily (as CSV).
+![example](../images/integration_test1.png)
 
-**Note:** Now that we are on binary mode, i have updated the API record-limit to 5000. So you can get 5000 minutes, ... 5000 days etc. In one call.
+What remains?
 
-**Note:** How on earth is this so fast, on a laptop? We are leveraging the OS page cache and CPU cache. OS does all the work. CPU gets fed in the right way. We could potentially notch it up even more, using GPU's. Currently, my system is saturated on IO-the NVMe. So locally, on my system, a GPU implementation is not beneficial. Only those with NVMe arrays would benefit. Not many indie traders have raid NVMe. Perhaps in the cloud, but not at home.
+- Web-interface to use the indicator integration (dynamic)
+- Builder extension to support output
+- CSV modus on the integrated 1.1 endpoint
 
-**Update:** Expect v1.1 to land, latest Wednesday. For data-only queries, eg like in V1.0, V1.1 is MUCH faster. 0.05 (V1.0) -> 0.017 (V1.1). Decision: V1.1 query logic will be migrated to V1.0. It solves the warmup issues and increases speed even more. Speed is ridiculous-in a good way-for data-only queries.
-
-**Update:** I’ve been working on integrated indicator support. I wasn’t satisfied with the performance in version 1.1, so I decided to remove DuckDB and take a different approach using direct NumPy computations. It’s still heavily under tuning, but the screenshot below shows what you can expect. On Wednesday, I’ll be spending the entire day building an HTML overlay that will allow you to apply indicators directly. We currently have around 40 indicators available, but I’ll focus on supporting those that can be plotted on charts or are most commonly used (SMA, EMA, RSI, MACD, etc. — essentially the top 10).
-
-![Example indicator integration](../images/integration_test1.png)
-
-**Why i removed DuckDB?** It was a refresh thingy but more importantly: for the warmup i had to scan the index for a number of records before a certain timestamp-the "after". DuckDB sucks at this, it quacked at me in a vicious way. I had increased latency of 30-40ms on the API calls because of that search. So i went on trying different things and ultimately found a solution. Now i perform a binary search for the after, retrieve its direct record(index)-id and just substract the fixed amount-the warmup count needed-from that. Then i take a chunk of data, using from-idx to to-idx, and feed that via a dataframe into the multithreaded indicators. This solved the issue. In fact, it is "relatively" much faster. The new overhead of 10-17 ms is now in the threadpool. When this is fixed, i declare API v1.1 beta-ready.
-
-**One last thing:** I’ve noticed that with the addition of more indicators, the browser is starting to experience increased lag. This is due to the growing amount of data being stored in memory arrays. I’ll address this by keeping only the currently visible data in memory, with one or two pages on either side cached. This approach will keep the interface responsive and performant.
-
-I got a question: why dont you build your own tradingview from this? NO! i will not :) Its about the replay functionality. I was annoyed by the backtesting platforms being around-various reasons-and decided to write my own base, cement a datalayer. Then i needed export capabilities for my "other tools", so the builder was built. Then i published the stuff as opensource-if beneficial for me, perhaps others could benefit as well. Then it got traction and i realized that I was not the only one feeling in a certain way about things. Then I decided to spend more time on this and just go all-the-way. Solve this completely. For everyone. I think coding is fun. This is a fun project too. How much can i squeeze out of a laptop with gigabytes of data. Answer: way above my own expectancy. I was planning a C++ version for extended capabilities. C++ is still important for the high-frequency version. It will be build. But after i have satisfied my primary need. 
-
-Ultimately, this is also a portfolio project too. 
-
-## Announcement: deprecation of the CSV format - 2026-01-10
-
-The CSV format is now in a deprecated state. CSV will continue to be supported until the release of version 0.7, but new features—such as replay—will not support CSV. This is because CSV lacks the performance required for high-speed processing.
-
-The default CSV reader and writer will remain available for existing features. If you do not require the new functionality, you can safely ignore this notice and continue using the current version (tag 0.6.5).
-
-The builder component, of course, will continue to support CSV and Parquet generation. This also means that the newly proposed selection syntax, including indicator generation support, will be compatible with CSV.
-
-[Replay](https://github.com/jpueberbach4/bp.markets.ingest/blob/feature/021-replay/dukascopy/docs/replay.md)
-
-**Note**: I want to re-emphasize that all of this was, likely, impossible without [Dukascopy](http://www.dukascopy.com) free and open API's. If you find this tool useful, consider trying their platform.
-
-## Notice: Version 0.6.5 may be a breaking change version - 2026-01-09
-
-When you update to this version, it will break the API when its running. You need to `./service.sh stop`, then update, then `./service.sh start`.
-
-What you get from this new version:
-
-- [Binary](binary.md) or text mode
-- 11x increased resampling performance in binary mode
-- About 10x increase on performance on API calls in binary mode
-- Cleaner HTTP service code
-- [Abstracted IO](io.md) layer
-- I/O bound performance in binary mode
-- Configuration validation using schema
-- Unchanged behavior on builder utility
-- 40+ indicators
-- 2 UI, 1 for charts, 1 to build queries
-
-When you change to this version, choose either `binary/text` mode. Default is still text-mode to try not to break existing installations but i cannot guarantee that it will not happen. The index files now hold 3 fields instead of two. I did build in backward compatibility. 
-
-If you notice any errors, solution is simple `./rebuild-full.sh`. 
-
-Most users will appreciate the binary version because of its increased performance. If you choose binary, make sure to set all the `fmode` fields to binary-also for transform, aggregate, http and resample. If you are still using the default setup `./setup-dukascopy.sh`, then edit the `config.user.yaml` and CTRL+F fmode and change all `text` values to `binary`. Next, perform a `./rebuild-full.sh`.
-
-| Operation | CSV Mode | Binary Mode | Speedup |
-| :--- | :--- | :--- | :--- |
-| **Transform** | 6.00s | 1.20s | 5x faster |
-| **Aggregate** | 2.76s | 3.05s | (Slightly slower - optimizing) |
-| **Resample** | 28.14s | 2.52s | **11x FASTER!** 🎉 |
-| --- | --- | --- | --- |
-| **TOTAL** | **38.42s** | **6.77s** | **5.0x FASTER OVERALL** |
-
-Total bars: 7,861,440
-
-**Actual throughput: ~1 million bars/second**
-
-**Note:** The infrastructure seems now ok to start building API 1.1 and replay (market simulation).
-
-**Note:** DuckDB with Numpy memory-mapped views is a `golden technology`. Replay is going to flyyyy.
-
-## Notice: HTTP service
-
-[HTTP API](http.md) service is implemented. It follows more or less the same syntax as the builder component. You can also define your own HTML pages, eg to render charts. Example is added to the ```config/dukascopy/http-docs``` directory.
-
-![Example](../images/webservice-example.png)
-
-You can now visually compare your data, example SGD:
-
-![SGD](../images/visual-compare-sgd.png)
+Performance is great.
 
 ## Notice: Panama backadjustment "Public beta" live
 
