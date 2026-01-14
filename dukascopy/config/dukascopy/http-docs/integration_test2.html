@@ -140,7 +140,7 @@
 
         <div id="content-wrapper">
             <div id="loader"><div class="spinner"></div></div>
-            <div id="chart-legend"></div> <div id="main-chart-container"></div>
+            <div id="chart-legend"></div>
             <div id="main-chart-container"></div>
             <div id="panel-container"></div>
         </div>
@@ -166,6 +166,7 @@
         let mainChart, candleSeries;
         let overlaySeries = []; 
         let panelCharts = {};
+        let overlaySeriesMap = {}; // Add this to track overlays by ID
         let volumeSeries; // Add this to your global variables
 
         const mainContainer = document.getElementById('main-chart-container');
@@ -252,37 +253,41 @@ mainChart.subscribeCrosshairMove(param => {
 
         }
 
-        function resetAndLoad(clear = false) {
-            isManualReset = true;
-            if (clear) {
-                masterData = [];
-                candleSeries.setData([]);
-                overlaySeries.forEach(s => mainChart.removeSeries(s));
-                overlaySeries = [];
-                Object.values(panelCharts).forEach(p => p.chart.remove());
-                document.getElementById('panel-container').innerHTML = '';
-                panelCharts = {};
-                shouldResetZoomOnNextLoad = true;
-            }
+function resetAndLoad(clear = false) {
+    isManualReset = true;
+    if (clear) {
+        masterData = [];
+        candleSeries.setData([]);
+        if(volumeSeries) volumeSeries.setData([]);
+        overlaySeries.forEach(s => mainChart.removeSeries(s));
+        overlaySeries = [];
+        overlaySeriesMap = {}; // Clear the map
 
-            currentMaxSearches = initialMaxSearches;
-            hasMoreHistory = true; 
-            gapRetryCount = 0;
-            currentUntilDate = null; 
-            const tf = document.getElementById('tfSelect').value;
-            const initialOffset = getTimeframeOffset(tf) / 2;
-            currentAfterDate = new Date(Date.now() - initialOffset);
+        Object.values(panelCharts).forEach(p => p.chart.remove());
+        document.getElementById('panel-container').innerHTML = '';
+        panelCharts = {};
+        shouldResetZoomOnNextLoad = true;
+    }
 
-            loadData();
-        }
+    currentMaxSearches = initialMaxSearches;
+    hasMoreHistory = true; 
+    gapRetryCount = 0;
+    currentUntilDate = null; 
+    const tf = document.getElementById('tfSelect').value;
+    const initialOffset = getTimeframeOffset(tf) / 2;
+    currentAfterDate = new Date(Date.now() - initialOffset);
 
-        function paginateBack() {
-            if (isFetching || !hasMoreHistory || masterData.length === 0) return;
-            isManualReset = false;
-            const tf = document.getElementById('tfSelect').value;
-            const referenceTime = masterData[0].time;
-            const untilUnix = referenceTime - 1;
-            currentUntilDate = new Date(untilUnix * 1000);
+    loadData();
+}
+
+function paginateBack() {
+    if (isFetching || !hasMoreHistory || masterData.length === 0) return;
+    isManualReset = false; // Important: tells the system this is an update, not a reset
+    
+    const tf = document.getElementById('tfSelect').value;
+    const referenceTime = masterData[0].time;
+    const untilUnix = referenceTime - 1;
+    currentUntilDate = new Date(untilUnix * 1000);
             const baseOffset = getTimeframeOffset(tf);
             const jumpSize = baseOffset * (gapRetryCount + 1); 
             const afterUnix = untilUnix - (jumpSize / 1000);
@@ -388,61 +393,73 @@ candleSeries.setData(masterData.map(d => ({
             }
         };
 
-        function renderIndicators() {
-            overlaySeries.forEach(s => mainChart.removeSeries(s));
-            overlaySeries = [];
+function renderIndicators() {
+    // Only remove and recreate overlay series if we are doing a hard reset
+    if (isManualReset) {
+        overlaySeries.forEach(s => mainChart.removeSeries(s));
+        overlaySeries = [];
+    }
 
-            chain.forEach(item => {
-                const meta = indicatorMeta[item.name];
-                const key = item.params.length ? `${item.name}_${item.params.join('_')}` : `${item.name}_`;
-                
-                if (meta && meta.meta && meta.meta.panel === 1) {
-                    renderPanel(item, key);
-                } else {
-                    renderOverlay(item, key);
-                }
-            });
+    chain.forEach(item => {
+        const meta = indicatorMeta[item.name];
+        const key = item.params.length ? `${item.name}_${item.params.join('_')}` : `${item.name}_`;
+        
+        if (meta && meta.meta && meta.meta.panel === 1) {
+            renderPanel(item, key);
+        } else {
+            renderOverlay(item, key);
         }
+    });
+}
 
 function renderOverlay(item, key) {
     const sampleEntry = masterData.find(d => d.indicators && d.indicators[key] !== undefined);
     const sample = sampleEntry ? sampleEntry.indicators[key] : null;
 
-    // If the item doesn't have a color assigned yet, assign one now
     if (!item.color) item.color = getRandomColor();
 
     if (sample !== null && typeof sample === 'object') {
-        // Handle Multi-line Overlays (BBands, Ichimoku, etc.)
+        // Multi-line Overlays (BBands, Ichimoku, etc.)
         Object.keys(sample).forEach(lineName => {
-            const series = mainChart.addSeries(LightweightCharts.LineSeries, { 
-                title: `${item.name} (${lineName})`, 
-                lineWidth: 1,
-                color: getOverlayColor(item.name, lineName, item.color)
-            });
+            const seriesId = `${item.id}_${lineName}`;
+            
+            if (!overlaySeriesMap[seriesId]) {
+                const series = mainChart.addSeries(LightweightCharts.LineSeries, { 
+                    title: `${item.name} (${lineName})`, 
+                    lineWidth: 1,
+                    color: getOverlayColor(item.name, lineName, item.color)
+                });
+                overlaySeriesMap[seriesId] = series;
+                overlaySeries.push(series);
+            }
 
             const lineData = masterData.map(d => ({
                 time: d.time,
                 value: d.indicators[key] ? d.indicators[key][lineName] : null
             })).filter(v => v.value !== null && v.value !== undefined);
             
-            series.setData(lineData);
-            overlaySeries.push(series);
+            overlaySeriesMap[seriesId].setData(lineData);
         });
     } else {
-        // Handle Single-line Overlays (SMA, EMA, etc.)
-        const series = mainChart.addSeries(LightweightCharts.LineSeries, { 
-            title: item.name, 
-            lineWidth: 2,
-            color: item.color // Uses the persisted color
-        });
+        // Single-line Overlays (SMA, EMA, etc.)
+        const seriesId = item.id;
+        
+        if (!overlaySeriesMap[seriesId]) {
+            const series = mainChart.addSeries(LightweightCharts.LineSeries, { 
+                title: item.name, 
+                lineWidth: 2,
+                color: item.color
+            });
+            overlaySeriesMap[seriesId] = series;
+            overlaySeries.push(series);
+        }
 
         const data = masterData.map(d => ({
             time: d.time,
             value: d.indicators ? d.indicators[key] : null
         })).filter(p => p.value !== null && p.value !== undefined);
         
-        series.setData(data);
-        overlaySeries.push(series);
+        overlaySeriesMap[seriesId].setData(data);
     }
 }
 
@@ -468,30 +485,37 @@ function getOverlayColor(indicatorName, lineName, baseColor) {
 
 
 
-        function renderPanel(item, key) {
-            if (!panelCharts[item.id]) {
-                const container = document.getElementById('panel-container');
-                const div = document.createElement('div');
-                div.className = 'indicator-panel';
-                div.id = `panel_${item.id}`;
-                container.appendChild(div);
+function renderPanel(item, key) {
+    if (!panelCharts[item.id]) {
+        const container = document.getElementById('panel-container');
+        const div = document.createElement('div');
+        div.className = 'indicator-panel';
+        div.id = `panel_${item.id}`;
+        container.appendChild(div);
 
-                const pChart = LightweightCharts.createChart(div, {
-                    height: 150, 
-                    layout: { background: { color: 'transparent' }, textColor: '#131722' },
-                    timeScale: { visible: false }, 
-                    rightPriceScale: { borderVisible: false }
-                });
+        const pChart = LightweightCharts.createChart(div, {
+            height: 150, 
+            layout: { background: { color: 'transparent' }, textColor: '#131722' },
+            timeScale: { visible: false }, 
+            rightPriceScale: { borderVisible: false }
+        });
 
-                // Safety check for null range to prevent crash
-                mainChart.timeScale().subscribeVisibleLogicalRangeChange(range => {
-                    if (range) pChart.timeScale().setVisibleLogicalRange(range);
-                });
+        // ADD THIS: Handle resizing for this specific panel
+        const panelResizeObserver = new ResizeObserver(entries => {
+            if (entries.length === 0 || !entries[0].contentRect) return;
+            const { width, height } = entries[0].contentRect;
+            pChart.applyOptions({ width, height });
+        });
+        panelResizeObserver.observe(div);
 
-                panelCharts[item.id] = { chart: pChart, series: {} };
-            }
-            updatePanelData(item, key);
-        }
+        mainChart.timeScale().subscribeVisibleLogicalRangeChange(range => {
+            if (range) pChart.timeScale().setVisibleLogicalRange(range);
+        });
+
+        panelCharts[item.id] = { chart: pChart, series: {} };
+    }
+    updatePanelData(item, key);
+}
 
         function updatePanelData(item, key) {
             const pObj = panelCharts[item.id];
