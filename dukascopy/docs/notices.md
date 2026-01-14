@@ -14,13 +14,15 @@ Full high-performance replay functionality.
 
 ## Notice: API 1.1 available beta - 2026-01-14
 
+**Update:** Can't get the interface finished today. Tomorrow. Likely. No evening work today.
+
 **Important:** CSV input mode is dead from this version onward. It's too much work to keep that compatibility modus in and tbh, it slows down everything by a factor of 100+.
 
 There is a beta/0.6.6 available. It's the integration-test version, not completed but fully functional. Web-interface is missing, rest works.
 
 What is added/modified?
 
-- API 1.1 DATA - with integrated indicator support (JSONP/JSON only atm)
+- API 1.1 DATA - with integrated indicator support (JSONP/JSON and CSV)
 - DuckDB has been removed
 - Speed gains
 - Demo script-integration_test.html-available in the `config/dukascopy/http-docs` 
@@ -56,17 +58,20 @@ Latest url gives (CSV modus 1.1 API), for example:
 
 So you are able to stack indicators and export them together with price data into one single CSV file. All within milliseconds. Note, this also works with your custom indicators. Obviously. I could show, but trust me, it works.
 
-Integration test example
+![example](../images/terminal2.png)
 
-![example](../images/integration_test1.png)
+Preliminary conclusion: API 1.1 works beautifully and can be perfectly integrated to a charting library.
 
 Builder example
 
-![example](../images/builder.png)
+![example](../images/builder11.png)
+
+Yeah, i am not playing around. This is insanely powerful.
 
 What remains?
 
-- Web-interface to use the indicator integration (dynamic)
+- Web-interface (50-60 percent done)
+- Built-in indicator verification - need visualization for that. Getting there.
 - Builder extension to support output
 
 Performance is great (understatement).
@@ -76,6 +81,8 @@ You can use this version to play around with custom indicators. The indicator.ht
 **Note:** Since performance allows, i will up the API record-limit once more, to like 20000 or something.
 
 **Note:** I tested performance with 20.000 records. Including recursive mapping: 0.27s. CSV mode stays below 0.15s. Its amazing. This binary mode. The recursive mapping is bottleneck. I will numba njit that. Try at least. So the JSON API will become even faster. Later, not now.
+
+**Note:** How do you get this insane performance on the API? [this](https://github.com/jpueberbach4/bp.markets.ingest/blob/beta/0.6.6/dukascopy/api/state11.py) is the secret.
 
 ## Notice: Panama backadjustment "Public beta" live
 
