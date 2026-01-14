@@ -202,8 +202,8 @@ async def list_indicators(
 @router.get(f"/{{request_uri:path}}")
 async def get_ohlcv(
     request_uri: str,
-    limit: Optional[int] = Query(1440, gt=0, le=5000),
-    offset: Optional[int] = Query(0, ge=0, le=1000),
+    limit: Optional[int] = Query(1440, gt=0, le=20000),
+    offset: Optional[int] = Query(0, ge=0, le=20000),
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
     callback: Optional[str] = "__bp_callback",
     config = Depends(get_config)
