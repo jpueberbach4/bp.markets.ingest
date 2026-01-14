@@ -16,7 +16,7 @@ Full high-performance replay functionality.
 
 **Important:** CSV input mode is dead from this version onward. It's too much work to keep that compatibility modus in and tbh, it slows down everything by a factor of 100+.
 
-There is a beta/0.6.6 available. It's the integration-test version, not completed fully functional.
+There is a beta/0.6.6 available. It's the integration-test version, not completed but fully functional. Web-interface is missing, rest works.
 
 What is added/modified?
 
