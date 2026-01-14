@@ -62,7 +62,7 @@ Integration test example
 
 Builder example
 
-![example](../images/builder.png)
+![example](../images/builder11.png)
 
 What remains?
 
