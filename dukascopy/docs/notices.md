@@ -14,6 +14,8 @@ Full high-performance replay functionality.
 
 ## Notice: API 1.1 available beta - 2026-01-14
 
+**Update:** This charting stuff with indicator support, i will need to do myself. AI fails here. Will take me a bit. I am a backender, not a frontender.
+
 **Important:** CSV input mode is dead from this version onward. It's too much work to keep that compatibility modus in and tbh, it slows down everything by a factor of 100+.
 
 There is a beta/0.6.6 available. It's the integration-test version, not completed but fully functional. Web-interface is missing, rest works.
@@ -81,13 +83,6 @@ You can use this version to play around with custom indicators. The indicator.ht
 **Note:** I tested performance with 20.000 records. Including recursive mapping: 0.27s. CSV mode stays below 0.15s. Its amazing. This binary mode. The recursive mapping is bottleneck. I will numba njit that. Try at least. So the JSON API will become even faster. Later, not now.
 
 **Note:** How do you get this insane performance on the API? [this](https://github.com/jpueberbach4/bp.markets.ingest/blob/beta/0.6.6/dukascopy/api/state11.py) is the secret.
-
-**Note:** Some people might wonder, how is he able to deliver so fast. I leverage AI. I have become an artist on `prompt engineering`. I know exactly what AI to leverage for what task. The critical stuff, the state11, etc, I build myself. But the rest. All AI. Invention of the century. Gemini devs should get the nobel prize.
-
-- Gemini for web-stuff and non-complex code generation
-- Deepseek for QA
-- ChatGPT for inline commenting and docstrings
-- Grok for the humor
 
 ## Notice: Panama backadjustment "Public beta" live
 
