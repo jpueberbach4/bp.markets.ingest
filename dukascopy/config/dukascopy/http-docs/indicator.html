@@ -201,25 +201,32 @@
         let currentMode = 'price';
         let symbolData = {};
         let indicators = {};
-        let userSettings = {}; // Simple session cache for user inputs
+        let userSettings = {}; 
 
         async function init() {
-            // Load Indicators from URL
-            try {
-                const response = await fetch('/ohlcv/1.1/list/indicators');
-                indicators = await response.json();
-                populateIndicatorSelect();
-            } catch (e) { console.error("Failed to fetch indicators", e); }
+            // Load Indicators via JSONP from the new URL
+            const iList = document.createElement('script');
+            iList.src = "/ohlcv/1.1/list/indicators/output/JSONP?callback=__my_callback";
+            document.body.appendChild(iList);
 
-            // Load Symbols via JSONP (as in original)
+            // Load Symbols via JSONP (kept as is)
             const sList = document.createElement('script');
             sList.src = "/ohlcv/1.0/list/output/JSONP?callback=__callbackList";
             document.body.appendChild(sList);
         }
 
+        // New callback handler for Indicators
+        window.__my_callback = function(response) {
+            if (response.status === "ok") {
+                indicators = response.result;
+                populateIndicatorSelect();
+            }
+        };
+
         function populateIndicatorSelect() {
             const sel = document.getElementById('indicatorSelect');
             sel.innerHTML = "";
+            // Sort alphabetically and populate
             Object.keys(indicators).sort().forEach(key => {
                 const opt = document.createElement('option');
                 opt.value = key;
@@ -263,16 +270,14 @@
                     const div = document.createElement('div');
                     div.style.marginBottom = '8px';
                     
-                    // Check if we have a session-cached value, otherwise use default
                     const cacheKey = `${indKey}_${paramId}`;
                     const val = userSettings[cacheKey] !== undefined ? userSettings[cacheKey] : config.defaults[paramId];
                     
                     div.innerHTML = `<label style="font-size:10px">${paramId}</label>
-                                     <input type="text" id="p_${paramId}" data-param="${paramId}" data-ind="${indKey}" value="${val}" oninput="inputHandler(this)">`;
+                                    <input type="text" id="p_${paramId}" data-param="${paramId}" data-ind="${indKey}" value="${val}" oninput="inputHandler(this)">`;
                     container.appendChild(div);
                 });
 
-                // Update right-hand info panel
                 document.getElementById('info-name').innerText = config.name;
                 document.getElementById('info-desc').innerText = config.description;
                 document.getElementById('info-author').innerText = `Author: ${config.meta.author}`;
@@ -284,7 +289,6 @@
 
         function inputHandler(el) {
             if (el && el.dataset.ind) {
-                // Save to session cache
                 userSettings[`${el.dataset.ind}_${el.dataset.param}`] = el.value;
             }
             updateUrl();
@@ -329,7 +333,8 @@
                 
                 if(config && config.defaults) {
                     Object.keys(config.defaults).forEach(paramId => {
-                        const val = document.getElementById(`p_${paramId}`).value;
+                        const inputEl = document.getElementById(`p_${paramId}`);
+                        const val = inputEl ? inputEl.value : config.defaults[paramId];
                         path += `/${paramId}/${val}`;
                     });
                 }
@@ -342,7 +347,6 @@
         function updateUrl() { document.getElementById('urlPreview').innerText = buildFinalUrl(); }
         function downloadData() { window.location.href = buildFinalUrl(); }
 
-        // Start initialization
         init();
     </script>
 </body>

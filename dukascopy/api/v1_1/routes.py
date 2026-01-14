@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 ===============================================================================
 File:        routes.py
@@ -5,46 +7,57 @@ File:        routes.py
 Author:      JP Ueberbach
 Created:     2026-01-12
 
-FastAPI router implementing a versioned OHLCV and indicator API.
+FastAPI router implementing a versioned OHLCV and indicator execution API.
 
-This module defines the public HTTP API for accessing OHLCV
-(Open, High, Low, Close, Volume) time-series data and derived indicators
-via a path-based query DSL. It exposes endpoints under the "/ohlcv/{version}" 
-namespace.
+This module defines the public HTTP interface for querying OHLCV
+(Open, High, Low, Close, Volume) time-series data and applying derived
+technical indicators via a path-based, slash-delimited query DSL.
+All endpoints are exposed under the "/ohlcv/{version}" namespace.
+
+The API is designed for high-throughput, low-latency market data access
+and supports both CSV-backed and memory-mapped binary datasets.
 
 Key Features:
-    - Executes raw OHLCV queries using a slash-delimited query DSL.
-    - Lists available symbols and timeframes discovered from the filesystem.
-    - Executes dynamically loaded indicator plugins on resolved OHLCV data.
-    - Supports pagination, ordering, and platform-specific options (e.g., MT4).
+    - Executes OHLCV queries defined by a path-based DSL.
+    - Discovers available symbols and timeframes from the filesystem.
+    - Lists dynamically loaded indicator plugins with metadata.
+    - Applies indicator plugins in parallel to resolved OHLCV data.
+    - Supports pagination, ordering, temporal filters, and MT4-specific flags.
     - Returns output in multiple formats: JSON, JSONP, and CSV.
+    - Includes execution timing (wall-clock) in response metadata.
 
 Request Processing Pipeline:
     1. Parse the path-based DSL into structured query options.
-    2. Validate pagination, ordering, and output constraints.
-    3. Resolve requested symbol/timeframe selections against filesystem-backed OHLCV data.
-    4. Register memory-mapped views for selected datasets (binary file mode).
-    5. Execute queries against CSV or binary sources.
-    6. Apply indicator plugins in parallel to the query results.
-    7. Filter, limit, and normalize rows based on user parameters.
+    2. Validate pagination, ordering, output mode, and platform constraints.
+    3. Resolve symbol/timeframe selections against filesystem-backed datasets.
+    4. Register memory-mapped views for binary OHLCV sources (when enabled).
+    5. Execute DuckDB queries against CSV or binary-backed data.
+    6. Apply indicator plugins in parallel to the result set.
+    7. Apply temporal filtering, row limits, and column normalization.
     8. Serialize results into the requested output format.
 
 Indicator System:
-    - Dynamically loads indicator modules at startup.
-    - Modules must expose a `calculate(data, options)` callable.
-    - Supports parallel execution for improved performance.
+    - Indicator plugins are dynamically loaded at application startup.
+    - Each plugin must expose a `calculate(data, options)` callable.
+    - Optional plugin metadata (defaults, warmup, description, meta) is
+      introspected at runtime.
+    - Indicator execution is parallelized for performance.
 
 Special Endpoints:
-    - `/quack`: Provides a playful “DuckDB experience” for demonstration and testing.
+    - `/list/indicators/{request_uri}`:
+        Returns metadata for all registered indicator plugins.
+    - `/quack`:
+        Provides a playful “DuckDB experience” for demonstration and testing.
 
 Usage:
-    - This module is included in the FastAPI router configuration.
-    - It should not be executed directly as a standalone script.
+    - This module is registered as part of the FastAPI router configuration.
+    - It is not intended to be executed as a standalone script.
 
-Classes/Functions:
-    - get_config(): Load the application configuration with caching.
-    - get_ohlcv(): Main path-based OHLCV query endpoint.
-    - quack(): Playful endpoint simulating full-table scan latency.
+Primary Functions:
+    - get_config(): Load and cache application configuration.
+    - list_indicators(): Enumerate available indicator plugins.
+    - get_ohlcv(): Resolve and execute path-based OHLCV queries.
+    - quack(): Simulated full-table scan endpoint for testing.
 
 Requirements:
     - Python 3.8+
@@ -52,33 +65,28 @@ Requirements:
     - DuckDB
     - NumPy
     - Pandas
-    - orjson (for JSON serialization)
+    - orjson
 
 License:
     MIT License
 ===============================================================================
 """
 
-import mmap
 import time
-import numpy as np
-import pandas as pd
 import orjson
-import duckdb
-import re
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Query
 from fastapi.responses import PlainTextResponse, JSONResponse
-from typing import Dict, Optional
+from typing import Optional
 from pathlib import Path
 from functools import lru_cache
 from fastapi import Depends
 
 from api.state11 import cache
 from api.config.app_config import load_app_config
-from api.v1_1.helper import parse_uri, discover_options, generate_output, discover_all, execute
+from api.v1_1.helper import parse_uri, discover_options, generate_output, execute
 from api.v1_1.parallel import parallel_indicators
-from api.v1_1.plugin import load_indicator_plugins, indicator_registry, get_indicator_plugins
+from api.v1_1.plugin import indicator_registry, get_indicator_plugins
 from api.v1_1.version import API_VERSION
 
 @lru_cache
@@ -97,10 +105,99 @@ router = APIRouter(
 async def quack_at_me():
     return quack()
 
-@router.get(f"/list/indicators")
-async def list_indicators():
-    return get_indicator_plugins(indicator_registry)
+@router.get(f"/list/indicators/{{request_uri:path}}")
+async def list_indicators(
+    request_uri: str,
+    order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
+    callback: Optional[str] = "__bp_callback",
+    config=Depends(get_config),
+):
+    """
+    List registered indicator plugins with optional output formatting.
 
+    This endpoint resolves a path-based request URI, collects metadata for all
+    registered indicator plugins, and returns the result in the requested
+    output format (JSON or JSONP). Execution timing information is included
+    in the response options.
+
+    Args:
+        request_uri (str): Encoded URI specifying output options and format.
+        order (Optional[str]): Sort order for the response ("asc" or "desc").
+        callback (Optional[str]): JSONP callback function name.
+        config: Application configuration dependency.
+
+    Returns:
+        dict or PlainTextResponse: A payload containing indicator metadata and
+        request options, formatted as JSON or JSONP depending on the request.
+
+    Raises:
+        Exception: If indicator metadata retrieval or response generation fails.
+    """
+    # Track execution start time for wall-clock measurement
+    time_start = time.time()
+
+    # Parse the path-based request URI into structured options
+    options = parse_uri(request_uri)
+
+    # Inject callback and output mode from configuration
+    options.update(
+        {
+            "callback": callback,
+            "fmode": config.http.fmode,
+        }
+    )
+    try:
+        # Retrieve metadata for all registered indicators
+        data = get_indicator_plugins(indicator_registry)
+
+        # Record wall-clock execution time
+        options["wall"] = time.time() - time_start
+
+        # Resolve callback name from options
+        callback = options.get("callback")
+
+        # Default JSON output
+        if options.get("output_type") == "JSON" or options.get("output_type") is None:
+            return {
+                "status": "ok",
+                "options": options,
+                "result": data,
+            }
+
+        # JSONP output for browser-based consumption
+        if options.get("output_type") == "JSONP":
+            payload = {
+                "status": "ok",
+                "options": options,
+                "result": data,
+            }
+
+            # Serialize payload and wrap in callback function
+            json_data = orjson.dumps(payload).decode("utf-8")
+            return PlainTextResponse(
+                content=f"{callback}({json_data});",
+                media_type="text/javascript",
+            )
+
+        raise Exception("Unsupported content type (Sorry, CSV not supported)")
+        
+    except Exception as e:
+        # Build standardized error payload
+        error_payload = {
+            "status": "failure",
+            "exception": f"{e}",
+            "options": options,
+        }
+
+        # Return JSONP error response if requested
+        if options.get("output_type") == "JSONP":
+            return PlainTextResponse(
+                content=f"{callback}({orjson.dumps(error_payload)});",
+                media_type="text/javascript",
+            )
+
+        # Default to JSON error response
+        return JSONResponse(content=error_payload, status_code=400)
 
 @router.get(f"/{{request_uri:path}}")
 async def get_ohlcv(
