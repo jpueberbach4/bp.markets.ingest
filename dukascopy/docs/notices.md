@@ -52,7 +52,7 @@ Latest url gives (CSV modus 1.1 API), for example:
 
 ![example](../images/csv_1_1_output.png)
 
-So you are able to stack indicators and export them together with price data into one single CSV file. All within milliseconds.
+So you are able to stack indicators and export them together with price data into one single CSV file. All within milliseconds. Note, this also works with your custom indicators. Obviously. I could show, but trust me, it works.
 
 Integration test example
 
