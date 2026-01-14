@@ -14,7 +14,9 @@ Full high-performance replay functionality.
 
 ## Notice: API 1.1 available beta - 2026-01-14
 
-**Update:** This charting stuff with indicator support, i will need to do myself. AI fails here. Will take me a bit. I am a backender, not a frontender.
+**Update:** Maybe i was too harsh about AI for this. It came actually pretty far. With a few manual edits, i got this:
+
+![example](../images/terminal.png)
 
 **Important:** CSV input mode is dead from this version onward. It's too much work to keep that compatibility modus in and tbh, it slows down everything by a factor of 100+.
 
