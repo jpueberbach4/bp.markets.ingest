@@ -272,8 +272,8 @@ async def get_ohlcv(
         df = execute(options)
 
         # Support for CSV output mode (do not build recursive output)
-        disable_recursive_mapping = True
-        if options.get("output_type") == "JSONP":
+        disable_recursive_mapping = False
+        if options.get("output_type") == "CSV":
             disable_recursive_mapping = True
 
         # Enrich the returned result with the requested indicators (parallelized)
