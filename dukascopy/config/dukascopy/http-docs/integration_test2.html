@@ -42,6 +42,25 @@
             padding: 6px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 5px;
         }
 
+/* Floating Legend Styling */
+#chart-legend {
+    position: absolute;
+    z-index: 1000;
+    pointer-events: none;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 8px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+    color: #131722;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    display: none;
+    line-height: 1.4;
+}
+.legend-ohlcv { font-weight: bold; border-bottom: 1px solid #eee; margin-bottom: 6px; padding-bottom: 4px; }
+.legend-item { display: flex; justify-content: space-between; margin-bottom: 2px; gap: 15px; }
+
 /* Container for the chart and all indicator panels */
 #content-wrapper { 
     flex: 1; 
@@ -121,6 +140,7 @@
 
         <div id="content-wrapper">
             <div id="loader"><div class="spinner"></div></div>
+            <div id="chart-legend"></div> <div id="main-chart-container"></div>
             <div id="main-chart-container"></div>
             <div id="panel-container"></div>
         </div>
@@ -145,7 +165,8 @@
         
         let mainChart, candleSeries;
         let overlaySeries = []; 
-        let panelCharts = {}; 
+        let panelCharts = {};
+        let volumeSeries; // Add this to your global variables
 
         const mainContainer = document.getElementById('main-chart-container');
 
@@ -168,10 +189,67 @@
                 upColor: '#26a69a', downColor: '#ef5350', borderVisible: false,
                 wickUpColor: '#26a69a', wickDownColor: '#ef5350',
             });
+            
+// Initialize Volume Series
+    volumeSeries = mainChart.addSeries(LightweightCharts.HistogramSeries, {
+        color: '#26a69a',
+        priceFormat: { type: 'volume' },
+        priceScaleId: '', // Overlay on main chart
+    });
+    volumeSeries.priceScale().applyOptions({
+        scaleMargins: { top: 0.8, bottom: 0 }, // Position at bottom 20%
+    });
 
-            mainChart.timeScale().subscribeVisibleLogicalRangeChange(() => {
-                requestAnimationFrame(checkIfChartFull);
+
+
+const legend = document.getElementById('chart-legend');
+
+mainChart.subscribeCrosshairMove(param => {
+        if (!param.time || param.point === undefined || param.point.x < 0 || param.point.y < 0) {
+            legend.style.display = 'none';
+            return;
+        }
+
+        // Position tooltip near mouse pointer
+        const containerRect = mainContainer.getBoundingClientRect();
+        legend.style.display = 'block';
+        legend.style.left = (param.point.x + 170) + 'px';
+        legend.style.top = (param.point.y + 60) + 'px';
+        
+        const data = param.seriesData.get(candleSeries);
+        const volData = param.seriesData.get(volumeSeries);
+        if (!data) return;
+
+        let html = `<div class="legend-ohlcv">`;
+        html += `O: ${data.open} H: ${data.high}<br>L: ${data.low} C: ${data.close}`;
+        if (volData) html += `<br>Vol: ${volData.value.toLocaleString()}`;
+        html += `</div>`;
+
+        // Add Indicator Values from MasterData
+        const masterPoint = masterData.find(d => d.time === param.time);
+        if (masterPoint && masterPoint.indicators) {
+            chain.forEach(item => {
+                const key = item.params.length ? `${item.name}_${item.params.join('_')}` : `${item.name}_`;
+                const val = masterPoint.indicators[key];
+                if (val !== undefined) {
+                    if (typeof val === 'object') {
+                        Object.entries(val).forEach(([k, v]) => {
+                            html += `<div class="legend-item"><span>${item.name}(${k})</span> <b style="color:${item.color || '#2962ff'}">${v.toFixed(4)}</b></div>`;
+                        });
+                    } else {
+                        html += `<div class="legend-item"><span>${item.name}</span> <b style="color:${item.color || '#7e57c2'}">${val.toFixed(4)}</b></div>`;
+                    }
+                }
             });
+        }
+        legend.innerHTML = html;
+    });
+
+    mainChart.timeScale().subscribeVisibleLogicalRangeChange(() => {
+        requestAnimationFrame(checkIfChartFull);
+    });
+
+
         }
 
         function resetAndLoad(clear = false) {
@@ -250,18 +328,38 @@
                 currentMaxSearches = normalMaxSearches;
                 gapRetryCount = 0;
 
-                const incoming = response.result.map(row => ({
-                    time: parseLiteralToUnix(row.time),
-                    open: row.open, high: row.high, low: row.low, close: row.close,
-                    indicators: row.indicators
-                }));
+const incoming = response.result.map(row => {
+            const isUp = row.close >= row.open;
+            return {
+                time: parseLiteralToUnix(row.time),
+                open: row.open, high: row.high, low: row.low, close: row.close,
+                value: row.volume,
+                // Bright solid colors for candles
+                candleColor: isUp ? '#26a69a' : '#ef5350', 
+                // Semi-transparent colors for volume overlay
+                volumeColor: isUp ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
+                indicators: row.indicators
+            };
+        });
 
                 const combined = [...masterData, ...incoming];
                 const uniqueMap = new Map();
                 combined.forEach(item => { if(item.time) uniqueMap.set(item.time, item); });
                 masterData = Array.from(uniqueMap.values()).sort((a, b) => a.time - b.time);
 
-                candleSeries.setData(masterData);
+candleSeries.setData(masterData.map(d => ({
+            time: d.time, open: d.open, high: d.high, low: d.low, close: d.close,
+            color: d.candleColor,
+            borderColor: d.candleColor,
+            wickColor: d.candleColor
+        })));
+
+        // Apply transparent colors to volume
+        volumeSeries.setData(masterData.map(d => ({ 
+            time: d.time, 
+            value: d.value, 
+            color: d.volumeColor 
+        })));
                 renderIndicators();
 
                 if (shouldResetZoomOnNextLoad) {
@@ -306,21 +404,69 @@
             });
         }
 
-        function renderOverlay(item, key) {
+function renderOverlay(item, key) {
+    const sampleEntry = masterData.find(d => d.indicators && d.indicators[key] !== undefined);
+    const sample = sampleEntry ? sampleEntry.indicators[key] : null;
+
+    // If the item doesn't have a color assigned yet, assign one now
+    if (!item.color) item.color = getRandomColor();
+
+    if (sample !== null && typeof sample === 'object') {
+        // Handle Multi-line Overlays (BBands, Ichimoku, etc.)
+        Object.keys(sample).forEach(lineName => {
             const series = mainChart.addSeries(LightweightCharts.LineSeries, { 
-                title: item.name, 
-                lineWidth: 2 
+                title: `${item.name} (${lineName})`, 
+                lineWidth: 1,
+                color: getOverlayColor(item.name, lineName, item.color)
             });
 
-            const data = masterData.map(d => {
-                const val = d.indicators ? d.indicators[key] : null;
-                const v = (typeof val === 'object' && val !== null) ? Object.values(val)[0] : val;
-                return { time: d.time, value: v };
-            }).filter(p => p.value !== null && p.value !== undefined);
+            const lineData = masterData.map(d => ({
+                time: d.time,
+                value: d.indicators[key] ? d.indicators[key][lineName] : null
+            })).filter(v => v.value !== null && v.value !== undefined);
             
-            series.setData(data);
+            series.setData(lineData);
             overlaySeries.push(series);
-        }
+        });
+    } else {
+        // Handle Single-line Overlays (SMA, EMA, etc.)
+        const series = mainChart.addSeries(LightweightCharts.LineSeries, { 
+            title: item.name, 
+            lineWidth: 2,
+            color: item.color // Uses the persisted color
+        });
+
+        const data = masterData.map(d => ({
+            time: d.time,
+            value: d.indicators ? d.indicators[key] : null
+        })).filter(p => p.value !== null && p.value !== undefined);
+        
+        series.setData(data);
+        overlaySeries.push(series);
+    }
+}
+
+// Updated helper to use the persisted base color for variations
+function getOverlayColor(indicatorName, lineName, baseColor) {
+    const name = indicatorName.toLowerCase();
+    const line = lineName.toLowerCase();
+
+    // Specific logic for known multi-line indicators
+    if (name.includes('bbands')) {
+        if (line.includes('upper') || line.includes('lower')) return '#2196F3'; 
+        return '#FF9800'; 
+    }
+    if (name.includes('ichimoku')) {
+        const ichiColors = {
+            'tenkan': '#0496ff', 'kijun': '#991515', 
+            'senkou_a': '#26a69a', 'senkou_b': '#ef5350', 'chikou': '#7e57c2'
+        };
+        return ichiColors[line] || baseColor;
+    }
+    return baseColor;
+}
+
+
 
         function renderPanel(item, key) {
             if (!panelCharts[item.id]) {
@@ -429,14 +575,22 @@
             }
         }
 
-        function addToChain() {
-            const name = document.getElementById('indicatorSelect').value;
-            const meta = indicatorMeta[name];
-            const params = meta.defaults ? Object.keys(meta.defaults).map(k => document.getElementById(`p_${k}`).value) : [];
-            chain.push({ name, params, id: `${name}_${Date.now()}` });
-            renderChain();
-            resetAndLoad(true);
-        }
+function addToChain() {
+    const name = document.getElementById('indicatorSelect').value;
+    const meta = indicatorMeta[name];
+    const params = meta.defaults ? Object.keys(meta.defaults).map(k => document.getElementById(`p_${k}`).value) : [];
+    
+    // Assign a color IMMEDIATELY when added to the chain
+    chain.push({ 
+        name, 
+        params, 
+        id: `${name}_${Date.now()}`,
+        color: getRandomColor() 
+    });
+    
+    renderChain();
+    resetAndLoad(true);
+}
 
         function renderChain() {
             document.getElementById('chain-list').innerHTML = chain.map((item, i) => `
