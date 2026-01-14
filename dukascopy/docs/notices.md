@@ -20,7 +20,7 @@ There is a beta/0.6.6 available. It's the integration-test version, not complete
 
 What is added/modified?
 
-- API 1.1 DATA - with integrated indicator support (JSONP/JSON only atm)
+- API 1.1 DATA - with integrated indicator support (JSONP/JSON and CSV)
 - DuckDB has been removed
 - Speed gains
 - Demo script-integration_test.html-available in the `config/dukascopy/http-docs` 
