@@ -76,7 +76,8 @@ from fastapi import Depends
 
 from api.state11 import cache # this is update to new high performance mapping for binary mode
 from api.config.app_config import load_app_config
-from api.v1_0.helper import parse_uri, generate_sql, discover_options, generate_output, discover_all
+from api.v1_1.helper import parse_uri, discover_options, generate_output, discover_all
+from api.v1_0.helper import generate_sql
 from api.v1_1.helper import execute # this is update to new high performance execution for binary mode
 
 from api.v1_1.plugin import load_indicator_plugins
