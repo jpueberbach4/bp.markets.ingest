@@ -37,7 +37,7 @@ from typing import List, Dict, Any
 
 THREAD_EXECUTOR = concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count())
 
-def parallel_indicators(df: pd.DataFrame, options: Dict[str, Any], plugins: Dict[str, callable]):
+def parallel_indicators(df: pd.DataFrame, options: Dict[str, Any], plugins: Dict[str, callable], disable_recursive_mapping: bool = False):
     """Calculates technical indicators directly on a provided DataFrame in parallel.
 
     This function applies user-specified indicator plugins to grouped slices of
@@ -132,27 +132,30 @@ def parallel_indicators(df: pd.DataFrame, options: Dict[str, Any], plugins: Dict
     indicator_matrix = pd.concat(results, axis=1)
     indicator_matrix = indicator_matrix.groupby(level=0, axis=1).first()
 
-    # Vectorized nesting of multi-column indicators into dictionaries
-    records = indicator_matrix.to_dict(orient='records')
-    nested_list = []
-    for rec in records:
-        row_dict = {}
-        for k, v in rec.items():
-            if pd.isna(v):
-                continue
-            if "__" in k:
-                grp, sub = k.split("__", 1)
-                if grp not in row_dict:
-                    row_dict[grp] = {}
-                row_dict[grp][sub] = v
-            else:
-                row_dict[k] = v
-        nested_list.append(row_dict)
+    if not disable_recursive_mapping:
+        # Vectorized nesting of multi-column indicators into dictionaries
+        records = indicator_matrix.to_dict(orient='records')
+        nested_list = []
+        for rec in records:
+            row_dict = {}
+            for k, v in rec.items():
+                if pd.isna(v):
+                    continue
+                if "__" in k:
+                    grp, sub = k.split("__", 1)
+                    if grp not in row_dict:
+                        row_dict[grp] = {}
+                    row_dict[grp][sub] = v
+                else:
+                    row_dict[k] = v
+            nested_list.append(row_dict)
 
-    # Attach nested indicators to the main DataFrame
-    indicator_matrix['indicators'] = nested_list
-    df = df.join(indicator_matrix[['indicators']], how='left')
-    df['indicators'] = df['indicators'].apply(lambda x: x if isinstance(x, dict) else {})
+        # Attach nested indicators to the main DataFrame
+        indicator_matrix['indicators'] = nested_list
+        df = df.join(indicator_matrix[['indicators']], how='left')
+        df['indicators'] = df['indicators'].apply(lambda x: x if isinstance(x, dict) else {})
+    else:
+        df = df.join(indicator_matrix)
 
     # Restore requested sort order
     is_asc = options.get('order', 'asc').lower() == 'asc'

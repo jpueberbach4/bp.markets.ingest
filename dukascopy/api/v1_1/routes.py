@@ -271,8 +271,13 @@ async def get_ohlcv(
         # Execute data-engine
         df = execute(options)
 
+        # Support for CSV output mode (do not build recursive output)
+        disable_recursive_mapping = True
+        if options.get("output_type") == "JSONP":
+            disable_recursive_mapping = True
+
         # Enrich the returned result with the requested indicators (parallelized)
-        enriched_df = parallel_indicators(df, options, indicator_registry)
+        enriched_df = parallel_indicators(df, options, indicator_registry, disable_recursive_mapping)
 
         if options.get('after'):
             # Filter to keep only rows >= requested start time
