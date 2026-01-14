@@ -20,6 +20,8 @@ Full high-performance replay functionality.
 
 Preliminary conclusion: API 1.1 works beautifully and can be perfectly integrated to a charting library.
 
+I don't think i will have it done today but getting there.
+
 **Important:** CSV input mode is dead from this version onward. It's too much work to keep that compatibility modus in and tbh, it slows down everything by a factor of 100+.
 
 There is a beta/0.6.6 available. It's the integration-test version, not completed but fully functional. Web-interface is missing, rest works.
