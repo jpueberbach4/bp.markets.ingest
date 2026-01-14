@@ -41,6 +41,19 @@ http://localhost:8000/ohlcv/1.1/select/EUR-USD,1m[sma_200:macd_12_6_9]/after/202
 ?order=desc&limit=10
 ```
 
+Or 
+
+```sh
+http://localhost:8000/ohlcv/1.1/select/AAPL.US-USD,1h[sma(20):sma(50):sma(200):macd(12,6,9)]/ \
+after/2025-11-30%2013:59:59/until/2025-12-30%2013:59:59/output/CSV?order=asc&limit=1440
+```
+
+Latest url gives (CSV modus 1.1 API), for example:
+
+![example](../images/csv_1_1_output.png)
+
+So you are able to stack indicators and export them together with price data into one single CSV file. All within milliseconds.
+
 Integration test example
 
 ![example](../images/integration_test1.png)
@@ -53,9 +66,8 @@ What remains?
 
 - Web-interface to use the indicator integration (dynamic)
 - Builder extension to support output
-- CSV modus on the integrated 1.1 endpoint
 
-Performance is great.
+Performance is great (understatement).
 
 You can use this version to play around with custom indicators. The indicator.html is already dynamic. So if you build one, it's immediately usable in `indicator.html`. So you can immediately export outputs. You can find example plugins in `api/plugins/indicators`, [more info](https://github.com/jpueberbach4/bp.markets.ingest/blob/beta/0.6.6/dukascopy/docs/indicators.md).
 
