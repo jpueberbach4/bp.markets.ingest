@@ -30,7 +30,7 @@ What is added/modified?
 In this version you can do something like
 
 ```sh
-GET http://localhost:8000/ohlcv/1.1/select/EUR-USD,1h[sma(20):sma(50):sma(200)]/after/2025-10-31%2023:59:59 \
+GET http://localhost:8000/ohlcv/1.1/select/EUR-USD,1h[sma(20):sma(50):sma(200):macd(12,6,9)]/after/2025-10-31%2023:59:59 \
 /until/2025-11-30%2023:59:59/output/JSON?order=asc&limit=1440
 ```
 
