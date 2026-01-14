@@ -69,6 +69,7 @@ Yeah, i am not playing around. This is insanely powerful.
 What remains?
 
 - Web-interface to use the indicator integration (dynamic)
+- Built-in indicator verification - need visualization for that. Working on that atm.
 - Builder extension to support output
 
 Performance is great (understatement).
