@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Trading Interface - BP.Markets Hybrid (Upgraded)</title>
+    <script src="scripts/lightweight-charts.standalone.production.js"></script>
+    <style>
+        :root {
+            --bg-main: #f0f3fa; --sidebar-dark: #131722; --accent-blue: #2962ff;
+            --text-gray: #787b86; --white: #ffffff; --border-color: #e0e3eb;
+        }
+
+        body { 
+            font-family: -apple-system, system-ui, sans-serif; background: var(--bg-main); 
+            margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+        }
+
+        header {
+            background: var(--sidebar-dark); color: white; padding: 10px 20px;
+            display: flex; align-items: center; justify-content: space-between; height: 50px;
+        }
+
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+
+        /* Sidebar Styling */
+        .sidebar { 
+            width: 300px; background: var(--white); border-right: 1px solid var(--border-color);
+            display: flex; flex-direction: column; padding: 15px; overflow-y: auto;
+        }
+
+        .control-group { margin-bottom: 15px; }
+        label { font-size: 11px; color: var(--text-gray); text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 5px; }
+        select, input { width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; box-sizing: border-box; }
+        
+        .param-box { background: #f8f9fd; padding: 10px; border-radius: 4px; border: 1px dashed var(--border-color); margin-top: 5px; }
+        .indicator-tag { 
+            background: #e3e9ff; color: var(--accent-blue); padding: 4px 8px; border-radius: 12px; 
+            font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;
+        }
+        .add-btn { 
+            background: var(--white); border: 1px solid var(--accent-blue); color: var(--accent-blue); 
+            padding: 6px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 5px;
+        }
+
+/* Container for the chart and all indicator panels */
+#content-wrapper { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden; 
+}
+
+/* Main Chart: Fills all remaining space */
+#main-chart-container { 
+    flex: 1 1 auto; 
+    min-height: 0; 
+    position: relative; 
+}
+
+/* Panel Container: Holds multiple panels, scrollable if they exceed space */
+#panel-container { 
+    flex: 0 0 auto; 
+    display: flex; 
+    flex-direction: column;
+    background: #fcfcfc;
+    overflow-y: auto;
+    max-height: 60vh; /* Prevents panels from completely squeezing out the main chart */
+}
+
+/* Individual Panel Styling */
+.indicator-panel { 
+    height: 150px; 
+    flex-shrink: 0;
+    border-top: 1px solid var(--border-color);
+    background: white; 
+}
+
+
+        #loader {
+            display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 255, 255, 0.7); z-index: 100; justify-content: center; align-items: center;
+        }
+        .spinner { width: 24px; height: 24px; border: 3px solid #f3f3f3; border-top: 3px solid var(--accent-blue); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h2 style="margin:0; font-size: 18px;">Terminal</h2>
+        <div id="status-indicator" style="font-size: 11px; opacity: 0.8;">Initialising...</div>
+    </header>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="control-group">
+                <label>Symbol</label>
+                <select id="symbolSelect" onchange="updateTimeframeOptions(); resetAndLoad(true);"></select>
+            </div>
+            <div class="control-group">
+                <label>Interval</label>
+                <select id="tfSelect" onchange="resetAndLoad(true)"></select>
+            </div>
+            
+            <hr style="border:0; border-top:1px solid #eee; margin: 15px 0;">
+            
+            <div class="control-group">
+                <label>Add Indicator</label>
+                <select id="indicatorSelect" onchange="renderParams()"></select>
+                <div id="params" class="param-box"></div>
+                <button class="add-btn" onclick="addToChain()">+ Add to Chart</button>
+            </div>
+
+            <div class="control-group">
+                <label>Active Indicators</label>
+                <div id="chain-list"></div>
+            </div>
+
+            <button onclick="resetAndLoad(false)" style="margin-top:auto; background: var(--accent-blue); color:white; border:none; padding:10px; border-radius:4px; font-weight:600; cursor:pointer;">Update View</button>
+        </div>
+
+        <div id="content-wrapper">
+            <div id="loader"><div class="spinner"></div></div>
+            <div id="main-chart-container"></div>
+            <div id="panel-container"></div>
+        </div>
+    </div>
+
+<script>
+        let symbolData = {}; 
+        let indicatorMeta = {};
+        let chain = []; 
+        let masterData = []; 
+        let isFetching = false;
+
+        let currentAfterDate = new Date();
+        let currentUntilDate = null;
+        let hasMoreHistory = true;
+        let gapRetryCount = 0;
+        let isManualReset = false;
+        let shouldResetZoomOnNextLoad = false;
+        const initialMaxSearches = 100;
+        const normalMaxSearches = 10;
+        let currentMaxSearches = initialMaxSearches;
+        
+        let mainChart, candleSeries;
+        let overlaySeries = []; 
+        let panelCharts = {}; 
+
+        const mainContainer = document.getElementById('main-chart-container');
+
+        function initCharts() {
+            mainChart = LightweightCharts.createChart(mainContainer, {
+                width: mainContainer.clientWidth,
+                height: mainContainer.clientHeight,
+                layout: { background: { color: '#ffffff' }, textColor: '#131722' },
+                timeScale: { timeVisible: true, borderColor: '#e0e3eb' },
+            });
+
+            const resizeObserver = new ResizeObserver(entries => {
+                if (entries.length === 0 || !entries[0].contentRect) return;
+                const { width, height } = entries[0].contentRect;
+                mainChart.applyOptions({ width, height });
+            });
+            resizeObserver.observe(mainContainer);
+
+            candleSeries = mainChart.addSeries(LightweightCharts.CandlestickSeries, {
+                upColor: '#26a69a', downColor: '#ef5350', borderVisible: false,
+                wickUpColor: '#26a69a', wickDownColor: '#ef5350',
+            });
+
+            mainChart.timeScale().subscribeVisibleLogicalRangeChange(() => {
+                requestAnimationFrame(checkIfChartFull);
+            });
+        }
+
+        function resetAndLoad(clear = false) {
+            isManualReset = true;
+            if (clear) {
+                masterData = [];
+                candleSeries.setData([]);
+                overlaySeries.forEach(s => mainChart.removeSeries(s));
+                overlaySeries = [];
+                Object.values(panelCharts).forEach(p => p.chart.remove());
+                document.getElementById('panel-container').innerHTML = '';
+                panelCharts = {};
+                shouldResetZoomOnNextLoad = true;
+            }
+
+            currentMaxSearches = initialMaxSearches;
+            hasMoreHistory = true; 
+            gapRetryCount = 0;
+            currentUntilDate = null; 
+            const tf = document.getElementById('tfSelect').value;
+            const initialOffset = getTimeframeOffset(tf) / 2;
+            currentAfterDate = new Date(Date.now() - initialOffset);
+
+            loadData();
+        }
+
+        function paginateBack() {
+            if (isFetching || !hasMoreHistory || masterData.length === 0) return;
+            isManualReset = false;
+            const tf = document.getElementById('tfSelect').value;
+            const referenceTime = masterData[0].time;
+            const untilUnix = referenceTime - 1;
+            currentUntilDate = new Date(untilUnix * 1000);
+            const baseOffset = getTimeframeOffset(tf);
+            const jumpSize = baseOffset * (gapRetryCount + 1); 
+            const afterUnix = untilUnix - (jumpSize / 1000);
+            currentAfterDate = new Date(afterUnix * 1000);
+            loadData();
+        }
+
+        function checkIfChartFull() {
+            if (isFetching || masterData.length === 0 || !hasMoreHistory) return;
+            const timeScale = mainChart.timeScale();
+            const visibleRange = timeScale.getVisibleRange();
+            if (visibleRange && visibleRange.from <= masterData[0].time) paginateBack();
+        }
+
+        function loadData() {
+            const sym = document.getElementById('symbolSelect').value;
+            const tf = document.getElementById('tfSelect').value;
+            if(!sym || !tf || isFetching) return;
+
+            isFetching = true;
+            document.getElementById('loader').style.display = 'flex';
+
+            const afterStr = formatUnixToLiteral(Math.floor(currentAfterDate.getTime() / 1000));
+            const chainStr = chain.length ? `[${chain.map(i => `${i.name}(${i.params.join(',')})`).join(':')}]` : "";
+            
+            let url = `/ohlcv/1.1/select/${sym},${tf}${chainStr}/after/${afterStr}`;
+            if (currentUntilDate) {
+                url += `/until/${formatUnixToLiteral(Math.floor(currentUntilDate.getTime() / 1000))}`;
+            }
+            url += `/output/JSONP?order=asc&limit=1440&callback=__callbackData`;
+
+            const s = document.createElement('script');
+            s.src = url;
+            document.body.appendChild(s);
+        }
+
+        window.__callbackData = function(response) {
+            isFetching = false;
+            document.getElementById('loader').style.display = 'none';
+            const statusIndicator = document.getElementById('status-indicator');
+
+            if (response.result && response.result.length > 0) {
+                currentMaxSearches = normalMaxSearches;
+                gapRetryCount = 0;
+
+                const incoming = response.result.map(row => ({
+                    time: parseLiteralToUnix(row.time),
+                    open: row.open, high: row.high, low: row.low, close: row.close,
+                    indicators: row.indicators
+                }));
+
+                const combined = [...masterData, ...incoming];
+                const uniqueMap = new Map();
+                combined.forEach(item => { if(item.time) uniqueMap.set(item.time, item); });
+                masterData = Array.from(uniqueMap.values()).sort((a, b) => a.time - b.time);
+
+                candleSeries.setData(masterData);
+                renderIndicators();
+
+                if (shouldResetZoomOnNextLoad) {
+                    mainChart.timeScale().fitContent();
+                    shouldResetZoomOnNextLoad = false;
+                }
+                
+                statusIndicator.innerText = `Data Synced: ${masterData.length} candles`;
+                setTimeout(checkIfChartFull, 200);
+            } else {
+                if (gapRetryCount < currentMaxSearches) {
+                    gapRetryCount++;
+                    statusIndicator.innerText = `Searching History... (${gapRetryCount}/${currentMaxSearches})`;
+                    if (masterData.length === 0) {
+                        const tf = document.getElementById('tfSelect').value;
+                        currentUntilDate = new Date(currentAfterDate.getTime() - 1000);
+                        currentAfterDate = new Date(currentUntilDate.getTime() - getTimeframeOffset(tf));
+                        loadData();
+                    } else {
+                        paginateBack(); 
+                    }
+                } else {
+                    hasMoreHistory = false;
+                    statusIndicator.innerText = `History Limit Reached`;
+                }
+            }
+        };
+
+        function renderIndicators() {
+            overlaySeries.forEach(s => mainChart.removeSeries(s));
+            overlaySeries = [];
+
+            chain.forEach(item => {
+                const meta = indicatorMeta[item.name];
+                const key = item.params.length ? `${item.name}_${item.params.join('_')}` : `${item.name}_`;
+                
+                if (meta && meta.meta && meta.meta.panel === 1) {
+                    renderPanel(item, key);
+                } else {
+                    renderOverlay(item, key);
+                }
+            });
+        }
+
+        function renderOverlay(item, key) {
+            const series = mainChart.addSeries(LightweightCharts.LineSeries, { 
+                title: item.name, 
+                lineWidth: 2 
+            });
+
+            const data = masterData.map(d => {
+                const val = d.indicators ? d.indicators[key] : null;
+                const v = (typeof val === 'object' && val !== null) ? Object.values(val)[0] : val;
+                return { time: d.time, value: v };
+            }).filter(p => p.value !== null && p.value !== undefined);
+            
+            series.setData(data);
+            overlaySeries.push(series);
+        }
+
+        function renderPanel(item, key) {
+            if (!panelCharts[item.id]) {
+                const container = document.getElementById('panel-container');
+                const div = document.createElement('div');
+                div.className = 'indicator-panel';
+                div.id = `panel_${item.id}`;
+                container.appendChild(div);
+
+                const pChart = LightweightCharts.createChart(div, {
+                    height: 150, 
+                    layout: { background: { color: 'transparent' }, textColor: '#131722' },
+                    timeScale: { visible: false }, 
+                    rightPriceScale: { borderVisible: false }
+                });
+
+                // Safety check for null range to prevent crash
+                mainChart.timeScale().subscribeVisibleLogicalRangeChange(range => {
+                    if (range) pChart.timeScale().setVisibleLogicalRange(range);
+                });
+
+                panelCharts[item.id] = { chart: pChart, series: {} };
+            }
+            updatePanelData(item, key);
+        }
+
+        function updatePanelData(item, key) {
+            const pObj = panelCharts[item.id];
+            const sampleEntry = masterData.find(d => d.indicators && d.indicators[key] !== undefined);
+            const sample = sampleEntry ? sampleEntry.indicators[key] : null;
+
+            if (sample !== null && typeof sample === 'object') {
+                Object.keys(sample).forEach(lineName => {
+                    if (!pObj.series[lineName]) {
+                        const isHist = lineName === 'hist' || lineName === 'histogram';
+                        const type = isHist ? LightweightCharts.HistogramSeries : LightweightCharts.LineSeries;
+                        const color = isHist ? '#ef5350' : (lineName === 'macd' ? '#2962ff' : getRandomColor());
+                        
+                        pObj.series[lineName] = pObj.chart.addSeries(type, { 
+                            title: lineName, 
+                            color: color,
+                            lineWidth: 1
+                        });
+                    }
+                    
+                    const lineData = masterData.map(d => ({
+                        time: d.time,
+                        value: d.indicators[key] ? d.indicators[key][lineName] : null
+                    })).filter(v => v.value !== null);
+                    
+                    pObj.series[lineName].setData(lineData);
+                });
+            } else {
+                if (!pObj.series['main']) {
+                    pObj.series['main'] = pObj.chart.addSeries(LightweightCharts.LineSeries, { 
+                        title: item.name, 
+                        color: '#7e57c2' 
+                    });
+                }
+                
+                const lineData = masterData.map(d => ({
+                    time: d.time,
+                    value: d.indicators ? d.indicators[key] : null
+                })).filter(v => v.value !== null);
+                
+                pObj.series['main'].setData(lineData);
+            }
+        }
+
+        function getRandomColor() {
+            const colors = ['#2962ff', '#ff6d00', '#2e7d32', '#6a1b9a', '#f50057', '#00b8d4'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        window.addEventListener('keydown', (event) => {
+            if (masterData.length === 0) return;
+            const timeScale = mainChart.timeScale();
+            const visibleRange = timeScale.getVisibleLogicalRange();
+            if (!visibleRange) return;
+            const rangeWidth = visibleRange.to - visibleRange.from;
+
+            if (event.key === 'PageUp') {
+                event.preventDefault();
+                timeScale.setVisibleLogicalRange({ from: visibleRange.from - rangeWidth, to: visibleRange.to - rangeWidth });
+            } else if (event.key === 'PageDown') {
+                event.preventDefault();
+                timeScale.setVisibleLogicalRange({ from: visibleRange.from + rangeWidth, to: visibleRange.to + rangeWidth });
+            } else if (event.key === 'End') {
+                event.preventDefault();
+                timeScale.scrollToPosition(0, true);
+            }
+        });
+
+        function renderParams() {
+            const ind = document.getElementById('indicatorSelect').value;
+            const meta = indicatorMeta[ind];
+            const container = document.getElementById('params');
+            if (meta && meta.defaults) {
+                container.innerHTML = Object.keys(meta.defaults).map(k => `
+                    <div style="margin-bottom:5px">
+                        <label style="font-size:9px; margin-bottom:2px">${k}</label>
+                        <input type="text" id="p_${k}" value="${meta.defaults[k]}">
+                    </div>`).join('');
+            } else {
+                container.innerHTML = '<span style="color:#999; font-size:11px">No parameters</span>';
+            }
+        }
+
+        function addToChain() {
+            const name = document.getElementById('indicatorSelect').value;
+            const meta = indicatorMeta[name];
+            const params = meta.defaults ? Object.keys(meta.defaults).map(k => document.getElementById(`p_${k}`).value) : [];
+            chain.push({ name, params, id: `${name}_${Date.now()}` });
+            renderChain();
+            resetAndLoad(true);
+        }
+
+        function renderChain() {
+            document.getElementById('chain-list').innerHTML = chain.map((item, i) => `
+                <div class="indicator-tag">
+                    <span>${item.name}(${item.params.join(',')})</span>
+                    <span style="cursor:pointer" onclick="chain.splice(${i},1); renderChain(); resetAndLoad(true);">✕</span>
+                </div>`).join('');
+        }
+
+        function formatUnixToLiteral(unix) {
+            const d = new Date(unix * 1000);
+            const pad = (n) => n.toString().padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        }
+
+        function parseLiteralToUnix(dateStr) {
+            const parts = dateStr.split(/[- :]/);
+            return Math.floor(new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]).getTime() / 1000);
+        }
+
+        function updateTimeframeOptions() {
+            const sym = document.getElementById('symbolSelect').value;
+            const tfS = document.getElementById('tfSelect');
+            tfS.innerHTML = (symbolData[sym] || []).map(tf => `<option value="${tf}">${tf}</option>`).join('');
+        }
+
+        function getTimeframeOffset(tf) {
+            const day = 24 * 60 * 60 * 1000;
+            switch (tf) {
+                case '1Y': case '1M': return 3650 * day; case '1W': return 730 * day;
+                case '1d': return 365 * day; case '4h': return 100 * day; case '1h': return 30 * day;
+                case '30m': return 15 * day; case '15m': return 7 * day; case '5m': return 2 * day;
+                case '1m': return 1 * day; 
+                default:
+                    if (tf.includes('M')) return 3650 * day;
+                    if (tf.includes('W')) return 1460 * day;
+                    if (tf.includes('h')) return 60 * day;
+                    if (tf.includes('m')) return 4 * day;
+                    return 4 * day;
+            }
+        }
+
+        window.__callbackList = (res) => {
+            symbolData = res.result;
+            const sel = document.getElementById('symbolSelect');
+            sel.innerHTML = Object.keys(symbolData).sort().map(s => `<option value="${s}">${s}</option>`).join('');
+            updateTimeframeOptions();
+            resetAndLoad(true);
+        };
+
+        window.__bp_callback = (res) => {
+            indicatorMeta = res.result;
+            document.getElementById('indicatorSelect').innerHTML = Object.keys(indicatorMeta).map(i => `<option value="${i}">${i.toUpperCase()}</option>`).join('');
+            renderParams();
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            const s1 = document.createElement('script');
+            s1.src = "/ohlcv/1.0/list/output/JSONP?callback=__callbackList";
+            document.body.appendChild(s1);
+            const s2 = document.createElement('script');
+            s2.src = "/ohlcv/1.1/list/indicators/output/JSONP?callback=__bp_callback";
+            document.body.appendChild(s2);
+        });
+    </script>
+</body>
+</html>
