@@ -16,7 +16,7 @@ Full high-performance replay functionality.
 
 **Update:** Maybe i was too harsh about AI for this. It came actually pretty far. With a few manual edits, i got this:
 
-![example](../images/terminal.png)
+![example](../images/terminal2.png)
 
 Preliminary conclusion: API 1.1 works beautifully and can be perfectly integrated to a charting library.
 
