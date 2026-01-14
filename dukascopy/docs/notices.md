@@ -14,7 +14,9 @@ Full high-performance replay functionality.
 
 ## Notice: API 1.1 available beta - 2026-01-14
 
-There is a beta/0.6.6 available. It's the integration-test version, not completed fully functional.
+**Important:** CSV input mode is dead from this version onward. It's too much work to keep that compatibility modus in and tbh, it slows down everything by a factor of 100+.
+
+There is a beta/0.6.6 available. It's the integration-test version, not completed but fully functional. Web-interface is missing, rest works.
 
 What is added/modified?
 
@@ -41,6 +43,19 @@ http://localhost:8000/ohlcv/1.1/select/EUR-USD,1m[sma_200:macd_12_6_9]/after/202
 ?order=desc&limit=10
 ```
 
+Or 
+
+```sh
+http://localhost:8000/ohlcv/1.1/select/AAPL.US-USD,1h[sma(20):sma(50):sma(200):macd(12,6,9)]/ \
+after/2025-11-30%2013:59:59/until/2025-12-30%2013:59:59/output/CSV?order=asc&limit=1440
+```
+
+Latest url gives (CSV modus 1.1 API), for example:
+
+![example](../images/csv_1_1_output.png)
+
+So you are able to stack indicators and export them together with price data into one single CSV file. All within milliseconds. Note, this also works with your custom indicators. Obviously. I could show, but trust me, it works.
+
 Integration test example
 
 ![example](../images/integration_test1.png)
@@ -53,11 +68,14 @@ What remains?
 
 - Web-interface to use the indicator integration (dynamic)
 - Builder extension to support output
-- CSV modus on the integrated 1.1 endpoint
 
-Performance is great.
+Performance is great (understatement).
 
 You can use this version to play around with custom indicators. The indicator.html is already dynamic. So if you build one, it's immediately usable in `indicator.html`. So you can immediately export outputs. You can find example plugins in `api/plugins/indicators`, [more info](https://github.com/jpueberbach4/bp.markets.ingest/blob/beta/0.6.6/dukascopy/docs/indicators.md).
+
+**Note:** Since performance allows, i will up the API record-limit once more, to like 20000 or something.
+
+**Note:** I tested performance with 20.000 records. Including recursive mapping: 0.27s. CSV mode stays below 0.15s. Its amazing. This binary mode. The recursive mapping is bottleneck. I will numba njit that. Try at least. So the JSON API will become even faster. Later, not now.
 
 ## Notice: Panama backadjustment "Public beta" live
 
