@@ -14,7 +14,7 @@ class BuilderPaths:
 @dataclass
 class BuilderConfig:
     """The root configuration for the builder.py script."""
-    fmode: str = "text"
+    fmode: str = "binary"
     num_processes: Optional[int] = None
     paths: BuilderPaths = field(default_factory=BuilderPaths)
 

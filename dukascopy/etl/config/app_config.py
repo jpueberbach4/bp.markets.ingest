@@ -122,7 +122,7 @@ class ResampleConfig:
     """Root configuration for the resampling stage."""
     round_decimals: int = 8
     batch_size: int = 250_000
-    fmode: str = "text"
+    fmode: str = "binary"
     fsync: bool = False
     paths: ResamplePaths = field(default_factory=ResamplePaths)
     timeframes: Dict[str, ResampleTimeframe] = field(default_factory=dict)
@@ -141,7 +141,7 @@ class AggregatePaths:
 class AggregateConfig:
     """Root configuration for the aggregation stage."""
     fsync: bool = False
-    fmode: str = "text"
+    fmode: str = "binary"
     paths: AggregatePaths = field(default_factory=AggregatePaths)
 
 
@@ -466,7 +466,7 @@ def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleSy
     if symbol_override.fsync is None:
         symbol_override.fsync = merged_config.fsync
         
-    # fmode (binary or text), inherit from global
+    # fmode binary, inherit from global
     symbol_override.fmode = merged_config.fmode
 
     def normalize_tf(tf: ResampleTimeframe) -> ResampleTimeframe:
