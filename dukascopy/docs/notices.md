@@ -12,7 +12,7 @@ See if we can remove "beta state".
 Full high-performance replay functionality.
 
 
-## Notice: API 1.0 and available beta - 2026-01-14
+## Notice: API 1.1 available beta - 2026-01-14
 
 There is a beta/0.6.6 available. It's the integration-test version, not completed fully functional.
 
