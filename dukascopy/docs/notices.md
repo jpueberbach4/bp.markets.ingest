@@ -14,6 +14,8 @@ Full high-performance replay functionality.
 
 ## Notice: API 1.1 available beta - 2026-01-14
 
+**Important:** CSV input mode is dead from this version onward. It's too much work to keep that compatibility modus in and tbh, it slows down everything by a factor of 100+.
+
 There is a beta/0.6.6 available. It's the integration-test version, not completed fully functional.
 
 What is added/modified?
