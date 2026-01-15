@@ -31,61 +31,7 @@ If you can't wait that long: make sure you are on binary mode, then `git fetch -
 
 This is starting to look like your very own mini-tradingview local stack. I know. But it is still about replay/market simulation. I needed to make sure that the indicators are fine. They will be used in replay too. So i needed to visualize them in order to check them. Result? your own mini-tradingview. Will i add drawing? Likely. But when, i don't know yet. Unplanned. Will i add storing chart settings. Definately. When? I don't know yet. Unplanned.
 
-Enjoy!
-
-## Notice: QA on indicators-first pass - 2026-01-15
-
-I am extremely pleased with the results of the first QA round on the indicators. More than 80% have been verified as correct, and only three require real debugging—Supertrend being one of them. The indicators that were successfully verified are marked with verified:1, while the invalid ones are marked with verified:0. You can see this in the right-hand column of indicator.html. Overall, things are looking very good.
-
-The new charting has now replaced the previous main index.html file and is almost complete. I have moved indicator support for the builder upgrade to a later stage and will update the record limit to 40,000 instead. The builder will only be used to dump full-histories (special case scenario).
-
-## Notice: API 1.1 available beta - 2026-01-14
-
-**Update:** Can't get the interface finished today. Tomorrow. Likely. No evening work today.
-
-**Important:** CSV input mode is dead from this version onward. It's too much work to keep that compatibility modus in and tbh, it slows down everything by a factor of 100+.
-
-There is a beta/0.6.6 available. It's the integration-test version, not completed but fully functional. Web-interface is missing, rest works.
-
-What is added/modified?
-
-- API 1.1 DATA - with integrated indicator support (JSONP/JSON and CSV)
-- DuckDB has been removed
-- Speed gains
-- Demo script-integration_test.html-available in the `config/dukascopy/http-docs` 
-- Normalized plugin architecture
-- Support for custom indicators in directory `config.user/plugins/indicators`
-- Indicator warmup issues on 1.0 have been resolved
-- Various other fixes
-
-In this version you can do something like
-
-```sh
-GET http://localhost:8000/ohlcv/1.1/select/EUR-USD,1h[sma(20):sma(50):sma(200):macd(12,6,9)]/after/2025-10-31%2023:59:59 \
-/until/2025-11-30%2023:59:59/output/JSON?order=asc&limit=1440
-```
-
-Or 
-
-```sh
-http://localhost:8000/ohlcv/1.1/select/EUR-USD,1m[sma_200:macd_12_6_9]/after/2025-10-31%2023:59:59/output/JSON \
-?order=desc&limit=10
-```
-
-Or 
-
-```sh
-http://localhost:8000/ohlcv/1.1/select/AAPL.US-USD,1h[sma(20):sma(50):sma(200):macd(12,6,9)]/ \
-after/2025-11-30%2013:59:59/until/2025-12-30%2013:59:59/output/CSV?order=asc&limit=1440
-```
-
-Previes new Interactive chart-new index.html:
-
-![example](../images/terminal2.png)
-
-Preliminary conclusion: API 1.1 works beautifully and can be perfectly integrated to a charting library.
-
-Preview new builder-new indicator.html:
+Example builder-new indicator.html:
 
 ![example](../images/builder11.png)
 
@@ -93,21 +39,19 @@ Example builder output:
 
 ![example](../images/csv_1_1_output.png)
 
-So you are able to stack indicators and export them together with price data into one single CSV file. All within a second-depending on record-limit. Note, this also works with your custom indicators. Obviously. I could show, but trust me, it works.
+New Interactive chart-new index.html:
 
-What remains?
-
-- Web-interface (80-90 percent done)
-- Built-in indicator verification - need visualization for that. Getting there.
-- Builder extension to support output
-
-Performance is great (understatement).
+![example](../images/terminal2.png)
 
 You can use this version to play around with custom indicators. The indicator.html is already dynamic. So if you build one, it's immediately usable in `indicator.html`. So you can immediately export outputs. You can find example plugins in `api/plugins/indicators`, [more info](https://github.com/jpueberbach4/bp.markets.ingest/blob/beta/0.6.6/dukascopy/docs/indicators.md).
 
-**Note:** Since performance allows, i will up the API record-limit once more, to like 40000. This eliminates the need for the upgrade of the builder component, for most scenarios.
+Enjoy!
 
-**Note:** This will be released soon now. If you upgrade and are still on "text-mode", you will break your system. Switch to binary-mode.
+## Notice: QA on indicators-first pass - 2026-01-15
+
+I am extremely pleased with the results of the first QA round on the indicators. More than 80% have been verified as correct, and only three require real debugging—Supertrend being one of them. The indicators that were successfully verified are marked with verified:1, while the invalid ones are marked with verified:0. You can see this in the right-hand column of indicator.html. Overall, things are looking very good.
+
+The new charting has now replaced the previous main index.html file and is almost complete. I have moved indicator support for the builder upgrade to a later stage and will update the record limit to 40,000 instead. The builder will only be used to dump full-histories (special case scenario).
 
 ## Notice: Panama backadjustment "Public beta" live
 
