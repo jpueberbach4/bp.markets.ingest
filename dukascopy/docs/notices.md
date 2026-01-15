@@ -2,6 +2,10 @@
 
 What’s next?
 
+- Fix the browser lag when you stack indicators and browse more and more into history. \
+Currently, no buffer is kept. All candles are stored in browser memory while not in view. \
+Those not in view should be sliced an re-retrieved when needed.
+
 - Pushed in: check panama with other source, minor effort. \
 See if we can remove "beta state".
 
