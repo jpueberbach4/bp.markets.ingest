@@ -74,11 +74,10 @@ from pathlib import Path
 from functools import lru_cache
 from fastapi import Depends
 
-from api.state11 import cache # this is update to new high performance mapping for binary mode
+from api.state11 import cache
 from api.config.app_config import load_app_config
 from api.v1_1.helper import parse_uri, discover_options, generate_output, discover_all
-from api.v1_0.helper import generate_sql
-from api.v1_1.helper import execute # this is update to new high performance execution for binary mode
+from api.v1_1.helper import execute
 
 from api.v1_1.plugin import load_indicator_plugins
 from api.v1_0.version import API_VERSION
@@ -188,8 +187,7 @@ async def get_indicator(
             cache.register_views_from_options(options)
             df = execute(options)
         else:
-            # I wonder if CSV input mode is still supported. I dont think so......
-            df = cache.get_conn().sql(generate_sql(options)).df()
+            raise Exception("Sorry pal, text-mode has become unsupported. Go binary!")
 
         # Prepare indicator options, including positional arguments
         ind_opts = options.copy()
@@ -464,9 +462,7 @@ async def get_ohlcv(
             cache.register_views_from_options(options)
             df = execute(options)
         else:
-            # I dont think CSV input mode is still supported... we will find out soon
-            sql = generate_sql(options)
-            df = cache.get_conn().sql(sql).df()
+            raise Exception("Sorry pal, text-mode has become unsupported. Go binary!")
 
         # Determine sort columns based on schema and apply ordering
         sort_cols = (
