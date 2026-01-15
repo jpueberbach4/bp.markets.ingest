@@ -703,7 +703,13 @@
                 if (!pObj.series['main']) {
                     pObj.series['main'] = pObj.chart.addSeries(LightweightCharts.LineSeries, { 
                         title: item.name, 
-                        color: '#7e57c2' 
+                        color: '#7e57c2',
+                        lineWidth: 1, // ADD THIS LINE TO FIX THE RSI WIDTH
+                        priceFormat: {
+                            type: 'price',
+                            precision: 5,
+                            minMove: 0.00001,
+                        },
                     });
                 }
                 
