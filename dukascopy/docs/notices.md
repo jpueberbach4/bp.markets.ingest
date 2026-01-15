@@ -1,6 +1,6 @@
 <u>MT4 is decoded.</u>
 
-**Note:** Do not use poolmode:process. Keep the default:thread (if not set in your config, it is thread and its fine). I was optimizing for performance and introduced an experimental poolmode:process to support very heavy-indicator queries, have the computing spread over multiple cores.. the problem is that processes, unlike python "threads" have a different process memory and receive copies of the dataframes. It loses aligmment during the swapping of memory between processes. Since "threads" share the same memory space, threads dont have the issue. I will find a solution but its not "pressing". The default works flawless.
+**Note:** Do not use poolmode:process. Keep the default:thread (if not set in your config, it is thread and its fine). I was optimizing for performance and introduced an experimental poolmode:process to support very heavy-indicator queries, have the computing spread over multiple cores.. the problem is that processes, unlike python "threads" have a different process memory and receive copies of the dataframes. It loses alignment during the swapping of memory between processes. Since "threads" share the same memory space, threads dont have the issue. I will find a solution but its not "pressing". The default works flawless.
 
 What’s next?
 
