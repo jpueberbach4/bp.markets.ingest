@@ -21,7 +21,8 @@ def meta()->Dict:
     return {
         "author": "Google Gemini",
         "version": 1.0,
-        "panel": 1
+        "panel": 1,
+        "verified": 1
     }
     
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -31,9 +32,9 @@ def warmup_count(options: Dict[str, Any]) -> int:
     We use 3x period for stabilization and consistency.
     """
     try:
-        period = int(options.get('period', 14))
+        period = int(options.get('period', 9))
     except (ValueError, TypeError):
-        period = 14
+        period = 9
 
     # Consistent with SMA/RSI stabilization buffers
     return period * 3
@@ -41,10 +42,10 @@ def warmup_count(options: Dict[str, Any]) -> int:
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.
-    Example: cmo_14 -> {'period': '14'}
+    Example: cmo_9 -> {'period': '9'}
     """
     return {
-        "period": args[0] if len(args) > 0 else "14"
+        "period": args[0] if len(args) > 0 else "9"
     }
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:

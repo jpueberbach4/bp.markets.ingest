@@ -19,7 +19,8 @@ def meta()->Dict:
     return {
         "author": "Google Gemini",
         "version": 1.0,
-        "panel": 0
+        "panel": 0,
+        "verified": 1
     }
     
 def warmup_count(options: Dict[str, Any]) -> int:

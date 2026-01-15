@@ -589,7 +589,12 @@
                         pObj.series[lineName] = pObj.chart.addSeries(type, { 
                             title: lineName, 
                             color: color,
-                            lineWidth: 1
+                            lineWidth: 1,
+                            priceFormat: {
+                                type: 'price',
+                                precision: 5,
+                                minMove: 0.00001,
+                            },
                         });
                     }
                     

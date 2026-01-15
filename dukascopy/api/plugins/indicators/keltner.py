@@ -21,7 +21,9 @@ def meta()->Dict:
     """
     return {
         "author": "Google Gemini",
-        "version": 1.0
+        "version": 1.0,
+        "verified": 1,
+        "needs": "surface-colouring"
     }
     
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -45,12 +47,12 @@ def warmup_count(options: Dict[str, Any]) -> int:
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.
-    Example: keltner_20_10_2 -> {'period': '20', 'atr_period': '10', 'multiplier': '2'}
+    Example: keltner_20_10_2 -> {'period': '20', 'atr_period': '10', 'multiplier': '1'}
     """
     return {
         "period": args[0] if len(args) > 0 else "20",
         "atr_period": args[1] if len(args) > 1 else "10",
-        "multiplier": args[2] if len(args) > 2 else "2.0"
+        "multiplier": args[2] if len(args) > 2 else "1.0"
     }
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
@@ -64,9 +66,9 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     try:
         ema_period = int(options.get('period', 20))
         atr_period = int(options.get('atr_period', 10))
-        multiplier = float(options.get('multiplier', 2.0))
+        multiplier = float(options.get('multiplier', 1.0))
     except (ValueError, TypeError):
-        ema_period, atr_period, multiplier = 20, 10, 2.0
+        ema_period, atr_period, multiplier = 20, 10, 1.0
 
     # 2. Determine Price Precision
     try:
