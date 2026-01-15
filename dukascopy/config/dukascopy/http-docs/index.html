@@ -107,7 +107,7 @@
         }
 
         .attribution { 
-            font-size: 11px; 
+            font-size: 14px; 
             color: var(--text-gray); 
             text-decoration: none; 
         }
@@ -135,6 +135,26 @@
             animation: spin 0.8s linear infinite;
         }
 
+        #export-modal {
+            display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: white; padding: 25px; border-radius: 8px; width: 320px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .modal-content h3 { margin-top: 0; font-size: 16px; color: var(--sidebar-dark); }
+        .export-field { margin-bottom: 15px; }
+        .export-checkboxes { display: flex; gap: 15px; margin-bottom: 20px; font-size: 12px; }
+        .cancel-btn { 
+            background: #e0e3eb; color: #131722; border: none; padding: 10px; 
+            border-radius: 4px; font-weight: 600; cursor: pointer; width: 48%; 
+        }
+        .exec-btn { 
+            background: var(--accent-blue); color: white; border: none; padding: 10px; 
+            border-radius: 4px; font-weight: 600; cursor: pointer; width: 48%; 
+        }        
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -143,7 +163,7 @@
 </head>
 <body>
     <header>
-        <h2 style="margin:0; font-size: 18px;">Terminal</h2>
+        <h2 style="margin:0; font-size: 18px;">Interactive Stream</h2>
         <div id="status-indicator" style="font-size: 11px; opacity: 0.8;">Initialising...</div>
     </header>
 
@@ -174,6 +194,8 @@
 
             <button onclick="resetAndLoad(false)" style="margin-top:auto; background: var(--accent-blue); color:white; border:none; padding:10px; border-radius:4px; font-weight:600; cursor:pointer;">Update View</button>
 
+            <button onclick="openExportModal()" style="margin-top:10px; background: #313339; color:white; border:none; padding:10px; border-radius:4px; font-weight:600; cursor:pointer; width:100%;">Export View</button>
+
             <div class="sidebar-footer">
                 <a href="https://www.dukascopy.com" target="_blank" class="attribution">
                     Market data by <strong>Dukascopy</strong>
@@ -189,6 +211,34 @@
         </div>
     </div>
 
+    <div id="export-modal">
+        <div class="modal-content">
+            <h3>Export Settings</h3>
+            <div class="export-field">
+                <label>Start Date (After)</label>
+                <input type="text" id="export-after" placeholder="YYYY-MM-DD HH:MM:SS">
+            </div>
+            <div class="export-field">
+                <label>Total Records (Limit)</label>
+                <input type="number" id="export-limit" value="1000">
+            </div>
+            <div class="export-field">
+                <label>Order</label>
+                <select id="export-order">
+                    <option value="asc">Ascending</option>
+                    <option value="desc">Descending</option>
+                </select>
+            </div>
+            <div class="export-checkboxes">
+                <label><input type="checkbox" id="export-mt4"> MT4 CSV</label>
+                <label><input type="checkbox" id="export-skiplast"> SkipLast</label>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <button class="cancel-btn" onclick="document.getElementById('export-modal').style.display='none'">Cancel</button>
+                <button class="exec-btn" onclick="runExport()">Download</button>
+            </div>
+        </div>
+    </div>
 <script>
         let symbolData = {}; 
         let indicatorMeta = {};
@@ -213,6 +263,37 @@
         let volumeSeries; 
 
         const mainContainer = document.getElementById('main-chart-container');
+
+        function openExportModal() {
+            const modal = document.getElementById('export-modal');
+            const dateInput = document.getElementById('export-after');
+            
+            if (masterData.length > 0) {
+                dateInput.value = formatUnixToLiteral(masterData[0].time);
+            } else {
+                dateInput.value = formatUnixToLiteral(Math.floor(Date.now() / 1000));
+            }
+            
+            modal.style.display = 'flex';
+        }
+
+        function runExport() {
+            const sym = document.getElementById('symbolSelect').value;
+            let tf = document.getElementById('tfSelect').value;
+            
+            if (document.getElementById('export-skiplast').checked) tf += ':skiplast';
+            const output = document.getElementById('export-mt4').checked ? 'CSV/MT4' : 'CSV';
+            
+            const after = encodeURIComponent(document.getElementById('export-after').value);
+            const limit = document.getElementById('export-limit').value;
+            const order = document.getElementById('export-order').value;
+            
+            const chainStr = chain.length ? `[${chain.map(i => `${i.name}(${i.params.join(',')})`).join(':')}]` : "";
+            
+            const exportUrl = `/ohlcv/1.1/select/${sym},${tf}${chainStr}/after/${after}/output/${output}?limit=${limit}&order=${order}`;
+            
+            window.location.href = exportUrl;
+        }
 
         function initCharts() {
             mainChart = LightweightCharts.createChart(mainContainer, {
@@ -739,7 +820,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             initCharts();
             const s1 = document.createElement('script');
-            s1.src = "/ohlcv/1.0/list/output/JSONP?callback=__callbackList";
+            s1.src = "/ohlcv/1.1/list/symbols/output/JSONP?callback=__callbackList";
             document.body.appendChild(s1);
             const s2 = document.createElement('script');
             s2.src = "/ohlcv/1.1/list/indicators/output/JSONP?callback=__bp_callback";

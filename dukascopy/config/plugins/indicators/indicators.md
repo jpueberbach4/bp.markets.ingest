@@ -80,6 +80,21 @@ def calculate(df: pd.DataFrame, options: Dict) -> pd.DataFrame:
 
 ```
 
+**Note:** When you are building an oscillator or panel-indicator, specify `panel:1` in the meta section.
+
+```python
+def meta() -> Dict:
+    return {"author": "DevTeam", "version": 1.1, "panel": 1}
+```
+
+**Note:** When you are building a complete chart-overlay, specify `chart:1` in the meta section. Note that this is currently unsupported but this is coming (example eg is a renko chart).
+
+```python
+def meta() -> Dict:
+    return {"author": "DevTeam", "version": 1.1, "chart": 1}
+```
+
+
 ## 3. Pro-Tip: Accelerate Development with Gemini
 
 The most efficient way to build new plugins is to leverage Google Gemini as a pair programmer. Because the engine follows a strict functional contract, you can "train" the AI on the structure once and generate dozens of indicators.
