@@ -31,21 +31,10 @@ Next, openup a browser: `http://localhost:8000/`
 
 This is starting to look like your very own mini-tradingview local stack. I know. But it is still about replay/market simulation. I needed to make sure that the indicators are fine. They will be used in replay too. So i needed to visualize them in order to check them. Result? your own mini-tradingview. Will i add drawing? Likely. But when, i don't know yet. Unplanned. Will i add storing chart settings. Definately. When? I don't know yet. Unplanned.
 
-What you get with this version?
-
-Example builder:
-
-![example](../images/builder11.png)
-
-Example output:
-
-![example](../images/csv_1_1_output.png)
-
 Interactive chart:
 
 ![example](../images/terminal2.png)
 
-**Note:** You are also able to export from the interactive chart. What is onscreen is what you get in your CSV, including all the indicators etc.
 
 Also. Pretty important i think: You can implement custom indicators in this version. Newly added indicators need a webservice restart. Once added, you dont need to restart anymore if you make changes to them. How to add/build an indicator? [See here](indicators.md). No more "pijn"-script.
 
@@ -55,39 +44,14 @@ Enjoy!
 
 PS Credits, once more. To [Dukascopy](https://www.dukascopy.com), Google Gemini, Deepseek and ChatGPT. 
 
-PPS This is still under 2,500 lines of actual code (LOC), not counting the HTML files. This is largely due to the design choices, as well as the absence of security measures. Since the application runs locally, those measures aren’t required. Still, it’s impressive how much can be accomplished with just 2,500 lines of code.
-
 **Note:** I still need to implement that limiting of the in-memory arrays within the browser to keep the performance of the browser in-sync with the rest of the system. I forgot. I will fix this and push this directly into the main branch. Just pull again somewhere tomorrow, end of day-GMT+1. ~~Plus, i have noticed a bug when you click "update view"-commonly used to get the latest candles, it removes the overlay indicators. Will fix that as well. Two interface bugs. Minor stuff, but still, should be semi-perfect.~~ (fixed) 
 
 **EXPERIMENTAL** If you are a heavy-indicator addict (like me) and perform heavy-duty indicator queries-eg one query with 20 indicators, i have added a `poolmode:process` option to the http configuration. Basically that option toggles whether to use the Python ProcessPoolExecutor or the Python ThreadPoolExecutor. Explanation: ThreadPoolExecutor runs tasks within a single process, utilizing multiple threads that share the same memory and are restricted by the Python Global Interpreter Lock (GIL), meaning they cannot truly execute Python code on multiple CPU cores simultaneously. In contrast, ProcessPoolExecutor bypasses the GIL by spawning separate child processes, each with its own Python interpreter and memory space, allowing tasks to run in parallel across multiple physical CPU cores. 
 
-![Example](../images/terminal3.png)
+You can get quite some extended views from your data. Example:
 
-Eg stuff like this takes in threadmode ~120ms and in processmode ~50ms. I didnt loadtest it yet. So very much experimental. Use at own risk. 
+![test](../images/test.png)
 
-Somewhat of proof. 8 indicators. Simple to heavy EMA200. 500 requests. 
-
-poolmode: thread (50ms per/req)
-
-```sh
-Request #498 | Status: 200 | Total Time: 25.311429s
-Request #496 | Status: 200 | Total Time: 25.320885s
-Request #499 | Status: 200 | Total Time: 25.355394s
-Request #500 | Status: 200 | Total Time: 25.401121s
-```
-
-poolmode: process (30ms per/req)
-
-```sh
-Request #497 | Status: 200 | Total Time: 15.240136s
-Request #498 | Status: 200 | Total Time: 15.262548s
-Request #499 | Status: 200 | Total Time: 15.316811s
-Request #500 | Status: 200 | Total Time: 15.297187s
-```
-
-I have hammered it with 10000 request. No issues. But still. Experimental.
-
-C++ would obliterate these stats but for Python, this is ok.
 
 ## Notice: Panama backadjustment "Public beta" live
 
