@@ -74,6 +74,7 @@ License:
 
 import time
 import orjson
+import re
 
 from fastapi import APIRouter, Query
 from fastapi.responses import PlainTextResponse, JSONResponse
@@ -84,7 +85,7 @@ from fastapi import Depends
 
 from api.state11 import cache
 from api.config.app_config import load_app_config
-from api.v1_1.helper import parse_uri, discover_options, generate_output, execute
+from api.v1_1.helper import parse_uri, discover_options, generate_output, execute, discover_all
 from api.v1_1.parallel import parallel_indicators
 from api.v1_1.plugin import indicator_registry, get_indicator_plugins
 from api.v1_1.version import API_VERSION
@@ -199,11 +200,106 @@ async def list_indicators(
         # Default to JSON error response
         return JSONResponse(content=error_payload, status_code=400)
 
+
+@router.get(f"/list/symbols/{{request_uri:path}}")
+async def get_ohlcv_list(
+    request_uri: str,
+    callback: Optional[str] = "__bp_callback",
+    config = Depends(get_config)
+):
+    """List available OHLCV symbols and timeframes.
+
+    This endpoint parses a path-based request URI, discovers available
+    filesystem-backed OHLCV data sources, and returns a mapping of symbols
+    to their supported timeframes. The response can be returned as JSON
+    or JSONP, depending on the requested output type.
+
+    Args:
+        request_uri (str): Path-encoded query string specifying output
+            options (e.g., output format). Selection and temporal filters
+            are ignored for this endpoint.
+        callback (Optional[str]): JavaScript callback function name used
+            when output_type is "JSONP". Defaults to "__bp_callback".
+
+    Returns:
+        dict | PlainTextResponse | JSONResponse:
+        - A JSON object mapping symbols to lists of available timeframes
+          when output_type is "JSON" or not specified.
+        - A PlainTextResponse containing a JSONP payload when output_type
+          is "JSONP".
+        - A JSONResponse with error details and HTTP 400 status code on
+          failure.
+
+    Raises:
+        Exception: Raised when an unsupported output type is requested
+        (e.g., CSV), or when an internal error occurs during discovery.
+
+    """
+    # Parse the path-based request URI into structured query options
+    options = parse_uri(request_uri)
+
+    try:
+        # Discover available OHLCV data sources from the filesystem
+        available_data = discover_all(options)
+
+        # Group timeframes by symbol name
+        symbols = {}
+        for ds in available_data:
+            symbols.setdefault(ds.symbol, []).append(ds.timeframe)
+
+        # Define 
+        tf_order = {'m': 1, 'h': 60, 'd': 1440, 'W': 10080, 'M': 43200, 'Y': 525600}
+        
+        # Define sorting function
+        def tf_sort_key(tf):
+            match = re.match(r"(\d+)([a-zA-Z]+)", tf)
+            if match:
+                val, unit = match.groups()
+                return int(val) * tf_order.get(unit, 1)
+            return 0
+
+        # Sort the timeframes for each symbol
+        for symbol in symbols:
+            symbols[symbol].sort(key=tf_sort_key)
+
+        # Default JSON output
+        if options.get("output_type") == "JSON" or options.get("output_type") is None:
+            return {
+                "status": "ok",
+                "result": symbols,
+            }
+
+        # JSONP output for browser-based consumption
+        if options.get("output_type") == "JSONP":
+            payload = {
+                "status": "ok",
+                "result": symbols,
+            }
+            json_data = orjson.dumps(payload).decode("utf-8")
+            return PlainTextResponse(
+                content=f"{callback}({json_data});",
+                media_type="text/javascript",
+            )
+
+        raise Exception("Unsupported content type (Sorry, CSV not supported)")
+
+    except Exception as e:
+        # Standardized error response
+        error_payload = {"status": "failure", "exception": f"{e}","options": options}
+        if options.get("output_type") == "JSONPX":
+            return PlainTextResponse(
+                content=f"{callback}({orjson.dumps(error_payload)});",
+                media_type="text/javascript",
+            )
+
+        return JSONResponse(content=error_payload, status_code=400)
+    pass
+
 @router.get(f"/{{request_uri:path}}")
 async def get_ohlcv(
     request_uri: str,
-    limit: Optional[int] = Query(1440, gt=0, le=20000),
-    offset: Optional[int] = Query(0, ge=0, le=20000),
+    limit: Optional[int] = Query(1440, gt=0, le=40000),
+    offset: Optional[int] = Query(0, ge=0, le=40000),
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
     callback: Optional[str] = "__bp_callback",
     config = Depends(get_config)

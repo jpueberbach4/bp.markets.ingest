@@ -20,7 +20,8 @@ def meta()->Dict:
     """
     return {
         "author": "Google Gemini",
-        "version": 1.0
+        "version": 1.0,
+        "verified": 1
     }
     
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -31,9 +32,9 @@ def warmup_count(options: Dict[str, Any]) -> int:
     We use a 3x multiplier to ensure total stability.
     """
     try:
-        period = int(options.get('period', 14))
+        period = int(options.get('period', 9))
     except (ValueError, TypeError):
-        period = 14
+        period = 9
 
     # The mathematical minimum is (period + sqrt(period)).
     # We use the 3x period standard to match SMA and EMA for visual consistency.
@@ -45,7 +46,7 @@ def position_args(args: List[str]) -> Dict[str, Any]:
     Example: hma_14 -> {'period': '14'}
     """
     return {
-        "period": args[0] if len(args) > 0 else "14"
+        "period": args[0] if len(args) > 0 else "9"
     }
 
 def fast_wma(series: pd.Series, n: int) -> pd.Series:

@@ -20,7 +20,8 @@ def meta()->Dict:
     """
     return {
         "author": "Google Gemini",
-        "version": 1.0
+        "version": 1.0,
+        "verified": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -30,9 +31,9 @@ def warmup_count(options: Dict[str, Any]) -> int:
     We use 3x the period as the industry standard for convergence.
     """
     try:
-        period = int(options.get('period', 14))
+        period = int(options.get('period', 9))
     except (ValueError, TypeError):
-        period = 14
+        period = 9
 
     # 3x period ensures the initial seed value has decayed 
     # and the EMA is mathematically accurate.
@@ -41,10 +42,10 @@ def warmup_count(options: Dict[str, Any]) -> int:
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.
-    Example: ema_50 -> {'period': '50'}
+    Example: ema_9 -> {'period': '9'}
     """
     return {
-        "period": args[0] if len(args) > 0 else "14"
+        "period": args[0] if len(args) > 0 else "9"
     }
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:

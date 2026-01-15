@@ -102,8 +102,8 @@ indicator_registry = load_indicator_plugins()
 async def get_indicator(
     name: str,
     request_uri: str,
-    limit: Optional[int] = Query(1440, gt=0, le=20000),
-    offset: Optional[int] = Query(0, ge=0, le=20000),
+    limit: Optional[int] = Query(1440, gt=0, le=40000),
+    offset: Optional[int] = Query(0, ge=0, le=40000),
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
     callback: Optional[str] = "__bp_callback",
     config=Depends(get_config),
@@ -400,8 +400,8 @@ async def get_ohlcv_list(
 @router.get(f"/{{request_uri:path}}")
 async def get_ohlcv(
     request_uri: str,
-    limit: Optional[int] = Query(1440, gt=0, le=20000),
-    offset: Optional[int] = Query(0, ge=0, le=20000),
+    limit: Optional[int] = Query(1440, gt=0, le=40000),
+    offset: Optional[int] = Query(0, ge=0, le=40000),
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
     callback: Optional[str] = "__bp_callback",
     config=Depends(get_config),

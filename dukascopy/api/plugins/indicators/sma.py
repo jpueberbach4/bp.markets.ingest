@@ -20,7 +20,8 @@ def meta()->Dict:
     """
     return {
         "author": "Google Gemini",
-        "version": 1.0
+        "version": 1.0,
+        "verified": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> Dict[str, Any]:
@@ -30,9 +31,9 @@ def warmup_count(options: Dict[str, Any]) -> Dict[str, Any]:
     """
     # 1. Parse the period from options
     try:
-        period = int(options.get('period', 14))
+        period = int(options.get('period', 9))
     except (ValueError, TypeError):
-        period = 14
+        period = 9
 
     return period*3
 
@@ -42,7 +43,7 @@ def position_args(args: List[str]) -> Dict[str, Any]:
     Example: sma_50 -> {'period': '50'}
     """
     return {
-        "period": args[0] if len(args) > 0 else "14"
+        "period": args[0] if len(args) > 0 else "9"
     }
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:

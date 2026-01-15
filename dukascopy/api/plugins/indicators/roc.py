@@ -22,7 +22,8 @@ def meta()->Dict:
     return {
         "author": "Google Gemini",
         "version": 1.0,
-        "panel": 1
+        "panel": 1,
+        "verified": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -32,9 +33,9 @@ def warmup_count(options: Dict[str, Any]) -> int:
     We use 3x period for stability and engine consistency.
     """
     try:
-        period = int(options.get('period', 12))
+        period = int(options.get('period', 9))
     except (ValueError, TypeError):
-        period = 12
+        period = 9
 
     # Consistent with other rolling-window stabilization buffers
     return period * 3
@@ -45,7 +46,7 @@ def position_args(args: List[str]) -> Dict[str, Any]:
     Example: roc_12 -> {'period': '12'}
     """
     return {
-        "period": args[0] if len(args) > 0 else "12"
+        "period": args[0] if len(args) > 0 else "9"
     }
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:

@@ -21,7 +21,9 @@ def meta()->Dict:
     return {
         "author": "Google Gemini",
         "version": 1.0,
-        "panel": 1
+        "panel": 1,
+        "verified": 0,
+        "needs": "debug"
     }
     
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -31,9 +33,9 @@ def warmup_count(options: Dict[str, Any]) -> int:
     We use a 3x multiplier on the total logic to ensure stability.
     """
     try:
-        period = int(options.get('period', 20))
+        period = int(options.get('period', 21))
     except (ValueError, TypeError):
-        period = 20
+        period = 21
 
     # Mathematical requirements:
     # 1. The SMA needs 'period' rows.
@@ -46,10 +48,10 @@ def warmup_count(options: Dict[str, Any]) -> int:
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.
-    Example: dpo_20 -> {'period': '20'}
+    Example: dpo_21 -> {'period': '21'}
     """
     return {
-        "period": args[0] if len(args) > 0 else "20"
+        "period": args[0] if len(args) > 0 else "21"
     }
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:

@@ -22,7 +22,9 @@ def meta()->Dict:
     return {
         "author": "Google Gemini",
         "version": 1.0,
-        "chart": 1
+        "chart": 1,
+        "verified": 0,
+        "needs": "chart-support"
     }
     
 def warmup_count(options: Dict[str, Any]) -> int:

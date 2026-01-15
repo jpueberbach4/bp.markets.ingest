@@ -21,7 +21,8 @@ def meta()->Dict:
     return {
         "author": "Google Gemini",
         "version": 1.0,
-        "panel": 1
+        "panel": 1,
+        "verified": 1
     }
     
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -31,9 +32,9 @@ def warmup_count(options: Dict[str, Any]) -> int:
     the number of days since a high or low.
     """
     try:
-        period = int(options.get('period', 25))
+        period = int(options.get('period', 14))
     except (ValueError, TypeError):
-        period = 25
+        period = 14
 
     # We need the full window plus a small buffer to ensure 
     # the first row after the warmup has stable values.
@@ -43,10 +44,10 @@ def warmup_count(options: Dict[str, Any]) -> int:
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.
-    Example: aroon_25 -> {'period': '25'}
+    Example: aroon_14 -> {'period': '14'}
     """
     return {
-        "period": args[0] if len(args) > 0 else "25"
+        "period": args[0] if len(args) > 0 else "14"
     }
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
