@@ -12,6 +12,29 @@ See if we can remove "beta state".
 Full high-performance replay functionality.
 
 
+## Notice: Release 0.6.6 beta - 2026-01-15
+
+There is now an "official" 0.6.6 beta released. This is a very powerful release. 
+
+- New indicator.html interface allowing CSV exports with stacked indicator support
+- New index.html charting interface with indicator support
+- New API 1.1 with stacked indicator support
+- Warmup issues in API 1.0 have been fixed
+- Another round of performance updates on the API
+- Increased API record-limit to 40000 (was 1440, then 20000, now 40000)
+- Custom indicator support
+- Removal of DuckDB
+
+Looks really good. This will get merged into the main branch soon. 
+
+If you can't wait that long: make sure you are on binary mode, then `git fetch -p && git checkout beta/0.6.6`. Then copy over the `config/dukacopy/http-docs/index.html` and the `config/dukacopy/http-docs/indicator.html` to your `config.user/dukascopy/http-docs` directory.
+
+**Note:** You can now use `./setup-dukascopy.sh` again if you are on binary mode. It will not flip back to text-mode. Binary is now the default.
+
+This is starting to look like your very own mini-tradingview local stack. I know. But it is still about replay/market simulation. I needed to make sure that the indicators are fine. They will be used in replay too. So i needed to visualize them in order to check them. Result? your own mini-tradingview. Will i add drawing? Likely. But when, i don't know yet. Unplanned. Will i add storing chart settings. Definately. When? I don't know yet. Unplanned.
+
+Enjoy!
+
 ## Notice: QA on indicators-first pass - 2026-01-15
 
 I am extremely pleased with the results of the first QA round on the indicators. More than 80% have been verified as correct, and only three require real debugging—Supertrend being one of them. The indicators that were successfully verified are marked with verified:1, while the invalid ones are marked with verified:0. You can see this in the right-hand column of indicator.html. Overall, things are looking very good.
