@@ -87,6 +87,8 @@ Request #500 | Status: 200 | Total Time: 15.297187s
 
 I have hammered it with 10000 request. No issues. But still. Experimental.
 
+C++ would obliterate these stats but for Python, this is ok.
+
 ## Notice: Panama backadjustment "Public beta" live
 
 **Update:** Assuming the rollover values from the broker are correct, this is acceptable. I checked one year of BRENT data. In some cases, a gap remains because applying the broker-specified adjustment can leave a gap—October 2025 is an example—whereas November and September are superbly corrected. You can verify the rollover values in your ```data/rollover``` folder; those are the values being used. I still need to check it against an other datasource with continuous prices. eg to confirm the October one. If that one checks out, i will remove the "beta status".
