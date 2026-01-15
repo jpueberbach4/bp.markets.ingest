@@ -47,6 +47,8 @@ You can use this version to play around with custom indicators. The indicator.ht
 
 **Note:** There is also an export button. So you can visualize your chart first and when you are happy, export indicator-integrated data to CSV with a maximum of 40000 records (it allows you to specify the after date when you click export).
 
+**Note:** I have tested with limit 100000. It can handle it. But we leave it at 40 for now.
+
 Enjoy!
 
 ## Notice: QA on indicators-first pass - 2026-01-15
