@@ -92,7 +92,7 @@ from datetime import datetime, timezone
 from typing import Dict, Any, List
 from urllib.parse import unquote_plus
 from pathlib import Path
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, StreamingResponse
 
 # Import builder utilities for resolving file-backed OHLCV selections
 from builder.config.app_config import load_app_config
@@ -332,22 +332,64 @@ def generate_output(options: Dict, columns: List, results: List):
 
     # CSV output for file-based or analytical workflows
     if options.get("output_type") == "CSV":
-        output = io.StringIO()
-        if results:
-            dict_results = [dict(zip(columns, row)) for row in results]
-            writer = csv.DictWriter(output, fieldnames=columns)
-            if not options.get('mt4'):
-                # No header if MT4 flag is set
-                writer.writeheader()
-
-            writer.writerows(dict_results)
-
-        return PlainTextResponse(
-            content=output.getvalue(),
-            media_type="text/csv",
-        )
+        return _csv_output(results,columns,options)
 
     return None
+
+def _csv_output(results, columns, options):
+    """Streams query results as a CSV response.
+
+    This function formats result rows into CSV-compatible text and returns
+    a streaming HTTP response to efficiently handle large datasets without
+    loading the entire output into memory. Float values are formatted with
+    fixed precision, and missing values are emitted as empty fields.
+
+    Args:
+        results (Iterable[Iterable[Any]]): Row-oriented result data to be
+            serialized into CSV format.
+        columns (List[str]): Column names to be used as the CSV header.
+        options (Dict[str, Any]): Output configuration options. If the
+            ``mt4`` flag is set, the CSV header row is omitted.
+
+    Returns:
+        StreamingResponse | None: A streaming CSV HTTP response if results
+        are present; otherwise, None.
+    """
+    # Only generate a CSV response if there are results to output
+    if results:
+        async def csv_generator_fast():
+            # Emit header row unless MT4-compatible output is requested
+            if not options.get('mt4'):
+                yield ','.join(columns) + '\n'
+
+            # Stream each row incrementally to avoid high memory usage
+            for row in results:
+                formatted = []
+
+                for val in row:
+                    # Represent missing or NaN values as empty CSV fields
+                    if val is None or (isinstance(val, float) and pd.isna(val)):
+                        formatted.append('')
+                    # Apply fast, fixed-precision formatting for floats
+                    elif isinstance(val, float):
+                        formatted.append(f"{val:.5f}")
+                    # Fallback to string conversion for all other types
+                    else:
+                        formatted.append(str(val))
+
+                yield ','.join(formatted) + '\n'
+
+        # Return a streaming CSV response suitable for large exports
+        return StreamingResponse(
+            csv_generator_fast(),
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": "attachment; filename=data.csv"
+            }
+        )
+
+
+
 
 def _get_warmup_rows(symbol: str, timeframe: str, after_str: str, indicators: List[str]) -> int:
     """Determine the maximum warmup row count required by a set of indicators.
