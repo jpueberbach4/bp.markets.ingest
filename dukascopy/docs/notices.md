@@ -2,15 +2,13 @@
 
 What’s next?
 
-- Builder upgrade \
-Introducing indicator-integrated outputs.
-
 - Pushed in: check panama with other source, minor effort. \
 See if we can remove "beta state".
 
 - Feature-rich market simulation \
 Full high-performance replay functionality.
 
+**Note:** removed builder integrated indicator extension since i am guessing everyone will use the HTTP-interface instead now record-limit is increased to 40000.
 
 ## Notice: Release 0.6.6 beta - 2026-01-15
 
