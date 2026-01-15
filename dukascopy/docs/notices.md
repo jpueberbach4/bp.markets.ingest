@@ -1,5 +1,13 @@
 <u>MT4 is decoded.</u>
 
+BUG!
+
+Found a critical bug in the result merge after the parallel_indicators call. I will fix this immediately tomorrow morning. I was testing "derministicality" and found issues. 
+
+![example](../images/critical_bug.png)
+
+THIS IS HIGH PRIO.
+
 What’s next?
 
 - Fix the browser lag when you stack indicators and browse more and more into history. \

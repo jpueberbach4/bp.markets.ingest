@@ -332,7 +332,21 @@ def generate_output(options: Dict, columns: List, results: List):
 
     # CSV output for file-based or analytical workflows
     if options.get("output_type") == "CSV":
-        return _csv_output(results,columns,options)
+        output = io.StringIO()
+        if results:
+            dict_results = [dict(zip(columns, row)) for row in results]
+            writer = csv.DictWriter(output, fieldnames=columns)
+            if not options.get('mt4'):
+                # No header if MT4 flag is set
+                writer.writeheader()
+
+            writer.writerows(dict_results)
+
+        return PlainTextResponse(
+            content=output.getvalue(),
+            media_type="text/csv",
+        )
+        # return _csv_output(results,columns,options)
 
     return None
 
@@ -367,15 +381,8 @@ def _csv_output(results, columns, options):
                 formatted = []
 
                 for val in row:
-                    # Represent missing or NaN values as empty CSV fields
-                    if val is None or (isinstance(val, float) and pd.isna(val)):
-                        formatted.append('')
-                    # Apply fast, fixed-precision formatting for floats
-                    elif isinstance(val, float):
-                        formatted.append(f"{val:.5f}")
-                    # Fallback to string conversion for all other types
-                    else:
-                        formatted.append(str(val))
+
+                    formatted.append(str(val))
 
                 yield ','.join(formatted) + '\n'
 
