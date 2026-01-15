@@ -12,6 +12,12 @@ See if we can remove "beta state".
 Full high-performance replay functionality.
 
 
+## Notice: QA on indicators-first pass - 2026-01-15
+
+I am extremely pleased with the results of the first QA round on the indicators. More than 80% have been verified as correct, and only three require real debugging—Supertrend being one of them. The indicators that were successfully verified are marked with verified:1, while the invalid ones are marked with verified:0. You can see this in the right-hand column of indicator.html. Overall, things are looking very good.
+
+The new charting has now replaced the previous main index.html file and is almost complete. I have moved indicator support for the builder upgrade to a later stage and will update the record limit to 40,000 instead. The builder will only be used to dump full-histories (special case scenario).
+
 ## Notice: API 1.1 available beta - 2026-01-14
 
 **Update:** Can't get the interface finished today. Tomorrow. Likely. No evening work today.
@@ -52,25 +58,25 @@ http://localhost:8000/ohlcv/1.1/select/AAPL.US-USD,1h[sma(20):sma(50):sma(200):m
 after/2025-11-30%2013:59:59/until/2025-12-30%2013:59:59/output/CSV?order=asc&limit=1440
 ```
 
-Latest url gives (CSV modus 1.1 API), for example:
-
-![example](../images/csv_1_1_output.png)
-
-So you are able to stack indicators and export them together with price data into one single CSV file. All within milliseconds. Note, this also works with your custom indicators. Obviously. I could show, but trust me, it works.
+Previes new Interactive chart-new index.html:
 
 ![example](../images/terminal2.png)
 
 Preliminary conclusion: API 1.1 works beautifully and can be perfectly integrated to a charting library.
 
-Builder example
+Preview new builder-new indicator.html:
 
 ![example](../images/builder11.png)
 
-Yeah, i am not playing around. This is insanely powerful.
+Example builder output:
+
+![example](../images/csv_1_1_output.png)
+
+So you are able to stack indicators and export them together with price data into one single CSV file. All within a second-depending on record-limit. Note, this also works with your custom indicators. Obviously. I could show, but trust me, it works.
 
 What remains?
 
-- Web-interface (50-60 percent done)
+- Web-interface (80-90 percent done)
 - Built-in indicator verification - need visualization for that. Getting there.
 - Builder extension to support output
 
@@ -78,11 +84,9 @@ Performance is great (understatement).
 
 You can use this version to play around with custom indicators. The indicator.html is already dynamic. So if you build one, it's immediately usable in `indicator.html`. So you can immediately export outputs. You can find example plugins in `api/plugins/indicators`, [more info](https://github.com/jpueberbach4/bp.markets.ingest/blob/beta/0.6.6/dukascopy/docs/indicators.md).
 
-**Note:** Since performance allows, i will up the API record-limit once more, to like 20000 or something.
+**Note:** Since performance allows, i will up the API record-limit once more, to like 40000. This eliminates the need for the upgrade of the builder component, for most scenarios.
 
-**Note:** I tested performance with 20.000 records. Including recursive mapping: 0.27s. CSV mode stays below 0.15s. Its amazing. This binary mode. The recursive mapping is bottleneck. I will numba njit that. Try at least. So the JSON API will become even faster. Later, not now.
-
-**Note:** How do you get this insane performance on the API? [this](https://github.com/jpueberbach4/bp.markets.ingest/blob/beta/0.6.6/dukascopy/api/state11.py) is the secret.
+**Note:** This will be released soon now. If you upgrade and are still on "text-mode", you will break your system. Switch to binary-mode.
 
 ## Notice: Panama backadjustment "Public beta" live
 
