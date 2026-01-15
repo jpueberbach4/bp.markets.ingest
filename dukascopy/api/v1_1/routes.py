@@ -74,6 +74,7 @@ License:
 
 import time
 import orjson
+import re
 
 from fastapi import APIRouter, Query
 from fastapi.responses import PlainTextResponse, JSONResponse
@@ -84,7 +85,7 @@ from fastapi import Depends
 
 from api.state11 import cache
 from api.config.app_config import load_app_config
-from api.v1_1.helper import parse_uri, discover_options, generate_output, execute
+from api.v1_1.helper import parse_uri, discover_options, generate_output, execute, discover_all
 from api.v1_1.parallel import parallel_indicators
 from api.v1_1.plugin import indicator_registry, get_indicator_plugins
 from api.v1_1.version import API_VERSION
