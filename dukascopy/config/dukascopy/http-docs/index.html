@@ -306,13 +306,17 @@
                             },
                         },
                 layout: { background: { color: '#ffffff' }, textColor: '#131722',attributionLogo: false },
-                timeScale: { timeVisible: true, borderColor: '#e0e3eb' }
+                timeScale: { timeVisible: true, borderColor: '#e0e3eb' },
+                rightPriceScale: {
+                    borderVisible: false,
+                    minimumWidth: 80
+                },
             });
 
             const resizeObserver = new ResizeObserver(entries => {
                 if (entries.length === 0 || !entries[0].contentRect) return;
                 const { width, height } = entries[0].contentRect;
-                mainChart.applyOptions({ width, height });
+                mainChart.applyOptions({ width, height, rightPriceScale: { minimumWidth: 80} });
             });
             resizeObserver.observe(mainContainer);
 
@@ -636,13 +640,16 @@
                     height: 150, 
                     layout: { background: { color: 'transparent' }, textColor: '#131722', attributionLogo: false}, //
                     timeScale: { visible: false }, 
-                    rightPriceScale: { borderVisible: false }, 
+                    rightPriceScale: {
+                        borderVisible: false,
+                        minimumWidth: 80
+                    }
                 });
 
                 const panelResizeObserver = new ResizeObserver(entries => {
                     if (entries.length === 0 || !entries[0].contentRect) return;
                     const { width, height } = entries[0].contentRect;
-                    pChart.applyOptions({ width, height });
+                    pChart.applyOptions({ width, height, rightPriceScale: {minimumWidth: 80} });
                 });
                 panelResizeObserver.observe(div);
 
