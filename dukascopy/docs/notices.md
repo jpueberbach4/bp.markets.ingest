@@ -45,7 +45,7 @@ New Interactive chart-new index.html:
 
 You can use this version to play around with custom indicators. The indicator.html is already dynamic. So if you build one, it's immediately usable in `indicator.html`. So you can immediately export outputs. You can find example plugins in `api/plugins/indicators`, [more info](https://github.com/jpueberbach4/bp.markets.ingest/blob/beta/0.6.6/dukascopy/docs/indicators.md).
 
-**Note:** I will add an export button to the interactive chart. Eg when you have added your indicators, visualized them and are happy with the result -> export data with current indicator settings. Today or tomorrow. I will update the beta/0.6.6. Follow these notices closely if waiting for/wanting this.
+**Note:** There is also an export button. So you can visualize your chart first and when you are happy, export indicator-integrated data to CSV with a maximum of 40000 records (it allows you to specify the after date when you click export).
 
 Enjoy!
 
