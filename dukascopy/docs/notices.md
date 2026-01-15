@@ -6,7 +6,7 @@ What’s next?
 See if we can remove "beta state".
 
 - Feature-rich market simulation \
-Full high-performance replay functionality.
+Full high-performance replay functionality. <-- almost there, preconditions almost met :)
 
 **Note:** removed builder integrated indicator extension since i am guessing everyone will use the HTTP-interface instead now record-limit is increased to 40000.
 
