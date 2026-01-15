@@ -6,7 +6,7 @@ Found a critical bug in the result merge after the parallel_indicators call. I w
 
 ![example](../images/critical_bug.png)
 
-THIS IS HIGH PRIO.
+~~THIS IS HIGH PRIO.~~ No, its not. Its in the experimental ProcessPoolExecutor. I warned for it that it was experimental. The thread-version is fine.
 
 What’s next?
 
@@ -55,14 +55,6 @@ Also. Pretty important i think: You can implement custom indicators in this vers
 Enjoy!
 
 PS Credits, once more. To [Dukascopy](https://www.dukascopy.com), Google Gemini, Deepseek and ChatGPT. 
-
-**Note:** I still need to implement that limiting of the in-memory arrays within the browser to keep the performance of the browser in-sync with the rest of the system. I forgot. I will fix this and push this directly into the main branch. Just pull again somewhere tomorrow, end of day-GMT+1. ~~Plus, i have noticed a bug when you click "update view"-commonly used to get the latest candles, it removes the overlay indicators. Will fix that as well. Two interface bugs. Minor stuff, but still, should be semi-perfect.~~ (fixed) 
-
-**EXPERIMENTAL** If you are a heavy-indicator addict (like me) and perform heavy-duty indicator queries-eg one query with 20 indicators, i have added a `poolmode:process` option to the http configuration. Basically that option toggles whether to use the Python ProcessPoolExecutor or the Python ThreadPoolExecutor. Explanation: ThreadPoolExecutor runs tasks within a single process, utilizing multiple threads that share the same memory and are restricted by the Python Global Interpreter Lock (GIL), meaning they cannot truly execute Python code on multiple CPU cores simultaneously. In contrast, ProcessPoolExecutor bypasses the GIL by spawning separate child processes, each with its own Python interpreter and memory space, allowing tasks to run in parallel across multiple physical CPU cores. 
-
-You can get quite some extended views from your data. Example:
-
-![test](../images/test.png)
 
 
 ## Notice: Panama backadjustment "Public beta" live

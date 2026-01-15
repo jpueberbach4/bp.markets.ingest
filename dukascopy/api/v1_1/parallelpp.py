@@ -205,7 +205,23 @@ def parallel_indicators(
     if not disable_recursive_mapping:
         # Convert flat indicator columns into nested dictionaries per row
         # Attach nested indicator dictionaries to the original DataFrame
-        indicator_matrix['indicators'] = _optimize_indicator_processing_vectorized(indicator_matrix)
+        #$indicator_matrix['indicators'] = _optimize_indicator_processing_vectorized(indicator_matrix)
+        records = indicator_matrix.to_dict(orient='records')
+        nested_list = []
+        for rec in records:
+            row_dict = {}
+            for k, v in rec.items():
+                if pd.isna(v):
+                    continue
+                if "__" in k:
+                    grp, sub = k.split("__", 1)
+                    if grp not in row_dict:
+                        row_dict[grp] = {}
+                    row_dict[grp][sub] = v
+                else:
+                    row_dict[k] = v
+            nested_list.append(row_dict)
+            
         df = df.join(indicator_matrix[['indicators']], how='left')
         df['indicators'] = df['indicators'].apply(
             lambda x: x if isinstance(x, dict) else {}
