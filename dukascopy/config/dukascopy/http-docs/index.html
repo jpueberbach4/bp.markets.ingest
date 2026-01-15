@@ -530,6 +530,8 @@
             if (isManualReset) {
                 overlaySeries.forEach(s => mainChart.removeSeries(s));
                 overlaySeries = [];
+                // Bugfix: reset the overlayseries to enforce repaint
+                overlaySeriesMap = {}; 
             }
 
             chain.forEach(item => {
@@ -543,6 +545,7 @@
                 }
             });
         }
+
 
         function renderOverlay(item, key) {
             const sampleEntry = masterData.find(d => d.indicators && d.indicators[key] !== undefined);
