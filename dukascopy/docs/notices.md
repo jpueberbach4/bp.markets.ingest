@@ -53,6 +53,8 @@ Also. Pretty important i think: You can implement custom indicators in this vers
 
 Enjoy!
 
+PS Credits, once more. To [Dukascopy](https://www.dukascopy.com), Google Gemini, Deepseek and ChatGPT. 
+
 ## Notice: Panama backadjustment "Public beta" live
 
 **Update:** Assuming the rollover values from the broker are correct, this is acceptable. I checked one year of BRENT data. In some cases, a gap remains because applying the broker-specified adjustment can leave a gap—October 2025 is an example—whereas November and September are superbly corrected. You can verify the rollover values in your ```data/rollover``` folder; those are the values being used. I still need to check it against an other datasource with continuous prices. eg to confirm the October one. If that one checks out, i will remove the "beta status".
