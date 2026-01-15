@@ -254,6 +254,7 @@
         let shouldResetZoomOnNextLoad = false;
         const initialMaxSearches = 100;
         const normalMaxSearches = 10;
+        let minimumPriceWidth = 70
         let currentMaxSearches = initialMaxSearches;
         
         let mainChart, candleSeries;
@@ -309,20 +310,25 @@
                 timeScale: { timeVisible: true, borderColor: '#e0e3eb' },
                 rightPriceScale: {
                     borderVisible: false,
-                    minimumWidth: 80
+                    minimumWidth: minimumPriceWidth
                 },
             });
 
             const resizeObserver = new ResizeObserver(entries => {
                 if (entries.length === 0 || !entries[0].contentRect) return;
                 const { width, height } = entries[0].contentRect;
-                mainChart.applyOptions({ width, height, rightPriceScale: { minimumWidth: 80} });
+                mainChart.applyOptions({ width, height, rightPriceScale: { minimumWidth: minimumPriceWidth} });
             });
             resizeObserver.observe(mainContainer);
 
             candleSeries = mainChart.addSeries(LightweightCharts.CandlestickSeries, {
                 upColor: '#26a69a', downColor: '#ef5350', borderVisible: false,
                 wickUpColor: '#26a69a', wickDownColor: '#ef5350',
+                priceFormat: {
+                    type: 'price',
+                    precision: 5,      // Sets the number of decimal places
+                    minMove: 0.00001,  // Matches the 5-decimal precision
+                },
             });
             
             volumeSeries = mainChart.addSeries(LightweightCharts.HistogramSeries, {
@@ -642,14 +648,14 @@
                     timeScale: { visible: false }, 
                     rightPriceScale: {
                         borderVisible: false,
-                        minimumWidth: 80
+                        minimumWidth: minimumPriceWidth
                     }
                 });
 
                 const panelResizeObserver = new ResizeObserver(entries => {
                     if (entries.length === 0 || !entries[0].contentRect) return;
                     const { width, height } = entries[0].contentRect;
-                    pChart.applyOptions({ width, height, rightPriceScale: {minimumWidth: 80} });
+                    pChart.applyOptions({ width, height, rightPriceScale: {minimumWidth: minimumPriceWidth} });
                 });
                 panelResizeObserver.observe(div);
 
