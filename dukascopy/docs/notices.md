@@ -55,6 +55,8 @@ Enjoy!
 
 PS Credits, once more. To [Dukascopy](https://www.dukascopy.com), Google Gemini, Deepseek and ChatGPT. 
 
+PPS This is still under 2,500 lines of actual code (LOC), not counting the HTML files. This is largely due to the design choices, as well as the absence of security measures. Since the application runs locally, those measures aren’t required. Still, it’s impressive how much can be accomplished with just 2,500 lines of code.
+
 ## Notice: Panama backadjustment "Public beta" live
 
 **Update:** Assuming the rollover values from the broker are correct, this is acceptable. I checked one year of BRENT data. In some cases, a gap remains because applying the broker-specified adjustment can leave a gap—October 2025 is an example—whereas November and September are superbly corrected. You can verify the rollover values in your ```data/rollover``` folder; those are the values being used. I still need to check it against an other datasource with continuous prices. eg to confirm the October one. If that one checks out, i will remove the "beta status".
