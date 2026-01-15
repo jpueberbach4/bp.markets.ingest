@@ -88,7 +88,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     # 8. Final Formatting and Rounding
     res = pd.DataFrame({
         'cci': cci.round(precision),
-        'direction': direction
+        'direction': direction*100
     }, index=df.index)
     
     # Drop rows where the window hasn't filled (warmup period)
