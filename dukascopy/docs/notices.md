@@ -63,7 +63,29 @@ PPS This is still under 2,500 lines of actual code (LOC), not counting the HTML 
 
 ![Example](../images/terminal3.png)
 
-Eg stuff like this takes in threadmode ~120ms and in processmode ~50ms. I didnt loadtest it yet. So very much experimental. Use at own risk.
+Eg stuff like this takes in threadmode ~120ms and in processmode ~50ms. I didnt loadtest it yet. So very much experimental. Use at own risk. 
+
+Somewhat of proof. 8 indicators. Simple to heavy EMA200. 500 requests. 
+
+poolmode: thread (50ms per/req)
+
+```sh
+Request #498 | Status: 200 | Total Time: 25.311429s
+Request #496 | Status: 200 | Total Time: 25.320885s
+Request #499 | Status: 200 | Total Time: 25.355394s
+Request #500 | Status: 200 | Total Time: 25.401121s
+```
+
+poolmode: process (30ms per/req)
+
+```sh
+Request #497 | Status: 200 | Total Time: 15.240136s
+Request #498 | Status: 200 | Total Time: 15.262548s
+Request #499 | Status: 200 | Total Time: 15.316811s
+Request #500 | Status: 200 | Total Time: 15.297187s
+```
+
+I have hammered it with 10000 request. No issues. But still. Experimental.
 
 ## Notice: Panama backadjustment "Public beta" live
 

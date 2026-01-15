@@ -204,25 +204,8 @@ def parallel_indicators(
 
     if not disable_recursive_mapping:
         # Convert flat indicator columns into nested dictionaries per row
-        records = indicator_matrix.to_dict(orient='records')
-        nested_list = []
-
-        for rec in records:
-            row_dict = {}
-            for k, v in rec.items():
-                if pd.isna(v):
-                    continue
-                if "__" in k:
-                    grp, sub = k.split("__", 1)
-                    if grp not in row_dict:
-                        row_dict[grp] = {}
-                    row_dict[grp][sub] = v
-                else:
-                    row_dict[k] = v
-            nested_list.append(row_dict)
-
         # Attach nested indicator dictionaries to the original DataFrame
-        indicator_matrix['indicators'] = nested_list
+        indicator_matrix['indicators'] = _optimize_indicator_processing_vectorized(indicator_matrix)
         df = df.join(indicator_matrix[['indicators']], how='left')
         df['indicators'] = df['indicators'].apply(
             lambda x: x if isinstance(x, dict) else {}
@@ -234,6 +217,49 @@ def parallel_indicators(
     # Restore original index and ordering
     is_asc = options.get('order', 'asc').lower() == 'asc'
     return df.reset_index().sort_values(by=temp_sort, ascending=is_asc)
+
+
+def _optimize_indicator_processing_vectorized(indicator_matrix):
+    # Vectorized NaN detection remains on the NumPy object
+    mask = ~indicator_matrix.isna().values
+    columns = indicator_matrix.columns.tolist()
+    
+    # Pre-grouping logic (remains the same)
+    grouped = {}
+    regular = []
+    for idx, col in enumerate(columns):
+        if "__" in col:
+            parts = col.split("__", 1)
+            grouped.setdefault(parts[0], []).append((idx, parts[1]))
+        else:
+            regular.append((idx, col))
+    
+    # FIX: Convert to list for JSON compatibility
+    values = indicator_matrix.values.tolist() 
+    nested_list = []
+    
+    for i in range(len(values)):
+        row_dict = {}
+        
+        # FIX: Use values[i][idx] instead of values[i, idx]
+        for idx, col in regular:
+            if mask[i, idx]:
+                row_dict[col] = values[i][idx]
+        
+        for grp, indices in grouped.items():
+            group_dict = {}
+            has_data = False
+            for idx, sub in indices:
+                if mask[i, idx]:
+                    group_dict[sub] = values[i][idx]
+                    has_data = True
+            
+            if has_data:
+                row_dict[grp] = group_dict
+        
+        nested_list.append(row_dict)
+    
+    return nested_list
 
 
 def _shutdown():
