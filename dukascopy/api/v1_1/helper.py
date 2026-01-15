@@ -332,21 +332,7 @@ def generate_output(options: Dict, columns: List, results: List):
 
     # CSV output for file-based or analytical workflows
     if options.get("output_type") == "CSV":
-        output = io.StringIO()
-        if results:
-            dict_results = [dict(zip(columns, row)) for row in results]
-            writer = csv.DictWriter(output, fieldnames=columns)
-            if not options.get('mt4'):
-                # No header if MT4 flag is set
-                writer.writeheader()
-
-            writer.writerows(dict_results)
-
-        return PlainTextResponse(
-            content=output.getvalue(),
-            media_type="text/csv",
-        )
-        # return _csv_output(results,columns,options)
+        return _csv_output(results,columns,options)
 
     return None
 
