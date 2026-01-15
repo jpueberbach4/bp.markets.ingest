@@ -8,11 +8,9 @@ See if we can remove "beta state".
 - Feature-rich market simulation \
 Full high-performance replay functionality. <-- almost there, preconditions almost met :)
 
-**Note:** removed builder integrated indicator extension since i am guessing everyone will use the HTTP-interface instead now record-limit is increased to 40000.
+## Notice: Release 0.6.6- 2026-01-15
 
-## Notice: Release 0.6.6 beta - 2026-01-15
-
-There is now an "official" 0.6.6 beta released. This is a very powerful release. 
+I decided to release 0.6.6. This is a very powerful release. 
 
 - New indicator.html interface allowing CSV exports with stacked indicator support
 - New index.html charting interface with indicator support
@@ -23,39 +21,35 @@ There is now an "official" 0.6.6 beta released. This is a very powerful release.
 - Custom indicator support
 - Removal of DuckDB
 
-Looks really good. This will get merged into the main branch soon. 
+Note that upgrading to this main-branch will break any left-over text-mode installations. Do not upgrade if you wish to stay, for whatever reason, on text-mode. 
 
-If you can't wait that long: make sure you are on binary mode, then `git fetch -p && git checkout beta/0.6.6`. Then copy over the `config/dukacopy/http-docs/index.html` and the `config/dukacopy/http-docs/indicator.html` to your `config.user/dukascopy/http-docs` directory.
+If you are still on text-mode and still using default settings, after update, `./setup-dukascopy.sh`, then `./rebuild-full.sh`. Wait for a few minutes. Then `./service.sh restart`. When it gives you a denied (error) `killall python3`, then retry.
 
-**Note:** You can now use `./setup-dukascopy.sh` again if you are on binary mode. It will not flip back to text-mode. Binary is now the default.
+Next, openup a browser: `http://localhost:8000/`
 
 This is starting to look like your very own mini-tradingview local stack. I know. But it is still about replay/market simulation. I needed to make sure that the indicators are fine. They will be used in replay too. So i needed to visualize them in order to check them. Result? your own mini-tradingview. Will i add drawing? Likely. But when, i don't know yet. Unplanned. Will i add storing chart settings. Definately. When? I don't know yet. Unplanned.
 
-Example builder-new indicator.html:
+What you get with this version?
+
+Example builder:
 
 ![example](../images/builder11.png)
 
-Example builder output:
+Example output:
 
 ![example](../images/csv_1_1_output.png)
 
-New Interactive chart-new index.html:
+Interactive chart:
 
 ![example](../images/terminal2.png)
 
-You can use this version to play around with custom indicators. The indicator.html is already dynamic. So if you build one, it's immediately usable in `indicator.html`. So you can immediately export outputs. You can find example plugins in `api/plugins/indicators`, [more info](https://github.com/jpueberbach4/bp.markets.ingest/blob/beta/0.6.6/dukascopy/docs/indicators.md).
+*Note:** You are also able to export from the interactive chart. What is onscreen is what you get in your CSV, including all the indicators etc.
 
-**Note:** There is also an export button. So you can visualize your chart first and when you are happy, export indicator-integrated data to CSV with a maximum of 40000 records (it allows you to specify the after date when you click export).
+Also. Pretty important i think: You can implement custom indicators in this version. Newly added indicators need a webservice restart. Once added, you dont need to restart anymore if you make changes to them. How to add/build an indicator? [See here](indicators.md). No more "pijn"-script.
 
-**Note:** I have tested with limit 100000. It can handle it. But we leave it at 40 for now.
+**Note:** Before using an existing indicator for an export and making your own analysis with it, check in the `http://localhost:8000/indicator.html` if the indicator has set the meta-flag `verified` to 1. Select the indicator on the lefthand side and check the meta settings on the right hand side. If you see a verified:1, it has been checked by me and confirmed to work correctly.
 
 Enjoy!
-
-## Notice: QA on indicators-first pass - 2026-01-15
-
-I am extremely pleased with the results of the first QA round on the indicators. More than 80% have been verified as correct, and only three require real debugging—Supertrend being one of them. The indicators that were successfully verified are marked with verified:1, while the invalid ones are marked with verified:0. You can see this in the right-hand column of indicator.html. Overall, things are looking very good.
-
-The new charting has now replaced the previous main index.html file and is almost complete. I have moved indicator support for the builder upgrade to a later stage and will update the record limit to 40,000 instead. The builder will only be used to dump full-histories (special case scenario).
 
 ## Notice: Panama backadjustment "Public beta" live
 
