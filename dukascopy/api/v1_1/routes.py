@@ -382,7 +382,25 @@ async def get_ohlcv(
         if options.get('limit'):
             # Limit rows
             enriched_df = enriched_df.iloc[:options['limit']]
-        
+
+        # MT4 output
+        if options.get('mt4'):
+            # Split the datetime column into separate date and time components
+            temp_time = enriched_df['time'].astype(str).str.split(' ', expand=True)
+
+            # Define columns that are not needed for MT4 output
+            cols_to_drop = ['symbol', 'timeframe', 'sort_key', 'time', 'year', 'indicators']
+
+            # Drop unnecessary columns, ignoring errors if a column does not exist
+            enriched_df.drop(columns=cols_to_drop, inplace=True, errors='ignore')
+
+            # Insert formatted date column (YYYY.MM.DD) as the first column
+            enriched_df.insert(0, 'date', temp_time[0].str.replace('-', '.'))
+
+            # Insert time column (HH:MM:SS) as the second column
+            enriched_df.insert(1, 'time', temp_time[1])
+
+
         # Normalize columns and rows
         columns = enriched_df.columns.tolist()
         results = enriched_df.values.tolist()
