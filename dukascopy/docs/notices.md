@@ -61,6 +61,10 @@ PPS This is still under 2,500 lines of actual code (LOC), not counting the HTML 
 
 **EXPERIMENTAL** If you are a heavy-indicator addict (like me) and perform heavy-duty indicator queries-eg one query with 20 indicators, i have added a `poolmode:process` option to the http configuration. Basically that option toggles whether to use the Python ProcessPoolExecutor or the Python ThreadPoolExecutor. Explanation: ThreadPoolExecutor runs tasks within a single process, utilizing multiple threads that share the same memory and are restricted by the Python Global Interpreter Lock (GIL), meaning they cannot truly execute Python code on multiple CPU cores simultaneously. In contrast, ProcessPoolExecutor bypasses the GIL by spawning separate child processes, each with its own Python interpreter and memory space, allowing tasks to run in parallel across multiple physical CPU cores. 
 
+![Example](../images/terminal3.png)
+
+Eg stuff like this takes in threadmode ~120ms and in processmode ~50ms. I didnt loadtest it yet. So very much experimental. Use at own risk.
+
 ## Notice: Panama backadjustment "Public beta" live
 
 **Update:** Assuming the rollover values from the broker are correct, this is acceptable. I checked one year of BRENT data. In some cases, a gap remains because applying the broker-specified adjustment can leave a gap—October 2025 is an example—whereas November and September are superbly corrected. You can verify the rollover values in your ```data/rollover``` folder; those are the values being used. I still need to check it against an other datasource with continuous prices. eg to confirm the October one. If that one checks out, i will remove the "beta status".
