@@ -43,7 +43,7 @@ Interactive chart:
 
 ![example](../images/terminal2.png)
 
-*Note:** You are also able to export from the interactive chart. What is onscreen is what you get in your CSV, including all the indicators etc.
+**Note:** You are also able to export from the interactive chart. What is onscreen is what you get in your CSV, including all the indicators etc.
 
 Also. Pretty important i think: You can implement custom indicators in this version. Newly added indicators need a webservice restart. Once added, you dont need to restart anymore if you make changes to them. How to add/build an indicator? [See here](indicators.md). No more "pijn"-script.
 
