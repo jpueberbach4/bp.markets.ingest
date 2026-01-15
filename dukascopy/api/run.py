@@ -38,14 +38,8 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from typing import List
 from pathlib import Path
+import os
 import uvicorn
-
-# Import versioned OHLCV routes
-from api.v1_0.routes import router as ohlcv_router_v1_0
-from api.v1_1.routes import router as ohlcv_router_v1_1
-
-# This is the current main version
-from api.v1_0.version import API_VERSION
 
 # Function to get config
 def get_config():
@@ -54,12 +48,28 @@ def get_config():
     app_config = load_app_config(config_file)
     return app_config.http
 
+# Set an environment variable to toggle what parallel.py to include later
+os.environ['__POOLMODE'] = get_config().poolmode
+
+# Import versioned OHLCV routes
+from api.v1_0.routes import router as ohlcv_router_v1_0
+from api.v1_1.routes import router as ohlcv_router_v1_1
+
+# This is the current main version
+from api.v1_0.version import API_VERSION
+
+
+
 # Lifespan context manager for startup/shutdown hooks
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application startup and shutdown lifecycle events."""
     print("Server starting: Optimizing resources...")
     yield  # Application is running
+    # If we are running in processpool mode, shutdown to prevent zombies
+    if os.environ['__POOLMODE'] == 'process':
+        from api.v1_1.parallelpp import _shutdown
+        _shutdown()
     print("Server shutting down...")
 
 # Initialize FastAPI application

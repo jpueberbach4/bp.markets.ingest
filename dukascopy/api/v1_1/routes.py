@@ -86,9 +86,18 @@ from fastapi import Depends
 from api.state11 import cache
 from api.config.app_config import load_app_config
 from api.v1_1.helper import parse_uri, discover_options, generate_output, execute, discover_all
-from api.v1_1.parallel import parallel_indicators
+
 from api.v1_1.plugin import indicator_registry, get_indicator_plugins
 from api.v1_1.version import API_VERSION
+
+# Set the multithreaded poolmode, either process or thread
+# Threads in python are not distributede among cores, multiprocessing pool, however, is
+# Since indicators are calculations that benefit from multiple cores, we have this option
+import os
+if os.environ['__POOLMODE'] == "process":
+    from api.v1_1.parallelpp import parallel_indicators
+else:
+    from api.v1_1.parallel import parallel_indicators
 
 @lru_cache
 def get_config():

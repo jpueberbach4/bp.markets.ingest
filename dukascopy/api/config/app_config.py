@@ -19,6 +19,7 @@ class HTTPServiceConfig:
     docs: str = "config/dukascopy/http-docs"
     listen: str = "127.0.0.1:8000"
     fmode: str = "binary"
+    poolmode: str = "thread"
     limits: HTTPServiceLimits = field(default_factory=HTTPServiceLimits)
 
 @dataclass
