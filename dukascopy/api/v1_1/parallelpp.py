@@ -86,7 +86,7 @@ def _indicator_worker(df_slice, plugin_module, plugin_func_name, full_name, p_op
         else:
             res_df.columns = [full_name]
 
-        return res_df
+        return {"data": res_df, "index": res_df.index}
     except Exception as e:
         # Log and suppress any worker-level exceptions
         print(f"Worker error executing {full_name}: {e}")
@@ -184,13 +184,19 @@ def parallel_indicators(
             )
 
     # Collect completed indicator results
-    results = [
-        f.result()
-        for f in concurrent.futures.as_completed(tasks)
-        if f.result() is not None
-    ]
+    indicator_matrix = pd.DataFrame(index=df.index)
 
-    # If no indicators produced results, return an empty indicator column
+
+    results = []
+    for f in concurrent.futures.as_completed(tasks):
+        result = f.result()
+        if result:
+            # Reconstruct the worker's DataFrame
+            # FORCE ALIGNMENT: Ensure it matches the master index 
+            # (fixes shifts from dropna() in plugins like aroon.py)
+            temp_df = result["data"].reindex(df.index)
+            results.append(temp_df)
+
     if not results:
         df['indicators'] = [{} for _ in range(len(df))]
         is_asc = options.get('order', 'asc').lower() == 'asc'
@@ -199,29 +205,15 @@ def parallel_indicators(
     # Combine all indicator outputs into a single DataFrame
     indicator_matrix = pd.concat(results, axis=1)
 
+
     # Remove any duplicate indicator columns
     indicator_matrix = indicator_matrix.loc[:, ~indicator_matrix.columns.duplicated()]
 
     if not disable_recursive_mapping:
         # Convert flat indicator columns into nested dictionaries per row
         # Attach nested indicator dictionaries to the original DataFrame
-        #$indicator_matrix['indicators'] = _optimize_indicator_processing_vectorized(indicator_matrix)
-        records = indicator_matrix.to_dict(orient='records')
-        nested_list = []
-        for rec in records:
-            row_dict = {}
-            for k, v in rec.items():
-                if pd.isna(v):
-                    continue
-                if "__" in k:
-                    grp, sub = k.split("__", 1)
-                    if grp not in row_dict:
-                        row_dict[grp] = {}
-                    row_dict[grp][sub] = v
-                else:
-                    row_dict[k] = v
-            nested_list.append(row_dict)
-            
+        indicator_matrix['indicators'] = _optimize_indicator_processing_vectorized(indicator_matrix)
+
         df = df.join(indicator_matrix[['indicators']], how='left')
         df['indicators'] = df['indicators'].apply(
             lambda x: x if isinstance(x, dict) else {}

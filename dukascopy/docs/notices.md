@@ -1,12 +1,6 @@
 <u>MT4 is decoded.</u>
 
-BUG!
-
-Found a critical bug in the result merge after the parallel_indicators call. I will fix this immediately tomorrow morning. I was testing "derministicality" and found issues. 
-
-![example](../images/critical_bug.png)
-
-~~THIS IS HIGH PRIO.~~ No, its not. Its in the experimental ProcessPoolExecutor. I warned for it that it was experimental. The thread-version is fine.
+**Note:** Do not use poolmode:process. Keep the default:thread (if not set in your config, it is thread and its fine). I was optimizing for performance and introduced an experimental poolmode:process to support very heavy-indicator queries, have the computing spread over multiple cores.. the problem is that processes, unlike python "threads" have a different process memory and receive copies of the dataframes. It loses aligmment during the swapping of memory between processes. Since "threads" share the same memory space, threads dont have the issue. I will find a solution but its not "pressing". The default works flawless.
 
 What’s next?
 
