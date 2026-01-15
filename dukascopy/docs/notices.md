@@ -2,87 +2,60 @@
 
 What’s next?
 
-- Builder upgrade \
-Introducing indicator-integrated outputs.
-
 - Pushed in: check panama with other source, minor effort. \
 See if we can remove "beta state".
 
 - Feature-rich market simulation \
-Full high-performance replay functionality.
+Full high-performance replay functionality. <-- almost there, preconditions almost met :)
 
+**Note:** removed builder integrated indicator extension since i am guessing everyone will use the HTTP-interface instead now record-limit is increased to 40000.
 
-## Notice: API 1.1 available beta - 2026-01-14
+## Notice: Release 0.6.6 beta - 2026-01-15
 
-**Update:** Can't get the interface finished today. Tomorrow. Likely. No evening work today.
+There is now an "official" 0.6.6 beta released. This is a very powerful release. 
 
-**Important:** CSV input mode is dead from this version onward. It's too much work to keep that compatibility modus in and tbh, it slows down everything by a factor of 100+.
+- New indicator.html interface allowing CSV exports with stacked indicator support
+- New index.html charting interface with indicator support
+- New API 1.1 with stacked indicator support
+- Warmup issues in API 1.0 have been fixed
+- Another round of performance updates on the API
+- Increased API record-limit to 40000 (was 1440, then 20000, now 40000)
+- Custom indicator support
+- Removal of DuckDB
 
-There is a beta/0.6.6 available. It's the integration-test version, not completed but fully functional. Web-interface is missing, rest works.
+Looks really good. This will get merged into the main branch soon. 
 
-What is added/modified?
+If you can't wait that long: make sure you are on binary mode, then `git fetch -p && git checkout beta/0.6.6`. Then copy over the `config/dukacopy/http-docs/index.html` and the `config/dukacopy/http-docs/indicator.html` to your `config.user/dukascopy/http-docs` directory.
 
-- API 1.1 DATA - with integrated indicator support (JSONP/JSON and CSV)
-- DuckDB has been removed
-- Speed gains
-- Demo script-integration_test.html-available in the `config/dukascopy/http-docs` 
-- Normalized plugin architecture
-- Support for custom indicators in directory `config.user/plugins/indicators`
-- Indicator warmup issues on 1.0 have been resolved
-- Various other fixes
+**Note:** You can now use `./setup-dukascopy.sh` again if you are on binary mode. It will not flip back to text-mode. Binary is now the default.
 
-In this version you can do something like
+This is starting to look like your very own mini-tradingview local stack. I know. But it is still about replay/market simulation. I needed to make sure that the indicators are fine. They will be used in replay too. So i needed to visualize them in order to check them. Result? your own mini-tradingview. Will i add drawing? Likely. But when, i don't know yet. Unplanned. Will i add storing chart settings. Definately. When? I don't know yet. Unplanned.
 
-```sh
-GET http://localhost:8000/ohlcv/1.1/select/EUR-USD,1h[sma(20):sma(50):sma(200):macd(12,6,9)]/after/2025-10-31%2023:59:59 \
-/until/2025-11-30%2023:59:59/output/JSON?order=asc&limit=1440
-```
-
-Or 
-
-```sh
-http://localhost:8000/ohlcv/1.1/select/EUR-USD,1m[sma_200:macd_12_6_9]/after/2025-10-31%2023:59:59/output/JSON \
-?order=desc&limit=10
-```
-
-Or 
-
-```sh
-http://localhost:8000/ohlcv/1.1/select/AAPL.US-USD,1h[sma(20):sma(50):sma(200):macd(12,6,9)]/ \
-after/2025-11-30%2013:59:59/until/2025-12-30%2013:59:59/output/CSV?order=asc&limit=1440
-```
-
-Latest url gives (CSV modus 1.1 API), for example:
-
-![example](../images/csv_1_1_output.png)
-
-So you are able to stack indicators and export them together with price data into one single CSV file. All within milliseconds. Note, this also works with your custom indicators. Obviously. I could show, but trust me, it works.
-
-![example](../images/terminal2.png)
-
-Preliminary conclusion: API 1.1 works beautifully and can be perfectly integrated to a charting library.
-
-Builder example
+Example builder-new indicator.html:
 
 ![example](../images/builder11.png)
 
-Yeah, i am not playing around. This is insanely powerful.
+Example builder output:
 
-What remains?
+![example](../images/csv_1_1_output.png)
 
-- Web-interface (50-60 percent done)
-- Built-in indicator verification - need visualization for that. Getting there.
-- Builder extension to support output
+New Interactive chart-new index.html:
 
-Performance is great (understatement).
+![example](../images/terminal2.png)
 
 You can use this version to play around with custom indicators. The indicator.html is already dynamic. So if you build one, it's immediately usable in `indicator.html`. So you can immediately export outputs. You can find example plugins in `api/plugins/indicators`, [more info](https://github.com/jpueberbach4/bp.markets.ingest/blob/beta/0.6.6/dukascopy/docs/indicators.md).
 
-**Note:** Since performance allows, i will up the API record-limit once more, to like 20000 or something.
+**Note:** There is also an export button. So you can visualize your chart first and when you are happy, export indicator-integrated data to CSV with a maximum of 40000 records (it allows you to specify the after date when you click export).
 
-**Note:** I tested performance with 20.000 records. Including recursive mapping: 0.27s. CSV mode stays below 0.15s. Its amazing. This binary mode. The recursive mapping is bottleneck. I will numba njit that. Try at least. So the JSON API will become even faster. Later, not now.
+**Note:** I have tested with limit 100000. It can handle it. But we leave it at 40 for now.
 
-**Note:** How do you get this insane performance on the API? [this](https://github.com/jpueberbach4/bp.markets.ingest/blob/beta/0.6.6/dukascopy/api/state11.py) is the secret.
+Enjoy!
+
+## Notice: QA on indicators-first pass - 2026-01-15
+
+I am extremely pleased with the results of the first QA round on the indicators. More than 80% have been verified as correct, and only three require real debugging—Supertrend being one of them. The indicators that were successfully verified are marked with verified:1, while the invalid ones are marked with verified:0. You can see this in the right-hand column of indicator.html. Overall, things are looking very good.
+
+The new charting has now replaced the previous main index.html file and is almost complete. I have moved indicator support for the builder upgrade to a later stage and will update the record limit to 40,000 instead. The builder will only be used to dump full-histories (special case scenario).
 
 ## Notice: Panama backadjustment "Public beta" live
 
