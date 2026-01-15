@@ -27,6 +27,8 @@ If you are still on text-mode and still using default settings, after update, `.
 
 Next, openup a browser: `http://localhost:8000/`
 
+**Note:** If you have custom settings. Do not run `./setup-dukascopy.sh`, instead, copy-over the `config/dukascopy/http-docs/*` files to your `config.user/dukascopy/http-docs` directory.
+
 This is starting to look like your very own mini-tradingview local stack. I know. But it is still about replay/market simulation. I needed to make sure that the indicators are fine. They will be used in replay too. So i needed to visualize them in order to check them. Result? your own mini-tradingview. Will i add drawing? Likely. But when, i don't know yet. Unplanned. Will i add storing chart settings. Definately. When? I don't know yet. Unplanned.
 
 What you get with this version?
