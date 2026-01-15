@@ -44,3 +44,48 @@ Non-breaking.
 
 ### For Existing Users
 Non-breaking. 
+
+## [0.6.0-stable] - 2025-12-31
+
+- **Feature**: DST (Daylight Saving Time) support has been added
+- **Feature**: Session support
+- **Feature**: Exotic indices now supported
+- **Feature**: Major simplification on configuration (inheritance support)
+- **Feature**: Improved robustness and exception handling
+- **Feature**: Vectorized session resolution
+- **Feature**: Session boundaries for post-processing rules
+- **Feature**: Beta version of Panama-backadjustment with aligned resample-support
+- **Feature**: JSON/JSONP/CSV HTTP API
+- **Feature**: Static HTML service with charting example
+- **Feature**: Schema validation on config
+- **Documentation**: Updated README with instructions
+
+### For Existing Users
+Non-breaking. 
+
+## [0.6.5-stable] - 2026-01-07
+
+- **Feature**: Binary mode introduced
+- **Feature**: IO Layer is abstracted
+- **Feature**: HTTP service code optimization
+- **Feature**: 40+ indicators added
+- **Feature**: Increased API limits
+- **Documentation**: Updated README with instructions
+
+### For Existing Users
+Non-breaking. 
+
+## [0.6.6-beta] - 2026-01-15
+
+- **Feature**: New indicator.html interface
+- **Feature**: New index.html interface
+- **Feature**: Increased API limits
+- **Feature**: Removal of DuckDB on API
+- **Documentation**: Updated README with instructions
+
+### For Existing Users
+!!BREAKING!! FOR TEXT MODE USERS. SWITCH TO BINARY MODE. SEE DOCUMENTATION.
+YOU WILL GET A LOT OF BENEFITS WITH BINARY MODE
+
+
+
