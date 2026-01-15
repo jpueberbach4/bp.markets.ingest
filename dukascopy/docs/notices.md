@@ -57,7 +57,7 @@ PS Credits, once more. To [Dukascopy](https://www.dukascopy.com), Google Gemini,
 
 PPS This is still under 2,500 lines of actual code (LOC), not counting the HTML files. This is largely due to the design choices, as well as the absence of security measures. Since the application runs locally, those measures aren’t required. Still, it’s impressive how much can be accomplished with just 2,500 lines of code.
 
-I still need to implement that limiting of the in-memory arrays within the browser to keep the performance of the browser in-sync with the rest of the system. I forgot. I will fix this and push this directly into the main branch. Just pull again somewhere tomorrow, end of day-GMT+1. 
+**Note:** I still need to implement that limiting of the in-memory arrays within the browser to keep the performance of the browser in-sync with the rest of the system. I forgot. I will fix this and push this directly into the main branch. Just pull again somewhere tomorrow, end of day-GMT+1. Plus, i have notices a bug when you click update view-commonly used to get the latest candles, it removes the overlay indicators. Will fix that as well. Two interface bugs. Minor stuff, but still, should be semi-perfect. 
 
 ## Notice: Panama backadjustment "Public beta" live
 
