@@ -42,6 +42,9 @@ OR
 http://localhost:8000/ohlcv/1.1/select/AAPL.US-USD,1m[sma(9)]/after/1768487400000/output/JSON?order=asc&limit=1440&subformat=3
 ```
 
+An additional format is planned: a binary output format that includes metadata describing the fields in the headers. I don’t know the timeline yet. It will be straightforward to implement and will support both streaming and non-streaming. I can’t make it more optimal than that.
+It's easy to build. 
+
 ## Notice: Release 0.6.6- 2026-01-15
 
 I decided to release 0.6.6. This is a very powerful release. 
