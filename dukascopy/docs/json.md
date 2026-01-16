@@ -1,6 +1,6 @@
 # API 1.1 Developer's Guide: OHLCV JSON Subformats
 
-This guide defines the four available JSON subformats in API 1.1. [cite_start]These formats allow developers to choose the optimal balance between human readability, data density, and streaming performance. [cite: 1, 2, 3, 4]
+This guide defines the four available JSON subformats in API 1.1. These formats allow developers to choose the optimal balance between human readability, data density, and streaming performance.
 
 ### Base Request URL
 `http://localhost:8000/ohlcv/1.1/select/{SYMBOL},{TF}[{INDICATORS}]/after/{TIMESTAMP}/output/JSON?subformat={ID}`
@@ -8,12 +8,12 @@ This guide defines the four available JSON subformats in API 1.1. [cite_start]Th
 ---
 
 ## 1. Subformat 1: Record-Oriented JSON (Default)
-[cite_start]**Use Case:** Debugging, small datasets, and general-purpose integration. [cite: 1]
+[cite_start]**Use Case:** Debugging, small datasets, and general-purpose integration.
 Each data point is an object with explicit keys.
 
-* [cite_start]**URL Parameter:** `subformat=1` [cite: 1]
-* [cite_start]**Time Format:** ISO 8601 String. [cite: 1]
-* [cite_start]**Structure:** Nested `indicators` object per record. [cite: 1]
+* [cite_start]**URL Parameter:** `subformat=1`
+* [cite_start]**Time Format:** ISO 8601 String.
+* [cite_start]**Structure:** Nested `indicators` object per record.
 
 ```json
 {
@@ -37,9 +37,9 @@ Each data point is an object with explicit keys.
 
 Use Case: Table-based views and internal data processing where headers are needed once.  Data is split into a list of column names and a 2D array of values.
 
-* [cite_start]**URL Parameter:** `subformat=2` [cite: 1]
-* [cite_start]**Time Format:** Epoch milliseconds. [cite: 1]
-* [cite_start]**Structure:** Metadata is separated from the raw values to reduce payload size. [cite: 1]
+* [cite_start]**URL Parameter:** `subformat=2`
+* [cite_start]**Time Format:** Epoch milliseconds.
+* [cite_start]**Structure:** Metadata is separated from the raw values to reduce payload size.
 
 ```json
 {
@@ -55,10 +55,10 @@ Use Case: Table-based views and internal data processing where headers are neede
 
 Use Case: High-performance charting (e.g., Lightweight Charts) and algorithmic analysis.  This is the most efficient non-streaming format. Indicators are flattened into top-level arrays. 
 
-* [cite_start]**URL Parameter:** `subformat=3` [cite: 1]
-* [cite_start]**Time Format:** Epoch milliseconds. [cite: 1]
-* [cite_start]**Structure:** Timeseries optimized. [cite: 1]
-* [cite_start]**Key Feature:** All indicators are flattened using the indicator_name__sub-value convention (e.g., macd_12_6_9__hist). [cite: 1]
+* [cite_start]**URL Parameter:** `subformat=3`
+* [cite_start]**Time Format:** Epoch milliseconds.
+* [cite_start]**Structure:** Timeseries optimized.
+* [cite_start]**Key Feature:** All indicators are flattened using the indicator_name__sub-value convention (e.g., macd_12_6_9__hist).
 
 ```json
 {
@@ -77,10 +77,10 @@ Use Case: High-performance charting (e.g., Lightweight Charts) and algorithmic a
 
 Use Case: Mass data transfer (80,000+ records) and real-time "firehose" feeds. Every line is a standalone JSON object. 
 
-* [cite_start]**URL Parameter:** `subformat=4` [cite: 1]
-* [cite_start]**Time Format:** Contains both ISO 8601 string AND sort_key (Epoch MS). [cite: 1]
-* [cite_start]**Structure:** Timeseries optimized. [cite: 1]
-* [cite_start]**Key Feature:** No outer wrapper. Clients can parse line-by-line before the full transfer completes. [cite: 1]
+* [cite_start]**URL Parameter:** `subformat=4`
+* [cite_start]**Time Format:** Contains both ISO 8601 string AND sort_key (Epoch MS).
+* [cite_start]**Structure:** Timeseries optimized.
+* [cite_start]**Key Feature:** No outer wrapper. Clients can parse line-by-line before the full transfer completes.
 
 ```json
 {"symbol":"AAPL.US-USD","time":"2025-04-24 13:30:00","sort_key":1745501400000,"open":204.687,...}
