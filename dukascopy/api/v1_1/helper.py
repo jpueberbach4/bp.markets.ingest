@@ -412,16 +412,8 @@ def _format_json(df, options):
         return {
             "status": "ok",
             "options": options,
-            "columns": ['time', 'open', 'high', 'low', 'close', 'volume', 'indicators'],
-            "result": {
-                'time': df['time'].tolist(),
-                'open': df['open'].tolist(),
-                'high': df['high'].tolist(),
-                'low': df['low'].tolist(),
-                'close': df['close'].tolist(),
-                'volume': df['volume'].tolist(),
-                'indicators': df['indicators'].tolist(),
-            },
+            "columns": df.columns.tolist(),
+            "result": {col: df[col].tolist() for col in df.columns}
         }
 
     # ------------------------------------------------------------------

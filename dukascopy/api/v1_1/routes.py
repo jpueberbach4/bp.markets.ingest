@@ -391,6 +391,8 @@ async def get_ohlcv(
         disable_recursive_mapping = False
         if options.get("output_type") == "CSV":
             disable_recursive_mapping = True
+        elif options.get("subformat") == 3:
+            disable_recursive_mapping = True
 
         # Enrich the returned result with the requested indicators (parallelized)
         enriched_df = parallel_indicators(df, options, indicator_registry, disable_recursive_mapping)
