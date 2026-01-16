@@ -13,7 +13,9 @@ See if we can remove "beta state".
 Full high-performance replay functionality. <-- almost there, preconditions almost met :)
 
 
-## Notice: API 1.1 added (sub-formats)
+## Notice: API 1.1 added (sub-formats) + limit-increase
+
+Now CSV streaming support is in, we can update the limit once more. New limit: 100.000- +/-1.5s before service starts sending.
 
 Because i also need to import stuff to other apps, various format requirements are needed. I have implemented 4 formats for JSON:
 
