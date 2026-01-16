@@ -363,6 +363,7 @@ def _format_json(df, options):
     Raises:
         Exception: If an unsupported subformat is specified.
     """
+    num_symbols = len(options.get('select_data'))
     # Resolve requested JSON subformat (default to 1)
     subformat = options.get('subformat') if options.get('subformat') else 1
 
@@ -386,8 +387,8 @@ def _format_json(df, options):
         # Drop original timestamp columns and normalize sort_key -> time
         df = (
             df.drop(columns=['time', 'time_original', 'year'], errors='ignore')
-              .rename(columns={'sort_key': 'time'})
-        )
+            .rename(columns={'sort_key': 'time'})
+        )       
 
         return {
             "status": "ok",
@@ -401,19 +402,30 @@ def _format_json(df, options):
     # ------------------------------------------------------------------
     elif subformat == 3:
         # Drop non-essential metadata and normalize sort_key -> time
-        df = (
-            df.drop(
-                columns=['symbol', 'timeframe', 'time', 'time_original', 'year'],
-                errors='ignore'
+        if num_symbols == 1:
+            df = (
+                df.drop(
+                    columns=['symbol', 'timeframe', 'time', 'time_original', 'year', 'indicators'],
+                    errors='ignore'
+                )
+                .rename(columns={'sort_key': 'time'})
             )
-            .rename(columns={'sort_key': 'time'})
-        )
+        else:
+            df = (
+                df.drop(
+                    columns=['time', 'time_original', 'year','indicators'],
+                    errors='ignore'
+                )
+                .rename(columns={'sort_key': 'time'})
+            )
+        
+        result = df.astype(object).where(df.notnull(), None).to_dict(orient='list')
 
         return {
             "status": "ok",
             "options": options,
             "columns": df.columns.tolist(),
-            "result": {col: df[col].tolist() for col in df.columns}
+            "result": result
         }
 
     # ------------------------------------------------------------------
