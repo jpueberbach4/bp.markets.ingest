@@ -98,3 +98,13 @@ Use Case: Mass data transfer (80,000+ records) and real-time "firehose" feeds. E
 | **Indicator Mode** | Nested Object | Nested Object | **Flattened Array** | Nested Object |
 | **Timestamp** | ISO String | Epoch MS | Epoch MS | Both |
 | **Streaming** | No | No | No | **Yes** |
+
+
+## Quick Format Selector
+
+| Use Case | Format | Why |
+|----------|--------|-----|
+| **Debugging / Testing** | 1 | Human-readable, nested structure |
+| **Excel / Table Import** | 2 | Column headers, compact |
+| **High-Performance Charts** | 3 | Flattened arrays, fastest rendering |
+| **Large Data Export (>10k rows)** | 4 | Streaming, memory efficient |
