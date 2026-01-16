@@ -20,7 +20,7 @@ Overall, I think the solution turned out extremely well.
 
 Wishing you all a highly profitable 2026! 🚀
 
-PS: it could be that users have been hammering this endpoint too much and automatic systems have triggered a temporary scraping ban. Sometimes requests are actually coming through.
+PS: it could be that users have been hammering this endpoint too much and automatic systems have triggered a temporary scraping ban. Sometimes requests are actually coming through. Make sure to checkback regularly. I am monitoring, optionally i will reach out.
 
 
 
