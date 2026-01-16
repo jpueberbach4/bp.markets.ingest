@@ -79,7 +79,7 @@ Use Case: Mass data transfer (80,000+ records) and real-time "firehose" feeds. E
 
 * **URL Parameter:** `subformat=4`
 * **Time Format:** Contains both ISO 8601 string AND sort_key (Epoch MS).
-* **Structure:** Timeseries optimized.
+* **Structure:** Streaming optimized.
 * **Key Feature:** No outer wrapper. Clients can parse line-by-line before the full transfer completes.
 
 ```json
