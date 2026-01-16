@@ -22,6 +22,7 @@ Wishing you all a highly profitable 2026! 🚀
 
 PS: it could be that users have been hammering this endpoint too much and automatic systems have triggered a temporary scraping ban. Sometimes requests are actually coming through. Make sure to checkback regularly. I am monitoring, optionally i will reach out.
 
+### Furthermore
 
-
+What this project has shown me, personally, that there is a big big need in certain areas and that is all the "motivation" i need to take this completely to another level. This is definately not the end. To be continued....
 
