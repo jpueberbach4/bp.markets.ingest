@@ -19,7 +19,7 @@ Because i also need to import stuff to other apps, various format requirements a
 
 The most important ones are format 1 (default) and 3 (timeseries-optimized). 2 is an intermediate format.
 
-You can specify the eg `?subformat=3` on the GET URL.
+You can specify the eg `?subformat=3` on the GET URL. This is the fastest format.
 
 More formats may get added in the future.
 
