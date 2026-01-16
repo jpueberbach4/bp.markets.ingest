@@ -6,58 +6,65 @@ File:        routes.py
 
 Author:      JP Ueberbach
 Created:     2026-01-12
+Updated:     2026-01-15
 
 FastAPI router implementing a versioned OHLCV and indicator execution API.
 
 This module defines the public HTTP interface for querying OHLCV
-(Open, High, Low, Close, Volume) time-series data and applying derived
-technical indicators via a path-based, slash-delimited query DSL.
-All endpoints are exposed under the "/ohlcv/{version}" namespace.
+(Open, High, Low, Close, Volume) time-series market data and applying
+derived technical indicators using a path-based, slash-delimited query
+DSL. All endpoints are exposed under the "/ohlcv/{version}" namespace.
 
 The API is designed for high-throughput, low-latency market data access
-and supports both CSV-backed and memory-mapped binary datasets.
+and supports CSV-backed datasets, memory-mapped binary sources, and
+parallel indicator execution for CPU-bound workloads.
 
 Key Features:
-    - Executes OHLCV queries defined by a path-based DSL.
-    - Discovers available symbols and timeframes from the filesystem.
-    - Lists dynamically loaded indicator plugins with metadata.
-    - Applies indicator plugins in parallel to resolved OHLCV data.
-    - Supports pagination, ordering, temporal filters, and MT4-specific flags.
-    - Returns output in multiple formats: JSON, JSONP, and CSV.
-    - Includes execution timing (wall-clock) in response metadata.
+    - Path-based DSL for expressing OHLCV queries and indicator selection.
+    - Filesystem-backed discovery of symbols and supported timeframes.
+    - Dynamic indicator plugin registry with runtime introspection.
+    - Parallelized indicator execution using multiprocessing.
+    - DuckDB-powered query execution over CSV and binary data sources.
+    - Optional MT4-compatible output formatting.
+    - Multiple output formats: JSON, JSONP, and CSV.
+    - Wall-clock execution timing included in response metadata.
 
 Request Processing Pipeline:
     1. Parse the path-based DSL into structured query options.
     2. Validate pagination, ordering, output mode, and platform constraints.
-    3. Resolve symbol/timeframe selections against filesystem-backed datasets.
+    3. Discover symbol/timeframe selections from filesystem-backed datasets.
     4. Register memory-mapped views for binary OHLCV sources (when enabled).
-    5. Execute DuckDB queries against CSV or binary-backed data.
+    5. Execute DuckDB queries against CSV or binary-backed OHLCV data.
     6. Apply indicator plugins in parallel to the result set.
     7. Apply temporal filtering, row limits, and column normalization.
     8. Serialize results into the requested output format.
 
 Indicator System:
     - Indicator plugins are dynamically loaded at application startup.
-    - Each plugin must expose a `calculate(data, options)` callable.
-    - Optional plugin metadata (defaults, warmup, description, meta) is
-      introspected at runtime.
-    - Indicator execution is parallelized for performance.
+    - Each plugin exposes a callable compatible with the parallel
+      execution engine.
+    - Optional plugin metadata (defaults, warmup, description, meta)
+      is introspected and exposed via discovery endpoints.
+    - Indicator execution is isolated per worker to avoid GIL and
+      pickling constraints.
 
 Special Endpoints:
     - `/list/indicators/{request_uri}`:
         Returns metadata for all registered indicator plugins.
+    - `/list/symbols/{request_uri}`:
+        Lists available symbols and their supported timeframes.
     - `/quack`:
-        Provides a playful “DuckDB experience” for demonstration and testing.
+        Provides a deliberately inefficient DuckDB-themed demo endpoint.
 
 Usage:
     - This module is registered as part of the FastAPI router configuration.
     - It is not intended to be executed as a standalone script.
 
-Primary Functions:
-    - get_config(): Load and cache application configuration.
-    - list_indicators(): Enumerate available indicator plugins.
+Primary Endpoints:
     - get_ohlcv(): Resolve and execute path-based OHLCV queries.
-    - quack(): Simulated full-table scan endpoint for testing.
+    - list_indicators(): Enumerate available indicator plugins.
+    - get_ohlcv_list(): Discover available symbols and timeframes.
+    - quack(): Demonstration endpoint.
 
 Requirements:
     - Python 3.8+
@@ -388,34 +395,12 @@ async def get_ohlcv(
             # Limit rows
             enriched_df = enriched_df.iloc[:options['limit']]
 
-        # MT4 output
-        if options.get('mt4'):
-            # Split the datetime column into separate date and time components
-            temp_time = enriched_df['time'].astype(str).str.split(' ', expand=True)
-
-            # Define columns that are not needed for MT4 output
-            cols_to_drop = ['symbol', 'timeframe', 'sort_key', 'time', 'year', 'indicators']
-
-            # Drop unnecessary columns, ignoring errors if a column does not exist
-            enriched_df.drop(columns=cols_to_drop, inplace=True, errors='ignore')
-
-            # Insert formatted date column (YYYY.MM.DD) as the first column
-            enriched_df.insert(0, 'date', temp_time[0].str.replace('-', '.'))
-
-            # Insert time column (HH:MM:SS) as the second column
-            enriched_df.insert(1, 'time', temp_time[1])
-
-
-        # Normalize columns and rows
-        columns = enriched_df.columns.tolist()
-        results = enriched_df.values.tolist()
-
         # Wall
-        options['count'] = len(results)
+        options['count'] = len(enriched_df)
         options['wall'] = time.time() - time_start
         
         # Generate the output
-        output = generate_output(options, columns, results)
+        output = generate_output(enriched_df, options)
 
         # If we have output, return the result
         if output:
