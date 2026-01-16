@@ -401,6 +401,10 @@ async def get_ohlcv(
             # Filter to keep only rows >= requested start time
             enriched_df = enriched_df[enriched_df['sort_key'] >= _get_ms(options['after'])]
 
+        if options.get('until'):
+            # Until is exclusive
+            enriched_df = enriched_df[enriched_df['sort_key'] < _get_ms(options['until'])]
+
         if options.get('limit'):
             # Limit rows
             enriched_df = enriched_df.iloc[:options['limit']]
