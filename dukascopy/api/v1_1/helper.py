@@ -319,25 +319,19 @@ def generate_output(df: pd.DataFrame, options: Dict):
     # Default JSON output
     if options.get("output_type") == "JSON" or options.get("output_type") is None:
         # Normalize DataFrame into row-oriented dictionaries
-        columns = df.columns.tolist()
-        results = df.values.tolist()
-
         return {
             "status": "ok",
             "options": options,
-            "result": [dict(zip(columns, row)) for row in results],
+            "result": df.to_dict(orient='records'),
         }
 
     # JSONP output for browser-based or cross-domain consumption
     if options.get("output_type") == "JSONP":
         # Normalize DataFrame into row-oriented dictionaries
-        columns = df.columns.tolist()
-        results = df.values.tolist()
-
         payload = {
             "status": "ok",
             "options": options,
-            "result": [dict(zip(columns, row)) for row in results],
+            "result": df.to_dict(orient='records'),
         }
 
         # Serialize payload and wrap in callback invocation
