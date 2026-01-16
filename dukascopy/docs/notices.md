@@ -24,5 +24,5 @@ PS: it could be that users have been hammering this endpoint too much and automa
 
 ### Furthermore
 
-What this project has shown me, personally, that there is a big big need in certain areas and that is all the "motivation" i need to take this completely to another level. This is definately not the end. To be continued....
+What this project has shown me, personally, is that there is a big big need in certain areas and that is all the "motivation" i need to take this completely to another level. This is definately not the end. To be continued....
 
