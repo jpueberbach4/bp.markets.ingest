@@ -1,28 +1,20 @@
 <u>MT4 is decoded.</u>
 
-## **Notice: User-agent has been blocked - 2026-01-16**
+## **Notice: We are being throttled
 
-Today (2026-01-16), the user-agent used in download.py was blocked by the endpoint. The project has likely gained enough popularity to trigger alarms, resulting in a targeted user-agent block rather than an IP ban.
+Hi. At first i thought the user-agent was being blocked, but that is not the case. We are severely being throttled. That is actually good news. It means the project is still usable for all users, except with degraded (download-)performance.
 
-At its core, this project was evolving into a fully local, offline TradingView-like system—potentially encroaching on a multi-billion-dollar market segment due to the traction and attention it received. That said, development is continuing, and the planned C++ implementation will still be built.
+If you are in-sync already, you are in luck. You only need to change some settings in your config.user.yaml
 
-This project serves as a showcase of how relatively easy it is to harvest, resample, enrich, and extend market data when access is available. Market data are facts and, in principle, should be accessible without artificial limits—especially for traders like us. This effort was an attempt at democratization.
+Find the download section
 
-I will be adding a [performance.md](performance.md) file to document and explain the more interesting technical aspects of the implementation. The project achieved institutional-level performance on nothing more than a mid-range laptop.
+```yaml
+  timeout: 30                         # Request timeout
+  rate_limit_rps: 0.2                   # Protect end-point (number of cores * rps = requests/second)
+```
 
-So yes—there were limits to this “free data feed.”. I hoped the attribution and driving customers towards them would have prevented this shutdown. I didn't get any email.
+Set the values to the same settings above. This should be able to let you retrieve your data.
 
-Thank you all for the attention and interest in this project. It isn’t dead; it’s simply shifting direction.
+I was afraid that this would happen, if you want more speed, you need to be a bit technical. But it is possible. 
 
-Be sure to check back regularly for updates and further development progress.
-
-Overall, I think the solution turned out extremely well.
-
-Wishing you all a highly profitable 2026! 🚀
-
-PS: it could be that users have been hammering this endpoint too much and automatic systems have triggered a temporary scraping ban. Sometimes requests are actually coming through. Make sure to checkback regularly. I am monitoring, optionally i will reach out.
-
-### Furthermore
-
-What this project has shown me, personally, is that there is a big big need in certain areas and that is all the "motivation" i need to take this completely to another level. This is definately not the end. To be continued....
-
+Also, i have started to write up everything i have learned on this project. I think this knowledge should be open. If you are interested in the internals of this project, the why, the what and the how, make sure to checkout [this documentation](performance.md) on a regular basis.
