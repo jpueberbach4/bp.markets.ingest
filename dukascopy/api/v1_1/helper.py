@@ -427,12 +427,48 @@ def _format_json(df, options):
             "columns": df.columns.tolist(),
             "result": result
         }
+    # ------------------------------------------------------------------
+    # Subformat 4: Stream–optimized OHLCV structure (NDJSON)
+    # ------------------------------------------------------------------
+    elif subformat == 4:
+        return _stream_json(df, options)
 
     # ------------------------------------------------------------------
     # Unsupported subformat
     # ------------------------------------------------------------------
     else:
         raise Exception("Unknown subformat, only subformat 1, 2 and 3 is known.")
+
+
+def _stream_json(df, options):
+    """Stream a pandas DataFrame as newline-delimited JSON (NDJSON).
+
+    This function converts each row of a DataFrame into an individual JSON
+    object and streams the result incrementally using the NDJSON format
+    (one JSON object per line). This approach is memory-efficient and well
+    suited for large result sets and streaming consumers.
+
+    Args:
+        df (pandas.DataFrame): DataFrame containing the data to be streamed.
+            Each row is serialized as an independent JSON object.
+        options (dict): Output options dictionary. Currently unused, but
+            included for interface consistency and future extensibility.
+
+    Returns:
+        StreamingResponse: A FastAPI StreamingResponse that emits NDJSON
+        (`application/x-ndjson`) content.
+    """
+    async def json_generator_fast(df):
+        # Convert the DataFrame to a list of row dictionaries and stream
+        # each record as a standalone JSON object followed by a newline
+        for record in df.to_dict(orient='records'):
+            yield orjson.dumps(record) + b"\n"
+
+    # Return a streaming NDJSON response suitable for large datasets
+    return StreamingResponse(
+        json_generator_fast(df),
+        media_type="application/x-ndjson"
+    )
 
 def _stream_csv(df, options):
     """Streams a pandas DataFrame as a CSV HTTP response.
@@ -503,12 +539,36 @@ def _stream_csv(df, options):
         )
 
 def _get_ms(val):
+    """Convert a numeric or timestamp value to epoch milliseconds (UTC).
+
+    This helper function normalizes different timestamp representations
+    into a single integer value expressed as milliseconds since the Unix
+    epoch (UTC). It supports numeric inputs, digit-only strings, and
+    ISO-formatted datetime strings.
+
+    Args:
+        val (int | float | str):
+            The value to convert. Supported forms include:
+            - int or float: Assumed to already represent milliseconds.
+            - str of digits: Parsed directly as milliseconds.
+            - ISO-formatted datetime string (e.g. "2025-01-12 13:59:00").
+
+    Returns:
+        int: The corresponding timestamp in epoch milliseconds (UTC).
+
+    Raises:
+        ValueError: If the input string cannot be parsed as an ISO datetime.
+        TypeError: If the input type is unsupported.
+    """
+    # Fast path for numeric inputs already representing milliseconds
     if isinstance(val, (int, float)):
         return int(val)
-    
-    if val.isdigit():
+
+    # Handle digit-only strings representing milliseconds
+    if isinstance(val, str) and val.isdigit():
         return int(val)
-    
+
+    # Parse ISO-formatted datetime strings and convert to epoch milliseconds
     return int(
         datetime.fromisoformat(val.replace(' ', 'T'))
         .replace(tzinfo=timezone.utc)

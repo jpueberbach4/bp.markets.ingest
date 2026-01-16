@@ -15,13 +15,30 @@ Full high-performance replay functionality. <-- almost there, preconditions almo
 
 ## Notice: API 1.1 added (sub-formats)
 
-Because i also need to import stuff to other apps, various format requirements are needed. I have implemented 3 formats for JSON atm.
+Because i also need to import stuff to other apps, various format requirements are needed. I have implemented 4 formats for JSON:
 
-The most important ones are format 1 (default) and 3 (timeseries-optimized). 2 is an intermediate format.
+- Subformat 1: The current format
+- Subformat 2: An intermediate format
+- Subformat 3: Timeseries optimized format
+- Subformat 4: NDJSON / Streaming JSON
 
-You can specify the eg `?subformat=3` on the GET URL. This is the fastest format.
+Fastest format is format 4 because of its streaming nature. 
 
-More formats may get added in the future.
+You can specify the eg `?subformat=3` on the GET URL.
+
+Furthermore, epoch_ms are now supported in after and until DSL parameters. You can use date-strings-the old way- and/or epoch_ms.
+
+Eg
+
+```sh
+http://localhost:8000/ohlcv/1.1/select/AAPL.US-USD,1m[sma(9)]/after/2026-01-15%2008:29:25/output/JSON?order=asc&limit=1440&subformat=3
+```
+
+OR
+
+```sh
+http://localhost:8000/ohlcv/1.1/select/AAPL.US-USD,1m[sma(9)]/after/1768487400000/output/JSON?order=asc&limit=1440&subformat=3
+```
 
 ## Notice: Release 0.6.6- 2026-01-15
 
