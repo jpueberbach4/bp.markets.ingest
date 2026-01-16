@@ -78,6 +78,8 @@ Interactive chart:
 
 If you want very high performance, with the current state: Use kubernetes, shared storage (working on same binaries, mounted as read-only-many). Run one webservice per pod, memory 1024MB, assign each pod 1 CPU. Loadbalancing service on top. Loadbalancing protocol round-robin. This is one way of scaling this atm. If, for whatever reason, you might need it. That localhost thingy, if you know how to use kubernetes, then,.. etc.
 
+Price-only data fetching is currently below 10ms for 2000 records. So indicators hit performance, which is perfectly normal. This is why i tried to use a process executor pool to distribute the calculations over the available cores. I found out that the dataframes indexes get misaligned during IPC, leading to shifts in data. I am looking into that but removed the experimental setting poolmode:process from the code-for now-since it would make users very unhappy. Cheers.
+
 ## Notice: Panama backadjustment "Public beta" live
 
 **Update:** Assuming the rollover values from the broker are correct, this is acceptable. I checked one year of BRENT data. In some cases, a gap remains because applying the broker-specified adjustment can leave a gap—October 2025 is an example—whereas November and September are superbly corrected. You can verify the rollover values in your ```data/rollover``` folder; those are the values being used. I still need to check it against an other datasource with continuous prices. eg to confirm the October one. If that one checks out, i will remove the "beta status".
