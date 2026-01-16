@@ -57,7 +57,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     lower = mid - (rolling_std * std_dev)
 
     sample_price = str(df['close'].iloc[0])
-    precision = len(sample_price.split('.')[1]) if '.' in sample_price else 5
+    precision = len(sample_price.split('.')[1])+1 if '.' in sample_price else 5
     
     res = pd.DataFrame({
         'upper': upper.round(precision),

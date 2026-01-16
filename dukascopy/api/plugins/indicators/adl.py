@@ -53,7 +53,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     # 1. Determine Price Precision for rounding based on input data
     try:
         sample_price = str(df['close'].iloc[0])
-        precision = len(sample_price.split('.')[1]) if '.' in sample_price else 2
+        precision = len(sample_price.split('.')[1])+1 if '.' in sample_price else 2
     except (IndexError, AttributeError):
         precision = 2
 
