@@ -10,7 +10,7 @@ This project serves as a showcase of how relatively easy it is to harvest, resam
 
 I will be adding a performance.md file to document and explain the more interesting technical aspects of the implementation. The project achieved institutional-level performance on nothing more than a mid-range laptop.
 
-So yes—there were limits to this so-called “free data feed.”. I hoped the attribution and driving customers towards them would have prevented this shutdown. I didn't get any email.
+So yes—there were limits to this “free data feed.”. I hoped the attribution and driving customers towards them would have prevented this shutdown. I didn't get any email.
 
 Thank you all for the attention and interest in this project. It isn’t dead; it’s simply shifting direction.
 
@@ -20,10 +20,7 @@ Overall, I think the solution turned out extremely well.
 
 Wishing you all a highly profitable 2026! 🚀
 
-
-
-
-
+PS: it could be that users have been hammering this endpoint too much and automatic systems have triggered a temporary scraping ban. Sometimes requests are actually coming through.
 
 
 
