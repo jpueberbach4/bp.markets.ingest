@@ -582,7 +582,8 @@
                     const series = mainChart.addSeries(LightweightCharts.LineSeries, { 
                         title: `${item.name}${settings}`, 
                         lineWidth: 2,
-                        color: item.color
+                        color: item.color,
+                        lineType: LightweightCharts.LineType.Curved,
                     });
                     overlaySeriesMap[seriesId] = series;
                     overlaySeries.push(series);
