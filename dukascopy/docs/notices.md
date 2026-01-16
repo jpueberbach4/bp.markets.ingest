@@ -12,6 +12,17 @@ See if we can remove "beta state".
 - Feature-rich market simulation \
 Full high-performance replay functionality. <-- almost there, preconditions almost met :)
 
+
+## Notice: API 1.1 added (sub-formats)
+
+Because i also need to import stuff to other apps, various format requirements are needed. I have implemented 3 formats for JSON atm.
+
+The most important ones are format 1 (default) and 3 (timeseries-optimized). 2 is an intermediate format.
+
+You can specify the eg `?subformat=3` on the GET URL.
+
+More formats may get added in the future.
+
 ## Notice: Release 0.6.6- 2026-01-15
 
 I decided to release 0.6.6. This is a very powerful release. 
