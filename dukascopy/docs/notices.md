@@ -33,19 +33,48 @@ Next, openup a browser: `http://localhost:8000/`
 
 **Note:** If you have custom settings. Do not run `./setup-dukascopy.sh`, instead, copy-over the `config/dukascopy/http-docs/*` files to your `config.user/dukascopy/http-docs` directory.
 
-This is starting to look like your very own mini-tradingview local stack. I know. But it is still about replay/market simulation. I needed to make sure that the indicators are fine. They will be used in replay too. So i needed to visualize them in order to check them. Result? your own mini-tradingview. Will i add drawing? Likely. But when, i don't know yet. Unplanned. Will i add storing chart settings. Definately. When? I don't know yet. Unplanned.
-
 Interactive chart:
 
 ![example](../images/terminal2.png)
 
-Also. Pretty important i think: You can implement custom indicators in this version. Newly added indicators need a webservice restart. Once added, you dont need to restart anymore if you make changes to them. How to add/build an indicator? [See here](indicators.md). No more "pijn"-script.
-
 **Note:** Before using an existing indicator for an export and making your own analysis with it, check in the `http://localhost:8000/indicator.html` if the indicator has set the meta-flag `verified` to 1. Select the indicator on the lefthand side and check the meta settings on the right hand side. If you see a verified:1, it has been checked by me and confirmed to work correctly.
 
-Enjoy!
+### 📊 Performance Profiling Report
 
-PS Credits, once more. To [Dukascopy](https://www.dukascopy.com), Google Gemini, Deepseek and ChatGPT. 
+| Metric | Details |
+| :--- | :--- |
+| **Symbol** | EUR-USD |
+| **Timeframe** | H4 (4-Hour) |
+| **Date Range** | 2000 — Present |
+| **Total Rows** | 32,821 |
+| **Execution Time** | 542ms |
+| **Export Size** | 5.8MB |
+| **System Load** | 1 Core @ 90% |
+
+---
+
+### 🛠 Active Indicators (10)
+* **MACD**: (12, 26, 9)
+* **RSI**: (14)
+* **Bollinger Bands**: (20, 2.0)
+* **SMA**: 20, 50, 100, 200
+* **Stochastic**: (14, 3)
+* **EMA**: 50, 100 (Requires 300 warmup rows)
+
+---
+
+### ⚡️ Data Processing Efficiency
+* **Total Datapoints**: 754,860
+* **Throughput (ms)**: ~1,400 datapoints / ms
+* **Throughput (sec)**: ~1.4 million datapoints / sec
+
+---
+
+### 📝 Key Takeaways
+* **Performance**: Pretty decent for a singlethreaded webservice.
+* **Technology**: Very decent for Python.
+* **Scalability**: Can update record-limit to 100k.
+* **Optimizable**: Yes, more performance can be extracted (later stage).
 
 ## Notice: Panama backadjustment "Public beta" live
 
