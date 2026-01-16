@@ -377,7 +377,7 @@ def _csv_output(results, columns, options):
             csv_generator_fast(),
             media_type="text/csv",
             headers={
-                "Content-Disposition": "attachment; filename=data.csv"
+                "Content-Disposition": f"attachment; filename={options.get('filename')}"
             }
         )
 

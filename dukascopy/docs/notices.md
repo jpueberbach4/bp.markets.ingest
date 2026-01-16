@@ -1,7 +1,5 @@
 <u>MT4 is decoded.</u>
 
-**Note:** Do not use poolmode:process. Keep the default:thread (if not set in your config, it is thread and its fine). I was optimizing for performance and introduced an experimental poolmode:process to support very heavy-indicator queries, have the computing spread over multiple cores.. the problem is that processes, unlike python "threads" have a different process memory and receive copies of the dataframes. It loses alignment during the swapping of memory between processes. Since "threads" share the same memory space, threads dont have the issue. I will find a solution but its not "pressing". The default works flawless.
-
 What’s next?
 
 - Fix the browser lag when you stack indicators and browse more and more into history. \
@@ -41,7 +39,6 @@ Interactive chart:
 
 ![example](../images/terminal2.png)
 
-
 Also. Pretty important i think: You can implement custom indicators in this version. Newly added indicators need a webservice restart. Once added, you dont need to restart anymore if you make changes to them. How to add/build an indicator? [See here](indicators.md). No more "pijn"-script.
 
 **Note:** Before using an existing indicator for an export and making your own analysis with it, check in the `http://localhost:8000/indicator.html` if the indicator has set the meta-flag `verified` to 1. Select the indicator on the lefthand side and check the meta settings on the right hand side. If you see a verified:1, it has been checked by me and confirmed to work correctly.
@@ -49,7 +46,6 @@ Also. Pretty important i think: You can implement custom indicators in this vers
 Enjoy!
 
 PS Credits, once more. To [Dukascopy](https://www.dukascopy.com), Google Gemini, Deepseek and ChatGPT. 
-
 
 ## Notice: Panama backadjustment "Public beta" live
 

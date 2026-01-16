@@ -89,15 +89,7 @@ from api.v1_1.helper import parse_uri, discover_options, generate_output, execut
 
 from api.v1_1.plugin import indicator_registry, get_indicator_plugins
 from api.v1_1.version import API_VERSION
-
-# Set the multithreaded poolmode, either process or thread
-# Threads in python are not distributede among cores, multiprocessing pool, however, is
-# Since indicators are calculations that benefit from multiple cores, we have this option
-import os
-if os.environ['__POOLMODE'] == "process":
-    from api.v1_1.parallelpp import parallel_indicators
-else:
-    from api.v1_1.parallel import parallel_indicators
+from api.v1_1.parallel import parallel_indicators
 
 @lru_cache
 def get_config():
@@ -311,6 +303,7 @@ async def get_ohlcv(
     offset: Optional[int] = Query(0, ge=0, le=40000),
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
     callback: Optional[str] = "__bp_callback",
+    filename: Optional[str] = "data.csv",
     config = Depends(get_config)
 ):
     """Resolve a path-based OHLCV query and return time-series market data.
@@ -354,9 +347,12 @@ async def get_ohlcv(
             "offset": offset,
             "order": order,
             "callback": callback,
-            "fmode": config.http.fmode
+            "fmode": config.http.fmode,
         }
     )
+
+    # If CSV mode, get output filename from query url
+    if options.get('output_type') == "CSV": options['filename'] = filename
 
     try:
         # Discover options
