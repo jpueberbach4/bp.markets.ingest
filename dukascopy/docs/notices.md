@@ -15,7 +15,7 @@ Full high-performance replay functionality. <-- almost there, preconditions almo
 
 ## Notice: API 1.1 added (sub-formats) + limit-increase
 
-Now CSV streaming support is in, we can update the limit once more. New limit: 100.000- +/-1.5s before service starts sending. It is really ridiculously fast if you consider that 100.000 records * 8 indicators are done calculating in bit more than a second and the service can begin streaming. I have tested with half a million. It can handle it too. But this is our limit. I am not going beyond. 100K should be more than enough for any use case.
+Now CSV streaming support is in, we can update the limit once more. New limit: 100.000- +/-1.5s before service starts sending. It is really ridiculously fast if you consider that 100.000 records * 8 indicators are done calculating in bit more than a second-on a single(!) core- and the service can begin streaming. I have tested with half a million. It can handle it too. But this is our limit. I am not going beyond. 100K should be more than enough for any use case. 
 
 Because i also need to import stuff to other apps, various format requirements are needed. I have implemented 4 formats for JSON:
 
