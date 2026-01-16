@@ -8,7 +8,7 @@ At its core, this project was evolving into a fully local, offline TradingView-l
 
 This project serves as a showcase of how relatively easy it is to harvest, resample, enrich, and extend market data when access is available. Market data are facts and, in principle, should be accessible without artificial limits—especially for traders like us. This effort was an attempt at democratization.
 
-I will be adding a performance.md file to document and explain the more interesting technical aspects of the implementation. The project achieved institutional-level performance on nothing more than a mid-range laptop.
+I will be adding a [performance.md](performance.md) file to document and explain the more interesting technical aspects of the implementation. The project achieved institutional-level performance on nothing more than a mid-range laptop.
 
 So yes—there were limits to this “free data feed.”. I hoped the attribution and driving customers towards them would have prevented this shutdown. I didn't get any email.
 

@@ -1,0 +1,13 @@
+# About this project
+
+Welcome. Although the user agent in download.py may be blocked, the project remains fully usable-if you are a bit technical. A core focus of this work is extracting as much performance as possible from a standard laptop. This document serves as an overview of how I achieved approximately 3 million candles per second in resampling performance on commodity hardware. It also provides an in-depth discussion of market data caveats and outlines a practical approach to transforming raw data into reliable, usable datasets.
+
+The goal of this document is to share the lessons I’ve learned so others can benefit substantially from these insights.
+
+## Project scope
+
+The project’s scope is centered on building a foundational data layer on which a high-performance backtesting engine can be built. Making raw market data usable presents many challenges, as most data formats and inputs do not accurately reflect real market conditions. Data is often poorly aligned, inconsistent with actual market behavior, or otherwise flawed—frequently forcing users to rely on expensive, “cleaned” data feeds.
+
+This project addresses the full range of issues associated with raw market data. MetaTrader 4 (MT4) has been reverse-engineered and translated into approximately 1,000 lines of core logic, enabling accurate and reliable data handling without dependence on paid data providers.
+
+I will write more... i will teach it all :)
