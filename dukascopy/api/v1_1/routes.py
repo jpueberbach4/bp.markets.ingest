@@ -115,6 +115,7 @@ async def list_indicators(
     request_uri: str,
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
     callback: Optional[str] = "__bp_callback",
+    id: Optional[str] = None, 
     config=Depends(get_config),
 ):
     """
@@ -151,6 +152,10 @@ async def list_indicators(
             "fmode": config.http.fmode,
         }
     )
+    
+    # If an id was passed on the URL, return it in response
+    if id: options['id'] = id
+
     try:
         # Retrieve metadata for all registered indicators
         data = get_indicator_plugins(indicator_registry)
@@ -209,6 +214,7 @@ async def list_indicators(
 async def get_ohlcv_list(
     request_uri: str,
     callback: Optional[str] = "__bp_callback",
+    id: Optional[str] = None, 
     config = Depends(get_config)
 ):
     """List available OHLCV symbols and timeframes.
@@ -307,6 +313,7 @@ async def get_ohlcv(
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
     callback: Optional[str] = "__bp_callback",
     filename: Optional[str] = "data.csv",
+    id: Optional[str] = None, 
     config = Depends(get_config)
 ):
     """Resolve a path-based OHLCV query and return time-series market data.
@@ -353,6 +360,9 @@ async def get_ohlcv(
             "fmode": config.http.fmode,
         }
     )
+
+    # If an id was passed on the URL, return it in response
+    if id: options['id'] = id
 
     # If CSV mode, get output filename from query url
     if options.get('output_type') == "CSV": options['filename'] = filename
