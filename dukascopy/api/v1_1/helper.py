@@ -502,6 +502,19 @@ def _stream_csv(df, options):
             }
         )
 
+def _get_ms(val):
+    if isinstance(val, (int, float)):
+        return int(val)
+    
+    if val.isdigit():
+        return int(val)
+    
+    return int(
+        datetime.fromisoformat(val.replace(' ', 'T'))
+        .replace(tzinfo=timezone.utc)
+        .timestamp() * 1000
+    )
+
 def _get_warmup_rows(symbol: str, timeframe: str, after_str: str, indicators: List[str]) -> int:
     """Determine the maximum warmup row count required by a set of indicators.
 
@@ -593,17 +606,9 @@ def execute(options):
         # Determine how many warmup rows are needed for indicators
         warmup_rows = _get_warmup_rows(symbol, timeframe, after_str, indicators)
 
-        # Convert ISO timestamps to epoch milliseconds (UTC)
-        after_ms = int(
-            datetime.fromisoformat(after_str.replace(' ', 'T'))
-            .replace(tzinfo=timezone.utc)
-            .timestamp() * 1000
-        )
-        until_ms = int(
-            datetime.fromisoformat(until_str.replace(' ', 'T'))
-            .replace(tzinfo=timezone.utc)
-            .timestamp() * 1000
-        )
+        # Convert ISO timestamps to epoch milliseconds (UTC), if applicable
+        after_ms = _get_ms(after_str)
+        until_ms = _get_ms(until_str)
 
         # Total number of rows to retrieve, including warmup
         total_limit = limit + warmup_rows

@@ -92,7 +92,7 @@ from fastapi import Depends
 
 from api.state11 import cache
 from api.config.app_config import load_app_config
-from api.v1_1.helper import parse_uri, discover_options, generate_output, execute, discover_all
+from api.v1_1.helper import parse_uri, discover_options, generate_output, execute, discover_all, _get_ms
 
 from api.v1_1.plugin import indicator_registry, get_indicator_plugins
 from api.v1_1.version import API_VERSION
@@ -399,7 +399,7 @@ async def get_ohlcv(
 
         if options.get('after'):
             # Filter to keep only rows >= requested start time
-            enriched_df = enriched_df[enriched_df['time'] >= options['after']]
+            enriched_df = enriched_df[enriched_df['sort_key'] >= _get_ms(options['after'])]
 
         if options.get('limit'):
             # Limit rows
