@@ -110,10 +110,6 @@ router = APIRouter(
     tags=["ohlcv1_0"]
 )
 
-@router.get(f"/quack")
-async def quack_at_me():
-    return quack()
-
 @router.get(f"/list/indicators/{{request_uri:path}}")
 async def list_indicators(
     request_uri: str,
@@ -420,31 +416,3 @@ async def get_ohlcv(
             )
 
         return JSONResponse(content=error_payload, status_code=400)
-
-
-
-def quack():
-    # Recreate the authentic DuckDB experience
-    import random
-    import time
-    time.sleep(0.04)
-    quacks = [
-        "QUACK! (translation: Have you tried a full-table scan?)",
-        "QUACK! (translation: Let me just check every single row real quick...)",
-        "QUACK! (translation: Binary search? Never heard of her.)",
-        "QUACK! (translation: Your timestamp is somewhere in these 8 million rows. BRB!",
-        "QUACK! (translation: Why go direct when you can go through ALL the data first?)"
-    ]
-    
-    return {
-        "status": "quacking",
-        "message": random.choice(quacks),
-        "performance": {
-            "latency": "40ms (thoughtfully slow)",
-            "records_scanned": "8,000,000 (all of them, just to be sure)",
-            "optimization_level": "quacktimal",
-            "efficiency": "0.0000125% (1 record / 8 million scanned)"
-        },
-        "suggestion": "For faster results, try literally any other endpoint.",
-        "served_lag": 0.04
-    }
