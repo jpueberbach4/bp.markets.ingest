@@ -10,4 +10,14 @@ The project’s scope is centered on building a foundational data layer on which
 
 This project addresses the full range of issues associated with raw market data. MetaTrader 4 (MT4) has been reverse-engineered and translated into approximately 1,000 lines of core logic, enabling accurate and reliable data handling without dependence on paid data providers.
 
-I will write more... i will teach it all :)
+## The why, how it started
+
+I have been involved in trading for quite some time-from around the Lehmann Brothers debacle and the early-bitcoin era- with periods of inactivity, but fully committed over the past year. During this time, I spent a significant amount of effort trying to optimize my workflow, only to repeatedly run into various limitations. The process was inefficient and overly tedious.
+
+Eventually, I took a closer look at the JSON data format provided by Dukascopy and realized it could serve as a strong alternative to my existing approach. I scrapped my previous solutions—which relied on external data sources—and set out to match this feed as closely as possible to what I observed in MT4. I wrote a downloader that retrieved per-day data for each asset, starting with EUR/USD, and attempted to resample it to replicate MT4’s behavior. From the outset, I used a cascaded design.
+
+This turned out to be a breakthrough. On the first attempt, I achieved nearly perfect alignment. I then generalized the software, built an aggregated feed covering all my primary forex pairs, and resampled them across all required timeframes. This marked the beginning of the ETL process. Data quality was significantly better than anything I had previously worked with.
+
+At that stage—about seven weeks ago, this was built in about 7 weeks time—everything was still stored as CSV which quickly became impractical. I needed multi-symbol aggregation and efficient data extraction, which meant building an extraction tool. This is how the builder was born.
+
+To be continued...
