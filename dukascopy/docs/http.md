@@ -181,6 +181,8 @@ Example output for JSON URL
 }
 ```
 
+**Note:** There are 3 different JSON output (sub-) formats. Specify ?subformat=[1,2 or 3] on the URL. Default format is the format above. 
+
 ## Example Error output - Always JSON, statuscode 400
 
 ```json

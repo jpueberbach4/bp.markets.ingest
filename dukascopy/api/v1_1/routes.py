@@ -314,6 +314,7 @@ async def get_ohlcv(
     callback: Optional[str] = "__bp_callback",
     filename: Optional[str] = "data.csv",
     id: Optional[str] = None, 
+    subformat: Optional[int] = None, 
     config = Depends(get_config)
 ):
     """Resolve a path-based OHLCV query and return time-series market data.
@@ -363,7 +364,8 @@ async def get_ohlcv(
 
     # If an id was passed on the URL, return it in response
     if id: options['id'] = id
-
+    # Support for alternate JSON version
+    if subformat: options['subformat'] = subformat
     # If CSV mode, get output filename from query url
     if options.get('output_type') == "CSV": options['filename'] = filename
 

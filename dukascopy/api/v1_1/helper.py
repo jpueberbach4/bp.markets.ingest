@@ -313,27 +313,15 @@ def generate_output(df: pd.DataFrame, options: Dict):
     # Extract optional JSONP callback function name
     callback = options.get('callback')
 
-    # Drop internal fields
-    df.drop(columns=['sort_key','year'], inplace=True, errors='ignore')
-
     # Default JSON output
     if options.get("output_type") == "JSON" or options.get("output_type") is None:
         # Normalize DataFrame into row-oriented dictionaries
-        return {
-            "status": "ok",
-            "options": options,
-            "result": df.to_dict(orient='records'),
-        }
+        return _format_json(df, options)
 
     # JSONP output for browser-based or cross-domain consumption
     if options.get("output_type") == "JSONP":
         # Normalize DataFrame into row-oriented dictionaries
-        payload = {
-            "status": "ok",
-            "options": options,
-            "result": df.to_dict(orient='records'),
-        }
-
+        payload = _format_json(df, options)
         # Serialize payload and wrap in callback invocation
         json_data = orjson.dumps(payload).decode("utf-8")
         return PlainTextResponse(
@@ -348,6 +336,99 @@ def generate_output(df: pd.DataFrame, options: Dict):
     # Unsupported output type
     return None
 
+def _format_json(df, options):
+    """Format a DataFrame into structured JSON output.
+
+    This function serializes a pandas DataFrame into one of several JSON
+    subformats, controlled by the ``subformat`` option. Each subformat is
+    designed for a different consumption pattern, ranging from simple
+    record-oriented JSON to columnar or time-series–optimized layouts.
+
+    Supported subformats:
+        1. Record-oriented JSON (default)
+        2. Column/value arrays (columnar JSON)
+        3. Time-series–optimized structure with explicit OHLCV arrays
+
+    Args:
+        df (pandas.DataFrame): DataFrame containing OHLCV data and optional
+            indicator columns.
+        options (dict): Output options dictionary. Recognized keys:
+            - subformat (int, optional): JSON subformat selector.
+              Defaults to 1 when not provided.
+
+    Returns:
+        dict: A JSON-serializable dictionary containing formatted result
+        data and request options.
+
+    Raises:
+        Exception: If an unsupported subformat is specified.
+    """
+    # Resolve requested JSON subformat (default to 1)
+    subformat = options.get('subformat') if options.get('subformat') else 1
+
+    # ------------------------------------------------------------------
+    # Subformat 1: Record-oriented JSON (list of row dictionaries)
+    # ------------------------------------------------------------------
+    if subformat == 1:
+        # Remove internal or non-public columns
+        df.drop(columns=['sort_key', 'year'], inplace=True, errors='ignore')
+
+        return {
+            "status": "ok",
+            "options": options,
+            "result": df.to_dict(orient='records'),
+        }
+
+    # ------------------------------------------------------------------
+    # Subformat 2: Columnar JSON (columns + 2D values array)
+    # ------------------------------------------------------------------
+    elif subformat == 2:
+        # Drop original timestamp columns and normalize sort_key -> time
+        df = (
+            df.drop(columns=['time', 'time_original', 'year'], errors='ignore')
+              .rename(columns={'sort_key': 'time'})
+        )
+
+        return {
+            "status": "ok",
+            "options": options,
+            "columns": df.columns.tolist(),
+            "values": df.values.tolist(),
+        }
+
+    # ------------------------------------------------------------------
+    # Subformat 3: Time-series–optimized OHLCV structure
+    # ------------------------------------------------------------------
+    elif subformat == 3:
+        # Drop non-essential metadata and normalize sort_key -> time
+        df = (
+            df.drop(
+                columns=['symbol', 'timeframe', 'time', 'time_original', 'year'],
+                errors='ignore'
+            )
+            .rename(columns={'sort_key': 'time'})
+        )
+
+        return {
+            "status": "ok",
+            "options": options,
+            "columns": ['time', 'open', 'high', 'low', 'close', 'volume', 'indicators'],
+            "result": {
+                'time': df['time'].tolist(),
+                'open': df['open'].tolist(),
+                'high': df['high'].tolist(),
+                'low': df['low'].tolist(),
+                'close': df['close'].tolist(),
+                'volume': df['volume'].tolist(),
+                'indicators': df['indicators'].tolist(),
+            },
+        }
+
+    # ------------------------------------------------------------------
+    # Unsupported subformat
+    # ------------------------------------------------------------------
+    else:
+        raise Exception("Unknown subformat, only subformat 1, 2 and 3 is known.")
 
 def _stream_csv(df, options):
     """Streams a pandas DataFrame as a CSV HTTP response.
@@ -371,8 +452,8 @@ def _stream_csv(df, options):
         StreamingResponse | None: A streaming CSV HTTP response if data
         is present; otherwise, None.
     """
-    # Remove the indicators column
-    df.drop(columns=['indicators'], inplace=True, errors='ignore')
+    # Remove the temporary columns
+    df.drop(columns=['indicators','sort_key','year'], inplace=True, errors='ignore')
 
     # Apply MT4-specific column transformations if requested
     if options.get('mt4'):
