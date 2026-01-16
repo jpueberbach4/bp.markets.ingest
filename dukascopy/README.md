@@ -66,7 +66,7 @@ The code-base is small and heavily documented.
 
 Example 20 year chart of EUR-USD:
 
-![Example GBPUSD](images/webservice-example.png)
+![Example GBPUSD](images/examplevieweurusd.png)
 
 Historical market data can be leveraged in multiple ways to enhance analysis, decision-making, and trading performance:
 
