@@ -29,6 +29,8 @@ I will keep you guys posted. Lets see what happens. It is too early to draw any 
 
 **Note:** Development continues as planned. Data-api is now ready to make "buffered-charts". Updates soon.
 
+**Note:** It could also be: Martin Luther King Jr. Day is up. A major market holiday. Could be regular maintenance. We just dont know atm.
+
 
 ## Notice: support for cache-only rebuilds - 2025-01-17
 
