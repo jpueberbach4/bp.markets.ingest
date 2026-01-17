@@ -302,7 +302,7 @@
         candleSeries = mainChart.addSeries(LightweightCharts.CandlestickSeries, {
             upColor: '#26a69a', downColor: '#ef5350', borderVisible: false,
             wickUpColor: '#26a69a', wickDownColor: '#ef5350',
-            priceFormat: { type: 'price', precision: 5, minMove: 0.00001 },
+            priceFormat: { type: 'price', precision: 6, minMove: 0.000001 },
         });
         
         volumeSeries = mainChart.addSeries(LightweightCharts.HistogramSeries, {
@@ -552,7 +552,7 @@
                         color: getSeriesColor(col),
                         lineWidth: 1,
                         title: displayTitle,
-                        priceFormat: { type: 'price', precision: 5, minMove: 0.00000001 },
+                        priceFormat: { type: 'price', precision: 6, minMove: 0.000001 },
                     });
                 }
                 overlaySeriesMap[col].setData(masterData.map(d => ({ 
@@ -576,7 +576,7 @@
                             color: getSeriesColor(col),
                             title: displayTitle,
                             lineWidth: 1,
-                            priceFormat: { type: 'price', precision: 5, minMove: 0.00000001 }
+                            priceFormat: { type: 'price', precision: 6, minMove: 0.000001 }
                         }
                     );
                 }
