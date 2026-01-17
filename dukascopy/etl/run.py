@@ -219,6 +219,7 @@ def main():
             for dt in dates
             for sym in symbols
             if not Path(f"{config.paths.transforms}/{dt:%Y}/{dt:%m}/{sym}_{dt:%Y%m%d}.csv").is_file()
+            and Path(f"{config.paths.downloads}/{dt:%Y}/{dt:%m}/{sym}_{dt:%Y%m%d}.json").is_file()
         ]
 
         # Prepare aggregate tasks (one per symbol, covering all dates)
