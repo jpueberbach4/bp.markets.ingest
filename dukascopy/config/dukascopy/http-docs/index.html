@@ -96,7 +96,10 @@
             height: 130px; 
             flex-shrink: 0;
             border-top: 1px solid #444;
-            background: white; 
+            background: white;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            contain: strict;
         }
 
         .panel-title {
@@ -114,6 +117,7 @@
             pointer-events: none;
             font-weight: 600;
             text-transform: uppercase;
+            overflow-anchor: none;
         }
 
         .sidebar-footer { 
@@ -652,8 +656,6 @@
             }
             color = `hsl(${Math.abs(hash % 360)}, 80%, 50%)`;
         }
-        console.log("color("+suffix+"):"+color)
-
         return color;
     }
 
