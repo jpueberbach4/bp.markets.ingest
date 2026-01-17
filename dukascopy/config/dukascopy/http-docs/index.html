@@ -716,6 +716,9 @@
             Object.values(panelCharts).forEach(p => p.chart.remove());
             panelCharts = {};
             document.getElementById('panel-container').innerHTML = '';
+            candleSeries.priceScale().applyOptions({
+                autoScale: true,
+            });
         }
         hasMoreHistory = true;
         gapRetryCount = 0;
@@ -834,6 +837,11 @@
                         from: 0,
                         to: jumpBarCount
                     });
+
+                    candleSeries.priceScale().applyOptions({
+                        autoScale: true,
+                    });
+
                     timeScale.unsubscribeVisibleLogicalRangeChange(jumpToStart);
                 }
             };
