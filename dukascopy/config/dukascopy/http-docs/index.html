@@ -241,7 +241,7 @@
                 <input type="text" id="export-after" placeholder="YYYY-MM-DD HH:MM:SS">
             </div>
             <div class="export-field">
-                <label>Total Records (Limit, max. 40000)</label>
+                <label>Total Records (Limit, max. 100000)</label>
                 <input type="number" id="export-limit" value="1000">
             </div>
             <div class="export-field">
@@ -279,6 +279,38 @@
     let overlaySeriesMap = {}; 
     let panelCharts = {};      
     const mainContainer = document.getElementById('main-chart-container');
+
+    function openExportModal() {
+        const modal = document.getElementById('export-modal');
+        const dateInput = document.getElementById('export-after');
+        
+        if (masterData.length > 0) {
+            dateInput.value = formatUnixToLiteral(masterData[0].time);
+        } else {
+            dateInput.value = formatUnixToLiteral(Math.floor(Date.now() / 1000));
+        }
+        
+        modal.style.display = 'flex';
+    }
+
+    function runExport() {
+        const sym = document.getElementById('symbolSelect').value;
+        let tf = document.getElementById('tfSelect').value;
+        
+        if (document.getElementById('export-skiplast').checked) tf += ':skiplast';
+        const output = document.getElementById('export-mt4').checked ? 'CSV/MT4' : 'CSV';
+        
+        const after = encodeURIComponent(document.getElementById('export-after').value);
+        const limit = document.getElementById('export-limit').value;
+        const order = document.getElementById('export-order').value;
+        
+        const chainStr = chain.length ? `[${chain.map(i => `${i.name}(${i.params.join(',')})`).join(':')}]` : "";
+        
+        const exportUrl = `/ohlcv/1.1/select/${sym},${tf}${chainStr}/after/${after}/output/${output}?limit=${limit}&order=${order}`;
+        
+        window.location.href = exportUrl;
+    }
+
 
     function initCharts() {
         mainChart = LightweightCharts.createChart(mainContainer, {
