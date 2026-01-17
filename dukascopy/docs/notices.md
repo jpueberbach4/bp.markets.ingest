@@ -23,6 +23,8 @@ I will reach out to Dukascopy, eventually. I would be willing to pay for this fe
 
 **Note:** It could also be: Martin Luther King Jr. Day is up. A major market holiday. Could be regular maintenance. We just dont know atm.
 
+**Note:** I have scanned historical mentions of Dukascopy 503's. It is VERY likely that this is maintenance. But no guarantees.
+
 ## Write-up
 
 I have started with writing up everything i have learned so far in a document [performance.md](performance.md). This project was able to get institutional performance on just a laptop. The project excelled in getting data aligned right. The forementioned document will cover everything, from performance tricks up until market-data specific difficulties. Basically the what, the why and the how of this project. It will be an educational read including in-depth technical howto's.
