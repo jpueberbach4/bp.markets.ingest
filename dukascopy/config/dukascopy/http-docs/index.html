@@ -67,7 +67,7 @@
         }
 
         .legend-ohlcv { font-weight: bold; border-bottom: 1px solid #eee; margin-bottom: 6px; padding-bottom: 4px; }
-        .legend-item { display: flex; justify-content: space-between; margin-bottom: 2px; gap: 15px; }
+        .legend-item { display: flex; justify-content: space-between; margin-bottom: 2px; gap: 15px; font-size: 11px; }
 
         #content-wrapper { 
             flex: 1; 
@@ -92,10 +92,28 @@
         }
 
         .indicator-panel { 
+            position: relative;
             height: 130px; 
             flex-shrink: 0;
             border-top: 1px solid #444;
             background: white; 
+        }
+
+        .panel-title {
+            position: absolute;
+            top: 5px;
+            left: 8px;
+            z-index: 5;
+            font-size: 11px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            color: #131722;
+            border: 1px solid #6e6f70;
+            background: rgba(230, 228, 228, 0.7);
+            padding: 2px 4px;
+            border-radius: 2px;
+            pointer-events: none;
+            font-weight: 600;
+            text-transform: uppercase;
         }
 
         .sidebar-footer { 
@@ -219,7 +237,7 @@
                 <input type="text" id="export-after" placeholder="YYYY-MM-DD HH:MM:SS">
             </div>
             <div class="export-field">
-                <label>Total Records (Limit, max. 100000)</label>
+                <label>Total Records (Limit, max. 40000)</label>
                 <input type="number" id="export-limit" value="1000">
             </div>
             <div class="export-field">
@@ -240,621 +258,476 @@
         </div>
     </div>
 <script>
-        let symbolData = {}; 
-        let indicatorMeta = {};
-        let chain = []; 
-        let masterData = []; 
-        let isFetching = false;
+    let symbolData = {}; 
+    let indicatorMeta = {};
+    let chain = []; 
+    let masterData = []; 
+    let isFetching = false;
+    let requestDirection = null;
 
-        let currentAfterDate = new Date();
-        let currentUntilDate = null;
-        let hasMoreHistory = true;
-        let gapRetryCount = 0;
-        let isManualReset = false;
-        let shouldResetZoomOnNextLoad = false;
-        const initialMaxSearches = 100;
-        const normalMaxSearches = 10;
-        let minimumPriceWidth = 80
-        let currentMaxSearches = initialMaxSearches;
+    let hasMoreHistory = true;
+    let gapRetryCount = 0;
+    const maxGapRetries = 10;
+    const bufferLimit = 5000; 
+    const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+    let mainChart, candleSeries, volumeSeries;
+    let overlaySeriesMap = {}; 
+    let panelCharts = {};      
+    const mainContainer = document.getElementById('main-chart-container');
+
+    function initCharts() {
+        mainChart = LightweightCharts.createChart(mainContainer, {
+            width: mainContainer.clientWidth,
+            height: mainContainer.clientHeight,
+            localization: { timeFormatter: (ts) => formatUnixToLiteral(ts) },
+            layout: { background: { color: '#ffffff' }, textColor: '#131722', attributionLogo: false },
+            timeScale: { timeVisible: true, borderColor: '#e0e3eb', shiftVisibleRangeOnNewBar: false },
+            rightPriceScale: { borderVisible: false, minimumWidth: 80 },
+        });
+
+        const resizeObserver = new ResizeObserver(entries => {
+            if (entries.length === 0 || !entries[0].contentRect) return;
+            const { width, height } = entries[0].contentRect;
+            mainChart.applyOptions({ width, height });
+            Object.values(panelCharts).forEach(p => p.chart.applyOptions({ width }));
+        });
+
+        resizeObserver.observe(mainContainer);
+
+        candleSeries = mainChart.addSeries(LightweightCharts.CandlestickSeries, {
+            upColor: '#26a69a', downColor: '#ef5350', borderVisible: false,
+            wickUpColor: '#26a69a', wickDownColor: '#ef5350',
+            priceFormat: { type: 'price', precision: 5, minMove: 0.00001 },
+        });
         
-        let mainChart, candleSeries;
-        let overlaySeries = []; 
-        let panelCharts = {};
-        let overlaySeriesMap = {}; 
-        let volumeSeries; 
+        volumeSeries = mainChart.addSeries(LightweightCharts.HistogramSeries, {
+            color: '#26a69a', priceFormat: { type: 'volume' }, priceScaleId: '',
+        });
+        volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
-        const mainContainer = document.getElementById('main-chart-container');
-
-        function openExportModal() {
-            const modal = document.getElementById('export-modal');
-            const dateInput = document.getElementById('export-after');
-            
-            if (masterData.length > 0) {
-                dateInput.value = formatUnixToLiteral(masterData[0].time);
-            } else {
-                dateInput.value = formatUnixToLiteral(Math.floor(Date.now() / 1000));
-            }
-            
-            modal.style.display = 'flex';
-        }
-
-        function runExport() {
-            const sym = document.getElementById('symbolSelect').value;
-            let tf = document.getElementById('tfSelect').value;
-            
-            if (document.getElementById('export-skiplast').checked) tf += ':skiplast';
-            const output = document.getElementById('export-mt4').checked ? 'CSV/MT4' : 'CSV';
-            
-            const after = encodeURIComponent(document.getElementById('export-after').value);
-            const limit = document.getElementById('export-limit').value;
-            const order = document.getElementById('export-order').value;
-            
-            const chainStr = chain.length ? `[${chain.map(i => `${i.name}(${i.params.join(',')})`).join(':')}]` : "";
-            
-            const exportUrl = `/ohlcv/1.1/select/${sym},${tf}${chainStr}/after/${after}/output/${output}?limit=${limit}&order=${order}`;
-            
-            window.location.href = exportUrl;
-        }
-
-        function initCharts() {
-            mainChart = LightweightCharts.createChart(mainContainer, {
-                width: mainContainer.clientWidth,
-                height: mainContainer.clientHeight,
-
-                localization: {
-                            timeFormatter: (unixTimestamp) => {
-                                return formatUnixToLiteral(unixTimestamp);
-                            },
-                        },
-                layout: { background: { color: '#ffffff' }, textColor: '#131722',attributionLogo: false },
-                timeScale: { timeVisible: true, borderColor: '#e0e3eb' },
-                rightPriceScale: {
-                    borderVisible: false,
-                    minimumWidth: minimumPriceWidth
-                },
-            });
-
-            const resizeObserver = new ResizeObserver(entries => {
-                if (entries.length === 0 || !entries[0].contentRect) return;
-                const { width, height } = entries[0].contentRect;
-                mainChart.applyOptions({ width, height, rightPriceScale: { minimumWidth: minimumPriceWidth} });
-            });
-            resizeObserver.observe(mainContainer);
-
-            candleSeries = mainChart.addSeries(LightweightCharts.CandlestickSeries, {
-                upColor: '#26a69a', downColor: '#ef5350', borderVisible: false,
-                wickUpColor: '#26a69a', wickDownColor: '#ef5350',
-                priceFormat: {
-                    type: 'price',
-                    precision: 5,      // Sets the number of decimal places
-                    minMove: 0.00001,  // Matches the 5-decimal precision
-                },
-            });
-            
-            volumeSeries = mainChart.addSeries(LightweightCharts.HistogramSeries, {
-                color: '#26a69a',
-                priceFormat: { type: 'volume' },
-                priceScaleId: '',
-            });
-            volumeSeries.priceScale().applyOptions({
-                scaleMargins: { top: 0.8, bottom: 0 }, 
-            });
-
-            const legend = document.getElementById('chart-legend');
-
-            mainChart.subscribeCrosshairMove(param => {
-                if (!param.time || param.point === undefined || param.point.x < 0 || param.point.y < 0) {
-                    legend.style.display = 'none';
-                    return;
-                }
-
-                const data = param.seriesData.get(candleSeries);
-                const volData = param.seriesData.get(volumeSeries);
-                if (!data) return;
-
-                legend.style.display = 'block';
-                legend.style.left = (param.point.x + 165) + 'px'; 
-                legend.style.top = (param.point.y + 65) + 'px';
-                
-                let html = `<div class="legend-ohlcv">`;
-                html += `<div style="color: var(--text-gray); font-size: 10px; margin-bottom: 4px;">${formatUnixToLiteral(param.time)}</div>`;
-                html += `O: ${data.open} H: ${data.high}<br>L: ${data.low} C: ${data.close}`;
-                if (volData) html += `<br>Vol: ${volData.value.toLocaleString()}`;
-                html += `</div>`;
-                const masterPoint = masterData.find(d => d.time === param.time);
-                if (masterPoint && masterPoint.indicators) {
-                    chain.forEach(item => {
-                        const key = item.params.length ? `${item.name}_${item.params.join('_')}` : `${item.name}_`;
-                        const val = masterPoint.indicators[key];
-                        const settings = item.params.length ? `(${item.params.join(',')})` : '';
-
-                        if (val !== undefined) {
-                            if (typeof val === 'object') {
-                                Object.entries(val).forEach(([k, v]) => {
-                                    html += `<div class="legend-item"><span>${item.name}${settings} [${k}]</span> <b style="color:${item.color || '#2962ff'}">${v.toFixed(4)}</b></div>`;
-                                });
-                            } else {
-                                html += `<div class="legend-item"><span>${item.name}${settings}</span> <b style="color:${item.color || '#7e57c2'}">${val.toFixed(4)}</b></div>`;
-                            }
-                        }
-                    });
-                }
-                legend.innerHTML = html;
-            });
-
-            mainChart.timeScale().subscribeVisibleLogicalRangeChange(() => {
-                requestAnimationFrame(checkIfChartFull);
-            });
-
-
-        }
-
-        function resetAndLoad(clear = false) {
-            isManualReset = true;
-            if (clear) {
-                masterData = [];
-                candleSeries.setData([]);
-                if(volumeSeries) volumeSeries.setData([]);
-                overlaySeries.forEach(s => mainChart.removeSeries(s));
-                overlaySeries = [];
-                overlaySeriesMap = {};
-
-                Object.values(panelCharts).forEach(p => p.chart.remove());
-                document.getElementById('panel-container').innerHTML = '';
-                panelCharts = {};
-                shouldResetZoomOnNextLoad = true;
+        const legend = document.getElementById('chart-legend');
+        mainChart.subscribeCrosshairMove(param => {
+            if (!param.time || !param.point || param.point.x < 0 || param.point.y < 0) {
+                legend.style.display = 'none';
+                return;
             }
 
-            currentMaxSearches = initialMaxSearches;
-            hasMoreHistory = true; 
-            gapRetryCount = 0;
-            currentUntilDate = null; 
-            const tf = document.getElementById('tfSelect').value;
-            const initialOffset = getTimeframeOffset(tf) / 2;
-            currentAfterDate = new Date(Date.now() - initialOffset);
+            const data = param.seriesData.get(candleSeries);
+            const volData = param.seriesData.get(volumeSeries);
+            const masterPoint = masterData.find(d => d.time === param.time);
+            if (!data || !masterPoint) return;
 
-            loadData();
-        }
+            legend.style.display = 'block';
+            legend.style.left = (param.point.x + 165) + 'px';
+            legend.style.top = (param.point.y + 65) + 'px';
 
-        function paginateBack() {
-            if (isFetching || !hasMoreHistory || masterData.length === 0) return;
-            isManualReset = false;
-    
-            const tf = document.getElementById('tfSelect').value;
-            const referenceTime = masterData[0].time;
-            const untilUnix = referenceTime - 1;
-            currentUntilDate = new Date(untilUnix * 1000);
-            const baseOffset = getTimeframeOffset(tf);
-            const jumpSize = baseOffset * (gapRetryCount + 1); 
-            const afterUnix = untilUnix - (jumpSize / 1000);
-            currentAfterDate = new Date(afterUnix * 1000);
-            loadData();
-        }
-
-        function checkIfChartFull() {
-            if (isFetching || masterData.length === 0 || !hasMoreHistory) return;
-            const timeScale = mainChart.timeScale();
-            const visibleRange = timeScale.getVisibleRange();
-            if (visibleRange && visibleRange.from <= masterData[0].time) paginateBack();
-        }
-
-        function loadData() {
-            const sym = document.getElementById('symbolSelect').value;
-            const tf = document.getElementById('tfSelect').value;
-            if(!sym || !tf || isFetching) return;
-
-            isFetching = true;
-            document.getElementById('loader').style.display = 'flex';
-
-            const afterStr = formatUnixToLiteral(Math.floor(currentAfterDate.getTime() / 1000));
-            const chainStr = chain.length ? `[${chain.map(i => `${i.name}(${i.params.join(',')})`).join(':')}]` : "";
+            let html = `<div class="legend-ohlcv">`;
+            html += `<div style="color: var(--text-gray); font-size: 10px; margin-bottom: 4px;">${formatUnixToLiteral(param.time)}</div>`;
+            html += `O: ${data.open} H: ${data.high}<br>L: ${data.low} C: ${data.close}`;
+            if (volData) html += `<br>Vol: ${volData.value.toLocaleString()}`;
+            html += `</div>`;
             
-            let url = `/ohlcv/1.1/select/${sym},${tf}${chainStr}/after/${afterStr}`;
-            if (currentUntilDate) {
-                url += `/until/${formatUnixToLiteral(Math.floor(currentUntilDate.getTime() / 1000))}`;
-            }
-            url += `/output/JSONP?order=asc&limit=1440&callback=__callbackData`;
-
-            const s = document.createElement('script');
-            s.src = url;
-            document.body.appendChild(s);
-        }
-
-        window.__callbackData = function(response) {
-            isFetching = false;
-            document.getElementById('loader').style.display = 'none';
-            const statusIndicator = document.getElementById('status-indicator');
-
-            if (response.result && response.result.length > 0) {
-                currentMaxSearches = normalMaxSearches;
-                gapRetryCount = 0;
-
-                const incoming = response.result.map(row => {
-                    const isUp = row.close >= row.open;
-                    return {
-                        time: parseLiteralToUnix(row.time),
-                        open: row.open, high: row.high, low: row.low, close: row.close,
-                        value: row.volume,
-                        candleColor: isUp ? '#26a69a' : '#ef5350', 
-                        volumeColor: isUp ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)',
-                        indicators: row.indicators
-                    };
-                });
-
-                const combined = [...masterData, ...incoming];
-                const uniqueMap = new Map();
-                combined.forEach(item => { if(item.time) uniqueMap.set(item.time, item); });
-                masterData = Array.from(uniqueMap.values()).sort((a, b) => a.time - b.time);
-
-                candleSeries.setData(masterData.map(d => ({
-                    time: d.time, open: d.open, high: d.high, low: d.low, close: d.close,
-                    color: d.candleColor,
-                    borderColor: d.candleColor,
-                    wickColor: d.candleColor
-                })));
-
-                volumeSeries.setData(masterData.map(d => ({ 
-                    time: d.time, 
-                    value: d.value, 
-                    color: d.volumeColor 
-                })));
-                renderIndicators();
-
-                if (shouldResetZoomOnNextLoad) {
-                    mainChart.timeScale().fitContent();
-                    shouldResetZoomOnNextLoad = false;
-                }
-                
-                statusIndicator.innerText = `Data Synced: ${masterData.length} candles`;
-                setTimeout(checkIfChartFull, 200);
-            } else {
-                if (gapRetryCount < currentMaxSearches) {
-                    gapRetryCount++;
-                    statusIndicator.innerText = `Searching History... (${gapRetryCount}/${currentMaxSearches})`;
-                    if (masterData.length === 0) {
-                        const tf = document.getElementById('tfSelect').value;
-                        currentUntilDate = new Date(currentAfterDate.getTime() - 1000);
-                        currentAfterDate = new Date(currentUntilDate.getTime() - getTimeframeOffset(tf));
-                        loadData();
-                    } else {
-                        paginateBack(); 
-                    }
-                } else {
-                    hasMoreHistory = false;
-                    statusIndicator.innerText = `History Limit Reached`;
-                }
-            }
-        };
-
-        function renderIndicators() {
-            if (isManualReset) {
-                overlaySeries.forEach(s => mainChart.removeSeries(s));
-                overlaySeries = [];
-                // Bugfix: reset the overlayseries to enforce repaint
-                overlaySeriesMap = {}; 
-            }
-
-            chain.forEach(item => {
-                const meta = indicatorMeta[item.name];
-                const key = item.params.length ? `${item.name}_${item.params.join('_')}` : `${item.name}_`;
-                
-                if (meta && meta.meta && meta.meta.panel === 1) {
-                    renderPanel(item, key);
-                } else {
-                    renderOverlay(item, key);
-                }
-            });
-        }
-
-
-        function renderOverlay(item, key) {
-            const sampleEntry = masterData.find(d => d.indicators && d.indicators[key] !== undefined);
-            const sample = sampleEntry ? sampleEntry.indicators[key] : null;
-
-            if (!item.color) item.color = getRandomColor();
-            const settings = item.params.length ? `(${item.params.join(',')})` : '';
-
-            if (sample !== null && typeof sample === 'object') {
-                Object.keys(sample).forEach(lineName => {
-                    const seriesId = `${item.id}_${lineName}`;
-                    
-                    if (!overlaySeriesMap[seriesId]) {
-                        const series = mainChart.addSeries(LightweightCharts.LineSeries, { 
-                            title: `${item.name}${settings} [${lineName}]`, 
-                            lineWidth: 1,
-                            color: getOverlayColor(item.name, lineName, item.color),
-                            lineType: LightweightCharts.LineType.Simple
-                        });
-                        overlaySeriesMap[seriesId] = series;
-                        overlaySeries.push(series);
-                    }
-
-                    const lineData = masterData.map(d => ({
-                        time: d.time,
-                        value: d.indicators[key] ? d.indicators[key][lineName] : null
-                    })).filter(v => v.value !== null && v.value !== undefined);
-                    
-                    overlaySeriesMap[seriesId].setData(lineData);
-                });
-            } else {
-                const seriesId = item.id;
-                
-                if (!overlaySeriesMap[seriesId]) {
-                    const series = mainChart.addSeries(LightweightCharts.LineSeries, { 
-                        title: `${item.name}${settings}`, 
-                        lineWidth: 2,
-                        color: item.color,
-                        lineType: LightweightCharts.LineType.Simple,
-                        priceFormat: {
-                            type: 'price',
-                            precision: 8,
-                            minMove: 0.00000001,
-                        },
-                    });
-                    overlaySeriesMap[seriesId] = series;
-                    overlaySeries.push(series);
-                }
-
-                const data = masterData.map(d => ({
-                    time: d.time,
-                    value: d.indicators ? d.indicators[key] : null
-                })).filter(p => p.value !== null && p.value !== undefined);
-                
-                overlaySeriesMap[seriesId].setData(data);
-            }
-        }
-
-        function getOverlayColor(indicatorName, lineName, baseColor) {
-            const name = indicatorName.toLowerCase();
-            const line = lineName.toLowerCase();
-            if (name.includes('bbands')) {
-                if (line.includes('upper') || line.includes('lower')) return '#2196F3'; 
-                return '#FF9800'; 
-            }
-            if (name.includes('ichimoku')) {
-                const ichiColors = {
-                    'tenkan': '#0496ff', 'kijun': '#991515', 
-                    'senkou_a': '#26a69a', 'senkou_b': '#ef5350', 'chikou': '#7e57c2'
-                };
-                return ichiColors[line] || baseColor;
-            }
-            return baseColor;
-        }
-
-
-
-        function renderPanel(item, key) {
-            if (!panelCharts[item.id]) {
-                const container = document.getElementById('panel-container');
-                const div = document.createElement('div');
-                div.className = 'indicator-panel';
-                div.id = `panel_${item.id}`;
-                div.style.position = 'relative';
-                container.appendChild(div);
-
-                const panelTitle = document.createElement('div');
-                const settings = item.params.length ? `(${item.params.join(',')})` : '';
-                panelTitle.innerText = `${item.name.toUpperCase()}${settings}`;
-                panelTitle.style.cssText = `
-                    position: absolute;
-                    top: 5px;
-                    left: 5px;
-                    z-index: 2;
-                    font-size: 11px;
-                    font-weight: bold;
-                    color: #131722;
-                    background-color: rgba(240, 243, 250, 0.85); /* Light grey with slight transparency */
-                    padding: 2px 6px;
-                    border-radius: 4px;
-                    border: 1px solid #e0e3eb;
-                    pointer-events: none;
-                    font-family: -apple-system, system-ui, sans-serif;
-                `;
-                div.appendChild(panelTitle);
-
-                const pChart = LightweightCharts.createChart(div, {
-                    height: 150, 
-                    layout: { background: { color: 'transparent' }, textColor: '#131722', attributionLogo: false}, //
-                    timeScale: { visible: false }, 
-                    rightPriceScale: {
-                        borderVisible: false,
-                        minimumWidth: minimumPriceWidth
-                    }
-                });
-
-                const panelResizeObserver = new ResizeObserver(entries => {
-                    if (entries.length === 0 || !entries[0].contentRect) return;
-                    const { width, height } = entries[0].contentRect;
-                    pChart.applyOptions({ width, height, rightPriceScale: {minimumWidth: minimumPriceWidth} });
-                });
-                panelResizeObserver.observe(div);
-
-                mainChart.timeScale().subscribeVisibleLogicalRangeChange(range => {
-                    if (range) pChart.timeScale().setVisibleLogicalRange(range); 
-                });
-
-                panelCharts[item.id] = { chart: pChart, series: {} };
-            }
-            updatePanelData(item, key);
-        }
-
-        function updatePanelData(item, key) {
-            const pObj = panelCharts[item.id];
-            const sampleEntry = masterData.find(d => d.indicators && d.indicators[key] !== undefined);
-            const sample = sampleEntry ? sampleEntry.indicators[key] : null;
-
-            if (sample !== null && typeof sample === 'object') {
-                Object.keys(sample).forEach(lineName => {
-                    if (!pObj.series[lineName]) {
-                        const isHist = lineName === 'hist' || lineName === 'histogram';
-                        const type = isHist ? LightweightCharts.HistogramSeries : LightweightCharts.LineSeries;
-                        const color = isHist ? '#ef5350' : (lineName === 'macd' ? '#2962ff' : getRandomColor());
+            if (masterPoint.indicators) {
+                Object.entries(masterPoint.indicators).forEach(([fullKey, val]) => {
+                        const parts = fullKey.split('_');
+                        const name = parts[0];
+                        const suffix = parts[parts.length - 1];
                         
-                        pObj.series[lineName] = pObj.chart.addSeries(type, { 
-                            title: lineName, 
-                            color: color,
-                            lineWidth: 1,
-                            priceFormat: {
-                                type: 'price',
-                                precision: 5,
-                                minMove: 0.00001,
-                            },
-                        });
-                    }
-                    
-                    const lineData = masterData.map(d => ({
-                        time: d.time,
-                        value: d.indicators[key] ? d.indicators[key][lineName] : null
-                    })).filter(v => v.value !== null);
-                    
-                    pObj.series[lineName].setData(lineData);
+                        const params = parts.slice(1, -1).filter(p => !isNaN(p) && p !== "");
+                        
+                        const settings = params.length > 0 ? `(${params.join(',')})` : '';
+                        const color = getSeriesColor(fullKey);
+
+                        html += `<div class="legend-item">
+                            <span>${name}${settings} ${suffix}</span>
+                            <b style="color:${color}">${Number(val).toFixed(5)}</b>
+                        </div>`;
                 });
+            }
+            legend.innerHTML = html;
+        });
+
+        mainChart.timeScale().subscribeVisibleLogicalRangeChange(() => {
+            if (isFetching || masterData.length === 0) return;
+            const logicalRange = mainChart.timeScale().getVisibleLogicalRange();
+            if (!logicalRange) return;
+
+            if (logicalRange.from < 10 && hasMoreHistory) {
+                loadData('history', masterData[0].time * 1000);
+            }
+            if (logicalRange.to > masterData.length - 10) {
+                loadData('future', masterData[masterData.length - 1].time * 1000);
+            }
+        });
+    }
+
+    function renderParams() {
+        const indKey = document.getElementById('indicatorSelect').value;
+        const meta = indicatorMeta[indKey];
+        const container = document.getElementById('params');
+        container.innerHTML = (meta && meta.defaults) ? 
+            Object.keys(meta.defaults).map(k => `<div style="margin-bottom:5px"><label style="font-size:9px;display:block;">${k}</label><input type="text" id="p_${k}" value="${meta.defaults[k]}" style="width:100%;box-sizing:border-box;"></div>`).join('') :
+            '<span style="color:#999; font-size:11px">No parameters</span>';
+    }
+
+    function addToChain() {
+        const indKey = document.getElementById('indicatorSelect').value;
+        const meta = indicatorMeta[indKey];
+        if (!meta) return;
+        const params = meta.defaults ? Object.keys(meta.defaults).map(k => document.getElementById(`p_${k}`).value) : [];
+        
+        chain.push({ name: indKey, params, meta });
+        updateChainUI();
+
+        const timeScale = mainChart.timeScale();
+        const visibleRange = timeScale.getVisibleLogicalRange();
+        
+        let referenceTime = Date.now();
+        let visibleBarCount = 1000;
+
+        if (visibleRange !== null && masterData.length > 0) {
+            visibleBarCount = Math.ceil(visibleRange.to - visibleRange.from) + 10;
+            const firstVisibleIdx = Math.max(0, Math.floor(visibleRange.from));
+            if (masterData[firstVisibleIdx]) {
+                referenceTime = masterData[firstVisibleIdx].time * 1000;
             } else {
-                if (!pObj.series['main']) {
-                    pObj.series['main'] = pObj.chart.addSeries(LightweightCharts.LineSeries, { 
-                        title: item.name, 
-                        color: '#7e57c2',
-                        lineWidth: 1, // ADD THIS LINE TO FIX THE RSI WIDTH
-                        priceFormat: {
-                            type: 'price',
-                            precision: 5,
-                            minMove: 0.00001,
-                        },
-                    });
-                }
-                
-                const lineData = masterData.map(d => ({
-                    time: d.time,
-                    value: d.indicators ? d.indicators[key] : null
-                })).filter(v => v.value !== null);
-                
-                pObj.series['main'].setData(lineData);
+                referenceTime = masterData[0].time * 1000;
             }
         }
 
-        function getRandomColor() {
-            const colors = ['#2962ff', '#ff6d00', '#2e7d32', '#6a1b9a', '#f50057', '#00b8d4'];
-            return colors[Math.floor(Math.random() * colors.length)];
+        Object.values(overlaySeriesMap).forEach(s => mainChart.removeSeries(s));
+        overlaySeriesMap = {};
+        masterData = []; 
+        loadData('initial', referenceTime, visibleBarCount); 
+    }
+
+    function updateChainUI() {
+        document.getElementById('chain-list').innerHTML = chain.map((item, idx) => `
+            <div class="indicator-tag">${item.name}(${item.params.join(',')})
+                <span style="cursor:pointer; margin-left:8px; font-weight:bold;" onclick="removeFromChain(${idx})">✕</span>
+            </div>`).join('');
+    }
+
+    function removeFromChain(idx) {
+        chain.splice(idx, 1);
+        updateChainUI();
+        resetAndLoad(true);
+    }
+
+    function loadData(direction, referenceTs, limit = 1000) {
+        if (isFetching) return;
+        const sym = document.getElementById('symbolSelect').value;
+        const tf = document.getElementById('tfSelect').value;
+        if(!sym || !tf) return;
+
+        isFetching = true;
+        requestDirection = direction;
+        document.getElementById('loader').style.display = 'flex';
+        
+        const chainStr = chain.length ? `[${chain.map(i => `${i.name}(${i.params.join(',')})`).join(':')}]` : "";
+        let url = `/ohlcv/1.1/select/${sym},${tf}${chainStr}`;
+        
+        const fetchLimit = Math.min(limit, 5000);
+        let params = `output/JSONP?limit=${fetchLimit}&callback=__callbackData&subformat=3`;
+
+        if (direction === 'history') {
+            url += `/until/${referenceTs || Date.now()}`;
+            params += `&order=desc`;
+        } else if (direction === 'future') {
+            url += `/after/${referenceTs || (masterData.length > 0 ? masterData[masterData.length-1].time * 1000 : Date.now())}`;
+            params += `&order=asc`;
+        } else {
+            if (referenceTs) {
+                url += `/after/${referenceTs}`;
+                params += `&order=asc`;
+            } else {
+                url += `/until/${Date.now()}`;
+                params += `&order=desc`;
+            }
         }
 
-        window.addEventListener('keydown', (event) => {
-            if (masterData.length === 0) return;
+        const s = document.createElement('script');
+        s.src = `${url}/${params}`;
+        document.body.appendChild(s);
+    }
+
+    window.__callbackData = function(response) {
+        isFetching = false;
+        document.getElementById('loader').style.display = 'none';
+        
+        if (response.result && response.result.time && response.result.time.length > 0) {
+            gapRetryCount = 0;
+            const res = response.result;
+            const cols = response.columns;
+
+            const incoming = res.time.map((t, i) => {
+                const item = {
+                    time: t / 1000,
+                    open: res.open[i], high: res.high[i], low: res.low[i], close: res.close[i],
+                    value: res.volume[i],
+                    indicators: {}
+                };
+                cols.forEach((col, idx) => {
+                    if (idx > 5) item.indicators[col] = res[col][i];
+                });
+                return item;
+            });
+
+            const timeScale = mainChart.timeScale();
+            const logicalRange = timeScale.getVisibleLogicalRange();
+
+            let combined = [...masterData, ...incoming];
+            const uniqueMap = new Map();
+            combined.forEach(d => uniqueMap.set(d.time, d));
+            const newData = Array.from(uniqueMap.values()).sort((a, b) => a.time - b.time);
+            
+            const addedToLeft = newData.findIndex(d => d.time === (masterData[0] ? masterData[0].time : null));
+            const countAdded = (addedToLeft === -1 || masterData.length === 0) ? 0 : addedToLeft;
+            masterData = newData;
+
+            if (masterData.length > bufferLimit) {
+                if (requestDirection === 'history') masterData = masterData.slice(0, bufferLimit);
+                else masterData = masterData.slice(-bufferLimit);
+            }
+
+            updateChartUI(cols);
+
+            if (logicalRange !== null && requestDirection === 'history' && countAdded > 0) {
+                timeScale.setVisibleLogicalRange({ from: logicalRange.from + countAdded, to: logicalRange.to + countAdded });
+            }
+        } else if (gapRetryCount < maxGapRetries) {
+            gapRetryCount++;
+            const currentTs = requestDirection === 'history' ? parseInt(response.options.until) : parseInt(response.options.after);
+            const nextTs = requestDirection === 'history' ? currentTs - MS_PER_DAY : currentTs + MS_PER_DAY;
+            loadData(requestDirection, nextTs);
+        }
+    };
+
+    function getTitleString(col) {
+        const parts = col.split('_');
+        const name = parts[0].toUpperCase();
+        const params = parts.filter(p => !isNaN(p) && p !== "");
+        const titleStr = params.length > 0 ? `${name} (${params.join(',')})` : name;
+        return titleStr;
+    }
+
+    function updateChartUI(cols = []) {
+        candleSeries.setData(masterData.map(d => ({
+            time: d.time, open: d.open, high: d.high, low: d.low, close: d.close
+        })));
+        
+        volumeSeries.setData(masterData.map(d => ({
+            time: d.time, value: d.value, 
+            color: d.close >= d.open ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)'
+        })));
+
+        const statusEl = document.querySelector('#status-indicator');
+        if (statusEl) {
+            statusEl.innerText = `Buffer: ${masterData.length} bars`;
+        }
+
+        cols.forEach((col, idx) => {
+            if (idx <= 5) return; 
+
+            const rawName = col.split('_')[0]; 
+            const meta = indicatorMeta[rawName];
+            if (!meta) return;
+
+            const mainParts = col.split('__');
+            const basePart = mainParts[0]; 
+            const displayTitle = (mainParts.length > 1) 
+                ? mainParts[1] 
+                : basePart.split('_')[0];
+
+            const targetPanel = (meta.meta && meta.meta.panel === 1) ? 1 : 0;
+
+            if (targetPanel === 0) {
+                if (!overlaySeriesMap[col]) {
+                    overlaySeriesMap[col] = mainChart.addSeries(LightweightCharts.LineSeries, {
+                        color: getSeriesColor(col),
+                        lineWidth: 1,
+                        title: displayTitle,
+                        priceFormat: { type: 'price', precision: 5, minMove: 0.00000001 },
+                    });
+                }
+                overlaySeriesMap[col].setData(masterData.map(d => ({ 
+                    time: d.time, value: d.indicators[col] 
+                })).filter(v => v.value !== null));
+
+            } else {
+                const panelKey = basePart;
+                if (!panelCharts[panelKey]) createPanel(panelKey);
+                
+                const pObj = panelCharts[panelKey];
+
+                if (pObj.titleElement && !pObj.series[col]) {
+                    pObj.titleElement.innerText = params.length > 0 ? `${nameOnly} (${params.join(',')})` : nameOnly;
+                }
+
+                if (!pObj.series[col]) {
+                    pObj.series[col] = pObj.chart.addSeries(
+                        col.includes('hist') ? LightweightCharts.HistogramSeries : LightweightCharts.LineSeries, 
+                        {
+                            color: getSeriesColor(col),
+                            title: displayTitle,
+                            lineWidth: 1,
+                            priceFormat: { type: 'price', precision: 5, minMove: 0.00000001 }
+                        }
+                    );
+                }
+
+                const seriesData = masterData.map(d => {
+                    const item = { time: d.time, value: d.indicators[col] };
+                    if (col.includes('hist')) {
+                        item.color = d.indicators[col] >= 0 ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)';
+                    }
+                    return item;
+                }).filter(v => v.value !== null);
+
+                pObj.series[col].setData(seriesData);
+            }
+        });
+    }
+
+    function createPanel(id) {
+        const container = document.getElementById('panel-container');
+        const div = document.createElement('div');
+        div.className = 'indicator-panel';
+        div.style.height = '130px';
+        div.style.width = '100%';
+        div.style.marginTop = '5px';
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'panel-title';
+        titleDiv.id = `title-${id}`;
+        titleDiv.innerText = getTitleString(id.toUpperCase());
+        div.appendChild(titleDiv);
+
+        container.appendChild(div);
+        
+        const chart = LightweightCharts.createChart(div, {
+            width: div.clientWidth, height: 130,
+            layout: { background: { color: '#ffffff' }, textColor: '#131722', attributionLogo: false },
+            timeScale: { 
+                visible: false,
+                shiftVisibleRangeOnNewBar: false
+            },
+            rightPriceScale: { borderVisible: false, minimumWidth: 80 },
+        });
+        
+        panelCharts[id] = { chart, series: {} };
+        const currentRange = mainChart.timeScale().getVisibleLogicalRange();
+        if (currentRange) {
+            chart.timeScale().setVisibleLogicalRange(currentRange);
+        }
+        mainChart.timeScale().subscribeVisibleLogicalRangeChange(range => {
+            if (range) {
+                chart.timeScale().setVisibleLogicalRange(range);
+            }
+        });
+    }
+
+    function getSeriesColor(col) {
+        const palette = {
+            'k': '#2962FF',        // Blue
+            'd': '#FF6D00',        // Orange
+            'signal': '#FF5252',   // Red
+            'macd': '#2962FF',     // Blue
+            'upper': '#787b86',    // Gray
+            'lower': '#787b86',    // Gray
+            'middle': '#FF9800',   // Amber
+            'rsi': '#9c27b0',      // Purple
+            'hist': '#26a69a'      // Teal
+        };
+        const mainParts = col.split('__');
+        const suffix = (mainParts.length > 1 ? mainParts[1] : col.split('_').shift()).toLowerCase();
+        color = 0;
+        if (palette[suffix]) { 
+            color = palette[suffix];
+        } else {
+            let hash = 0;
+            for (let i = 0; i < col.length; i++) {
+                hash = col.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            color = `hsl(${Math.abs(hash % 360)}, 80%, 50%)`;
+        }
+        console.log("color("+suffix+"):"+color)
+
+        return color;
+    }
+
+    function resetAndLoad(clear = false) {
+        if (clear) {
+            masterData = [];
+            candleSeries.setData([]);
+            volumeSeries.setData([]);
+            Object.values(overlaySeriesMap).forEach(s => mainChart.removeSeries(s));
+            overlaySeriesMap = {};
+            Object.values(panelCharts).forEach(p => p.chart.remove());
+            panelCharts = {};
+            document.getElementById('panel-container').innerHTML = '';
+        }
+        hasMoreHistory = true;
+        gapRetryCount = 0;
+        loadData('initial');
+    }
+
+    function formatUnixToLiteral(unix) {
+        const d = new Date(unix * 1000);
+        return d.toISOString().replace('T', ' ').split('.')[0];
+    }
+
+    function updateTimeframeOptions() {
+        const sym = document.getElementById('symbolSelect').value;
+        const tfS = document.getElementById('tfSelect');
+        const options = symbolData[sym] || [];
+        tfS.innerHTML = options.map(tf => `<option value="${tf}">${tf}</option>`).join('');
+    }
+
+    window.__callbackList = (res) => {
+        symbolData = res.result;
+        const sel = document.getElementById('symbolSelect');
+        sel.innerHTML = Object.keys(symbolData).sort().map(s => `<option value="${s}">${s}</option>`).join('');
+        updateTimeframeOptions();
+        resetAndLoad(true);
+    };
+
+    window.__bp_callback = (res) => {
+        indicatorMeta = res.result;
+        document.getElementById('indicatorSelect').innerHTML = Object.keys(indicatorMeta).map(i => `<option value="${i}">${i.toUpperCase()}</option>`).join('');
+        renderParams();
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initCharts();
+        const s1 = document.createElement('script'); s1.src = "/ohlcv/1.1/list/symbols/output/JSONP?callback=__callbackList"; document.body.appendChild(s1);
+        const s2 = document.createElement('script'); s2.src = "/ohlcv/1.1/list/indicators/output/JSONP?callback=__bp_callback"; document.body.appendChild(s2);
+        document.addEventListener('keydown', (e) => {
             const timeScale = mainChart.timeScale();
             const visibleRange = timeScale.getVisibleLogicalRange();
             if (!visibleRange) return;
-            const rangeWidth = visibleRange.to - visibleRange.from;
 
-            if (event.key === 'PageUp') {
-                event.preventDefault();
-                timeScale.setVisibleLogicalRange({ from: visibleRange.from - rangeWidth, to: visibleRange.to - rangeWidth });
-            } else if (event.key === 'PageDown') {
-                event.preventDefault();
-                timeScale.setVisibleLogicalRange({ from: visibleRange.from + rangeWidth, to: visibleRange.to + rangeWidth });
-            } else if (event.key === 'End') {
-                event.preventDefault();
-                timeScale.scrollToPosition(0, true);
+            const barsInView = visibleRange.to - visibleRange.from;
+
+            if (e.key === 'PageUp') {
+                e.preventDefault();
+                timeScale.setVisibleLogicalRange({
+                    from: visibleRange.from - barsInView,
+                    to: visibleRange.to - barsInView
+                });
+            } else if (e.key === 'PageDown') {
+                e.preventDefault();
+                timeScale.setVisibleLogicalRange({
+                    from: visibleRange.from + barsInView,
+                    to: visibleRange.to + barsInView
+                });
+            } else if (e.key === 'End') {
+                e.preventDefault();
+                timeScale.scrollToRealTime();
             }
         });
-
-        function renderParams() {
-            const ind = document.getElementById('indicatorSelect').value;
-            const meta = indicatorMeta[ind];
-            const container = document.getElementById('params');
-            if (meta && meta.defaults) {
-                container.innerHTML = Object.keys(meta.defaults).map(k => `
-                    <div style="margin-bottom:5px">
-                        <label style="font-size:9px; margin-bottom:2px">${k}</label>
-                        <input type="text" id="p_${k}" value="${meta.defaults[k]}">
-                    </div>`).join('');
-            } else {
-                container.innerHTML = '<span style="color:#999; font-size:11px">No parameters</span>';
-            }
-        }
-
-        function addToChain() {
-            const name = document.getElementById('indicatorSelect').value;
-            const meta = indicatorMeta[name];
-            const params = meta.defaults ? Object.keys(meta.defaults).map(k => document.getElementById(`p_${k}`).value) : [];
-            chain.push({ 
-                name, 
-                params, 
-                id: `${name}_${Date.now()}`,
-                color: getRandomColor() 
-            });
-            
-            renderChain();
-            resetAndLoad(true);
-        }
-
-        function renderChain() {
-            document.getElementById('chain-list').innerHTML = chain.map((item, i) => `
-                <div class="indicator-tag">
-                    <span>${item.name}(${item.params.join(',')})</span>
-                    <span style="cursor:pointer" onclick="chain.splice(${i},1); renderChain(); resetAndLoad(true);">✕</span>
-                </div>`).join('');
-        }
-
-        function formatUnixToLiteral(unix) {
-            const d = new Date(unix * 1000);
-            const pad = (n) => n.toString().padStart(2, '0');
-            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-        }
-
-        function parseLiteralToUnix(dateStr) {
-            const parts = dateStr.split(/[- :]/);
-            return Math.floor(new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]).getTime() / 1000);
-        }
-
-        function updateTimeframeOptions() {
-            const sym = document.getElementById('symbolSelect').value;
-            const tfS = document.getElementById('tfSelect');
-            const currentTf = tfS.value;
-            const options = (symbolData[sym] || []);
-            tfS.innerHTML = options.map(tf => `<option value="${tf}">${tf}</option>`).join('');
-            if (currentTf && options.includes(currentTf)) {
-                tfS.value = currentTf;
-            }
-        }
-
-        function getTimeframeOffset(tf) {
-            const day = 24 * 60 * 60 * 1000;
-            switch (tf) {
-                case '1Y': case '1M': return 3650 * day; case '1W': return 730 * day;
-                case '1d': return 365 * day; case '4h': return 100 * day; case '1h': return 30 * day;
-                case '30m': return 15 * day; case '15m': return 7 * day; case '5m': return 2 * day;
-                case '1m': return 1 * day; 
-                default:
-                    if (tf.includes('M')) return 3650 * day;
-                    if (tf.includes('W')) return 1460 * day;
-                    if (tf.includes('h')) return 60 * day;
-                    if (tf.includes('m')) return 4 * day;
-                    return 4 * day;
-            }
-        }
-
-        window.__callbackList = (res) => {
-            symbolData = res.result;
-            const sel = document.getElementById('symbolSelect');
-            sel.innerHTML = Object.keys(symbolData).sort().map(s => `<option value="${s}">${s}</option>`).join('');
-            updateTimeframeOptions();
-            resetAndLoad(true);
-        };
-
-        window.__bp_callback = (res) => {
-            indicatorMeta = res.result;
-            document.getElementById('indicatorSelect').innerHTML = Object.keys(indicatorMeta).map(i => `<option value="${i}">${i.toUpperCase()}</option>`).join('');
-            renderParams();
-        };
-
-        document.addEventListener('DOMContentLoaded', () => {
-            initCharts();
-            const s1 = document.createElement('script');
-            s1.src = "/ohlcv/1.1/list/symbols/output/JSONP?callback=__callbackList";
-            document.body.appendChild(s1);
-            const s2 = document.createElement('script');
-            s2.src = "/ohlcv/1.1/list/indicators/output/JSONP?callback=__bp_callback";
-            document.body.appendChild(s2);
-        });
-    </script>
+    });
+</script>
 </body>
 </html>
