@@ -25,6 +25,8 @@ There are four common reasons why CloudFront might serve this error, AI says:
 
 It seems an issue on the cloudprovider they use. A resource issue. It's definately not a ban/block.
 
+https://downdetector.com/status/aws-amazon-web-services/
+
 ## Write-up
 
 I have started with writing up everything i have learned so far in a document [performance.md](performance.md). This project was able to get institutional performance on just a laptop. The project excelled in getting data aligned right. The forementioned document will cover everything, from performance tricks up until market-data specific difficulties. Basically the what, the why and the how of this project. It will be an educational read including in-depth technical howto's.
