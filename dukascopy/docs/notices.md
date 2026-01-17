@@ -17,13 +17,15 @@ A "Error from Cloudfront". Could basically mean anything. Because of the inconsi
 
 What's next?
 
-I will reach out to Dukascopy, eventually. I would be willing to pay for this feed, in case its not a technical issue. This tool is very cool :)
+I will reach out to Dukascopy, eventually. I would be willing to pay for this feed, in case its not a technical issue. This tool is very cool.
 
 **Note:** General advice is to stop your crontab trying to execute the downloads until we know exactly whatsup.
 
 **Note:** It could also be: Martin Luther King Jr. Day is up. A major market holiday. Could be regular maintenance. We just dont know atm.
 
 **Note:** I have scanned historical mentions of Dukascopy 503's. It is VERY likely that this is maintenance. But no guarantees.
+
+Back to coding :)
 
 ## Write-up
 
