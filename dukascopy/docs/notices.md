@@ -1,5 +1,11 @@
 <u>MT4 is decoded.</u>
 
+What's next?
+
+- Replay/Market simulation
+- Optionally reaching out if problems persist longer than expected
+- Write-up
+
 ## **Notice: Endpoint issues - 503**
 
 I changed code and tried a few things. These are the things i considered
