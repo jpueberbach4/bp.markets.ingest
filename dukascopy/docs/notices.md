@@ -1,31 +1,26 @@
 <u>MT4 is decoded.</u>
 
-## **Notice: Endpoint down**
+## **Notice: Endpoint issues**
 
-Update: Hi, as of this morning (2025-01-17) the public historical feed seems to be down. It gives a 503 error. It is not IP-based, since all my "other IPs" experience the same behavior. Even IPs I didnt use yet for anything so far. Also my two mobiles fail. 503 normally indicates a resource issue. So it may be broken.
+Allright, i have analyzed this. The endpoint is not down, only very recent historical downloads have been disabled. 
 
-The specific error is: **Error from cloudfront**
+```sh
+https://jetta.dukascopy.com/v1/candles/minute/BRENT.CMD-USD/BID/2026/1/16 <- not work
+https://jetta.dukascopy.com/v1/candles/minute/BRENT.CMD-USD/BID/2026/1/15 <- works
+https://jetta.dukascopy.com/v1/candles/minute/BRENT.CMD-USD/BID/2026/1/14 <- works
 
-What is cloudfront?
+https://jetta.dukascopy.com/v1/candles/minute/EUR-USD/BID/2026/1/16 <- not work
+https://jetta.dukascopy.com/v1/candles/minute/EUR-USD/BID/2026/1/15 <- works
+https://jetta.dukascopy.com/v1/candles/minute/EUR-USD/BID/2026/1/14 <- works
+```
 
-Amazon CloudFront is a Content Delivery Network (CDN) service provided by Amazon Web Services (AWS). Its primary goal is to speed up the delivery of your website’s content—like images, videos, and data—to users all over the world.
-+1
+This means that the recent tail cannot be downloaded. Aka, the "liveness" of this project is not possible anymore.
 
-Why CloudFront is showing a 503
+I will provide a fix for this project so that you can use the pipeline but with a lag of two days. There are solutions to restoring liveness but i cannot share these solutions in here because the message is, i think, clear.
 
-There are four common reasons why CloudFront might serve this error, AI says:
+There will be a new setting in the download section soon. For historical data this still can be used. Check back for an update soon. 
 
-- Origin Capacity (The most common): The backend server (S3, an EC2 instance, or a Load Balancer) is overwhelmed by too many requests and is telling CloudFront it can't handle any more.
-
-- Lambda@Edge or CloudFront Functions: If you use custom code to modify requests at the edge, a 503 often means that code crashed or hit a timeout limit (usually 10–30 seconds).
-
-- S3 "Slow Down" Throttling: If you are using Amazon S3 as your source, S3 might be throttling CloudFront because you're hitting the request rate limit for a specific folder (prefix).
-
-- CloudFront Resource Constraints: In rare cases, the specific CloudFront "edge location" closest to you might be experiencing temporary resource issues.
-
-It seems an issue on the cloudprovider they use. A resource issue. It's definately not a ban/block.
-
-https://downdetector.com/status/aws-amazon-web-services/
+I would be willing to pay for this "liveness" tail, so i am going to reach out.
 
 ## Write-up
 
