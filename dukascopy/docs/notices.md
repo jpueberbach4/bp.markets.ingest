@@ -19,6 +19,8 @@ What's next?
 
 I will reach out to Dukascopy, eventually. I would be willing to pay for this feed, in case its not a technical issue. This tool is very cool :)
 
+**Note:** General advice is to stop your crontab trying to execute the downloads until we know exactly whatsup.
+
 ## Write-up
 
 I have started with writing up everything i have learned so far in a document [performance.md](performance.md). This project was able to get institutional performance on just a laptop. The project excelled in getting data aligned right. The forementioned document will cover everything, from performance tricks up until market-data specific difficulties. Basically the what, the why and the how of this project. It will be an educational read including in-depth technical howto's.
