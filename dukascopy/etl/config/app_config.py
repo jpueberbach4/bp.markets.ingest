@@ -215,6 +215,7 @@ class OrchestratorPaths:
 class OrchestratorConfig:
     """Root configuration for the orchestrator."""
     num_processes: Optional[int] = None
+    disable_download: Optional[bool] = False 
     paths: OrchestratorPaths = field(default_factory=OrchestratorPaths)
 
 

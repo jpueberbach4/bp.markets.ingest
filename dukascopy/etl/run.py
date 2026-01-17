@@ -210,6 +210,9 @@ def main():
             if not Path(f"{config.paths.downloads}/{dt:%Y}/{dt:%m}/{sym}_{dt:%Y%m%d}.json").is_file()
         ]
 
+        # Download disable option support
+        if config.disable_download: download_tasks = []
+
         # Prepare transform tasks for CSV files that are missing
         transform_tasks = [
             (sym, dt, app_config)

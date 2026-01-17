@@ -75,6 +75,7 @@ http:
 ## Below you will find the configuration for the orchestrator script
 orchestrator:
   # num_processes: 8                  # Override maximum number of cores to use
+  disable_download: 0                 # Option to disable downloading
   paths:
     downloads: cache                  # Output path for downloads
     locks: data/locks                 # Lock files are stored here
