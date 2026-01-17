@@ -1,26 +1,23 @@
 <u>MT4 is decoded.</u>
 
-## **Notice: Endpoint issues**
+## **Notice: Endpoint issues - 503**
 
-Allright, i have analyzed this. The endpoint is not down, only very recent historical downloads have been disabled. 
+I changed code and tried a few things. These are the things i considered
 
-```sh
-https://jetta.dukascopy.com/v1/candles/minute/BRENT.CMD-USD/BID/2026/1/16 <- not work
-https://jetta.dukascopy.com/v1/candles/minute/BRENT.CMD-USD/BID/2026/1/15 <- works
-https://jetta.dukascopy.com/v1/candles/minute/BRENT.CMD-USD/BID/2026/1/14 <- works
+- User-agent blockage: Not the case
+  Similar results with regular browser headers
+- AWS endpoint issue in Amsterdam (my nearest Dukascopy CDN): Not the case
+  Tried VPN services and Google Shell. No difference.
+- Historical tail disable (prevent trading bots)
+  Seems also not the case.
 
-https://jetta.dukascopy.com/v1/candles/minute/EUR-USD/BID/2026/1/16 <- not work
-https://jetta.dukascopy.com/v1/candles/minute/EUR-USD/BID/2026/1/15 <- works
-https://jetta.dukascopy.com/v1/candles/minute/EUR-USD/BID/2026/1/14 <- works
-```
+What's up?
 
-This means that the recent tail cannot be downloaded. Aka, the "liveness" of this project is not possible anymore.
+A "Error from Cloudfront". Could basically mean anything. Because of the inconsistent behavior my best guess is technical issues.
 
-I will provide a fix for this project so that you can use the pipeline but with a lag of two days. There are solutions to restoring liveness but i cannot share these solutions in here because the message is, i think, clear.
+What's next?
 
-There will be a new setting in the download section soon. For historical data this still can be used. Check back for an update soon. 
-
-I would be willing to pay for this "liveness" tail, so i am going to reach out.
+I will reach out to Dukascopy, eventually. I would be willing to pay for this feed, in case its not a technical issue. This tool is very cool :)
 
 ## Write-up
 
