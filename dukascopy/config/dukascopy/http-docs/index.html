@@ -682,9 +682,23 @@
 
     function updateTimeframeOptions() {
         const sym = document.getElementById('symbolSelect').value;
-        const tfS = document.getElementById('tfSelect');
-        const options = symbolData[sym] || [];
-        tfS.innerHTML = options.map(tf => `<option value="${tf}">${tf}</option>`).join('');
+        const tfSelect = document.getElementById('tfSelect');
+        const availableTfs = symbolData[sym] || [];
+        
+        const currentTf = tfSelect.value;
+
+        tfSelect.innerHTML = availableTfs.map(tf => 
+            `<option value="${tf}">${tf}</option>`
+        ).join('');
+        if (availableTfs.includes(currentTf)) {
+            tfSelect.value = currentTf;
+        } else {
+            if (availableTfs.includes('1h')) {
+                tfSelect.value = '1h';
+            } else if (availableTfs.length > 0) {
+                tfSelect.value = availableTfs[0];
+            }
+        }
     }
 
     window.__callbackList = (res) => {
