@@ -1,6 +1,6 @@
 # About this project
 
-Welcome. Although the user agent in download.py is severely throttled, the project remains fully usable-if you are a bit technical. A core focus of this work is extracting as much performance as possible from a standard laptop. This document serves as an overview of how I achieved approximately 3 million candles per second in resampling performance on commodity hardware. It also provides an in-depth discussion of market data caveats and outlines a practical approach to transforming raw data into reliable, usable datasets.
+Welcome. A core focus of this work is extracting as much performance as possible from a standard laptop. This document serves as an overview of how I achieved approximately 3 million candles per second in resampling performance on commodity hardware. It also provides an in-depth discussion of market data caveats and outlines a practical approach to transforming raw data into reliable, usable datasets.
 
 The goal of this document is to share the lessons I’ve learned so others can benefit substantially from these insights.
 
