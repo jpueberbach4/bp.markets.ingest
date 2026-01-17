@@ -21,26 +21,9 @@ What's up?
 
 A "Error from Cloudfront". Could basically mean anything. Because of the inconsistent behavior my best guess is technical issues.
 
-What's next?
+What's likely up?
 
-I will reach out to Dukascopy, eventually. I would be willing to pay for this feed, in case its not a technical issue. This tool is very cool.
-
-**Note:** General advice is to stop your crontab trying to execute the downloads until we know exactly whatsup.
-
-**Note:** It could also be: Martin Luther King Jr. Day is up. A major market holiday. Could be regular maintenance. We just dont know atm.
-
-**Note:** I have scanned historical mentions of Dukascopy 503's. It is VERY likely that this is maintenance. But no guarantees.
-
-Back to coding :)
-
-## Write-up
-
-I have started with writing up everything i have learned so far in a document [performance.md](performance.md). This project was able to get institutional performance on just a laptop. The project excelled in getting data aligned right. The forementioned document will cover everything, from performance tricks up until market-data specific difficulties. Basically the what, the why and the how of this project. It will be an educational read including in-depth technical howto's.
-
-I will keep you guys posted. Lets see what happens. It is too early to draw any conclusions.
-
-**Note:** Development continues as planned. Data-api is now ready to make "buffered-charts". Updates soon.
-
+Could be a dataset rebuild on Dukascopy's end. With Martin Luther King Jr day up etc, it gives a window to perform rebuilds. Maintenance. Everything points to this atm. 
 
 ## Notice: support for cache-only rebuilds - 2025-01-17
 
