@@ -25,8 +25,6 @@ What's likely up?
 
 Could be a dataset rebuild on Dukascopy's end. With Martin Luther King Jr day up etc, it gives a window to perform rebuilds. Maintenance. Everything points to this atm. 
 
-Especially since the CDN "age"-header keeps increasing of objects that work. They are not refreshed atm.
-
 ## Notice: support for cache-only rebuilds - 2025-01-17
 
 If the download endpoint is unavailable but you have a cache folder and want to modify timeframes and rebuild using those new timeframes, this is now supported. Before running any rebuild scripts, set `orchestrator.disable_downloads` to 1 in `config.user.yaml`.
