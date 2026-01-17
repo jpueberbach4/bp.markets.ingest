@@ -40,7 +40,7 @@ class DownloadEngine:
     merging of Dukascopy JSON delta candle data.
     """
 
-    last_request_time = 0.0 
+    last_request_time = time.monotonic()
 
     def __init__(self, config: DownloadConfig):
         """
