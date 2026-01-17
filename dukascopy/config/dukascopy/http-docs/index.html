@@ -175,7 +175,7 @@
         .exec-btn { 
             background: var(--accent-blue); color: white; border: none; padding: 10px; 
             border-radius: 4px; font-weight: 600; cursor: pointer; width: 48%; 
-        }        
+        }
 
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -186,6 +186,7 @@
 <body>
     <header>
         <h2 style="margin:0; font-size: 18px;">Interactive Stream</h2>
+        <button id="calendarBtn" style="background: var(--accent-blue); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 500;">📅 Jump to Date</button>
         <div id="status-indicator" style="font-size: 11px; opacity: 0.8;">Initialising...</div>
     </header>
 
@@ -258,6 +259,20 @@
             <div style="display: flex; justify-content: space-between;">
                 <button class="cancel-btn" onclick="document.getElementById('export-modal').style.display='none'">Cancel</button>
                 <button class="exec-btn" onclick="runExport()">Download</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="calendarModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: var(--white); width: 320px; border-radius: 8px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <div style="background: var(--sidebar-dark); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; font-size: 16px;">Jump to Date</h3>
+                <span id="closeModal" style="cursor: pointer; font-size: 20px;">&times;</span>
+            </div>
+            <div style="padding: 20px;">
+                <label style="display: block; color: var(--text-gray); font-size: 12px; margin-bottom: 8px;">SELECT DATE</label>
+                <input type="date" id="calendarInput" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; margin-bottom: 20px; box-sizing: border-box;">
+                <button id="calendarOk" style="width: 100%; background: var(--accent-blue); color: white; border: none; padding: 12px; border-radius: 4px; font-weight: bold; cursor: pointer;">OK</button>
             </div>
         </div>
     </div>
@@ -776,6 +791,58 @@
             }
         });
     });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('calendarModal');
+        const btn = document.getElementById('calendarBtn');
+        const close = document.getElementById('closeModal');
+        const okBtn = document.getElementById('calendarOk');
+        const dateInput = document.getElementById('calendarInput');
+
+        btn.onclick = () => modal.style.display = 'flex';
+        close.onclick = () => modal.style.display = 'none';
+        window.onclick = (e) => { if (e.target == modal) modal.style.display = 'none'; };
+
+        let isJumpRequest = false;
+        let jumpBarCount = 1000;
+
+        okBtn.onclick = () => {
+            const val = dateInput.value;
+            if (!val) return;
+
+            const timeScale = mainChart.timeScale();
+            const range = timeScale.getVisibleLogicalRange();
+            const jumpBarCount = range ? Math.round(range.to - range.from) : 1000;
+
+            const [year, month, day] = val.split('-').map(Number);
+            modal.style.display = 'none';
+            const referenceTs = Date.UTC(year, month - 1, day);
+
+            masterData = [];
+            candleSeries.setData([]);
+            volumeSeries.setData([]);
+            Object.values(overlaySeriesMap).forEach(s => mainChart.removeSeries(s));
+            overlaySeriesMap = {};
+            Object.values(panelCharts).forEach(p => p.chart.remove());
+            panelCharts = {};
+            document.getElementById('panel-container').innerHTML = '';
+
+            const jumpToStart = () => {
+                const newRange = timeScale.getVisibleLogicalRange();
+                if (newRange && masterData.length > 0) {
+                    timeScale.setVisibleLogicalRange({
+                        from: 0,
+                        to: jumpBarCount
+                    });
+                    timeScale.unsubscribeVisibleLogicalRangeChange(jumpToStart);
+                }
+            };
+
+            timeScale.subscribeVisibleLogicalRangeChange(jumpToStart);
+            loadData("future", referenceTs, jumpBarCount);
+        };
+    });
+
 </script>
 </body>
 </html>
