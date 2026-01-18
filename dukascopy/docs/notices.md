@@ -29,9 +29,10 @@ Charts are down too: https://www.dukascopy.com/swiss/english/marketwatch/charts/
 
 ## Notice: been playing around with custom indicators
 
-You can really write neat stuff using custom indicators. Positive divergence example-with doji detection.
+You can really write neat stuff using custom indicators. Positive divergence (bullish) example-with doji detection.
 
 ![Example](../images/reversal.png)
+![Example2](../images/reversal2.png)
 
 Currently there are 2 issues which makes custom indicator building a bit tedious:
 
