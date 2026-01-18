@@ -47,6 +47,8 @@ I will make changes for that. It's not handy the way it is now. Will make it lik
 
 Rapid prototyping should be possible. The above helps with that.
 
+I will build these things first and then really start with replay.
+
 ## Notice: support for cache-only rebuilds - 2025-01-17
 
 If the download endpoint is unavailable but you have a cache folder and want to modify timeframes and rebuild using those new timeframes, this is now supported. Before running any rebuild scripts, set `orchestrator.disable_downloads` to 1 in `config.user.yaml`.
