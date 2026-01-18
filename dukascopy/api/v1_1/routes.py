@@ -296,7 +296,7 @@ async def get_ohlcv_list(
     except Exception as e:
         # Standardized error response
         error_payload = {"status": "failure", "exception": f"{e}","options": options}
-        if options.get("output_type") == "JSONPX":
+        if options.get("output_type") == "JSONP":
             return PlainTextResponse(
                 content=f"{callback}({orjson.dumps(error_payload)});",
                 media_type="text/javascript",
