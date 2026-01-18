@@ -60,3 +60,7 @@ Important is that your cache folder doesnt have any gaps. If you use an original
 ## Notice: buffered interface is now supported - 2025-01-17
 
 I have updated the interface to not keep everything in memory when browsing history-this smooths the UX. It keeps a record of maximum 5000 bars. This is optimized for a laptop 1680x1050. If you have a "wider-screen" you might wanna set the bufferLimit higher in `config.user/dukascopy/http-docs/index.html` (you might need to copy over the new file). Just CTRL+F 5000 and change it to a value that matches your setup.
+
+## Notice: abstracting the IO layer for download
+
+This would be a logical step now this happened but I dont want to start with that just yet.
