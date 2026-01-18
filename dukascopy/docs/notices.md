@@ -57,7 +57,7 @@ Rapid prototyping should be possible. The above helps with that.
 
 I will build these things first and then really start with replay.
 
-I realize myself now, how powerful this actually has become.
+I realize myself now, how powerful this actually has become. Python for custom indicators? Pure gold. Moondust.
 
 ## Notice: support for cache-only rebuilds - 2025-01-17
 
