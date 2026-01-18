@@ -33,6 +33,17 @@ You can really write neat stuff using custom indicators. Positive divergence exa
 
 ![Example](../images/reversal.png)
 
+Currently there are 2 issues which makes custom indicator building a bit tedious:
+
+- you need to restart the webservice
+- you need to reload the page, reselect the symbol, timeframe, indicator
+
+I will make changes for that. It's not handy the way it is now. Will make it like this:
+
+- indicator change is detected automatically and refreshed in the service
+- pressing update view will update with new output
+- refreshing page will remember (last) settings - using browser localstorage (for now)
+
 ## Notice: support for cache-only rebuilds - 2025-01-17
 
 If the download endpoint is unavailable but you have a cache folder and want to modify timeframes and rebuild using those new timeframes, this is now supported. Before running any rebuild scripts, set `orchestrator.disable_downloads` to 1 in `config.user.yaml`.
