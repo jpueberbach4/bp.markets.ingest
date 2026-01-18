@@ -54,7 +54,7 @@ Honestly, its not flawless yet. But for a first attempt? Pretty good.
 ![Example5](../images/reversal5.png)
 ![Example6](../images/reversal6.png)
 
-(This is 100 percent without lookahead bias, the above examples ;))
+This is 100 percent without lookahead bias. Imagine this filtering out false-positives and then monitoring all assets on a daily basis. The few signals you might see in these screenshots, when applied to many assets, you would get a signal every so many days. 
 
 I realize myself now, how powerful this actually has become. Python for custom indicators? Pure gold. Moondust.
 
