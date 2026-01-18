@@ -94,7 +94,7 @@ from api.state11 import cache
 from api.config.app_config import load_app_config
 from api.v1_1.helper import parse_uri, discover_options, generate_output, execute, discover_all, _get_ms
 
-from api.v1_1.plugin import indicator_registry, get_indicator_plugins
+from api.v1_1.plugin import indicator_registry, get_indicator_plugins, refresh_indicators
 from api.v1_1.version import API_VERSION
 from api.v1_1.parallel import parallel_indicators
 
@@ -157,8 +157,11 @@ async def list_indicators(
     if id: options['id'] = id
 
     try:
+        # Hot reload support (only for custom user indicators)
+        local_indicator_registry = refresh_indicators(options, indicator_registry, "config.user/plugins/indicators")
+
         # Retrieve metadata for all registered indicators
-        data = get_indicator_plugins(indicator_registry)
+        data = get_indicator_plugins(local_indicator_registry)
 
         # Record wall-clock execution time
         options["wall"] = time.time() - time_start
@@ -394,8 +397,11 @@ async def get_ohlcv(
         elif options.get("subformat") == 3:
             disable_recursive_mapping = True
 
+        # Hot reload support (only for custom user indicators)
+        local_indicator_registry = refresh_indicators(options, indicator_registry, "config.user/plugins/indicators")
+
         # Enrich the returned result with the requested indicators (parallelized)
-        enriched_df = parallel_indicators(df, options, indicator_registry, disable_recursive_mapping)
+        enriched_df = parallel_indicators(df, options, local_indicator_registry, disable_recursive_mapping)
 
         if options.get('after'):
             # Filter to keep only rows >= requested start time

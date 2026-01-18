@@ -79,7 +79,7 @@ from api.config.app_config import load_app_config
 from api.v1_1.helper import parse_uri, discover_options, generate_output, discover_all
 from api.v1_1.helper import execute
 
-from api.v1_1.plugin import load_indicator_plugins
+from api.v1_1.plugin import load_indicator_plugins, refresh_indicators
 from api.v1_0.version import API_VERSION
 
 
@@ -163,8 +163,11 @@ async def get_indicator(
                 "Multi-symbol or multi-timeframe is not supported with MT4 flag"
             )
 
+        # Hot reload support (only for custom user indicators)
+        local_indicator_registry = refresh_indicators(options, indicator_registry, "config.user/plugins/indicators")
+
         # Resolve indicator plugin function
-        plugin_func = indicator_registry[name]
+        plugin_func = local_indicator_registry[name].get('calculate')
         pos_opts = {}
         default_opts = {}
 
@@ -204,7 +207,7 @@ async def get_indicator(
             df["close"] = pd.to_numeric(df["close"], errors="coerce")
 
         # Execute indicator logic and merge results with source data
-        calculated_df = indicator_registry[name](df, ind_opts)
+        calculated_df = indicator_registry[name].get('calculate')(df, ind_opts)
         enriched_df = df.join(calculated_df)
 
         # Apply final sorting order
