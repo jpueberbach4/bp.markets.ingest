@@ -27,6 +27,8 @@ Technical issues.
 
 Charts are down too: https://www.dukascopy.com/swiss/english/marketwatch/charts/
 
+In the unlikely case that the issues are intentional, i will try to work something out with Dukascopy to arrange a paid access for these feeds and this tool. Where users can subscribe. I think it's fair to pay for the infrastructure cost that goes along with delivering this data. For me, now i have played with custom indicators, and have some initial versions of stuff, its a major major gamechanger. Already. And replay isnt even there yet.
+
 ## Notice: been playing around with custom indicators
 
 You can really write neat stuff using custom indicators. Positive divergence (bullish) example-with doji detection.
