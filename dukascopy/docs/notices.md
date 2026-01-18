@@ -24,17 +24,11 @@ A "Error from Cloudfront". Could basically mean anything. Because of the inconsi
 
 What's likely up?
 
-Technical issues.
+This is now certain: Technical issues. Specifically the jetta subsystem.
 
-Charts are down too: https://www.dukascopy.com/swiss/english/marketwatch/charts/
-
-In the unlikely case that the issues are intentional, i will try to work something out with Dukascopy to arrange a paid access for these feeds and this tool. Where users can subscribe. I think it's fair to pay for the infrastructure cost that goes along with delivering this data. For me, now i have played with custom indicators, and have some initial versions of stuff, its a major major gamechanger. Already. And replay isnt even there yet. The tool, ofcourse, will remain in development and free of charge.
-
-This is not monetization of this tool, its making sure it stays around.
+The freeserv and datafeed subsystem are unaffected. I will reach out, if needed. 
 
 Monday is MLK (Martin Luther King Jr) day, being a major market holiday.
-
-PS: this project has about 10k clones and 5k uniques in just 40 days. In a small "niche". Etc..
 
 ## Notice: hot-reload of CUSTOM indicators is now done - 2025-01-18
 
