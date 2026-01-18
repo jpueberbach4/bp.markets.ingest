@@ -59,6 +59,8 @@ I will build these things first and then really start with replay.
 
 I realize myself now, how powerful this actually has become. Python for custom indicators? Pure gold. Moondust.
 
+When feed access is restored, nomatter in what way, and replay is done, the next logical step would be an "alert-system". Thinking out loud: runs periodically. Queries the API. You have business rules setup that looks for combinations of values, in either combined or single feeds, when the conditional rules match fields -> email (or popup with star wars sound, whatever).
+
 ## Notice: support for cache-only rebuilds - 2025-01-17
 
 If the download endpoint is unavailable but you have a cache folder and want to modify timeframes and rebuild using those new timeframes, this is now supported. Before running any rebuild scripts, set `orchestrator.disable_downloads` to 1 in `config.user.yaml`.
