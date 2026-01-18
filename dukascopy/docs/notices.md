@@ -11,7 +11,7 @@ What's next?
 
 What's up?
 
-A "Error from Cloudfront". Could basically mean anything. Because of the inconsistent behavior my best guess is technical issues.
+A "Error from Cloudfront".  Because of the inconsistent behavior my best guess is technical issues.
 
 What's likely up?
 
