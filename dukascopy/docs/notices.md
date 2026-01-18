@@ -33,7 +33,14 @@ This is not monetization of this tool, its making sure it stays around.
 
 Monday is MLK (Martin Luther King Jr) day, being a major market holiday.
 
-## Notice: been playing around with custom indicators
+
+## Notice: hot-reload of CUSTOM indicators is now done - 2025-01-18
+
+Hot-reload of custom indicators has now been implemented. No more webservice restarts if you ADD/CHANGE an indicator. No more webservice restarts needed. Now, it still has to get supported in the interfaces. Reloading when you press "update view". Goal of these changes is to support "rapid prototyping", easy the developer experience. 
+
+Note that it only works for CUSTOM indicators. The system ones will not be refreshed without a webservice restart. You shouldnt change them anyways. 
+
+## Notice: been playing around with custom indicators - 2025-01-18
 
 You can really write neat stuff using custom indicators. Positive divergence (bullish) example-with doji detection.
 
@@ -47,21 +54,6 @@ Honestly, its not flawless yet. But for a first attempt? Pretty good.
 ![Example4](../images/reversal5.png)
 
 (This is 100 percent without lookahead bias, the above examples ;))
-
-Currently there are 2 issues which makes custom indicator building a bit tedious:
-
-- you need to restart the webservice
-- you need to reload the page, reselect the symbol, timeframe, indicator
-
-I will make changes for that. It's not handy the way it is now. Will make it like this:
-
-- indicator change is detected automatically and refreshed in the service
-- pressing update view will update with new output
-- refreshing page will remember (last) settings - using browser localstorage (for now)
-
-Rapid prototyping should be possible. The above helps with that.
-
-I will build these things first and then really start with replay.
 
 I realize myself now, how powerful this actually has become. Python for custom indicators? Pure gold. Moondust.
 
