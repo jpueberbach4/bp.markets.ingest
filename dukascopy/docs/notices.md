@@ -9,15 +9,6 @@ What's next?
 
 ## **Notice: Endpoint issues - 503**
 
-I changed code and tried a few things. These are the things i considered
-
-- User-agent blockage: Not the case
-  Similar results with regular browser headers
-- AWS endpoint issue in Amsterdam (my nearest Dukascopy CDN): Not the case
-  Tried VPN services and Google Shell. No difference.
-- Historical tail disable (prevent trading bots)
-  Seems also not the case.
-
 What's up?
 
 A "Error from Cloudfront". Could basically mean anything. Because of the inconsistent behavior my best guess is technical issues.
