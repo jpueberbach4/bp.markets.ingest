@@ -42,6 +42,8 @@ Hot-reload of custom indicators has now been implemented. No more webservice res
 
 **Update:** The chart-web-UI has been updated to reload indicators on "Update view". So if you add/modify an indicator, press "Update view" to reload its settings/newly added indicators. `index.html` has changed once more, copy over the file manually to `config.user`. Note that it only works for CUSTOM indicators. The system ones will not be refreshed without a webservice restart. You shouldnt change them anyways.
 
+**Note:** Sometimes with "dragging" the chart, it flips a bit. Use pagedown/pageup/end keys. Still needs some polishing. But is of later concern. I am not so great at frontend development. It's not so "strict" as backend. The asynchronous stuff with JSONP. Brrr. 
+
 ## Notice: been playing around with custom indicators - 2025-01-18
 
 You can really write neat stuff using custom indicators. Positive divergence (bullish) example-with doji detection.
