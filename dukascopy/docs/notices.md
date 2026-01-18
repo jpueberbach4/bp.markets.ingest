@@ -23,7 +23,9 @@ A "Error from Cloudfront". Could basically mean anything. Because of the inconsi
 
 What's likely up?
 
-Could be a dataset rebuild on Dukascopy's end. With Martin Luther King Jr day up etc, it gives a window to perform rebuilds. Maintenance. Everything points to this atm. 
+Technical issues.
+
+Charts are down too: https://www.dukascopy.com/swiss/english/marketwatch/charts/
 
 ## Notice: support for cache-only rebuilds - 2025-01-17
 
@@ -34,9 +36,3 @@ Important is that your cache folder doesnt have any gaps. If you use an original
 ## Notice: buffered interface is now supported - 2025-01-17
 
 I have updated the interface to not keep everything in memory when browsing history-this smooths the UX. It keeps a record of maximum 5000 bars. This is optimized for a laptop 1680x1050. If you have a "wider-screen" you might wanna set the bufferLimit higher in `config.user/dukascopy/http-docs/index.html` (you might need to copy over the new file). Just CTRL+F 5000 and change it to a value that matches your setup.
-
-Still no news on the 503 status. Still same. Their main historical downloads on their own website are also down. IP's user-agents, etc etc etc. All doesnt matter. All same behavior. So still thinking its a technical issue. No reasons to assume its anything else than that. Have a great weekend. 
-
-## Notice: just theoretical, how would I scale this?
-
-Kubernetes. Read-only-many storage. Each pod, one http service instance. Each pod pinned to a CPU and 1024M memory. Service on top. Loadbalancing protocol round-robin. Done. Although the HTTP service is limited to a single core, this is how i would do it. The ETL-part? that's a secret :)
