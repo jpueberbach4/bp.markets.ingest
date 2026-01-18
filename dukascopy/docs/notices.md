@@ -3,6 +3,7 @@
 What's next?
 
 - Evening off
+- Markers
 - Replay/Market simulation
 - Optionally reaching out if problems persist longer than expected
 - Write-up
@@ -20,6 +21,10 @@ This is now certain: Technical issues. Specifically the jetta subsystem.
 The freeserv and datafeed subsystem are unaffected. I will reach out, if needed. 
 
 Monday is MLK (Martin Luther King Jr) day, being a major market holiday.
+
+## Notice: markers
+
+I need markers in my charts. Arrows up/down, smileys, money-signs, letters, etc. Will be added. 
 
 ## Notice: hot-reload of CUSTOM indicators is now done - 2025-01-18
 
