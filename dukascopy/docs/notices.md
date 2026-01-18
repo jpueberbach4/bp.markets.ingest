@@ -33,6 +33,7 @@ This is not monetization of this tool, its making sure it stays around.
 
 Monday is MLK (Martin Luther King Jr) day, being a major market holiday.
 
+PS: this project has about 10k clones and 5k uniques in just 40 days. In a small "niche". Etc..
 
 ## Notice: hot-reload of CUSTOM indicators is now done - 2025-01-18
 
