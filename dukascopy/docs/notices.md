@@ -36,7 +36,7 @@ Monday is MLK (Martin Luther King Jr) day, being a major market holiday.
 
 ## Notice: hot-reload of CUSTOM indicators is now done - 2025-01-18
 
-Hot-reload of custom indicators has now been implemented. No more webservice restarts if you ADD/CHANGE an indicator. No more webservice restarts needed. Now, it still has to get supported in the interfaces. Reloading when you press "update view". Goal of these changes is to support "rapid prototyping", easy the developer experience. 
+Hot-reload of custom indicators has now been implemented. No more webservice restarts needed if you ADD/CHANGE an indicator. Now, it still has to get supported in the interfaces. Reloading when you press "update view". Goal of these changes is to support "rapid prototyping", easy the developer experience. 
 
 Note that it only works for CUSTOM indicators. The system ones will not be refreshed without a webservice restart. You shouldnt change them anyways. 
 
