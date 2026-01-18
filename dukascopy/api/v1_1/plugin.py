@@ -37,6 +37,7 @@
 
 import os
 import importlib.util
+import sys
 from pathlib import Path
 
 indicator_stats = {}
@@ -182,6 +183,10 @@ def refresh_indicators(options, indicator_registry, plugin_dir_path):
         )
 
         if needs_reload:
+            # Just to make sure its REALLY and FULLY reloaded on import
+            if plugin_name in sys.modules:
+                del sys.modules[plugin_name]
+                
             # Dynamically load the plugin module from its file path.
             spec = importlib.util.spec_from_file_location(plugin_name, file_path)
             module = importlib.util.module_from_spec(spec)
