@@ -607,7 +607,7 @@ def _get_warmup_rows(symbol: str, timeframe: str, after_str: str, indicators: Li
         if name not in indicator_registry:
             continue
 
-        plugin_func = indicator_registry[name]
+        plugin_func = indicator_registry[name].get('calculate')
 
         # Initialize indicator options with raw positional parameters
         ind_opts = {"params": parts[1:]}
