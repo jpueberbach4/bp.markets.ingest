@@ -195,6 +195,7 @@ async def list_indicators(
         raise Exception("Unsupported content type (Sorry, CSV not supported)")
         
     except Exception as e:
+        # Print traceback in service console in case developer makes a mistake
         import traceback
         traceback.print_exc()
         # Build standardized error payload
@@ -299,6 +300,9 @@ async def get_ohlcv_list(
         raise Exception("Unsupported content type (Sorry, CSV not supported)")
 
     except Exception as e:
+        # Print traceback in service console in case developer makes a mistake
+        import traceback
+        traceback.print_exc()
         # Standardized error response
         error_payload = {"status": "failure", "exception": f"{e}","options": options}
         if options.get("output_type") == "JSONP":
@@ -432,6 +436,10 @@ async def get_ohlcv(
         raise Exception("Unsupported content type")
 
     except Exception as e:
+        # Print traceback in service console in case developer makes a mistake
+        import traceback
+        traceback.print_exc()
+
         # Standardized error response
         error_payload = {"status": "failure", "exception": f"{e}","options": options}
 
