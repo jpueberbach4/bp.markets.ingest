@@ -39,7 +39,7 @@ PS: this project has about 10k clones and 5k uniques in just 40 days. In a small
 
 Hot-reload of custom indicators has now been implemented. No more webservice restarts needed if you ADD/CHANGE an indicator. Goal of these changes is to support "rapid prototyping", ease the developer experience. 
 
-**Important:** Do not use `_`-understore-in indicator file-names. If you need to seperate, use a `-`-dash- or a `.`-dot.
+**Important:** Do not use `_`-underscore-in indicator file-names. If you need to seperate, use a `-`-dash- or a `.`-dot.
 
 **Update:** The chart-web-UI has been updated to reload indicators on "Update view". So if you add/modify an indicator, press "Update view" to reload its settings/newly added indicators. `index.html` has changed once more, copy over the file manually to `config.user`. Note that it only works for CUSTOM indicators. The system ones will not be refreshed without a webservice restart. You shouldnt change them anyways.
 
