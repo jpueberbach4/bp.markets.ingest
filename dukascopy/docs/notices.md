@@ -33,6 +33,8 @@ You can really write neat stuff using custom indicators. Positive divergence (bu
 
 ![Example](../images/reversal.png)
 ![Example2](../images/reversal2.png)
+![Example3](../images/reversal3.png)
+![Example4](../images/reversal4.png)
 
 Currently there are 2 issues which makes custom indicator building a bit tedious:
 
