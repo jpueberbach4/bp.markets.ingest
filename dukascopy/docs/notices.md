@@ -42,6 +42,10 @@ You can really write neat stuff using custom indicators. Positive divergence (bu
 ![Example3](../images/reversal3.png)
 ![Example4](../images/reversal4.png)
 
+Honestly, its not flawless yet. But for a first attempt? Pretty good.
+
+![Example4](../images/reversal5.png)
+
 (This is 100 percent without lookahead bias, the above examples ;))
 
 Currently there are 2 issues which makes custom indicator building a bit tedious:
