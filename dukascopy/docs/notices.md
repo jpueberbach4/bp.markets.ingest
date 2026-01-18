@@ -36,13 +36,11 @@ Monday is MLK (Martin Luther King Jr) day, being a major market holiday.
 
 ## Notice: hot-reload of CUSTOM indicators is now done - 2025-01-18
 
-Hot-reload of custom indicators has now been implemented. No more webservice restarts needed if you ADD/CHANGE an indicator. Now, it still has to get supported in the interfaces. Reloading when you press "update view". Goal of these changes is to support "rapid prototyping", ease the developer experience. 
-
-Note that it only works for CUSTOM indicators. The system ones will not be refreshed without a webservice restart. You shouldnt change them anyways.
+Hot-reload of custom indicators has now been implemented. No more webservice restarts needed if you ADD/CHANGE an indicator. Goal of these changes is to support "rapid prototyping", ease the developer experience. 
 
 **Important:** Do not use `_`-understore-in indicator file-names. If you need to seperate, use a `-`-dash- or a `.`-dot.
 
-**Update:** The chart-web-UI has been updated to reload indicators on "Update view". So if you add/modify an indicator, press "Update view" to reload its settings/newly added indicators. `index.html` has changed once more, copy over the file manually to `config.user`.
+**Update:** The chart-web-UI has been updated to reload indicators on "Update view". So if you add/modify an indicator, press "Update view" to reload its settings/newly added indicators. `index.html` has changed once more, copy over the file manually to `config.user`. Note that it only works for CUSTOM indicators. The system ones will not be refreshed without a webservice restart. You shouldnt change them anyways.
 
 ## Notice: been playing around with custom indicators - 2025-01-18
 
