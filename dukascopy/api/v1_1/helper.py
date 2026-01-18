@@ -113,6 +113,8 @@ CSV_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 CSV_TIMESTAMP_FORMAT_MT4_DATE = "%Y.%m.%d"
 CSV_TIMESTAMP_FORMAT_MT4_TIME = "%H:%M:%S"
 
+available_datasets = []
+
 def normalize_timestamp(ts: str) -> str:
     if not ts:
         return ts
@@ -243,8 +245,6 @@ def discover_all(options: Dict):
     # Scan the filesystem and return the discovered datasets
     return discovery.scan()
 
-
-
 def discover_options(options: Dict):
     """Resolve and enrich data selection options using filesystem-backed sources.
 
@@ -269,16 +269,19 @@ def discover_options(options: Dict):
     """
 
     try:
+        # Global sets
+        global available_datasets
         # Load builder configuration
-        config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
-        config = load_app_config(config_file)
+        if len(available_datasets) == 0:
+            config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
+            config = load_app_config(config_file)
 
-        # Initialize discovery
-        discovery = DataDiscovery(config.builder)
-        available = discovery.scan()
+            # Initialize discovery
+            discovery = DataDiscovery(config.builder)
+            available_datasets = discovery.scan()
 
         # Resolve selections
-        resolver = SelectionResolver(available)
+        resolver = SelectionResolver(available_datasets)
         options["select_data"], _ = resolver.resolve(options["select_data"])
 
         return options
