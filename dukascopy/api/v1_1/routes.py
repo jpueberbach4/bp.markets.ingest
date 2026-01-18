@@ -195,6 +195,8 @@ async def list_indicators(
         raise Exception("Unsupported content type (Sorry, CSV not supported)")
         
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         # Build standardized error payload
         error_payload = {
             "status": "failure",

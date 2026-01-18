@@ -241,11 +241,14 @@ def get_indicator_plugins(plugins):
     # Container for all discovered indicator metadata
     indicators = {}
 
+    # Support for hot-reload (custom indicators only)
+    indicator_registry_local = refresh_indicators({}, indicator_registry, "config.user/plugins/indicators")
+
     # Iterate through provided plugins by name
     for name, plugin in plugins.items():
 
         # Resolve the actual indicator function from the registry
-        plugin_func = indicator_registry[name].get('calculate')
+        plugin_func = indicator_registry_local[name].get('calculate')
 
         # Initialize metadata structure with defaults
         info = {
