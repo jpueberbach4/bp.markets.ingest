@@ -864,6 +864,10 @@
     }
 
     function resetAndLoad(clear = false) {
+        // Refresh the indicator list from the API
+        const s = document.createElement('script');
+        s.src = "/ohlcv/1.1/list/indicators/output/JSONP?callback=__bp_callback";
+        document.body.appendChild(s);
         if (clear) {
             masterData = [];
             candleSeries.setData([]);

@@ -42,6 +42,8 @@ Note that it only works for CUSTOM indicators. The system ones will not be refre
 
 **Important:** Do not use `_`-understore-in indicator file-names. If you need to seperate, use a `-`-dash- or a `.`-dot.
 
+**Update:** The chart-web-UI has been updated to reload indicators on "Update view". So if you add/modify an indicator, press "Update view" to reload its settings/newly added indicators. `index.html` has changed once more, copy over the file manually to `config.user`.
+
 ## Notice: been playing around with custom indicators - 2025-01-18
 
 You can really write neat stuff using custom indicators. Positive divergence (bullish) example-with doji detection.
