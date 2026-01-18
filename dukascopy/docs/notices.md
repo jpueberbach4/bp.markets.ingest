@@ -51,7 +51,8 @@ You can really write neat stuff using custom indicators. Positive divergence (bu
 
 Honestly, its not flawless yet. But for a first attempt? Pretty good.
 
-![Example4](../images/reversal5.png)
+![Example5](../images/reversal5.png)
+![Example6](../images/reversal6.png)
 
 (This is 100 percent without lookahead bias, the above examples ;))
 
