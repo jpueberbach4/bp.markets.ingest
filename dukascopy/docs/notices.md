@@ -27,6 +27,12 @@ Technical issues.
 
 Charts are down too: https://www.dukascopy.com/swiss/english/marketwatch/charts/
 
+## Notice: been playing around with custom indicators
+
+You can really write neat stuff using custom indicators. Positive divergence example.
+
+![Example](../images/reversal.png)
+
 ## Notice: support for cache-only rebuilds - 2025-01-17
 
 If the download endpoint is unavailable but you have a cache folder and want to modify timeframes and rebuild using those new timeframes, this is now supported. Before running any rebuild scripts, set `orchestrator.disable_downloads` to 1 in `config.user.yaml`.
