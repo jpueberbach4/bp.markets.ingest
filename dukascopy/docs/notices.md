@@ -31,6 +31,8 @@ In the unlikely case that the issues are intentional, i will try to work somethi
 
 This is not monetization of this tool, its making sure it stays around.
 
+Monday is MLK (Martin Luther King Jr) day, being a major market holiday.
+
 ## Notice: been playing around with custom indicators
 
 You can really write neat stuff using custom indicators. Positive divergence (bullish) example-with doji detection.
