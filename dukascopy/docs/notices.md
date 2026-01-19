@@ -6,15 +6,16 @@ What's next?
 - Write-up
 
 
-## **Notice:** Accidently introduced a bug during the 503 issues** - 2025-01-19
+## **Notice:** Interface (bug-)fixes - 2025-01-19
 
-Good morning. Because of the 503 issues i introduced a flag, disable_downloads and made changes in run.py. Part of these changes have been reverted because they disabled loading the end-tail-the day of today. Advice is to update and perform a `./rebuild-weekly.sh` to reinitialize the pointers. Sorry about this.
+Over the weekend, I updated the HTML chart interface to use a buffered approach for “candle memory.” While this worked fine on my laptop, it likely didn’t scale well on desktop setups with much larger screens. The default bufferLimit of 5000 appears to have been too low, forcing users to manually edit index.html and adjust the value to match their setup.
 
-Have a great day
+I’ve now implemented a dynamic bufferLimit, which should resolve this issue. For testing, I initialized the bufferLimit to 10, and it seems to be working as expected. I’m primarily a full-stack developer, but JavaScript—especially frontend work—is not my strongest area, as I’m more accustomed to the strictness of backend development.
 
-PS: a `./rebuild-weekly.sh` will also make sure that the files of last week are in-check. if you are completely new and didnt do any rebuild yet, use the `./rebuild-full.sh` script. For users that really want to check things out and have EUR-USD, you can run `python3 dump.py`. This checks the last date of the aggregate file-the last date should be now-1 minute. If your `data/temp` directory doesnt have any .bin files, `weekly-rebuild.sh`. Cronjobs can be enabled again.
+Additionally, when the tail of the chart is in view, the update logic should now correctly display new candles. I’m still testing this, but so far it looks okay.
 
-One more thing. The update view button doesnt refresh the tail. The updated data comes in correctly. So its an interface thingy. I will fix this soon. I have to go on some other business first but when i get back i will fix it. As a temporary solution you can switch the timeframes forth and back. 
+Copy over the new `config/dukascopy/http-docs/index.html` to your `config.user/dukascopy/http-docs/index.html`.W
+
 
 ## **Notice: Endpoint issues - 503** - 2025-01-18
 
