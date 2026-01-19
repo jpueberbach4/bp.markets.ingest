@@ -705,8 +705,6 @@
 
             masterData = newData;
 
-            console.log(requestDirection)
-
             if (masterData.length > bufferLimit) {
                 
                 if (requestDirection === 'future' || requestDirection === 'initial') {
@@ -724,7 +722,6 @@
                 // I dont know this library very well....
                 const timeScale = mainChart.timeScale();
                 const newLeftIndex = masterData.findIndex(d => d.time === window.anchorTime);
-                console.log('anchoring: ' + window.anchorTime)
                 if (newLeftIndex !== -1) {
                     timeScale.setVisibleLogicalRange({
                         from: newLeftIndex,
