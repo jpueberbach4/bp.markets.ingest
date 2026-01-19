@@ -14,11 +14,7 @@ What's up?
 
 A "Error from Cloudfront".  Because of the inconsistent behavior my best guess is technical issues.
 
-What's likely up?
-
-This is now certain: Technical issues. Specifically the jetta subsystem.
-
-The freeserv and datafeed subsystem are unaffected. I will reach out, if needed. 
+**Update:** I was able to synchronize with making 503 a transient error, retries to 5. Things are slowly improving.
 
 Monday is MLK (Martin Luther King Jr) day, being a major market holiday.
 
