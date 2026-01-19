@@ -5,6 +5,14 @@ What's next?
 - Replay/Market simulation
 - Write-up
 
+## **Notice:** Functional replay mockup - 2025-01-19
+
+For demonstration purposes, I’ve included a fully functional replay mockup in this repository. You can use it to run replays with your own assets, indicators, and configurations.
+
+This is not the definitive replay implementation—the final version is significantly more advanced than what’s included here.
+
+That said, feel free to explore and experiment with it. Since this was implemented and reviewed quickly, there may be minor glitches or rough edges.
+
 
 ## **Notice:** Interface (bug-)fixes - 2025-01-19
 
