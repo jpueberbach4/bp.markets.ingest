@@ -430,7 +430,7 @@
     let hasMoreHistory = true;
     let gapRetryCount = 0;
     const maxGapRetries = 10;
-    const bufferLimit = 5000; 
+    let bufferLimit = 2000; 
     const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
     let mainChart, candleSeries, volumeSeries;
@@ -547,6 +547,8 @@
             const logicalRange = mainChart.timeScale().getVisibleLogicalRange();
             if (!logicalRange) return;
 
+            syncBufferLimit();
+
             if (logicalRange.from < 10 && hasMoreHistory) {
                 loadData('history', masterData[0].time * 1000);
             }
@@ -554,6 +556,21 @@
                 loadData('future', masterData[masterData.length - 1].time * 1000);
             }
         });
+        
+        window.addEventListener('resize', syncBufferLimit);
+        syncBufferLimit(); 
+
+    }
+
+    function syncBufferLimit() {
+        const container = document.getElementById('main-chart-container');
+        const spacing = mainChart.timeScale().options().barSpacing || 6;
+        const visibleBars = Math.ceil(container.offsetWidth / spacing);
+        const target = Math.max(3000, visibleBars * 3); 
+
+        if (Math.abs(target - bufferLimit) > 200) {
+            bufferLimit = target;
+        }
     }
 
     function renderParams() {
@@ -680,12 +697,20 @@
             const countAdded = (addedToLeft === -1 || masterData.length === 0) ? 0 : addedToLeft;
             masterData = newData;
 
+            console.log(requestDirection)
+
             if (masterData.length > bufferLimit) {
-                if (requestDirection === 'history') masterData = masterData.slice(0, bufferLimit);
-                else masterData = masterData.slice(-bufferLimit);
+                console.log(`Trimming masterData: ${masterData.length} -> ${bufferLimit}`);
+                
+                if (requestDirection === 'future' || requestDirection === 'initial') {
+                    masterData = masterData.slice(-bufferLimit);
+                } 
+                else if (requestDirection === 'history') {
+                    masterData = masterData.slice(0, Math.max(bufferLimit, logicalRange.to + 100));
+                }
             }
 
-            updateChartUI(cols);
+            updateChartUI(cols, requestDirection);
 
             if (logicalRange !== null && requestDirection === 'history' && countAdded > 0) {
                 timeScale.setVisibleLogicalRange({ from: logicalRange.from + countAdded, to: logicalRange.to + countAdded });
@@ -706,7 +731,8 @@
         return titleStr;
     }
 
-    function updateChartUI(cols = []) {
+    function updateChartUI(cols = [], requestDirection) {
+
         candleSeries.setData(masterData.map(d => ({
             time: d.time, open: d.open, high: d.high, low: d.low, close: d.close
         })));
