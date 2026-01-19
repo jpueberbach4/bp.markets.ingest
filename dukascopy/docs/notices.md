@@ -33,8 +33,6 @@ Hot-reload of custom indicators has now been implemented. No more webservice res
 You can really write neat stuff using custom indicators. Positive divergence (bullish) example-with doji detection.
 
 ![Example](../images/reversal.png)
-![Example2](../images/reversal2.png)
-![Example3](../images/reversal3.png)
 ![Example4](../images/reversal4.png)
 
 Honestly, its not flawless yet. But for a first attempt? Pretty good.
@@ -42,11 +40,9 @@ Honestly, its not flawless yet. But for a first attempt? Pretty good.
 ![Example5](../images/reversal5.png)
 ![Example6](../images/reversal6.png)
 
-This is 100 percent without lookahead bias. Imagine this filtering out false-positives and then monitoring all assets on a daily basis. The few signals you might see in these screenshots, when applied to many assets, you would get a signal every so many days. 
+This is 100 percent without lookahead bias. 
 
-I realize myself now, how powerful this actually has become. Python for custom indicators? Pure gold. Moondust.
-
-When feed access is restored, nomatter in what way, and replay is done, the next logical step would be an "alert-system". Thinking out loud: runs periodically. Queries the API. You have business rules setup that looks for combinations of values, in either combined or single feeds, when the conditional rules match fields -> email (or popup with star wars sound, whatever).
+Python for custom indicators? Pure gold.
 
 ## Notice: support for cache-only rebuilds - 2025-01-17
 
