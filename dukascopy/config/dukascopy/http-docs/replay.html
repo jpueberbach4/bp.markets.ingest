@@ -177,7 +177,13 @@
             text-transform: uppercase;
             overflow-anchor: none;
         }
-
+        .sidebar-footer { 
+            padding: 15px 20px; 
+            border-top: 1px solid var(--border-color); 
+            background: #fafbfc; 
+            text-align: center; 
+            margin-top: auto;
+        }
         /* UTILS */
         #loader {
             display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -403,6 +409,11 @@
             <div style="margin-top: auto;">
                 <button onclick="resetAndLoad(false)" class="action-btn btn-primary">Refresh View</button>
                 <button onclick="openExportModal()" class="action-btn btn-secondary">Export Data</button>
+            </div>
+            <div class="sidebar-footer">
+                <a href="https://www.dukascopy.com" target="_blank" class="attribution">
+                    Market data by <strong>Dukascopy</strong>
+                </a>
             </div>
         </div>
 
