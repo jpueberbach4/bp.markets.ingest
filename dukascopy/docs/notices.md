@@ -22,10 +22,6 @@ The freeserv and datafeed subsystem are unaffected. I will reach out, if needed.
 
 Monday is MLK (Martin Luther King Jr) day, being a major market holiday.
 
-## Notice: markers
-
-I need markers in my charts. Arrows up/down, smileys, money-signs, letters, etc. Will be added. 
-
 ## Notice: hot-reload of CUSTOM indicators is now done - 2025-01-18
 
 Hot-reload of custom indicators has now been implemented. No more webservice restarts needed if you ADD/CHANGE an indicator. Goal of these changes is to support "rapid prototyping", ease the developer experience. 
@@ -65,7 +61,3 @@ Important is that your cache folder doesnt have any gaps. If you use an original
 ## Notice: buffered interface is now supported - 2025-01-17
 
 I have updated the interface to not keep everything in memory when browsing history-this smooths the UX. It keeps a record of maximum 5000 bars. This is optimized for a laptop 1680x1050. If you have a "wider-screen" you might wanna set the bufferLimit higher in `config.user/dukascopy/http-docs/index.html` (you might need to copy over the new file). Just CTRL+F 5000 and change it to a value that matches your setup.
-
-## Notice: abstracting the IO layer for download
-
-This would be a logical step now this happened but I dont want to start with that just yet.
