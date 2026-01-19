@@ -14,6 +14,8 @@ Have a great day
 
 PS: a `./rebuild-weekly.sh` will also make sure that the files of last week are in-check. if you are completely new and didnt do any rebuild yet, use the `./rebuild-full.sh` script. For users that really want to check things out and have EUR-USD, you can run `python3 dump.py`. This checks the last date of the aggregate file-the last date should be now-1 minute. If your `data/temp` directory doesnt have any .bin files, `weekly-rebuild.sh`. Cronjobs can be enabled again.
 
+One more thing. The update view button doesnt refresh the tail. The updated data comes in correctly. So its an interface thingy. I will fix this soon. I have to go on some other business first but when i get back i will fix it. As a temporary solution you can switch the timeframes forth and back. 
+
 ## **Notice: Endpoint issues - 503** - 2025-01-18
 
 What's up?
