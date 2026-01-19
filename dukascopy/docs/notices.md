@@ -5,13 +5,20 @@ What's next?
 - Replay/Market simulation
 - Write-up
 
-## **Notice: Endpoint issues - 503**
+
+## **Notice:** Accidently introduced a bug during the 503 issues** - 2025-01-19
+
+Good morning. Because of the 503 issues i introduced a flag, disable_downloads and made changes in run.py. Part of these changes have been reverted because they disabled loading the end-tail-the day of today. Advice is to update and perform a `./rebuild-weekly.sh` to reinitialize the pointers. Sorry about this.
+
+Have a great day
+
+## **Notice: Endpoint issues - 503** - 2025-01-18
 
 What's up?
 
 A "Error from Cloudfront".  Because of the inconsistent behavior my best guess is technical issues.
 
-**Update:** I was able to synchronize with making 503 a transient error, retries to 5. Things are slowly improving.
+**Update:** Issues have been resolved.
 
 Monday is MLK (Martin Luther King Jr) day, being a major market holiday.
 
