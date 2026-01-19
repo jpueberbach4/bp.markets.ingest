@@ -17,12 +17,14 @@ That said, feel free to explore and experiment with it. Since this was implement
 
 PS: Oh yes. The url and the script. `config/dukascopy/http-docs/replay.html`, copy it to `config.user/dukascopy/http-docs/`. After copying `http://localhost:8000/replay.html`. You will find a `Jump/Replay` button on the right topside. This should by no means be compared to what is coming.
 
+**Note:** If you build lookahead bias in your indicators, this replay will just accept that. So make sure you develop your indicators right. If i have time i will build an example on how to implement a cross-asset indicator without losing too much performance. Not today.
+
 
 ## **Notice:** Interface (bug-)fixes - 2025-01-19
 
 **Note:** I updated the index.html **twice** today. Now its oke. I think. I hope. Update view works too. These are important changes in case developing custom indicators. When you press update view, you want to see the new indicators output immediately, without a shifting chart or any other "weird stuff". All that has been fixed. My JS skills are improving.
 
-Copy over the new `config/dukascopy/http-docs/index.html` to your `config.user/dukascopy/http-docs/index.html`.W
+Copy over the new `config/dukascopy/http-docs/index.html` to your `config.user/dukascopy/http-docs/index.html`.
 
 ## **Notice: Endpoint issues - 503** - 2025-01-18
 
