@@ -19,6 +19,8 @@ PS: Oh yes. The url and the script. `config/dukascopy/http-docs/replay.html`, co
 
 **Note:** If you build lookahead bias in your indicators, this replay will just accept that. So make sure you develop your indicators right. If i have time i will build an example on how to implement a cross-asset indicator without losing too much performance. Not today.
 
+**Note:** The sharp eye will notice that SMA200 starting later. If you look closely, the start date is at the beginning of the data, 2005-ish, SMA200 needs 200 warmup rows. Since beginning of data, these were not passed. The system handles this correctly. 
+
 
 ## **Notice:** Interface (bug-)fixes - 2025-01-19
 
