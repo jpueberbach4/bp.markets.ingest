@@ -12,6 +12,8 @@ Good morning. Because of the 503 issues i introduced a flag, disable_downloads a
 
 Have a great day
 
+PS: a `./rebuild-weekly.sh` will also make sure that the files of last week are in-check. if you are completely new and didnt do any rebuild yet, use the `./rebuild-full.sh` script. For users that really want to check things out and have EUR-USD, you can run `python3 dump.py`. This checks the last date of the aggregate file-the last date should be now-1 minute. If your `data/temp` directory doesnt have any .bin files, `weekly-rebuild.sh`. Cronjobs can be enabled again.
+
 ## **Notice: Endpoint issues - 503** - 2025-01-18
 
 What's up?
