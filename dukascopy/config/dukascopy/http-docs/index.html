@@ -430,9 +430,10 @@
     let hasMoreHistory = true;
     let gapRetryCount = 0;
     const maxGapRetries = 10;
-    let bufferLimit = 2000; 
+    let bufferLimit = 20; 
     const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+    let rightPriceScaleWidth = 90;
     let mainChart, candleSeries, volumeSeries;
     let overlaySeriesMap = {}; 
     let panelCharts = {};      
@@ -477,7 +478,9 @@
             localization: { timeFormatter: (ts) => formatUnixToLiteral(ts) },
             layout: { background: { color: '#ffffff' }, textColor: '#131722', attributionLogo: false },
             timeScale: { timeVisible: true, borderColor: '#e0e3eb', shiftVisibleRangeOnNewBar: false },
-            rightPriceScale: { borderVisible: false, minimumWidth: 80 },
+            rightPriceScale: { 
+                borderVisible: false, minimumWidth: rightPriceScaleWidth
+            },
         });
 
         const resizeObserver = new ResizeObserver(entries => {
@@ -705,6 +708,8 @@
 
             masterData = newData;
 
+            console.log(requestDirection)
+
             if (masterData.length > bufferLimit) {
                 
                 if (requestDirection === 'future' || requestDirection === 'initial') {
@@ -722,6 +727,7 @@
                 // I dont know this library very well....
                 const timeScale = mainChart.timeScale();
                 const newLeftIndex = masterData.findIndex(d => d.time === window.anchorTime);
+                console.log('anchoring: ' + window.anchorTime)
                 if (newLeftIndex !== -1) {
                     timeScale.setVisibleLogicalRange({
                         from: newLeftIndex,
@@ -871,7 +877,7 @@
                 visible: false,
                 shiftVisibleRangeOnNewBar: false
             },
-            rightPriceScale: { borderVisible: false, minimumWidth: 80 },
+            rightPriceScale: { borderVisible: false, minimumWidth: rightPriceScaleWidth },
         });
         
         panelCharts[id] = { chart, series: {} };
