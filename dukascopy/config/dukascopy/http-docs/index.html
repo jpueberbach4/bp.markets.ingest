@@ -430,7 +430,7 @@
     let hasMoreHistory = true;
     let gapRetryCount = 0;
     const maxGapRetries = 10;
-    let bufferLimit = 1000; 
+    let bufferLimit = 2000; 
     const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
     let mainChart, candleSeries, volumeSeries;
@@ -500,6 +500,9 @@
         });
         volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
+        mainChart.timeScale().applyOptions({
+            shiftVisibleRangeOnNewBar: false,
+        });
         const legend = document.getElementById('chart-legend');
         mainChart.subscribeCrosshairMove(param => {
             if (!param.time || !param.point || param.point.x < 0 || param.point.y < 0) {
@@ -553,7 +556,7 @@
                 loadData('history', masterData[0].time * 1000);
             }
             if (logicalRange.to > masterData.length - 10) {
-                loadData('future', masterData[masterData.length - 1].time * 1000);
+                loadData('future', (masterData[masterData.length - 1].time * 1000)+1);
             }
         });
         
@@ -692,15 +695,19 @@
             const uniqueMap = new Map();
             combined.forEach(d => uniqueMap.set(d.time, d));
             const newData = Array.from(uniqueMap.values()).sort((a, b) => a.time - b.time);
-            
+
+            const lastOldTime = masterData.length > 0 ? masterData[masterData.length - 1].time : null;
             const addedToLeft = newData.findIndex(d => d.time === (masterData[0] ? masterData[0].time : null));
-            const countAdded = (addedToLeft === -1 || masterData.length === 0) ? 0 : addedToLeft;
+            const countAddedLeft = (addedToLeft === -1 || masterData.length === 0) ? 0 : addedToLeft;
+
+            const oldLastIndex = lastOldTime ? newData.findIndex(d => d.time === lastOldTime) : -1;
+            const countAddedRight = (oldLastIndex === -1) ? 0 : (newData.length - 1 - oldLastIndex);
+
             masterData = newData;
 
             console.log(requestDirection)
 
             if (masterData.length > bufferLimit) {
-                console.log(`Trimming masterData: ${masterData.length} -> ${bufferLimit}`);
                 
                 if (requestDirection === 'future' || requestDirection === 'initial') {
                     masterData = masterData.slice(-bufferLimit);
@@ -712,9 +719,31 @@
 
             updateChartUI(cols, requestDirection);
 
-            if (logicalRange !== null && requestDirection === 'history' && countAdded > 0) {
-                timeScale.setVisibleLogicalRange({ from: logicalRange.from + countAdded, to: logicalRange.to + countAdded });
+            if (window.anchorTime) {
+                // This stuff is wayyyyy harder than even the most complex part of the ETL pipeline.
+                // I dont know this library very well....
+                const timeScale = mainChart.timeScale();
+                const newLeftIndex = masterData.findIndex(d => d.time === window.anchorTime);
+                console.log('anchoring: ' + window.anchorTime)
+                if (newLeftIndex !== -1) {
+                    timeScale.setVisibleLogicalRange({
+                        from: newLeftIndex,
+                        to: newLeftIndex + (window.savedWidth || 50)
+                    });
+                }
+                window.anchorTime = null;
+                window.savedWidth = null;
             }
+
+            if (logicalRange !== null) {
+                if (requestDirection === 'history' && countAddedLeft > 0) {
+                    timeScale.setVisibleLogicalRange({ 
+                        from: logicalRange.from + countAddedLeft, 
+                        to: logicalRange.to + countAddedLeft 
+                    });
+                } 
+            }
+
         } else if (gapRetryCount < maxGapRetries) {
             gapRetryCount++;
             const currentTs = requestDirection === 'history' ? parseInt(response.options.until) : parseInt(response.options.after);
@@ -889,23 +918,54 @@
         return color;
     }
 
+
+    function clearOnUpdate() {
+        masterData = [];
+        candleSeries.setData([]);
+        volumeSeries.setData([]);
+        Object.values(overlaySeriesMap).forEach(s => mainChart.removeSeries(s));
+        overlaySeriesMap = {};
+        Object.values(panelCharts).forEach(p => p.chart.remove());
+        panelCharts = {};
+        document.getElementById('panel-container').innerHTML = '';
+        candleSeries.priceScale().applyOptions({
+            autoScale: true,
+        });
+    }
+
     function resetAndLoad(clear = false) {
         // Refresh the indicator list from the API
         const s = document.createElement('script');
         s.src = "/ohlcv/1.1/list/indicators/output/JSONP?callback=__bp_callback";
         document.body.appendChild(s);
         if (clear) {
-            masterData = [];
-            candleSeries.setData([]);
-            volumeSeries.setData([]);
-            Object.values(overlaySeriesMap).forEach(s => mainChart.removeSeries(s));
-            overlaySeriesMap = {};
-            Object.values(panelCharts).forEach(p => p.chart.remove());
-            panelCharts = {};
-            document.getElementById('panel-container').innerHTML = '';
-            candleSeries.priceScale().applyOptions({
-                autoScale: true,
-            });
+            clearOnUpdate();
+        } else{
+
+            const timeScale = mainChart.timeScale();
+            const range = timeScale.getVisibleLogicalRange();
+            
+            if (range && masterData.length > 0) {
+                const firstVisibleIdx = Math.max(0, Math.floor(range.from));
+                
+                // Save the anchor-time to force the view to remain unchanged
+                // See: additional logic in __callbackData
+                window.anchorTime = masterData[firstVisibleIdx].time;               
+                window.savedWidth = range.to - range.from;
+
+                masterData = [];
+                candleSeries.setData([]);
+                volumeSeries.setData([]);
+
+                hasMoreHistory = true;
+                gapRetryCount = 0;
+                // We go FORWARD direction since the reference time is the left bar!
+                requestDirection = 'forward';
+                // Do not forget that we are dealing with epoch_ms, so multiply by 1000
+                loadData('forward', window.anchorTime*1000);
+
+                return;
+            }
         }
         hasMoreHistory = true;
         gapRetryCount = 0;

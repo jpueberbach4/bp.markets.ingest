@@ -677,7 +677,7 @@ def execute(options):
         total_limit = limit + warmup_rows
 
         # Find index positions in cache for the requested time range
-        after_idx = cache.find_record(symbol, timeframe, after_ms, "right")
+        after_idx = cache.find_record(symbol, timeframe, after_ms, "left")
         until_idx = cache.find_record(symbol, timeframe, until_ms, "right")
 
         # Extend the start index backward to include warmup rows

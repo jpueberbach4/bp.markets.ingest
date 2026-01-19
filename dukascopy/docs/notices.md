@@ -8,6 +8,8 @@ What's next?
 
 ## **Notice:** Interface (bug-)fixes - 2025-01-19
 
+**Note:** I updated the index.html twice today. Now its oke. I think. I hope. Update view works too.
+
 Over the weekend, I updated the HTML chart interface to use a buffered approach for “candle memory.” While this worked fine on my laptop, it likely didn’t scale well on desktop setups with much larger screens. The default bufferLimit of 5000 appears to have been too low, forcing users to manually edit index.html and adjust the value to match their setup.
 
 I’ve now implemented a dynamic bufferLimit, which should resolve this issue. For testing, I initialized the bufferLimit to 10, and it seems to be working as expected. I’m primarily a full-stack developer, but JavaScript—especially frontend work—is not my strongest area, as I’m more accustomed to the strictness of backend development.
