@@ -1,221 +1,59 @@
 <u>MT4 is decoded.</u>
 
-What’s next?
+What's next?
 
-- Builder upgrade \
-Introducing indicator-integrated outputs.
+- Replay/Market simulation
+- Write-up
 
-- Pushed in: check panama with other source, minor effort. \
-See if we can remove "beta state".
 
-- Feature-rich market simulation \
-Full high-performance replay functionality.
+## **Notice:** Interface (bug-)fixes - 2025-01-19
 
+**Note:** I updated the index.html **twice** today. Now its oke. I think. I hope. Update view works too. These are important changes in case developing custom indicators. When you press update view, you want to see the new indicators output immediately, without a shifting chart or any other "weird stuff". All that has been fixed. My JS skills are improving.
 
-## Notice: QA on indicators-first pass - 2026-01-15
+Copy over the new `config/dukascopy/http-docs/index.html` to your `config.user/dukascopy/http-docs/index.html`.W
 
-I am extremely pleased with the results of the first QA round on the indicators. More than 80% have been verified as correct, and only three require real debugging—Supertrend being one of them. The indicators that were successfully verified are marked with verified:1, while the invalid ones are marked with verified:0. You can see this in the right-hand column of indicator.html. Overall, things are looking very good.
+## **Notice: Endpoint issues - 503** - 2025-01-18
 
-The new charting has now replaced the previous main index.html file and is almost complete. I have moved indicator support for the builder upgrade to a later stage and will update the record limit to 40,000 instead. The builder will only be used to dump full-histories (special case scenario).
+What's up?
 
-## Notice: API 1.1 available beta - 2026-01-14
+A "Error from Cloudfront".  Because of the inconsistent behavior my best guess is technical issues.
 
-**Update:** Can't get the interface finished today. Tomorrow. Likely. No evening work today.
+**Update:** Issues have been resolved.
 
-**Important:** CSV input mode is dead from this version onward. It's too much work to keep that compatibility modus in and tbh, it slows down everything by a factor of 100+.
+Monday is MLK (Martin Luther King Jr) day, being a major market holiday.
 
-There is a beta/0.6.6 available. It's the integration-test version, not completed but fully functional. Web-interface is missing, rest works.
+## Notice: hot-reload of CUSTOM indicators is now done - 2025-01-18
 
-What is added/modified?
+Hot-reload of custom indicators has now been implemented. No more webservice restarts needed if you ADD/CHANGE an indicator. Goal of these changes is to support "rapid prototyping", ease the developer experience. 
 
-- API 1.1 DATA - with integrated indicator support (JSONP/JSON and CSV)
-- DuckDB has been removed
-- Speed gains
-- Demo script-integration_test.html-available in the `config/dukascopy/http-docs` 
-- Normalized plugin architecture
-- Support for custom indicators in directory `config.user/plugins/indicators`
-- Indicator warmup issues on 1.0 have been resolved
-- Various other fixes
+**Important:** Do not use `_`-underscore-in indicator file-names. If you need to seperate, use a `-`-dash- or a `.`-dot.
 
-In this version you can do something like
+**Update:** The chart-web-UI has been updated to reload indicators on "Update view". So if you add/modify an indicator, press "Update view" to reload its settings/newly added indicators. `index.html` has changed once more, copy over the file manually to `config.user`. Note that it only works for CUSTOM indicators. The system ones will not be refreshed without a webservice restart. You shouldnt change them anyways.
 
-```sh
-GET http://localhost:8000/ohlcv/1.1/select/EUR-USD,1h[sma(20):sma(50):sma(200):macd(12,6,9)]/after/2025-10-31%2023:59:59 \
-/until/2025-11-30%2023:59:59/output/JSON?order=asc&limit=1440
-```
+**Note:** Sometimes with "dragging" the chart, it flips a bit. Use pagedown/pageup/end keys. Still needs some polishing. But is of later concern. I am not so great at frontend development. It's not so "strict" as backend. The asynchronous stuff with JSONP. Brrr. 
 
-Or 
+## Notice: been playing around with custom indicators - 2025-01-18
 
-```sh
-http://localhost:8000/ohlcv/1.1/select/EUR-USD,1m[sma_200:macd_12_6_9]/after/2025-10-31%2023:59:59/output/JSON \
-?order=desc&limit=10
-```
+You can really write neat stuff using custom indicators. Positive divergence (bullish) example-with doji detection.
 
-Or 
+![Example](../images/reversal.png)
+![Example4](../images/reversal4.png)
 
-```sh
-http://localhost:8000/ohlcv/1.1/select/AAPL.US-USD,1h[sma(20):sma(50):sma(200):macd(12,6,9)]/ \
-after/2025-11-30%2013:59:59/until/2025-12-30%2013:59:59/output/CSV?order=asc&limit=1440
-```
+Honestly, its not flawless yet. But for a first attempt? Pretty good.
 
-Previes new Interactive chart-new index.html:
+![Example5](../images/reversal5.png)
+![Example6](../images/reversal6.png)
 
-![example](../images/terminal2.png)
+This is 100 percent without lookahead bias. 
 
-Preliminary conclusion: API 1.1 works beautifully and can be perfectly integrated to a charting library.
+Python for custom indicators? Pure gold.
 
-Preview new builder-new indicator.html:
+## Notice: support for cache-only rebuilds - 2025-01-17
 
-![example](../images/builder11.png)
+If the download endpoint is unavailable but you have a cache folder and want to modify timeframes and rebuild using those new timeframes, this is now supported. Before running any rebuild scripts, set `orchestrator.disable_downloads` to 1 in `config.user.yaml`.
 
-Example builder output:
+Important is that your cache folder doesnt have any gaps. If you use an originally constructed cache-folder made by this application, this shouldnt be an existing issue. 
 
-![example](../images/csv_1_1_output.png)
+## Notice: buffered interface is now supported - 2025-01-17
 
-So you are able to stack indicators and export them together with price data into one single CSV file. All within a second-depending on record-limit. Note, this also works with your custom indicators. Obviously. I could show, but trust me, it works.
-
-What remains?
-
-- Web-interface (80-90 percent done)
-- Built-in indicator verification - need visualization for that. Getting there.
-- Builder extension to support output
-
-Performance is great (understatement).
-
-You can use this version to play around with custom indicators. The indicator.html is already dynamic. So if you build one, it's immediately usable in `indicator.html`. So you can immediately export outputs. You can find example plugins in `api/plugins/indicators`, [more info](https://github.com/jpueberbach4/bp.markets.ingest/blob/beta/0.6.6/dukascopy/docs/indicators.md).
-
-**Note:** Since performance allows, i will up the API record-limit once more, to like 40000. This eliminates the need for the upgrade of the builder component, for most scenarios.
-
-**Note:** This will be released soon now. If you upgrade and are still on "text-mode", you will break your system. Switch to binary-mode.
-
-## Notice: Panama backadjustment "Public beta" live
-
-**Update:** Assuming the rollover values from the broker are correct, this is acceptable. I checked one year of BRENT data. In some cases, a gap remains because applying the broker-specified adjustment can leave a gap—October 2025 is an example—whereas November and September are superbly corrected. You can verify the rollover values in your ```data/rollover``` folder; those are the values being used. I still need to check it against an other datasource with continuous prices. eg to confirm the October one. If that one checks out, i will remove the "beta status".
-
-I’ve implemented an initial version of the Panama backadjustment logic. It’s now available for you to try, although I’m still rigorously testing it myself. At the moment, rollover adjustments are supported for *-USD commodities, *-USX soft-commodities and *TR* bonds. I have tested it with:
-
-- BRENT.CMD-USD
-- GAS.CMD-USD
-- LIGHT.CMD-USD
-- DIESEL.CMD-USD
-
-For these symbols, the adjustment works beautifully. Since Dukascopy applies rollovers at the end of the day, implementing this solution turned out to be much simpler than expected.
-
-I cannot guarantee flawless performance for symbols outside of those tested, which is why the feature is currently in a “public beta” state.
-
-Below is a general explanation of Panama backadjustment and why it is widely used by retail traders, generated with the help of AI:
-
-Panama backadjustment is a method used mainly for futures contracts to create a continuous price series across contract rollovers. When one futures contract expires and trading moves to the next, there is often a price gap caused by differences in contract pricing, not real market movement. Panama backadjustment removes these artificial gaps by calculating the price difference at each rollover and applying cumulative offsets to historical prices.
-
-This is important to traders because it produces clean, continuous charts that preserve true price action, trends, and technical indicator behavior. It is commonly used for technical analysis, backtesting trading strategies, risk modeling, and signal generation, where unadjusted rollover gaps would otherwise distort indicators, trigger false signals, or break historical comparisons.
-
-**Note:** Panama backadjustment modifies the 1-minute base data and resamples all higher timeframes to ensure they align with the adjusted base. The process takes some time, but for most symbols it typically completes in under 30 seconds, depending on your hardware.
-
-Examples:
-
-```sh
-./build-csv.sh --select BRENT.CMD-USD:panama/1m --output panama-test.csv
-```
-
-Before Panama
-
-![25 november BRENT before backadjust](../images/backadjust/20251125-brent-before-backadjust.png)
-
-After Panama
-
-![25 november BRENT after backadjust](../images/backadjust/20251125-brent-after-backadjust.png)
-
-Completely different perspective. As you can see.
-
-**Note:** This only applies to futures traders. Commodities, Bonds, Indices. For Forex and Crypto it will just skip the logic if you specify it. The ```panama``` modifier will then only just print a warning - that you are trying to apply it for an instrument where its not necessary. 
-
-**Note:** Panama-adjusted data may show negative prices in the distant past. This is normal and expected. Please ensure your backtesting framework can handle such values. If you want to know how to deal with this/when this is a problem, just copy the previous sentence to Gemini and it will guide you.
-
-## Notice: Backfilling
-
-Backfilling is not currently supported, as our pipeline processes data strictly forward. Because of this, historical data—particularly for illiquid pairs and at the highest granularity—may be skewed. Backfilling has been identified as a must-have feature.
-
-We'll provide a script that should be executed once every seven days (run on saturdays). It will re-download the past week of data for all configured symbols and perform a full rebuild. This captures any backfills within that window, effectively addressing ~99.94-99.97% of all backfill issues.
-
-For reference, running this on 26 symbols takes about five minutes (or around 2 minutes 30 seconds if you’re up to date and use the rebuild script)—a small price to pay for accuracy.
-
-```python
-Major FX         █░░░░░░░░░ 0.01%  (1 in 7,000-12,500 symbol-days)
-Major Crosses    ███░░░░░░░ 0.05%
-Illiquid FX      ██████████ 1.1%
-Indices          ██░░░░░░░░ 0.09%
-Major Crypto     ██████████ 1.3%
-Altcoins         ████████████████ 3.5%
-```
-
-```sh
-crontab -e
-```
-Add the following line, adjust path accordingly:
-
-```sh
-0 1 * * 6 cd /home/repos/bp.markets.ingest/dukascopy && ./rebuild-weekly.sh
-```
-
-This configuration triggers the rebuild script at 01:00 each Saturday. It will not conflict with the per-minute ./run.sh cron entry (due to locking). For additional assurance, you may choose to run it daily. Overall, the setup is now far more robust in terms of integrity.
-
->This is a universal challenge in market-data engineering. Even when working with top-tier, premium data vendors, the moment you download or extract data and begin using it, some portion of it may already be stale due to backfills. It’s an inherent property of financial datasets, not a limitation of this tool. There is no central log or official feed that reliably exposes all historical corrections, making automated detection non-trivial. As a result, every data pipeline—paid or free—must contend with this reality.
-
-The quality of this dataset is on par with what you would receive from commercial providers. The difference is simply that this one is free.
-
-## Notice: What about MT5?
-
-There will be some exploratory research in January. Low priority.
-
-## Notice: What about realtime? Second-level updates
-
-Engine is capable of this. Creating a second-level aggregate file and then calling the incremental cascade every second. The resampling cascade (binary version), on a single-core, is able to push 20 years of EUR-USD data to 10 timeframes in just over 2 seconds. Speed is there. Incrementality is there. 
-
-Hard number: 7844920 candles in 2.5 seconds = ~ 3 million candles/second
-
-Why is it not there? Beyond scope of what i need this for atm. Perhaps in future version.
-
-## Hall of Fame
-
-List of the most "interesting stuff" encountered, during development of this project
-
-**ASX is record holder**
-- Monday-specific EPOCH-based candles only during day-session - resolved
-- H4 candles spanning 6h10m - resolved
-- 2020 severe DST/STD switch issues MT4-side \
-  **The decision is:** We are going to replicate the (bug-) behavior through date-range bound, custom,  timeshift support in transform. There are changes for leap-years needed anyhow. The two complement each other.
-- Sub-hourly intraday candle offsets at HH:51 and HH:10 - resolved
-
-**SGD**
-- Only in winter merge of a 11:51 candle, not in summer, while similar behavior - resolved
-- Similarly to ASX, sub-hourly intraday candle at HH:51 - resolved
-
-**MT4 general**
-- Leap-year only lag of STD switch - unresolved (will solve in boundaries logic)
-- Interesting DST/STD switch logic, based on NY DST state either GMT+2/GMT+3 - resolved
-- 4x DST/STD annual switches per timezone-dependent asset - resolved
-
-**Performance**
-- Unexpected very high performance of Python in binary mode.
-
-**AI**
-- AI CANNOT be used for complex logic - it hallucinates and fails on edge cases
-- AI CAN be used for docstring and inline commenting of code - it excels at that
-- AI CAN be used for QA purposes - it actually found a bug that really mattered
-- AI CAN be used for generic HTML and Javascript implementations - it excels at that
-- AI CAN be really funny - especially Grok!
-
-I think the solution came out really really well.
-
-"In the intricate tapestry of apparent chaos, true mastery lies not in imposing order upon the unknown, but in patiently decoding its hidden patterns—until one day, with quiet revelation, we declare: the enigma is unveiled, and what was once obscure now illuminates the path for all."
-
-Wishing you all a highly profitable 2026! 🚀
-
-
-
-
-
-
-
-
-
+I have updated the interface to not keep everything in memory when browsing history-this smooths the UX. It keeps a record of maximum 5000 bars. This is optimized for a laptop 1680x1050. If you have a "wider-screen" you might wanna set the bufferLimit higher in `config.user/dukascopy/http-docs/index.html` (you might need to copy over the new file). Just CTRL+F 5000 and change it to a value that matches your setup.

@@ -64,6 +64,7 @@ download:
 
 ## Below you will find the configuration for the http service script.
 http:
+  poolmode: thread                    # Poolmode indicator calculations (process/thread)
   fmode: binary                       # Only binary is supported from v0.6.6 onward
   docs: config/dukascopy/http-docs    # Directory where HTML docs will live
   listen: ":8000"                     # Listen to this port
@@ -74,6 +75,7 @@ http:
 ## Below you will find the configuration for the orchestrator script
 orchestrator:
   # num_processes: 8                  # Override maximum number of cores to use
+  disable_download: 0                 # Option to disable downloading
   paths:
     downloads: cache                  # Output path for downloads
     locks: data/locks                 # Lock files are stored here

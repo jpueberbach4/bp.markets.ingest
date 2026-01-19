@@ -65,7 +65,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     try:
         sample_val = df['close'].iloc[0]
         sample_price = f"{sample_val:.10f}".rstrip('0')
-        precision = len(sample_price.split('.')[1]) if '.' in sample_price else 2
+        precision = len(sample_price.split('.')[1])+1 if '.' in sample_price else 2
         precision = min(max(precision, 2), 8) 
     except (IndexError, AttributeError, ValueError):
         precision = 2

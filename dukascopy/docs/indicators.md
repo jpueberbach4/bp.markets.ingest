@@ -4,9 +4,9 @@ Extending our technical analysis engine with custom indicators is straightforwar
 
 **Plugins should be stored in your `config.user/plugins/indicators` directory**
 
-**When you add a plugin you will need to restart the service. I think when its loaded, you dont need to restart anymore.**
-
 **When plugin names collide with system ones, the system ones will get preference. Use unique names.**
+
+**Do not use '_' in indicator filenames. Use a '-' (dash) or a '.' (dot) if you need to seperate**
 
 ---
 

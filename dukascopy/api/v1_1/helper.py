@@ -8,37 +8,41 @@ Created:     2026-01-02
 Core helper utilities for path-based OHLCV query parsing, resolution,
 execution, and output formatting.
 
-This module implements the backbone of a filesystem-backed OHLCV query
-pipeline. It parses a slash-delimited query DSL embedded in request paths,
-resolves symbol/timeframe selections against discovered datasets, determines
-indicator warmup requirements, executes cache-backed data retrieval, and
-formats results for API delivery.
+This module implements the core execution pipeline for the OHLCV API.
+It parses a slash-delimited query DSL embedded in request paths, resolves
+symbol and timeframe selections against filesystem-backed datasets,
+determines indicator warmup requirements, retrieves cached market data,
+and serializes results for API delivery.
 
-The module is designed to provide consistent behavior between path-based
-API queries and programmatic query construction, integrating tightly with
-the internal OHLCV builder pipeline, dataset discovery layer, indicator
-plugin system, and execution cache.
+The helpers in this module are shared across API endpoints to ensure
+consistent behavior between path-based HTTP queries and internal,
+programmatic query execution. The module integrates tightly with the
+dataset discovery layer, selection resolver, indicator plugin system,
+and cache-backed execution engine.
 
-Primary capabilities:
-    - Parse path-encoded OHLCV query URIs into structured option dictionaries.
+Primary responsibilities:
+    - Parse and normalize path-encoded OHLCV query URIs.
     - Normalize and validate timestamp inputs.
-    - Discover OHLCV datasets from the filesystem using builder configuration.
+    - Discover available OHLCV datasets from the filesystem using builder
+      configuration.
     - Resolve user selections into concrete dataset definitions.
-    - Dynamically inspect indicator plugins to determine warmup requirements.
-    - Execute indicator-aware, cache-backed queries with filtering,
+    - Inspect indicator plugins to determine warmup row requirements.
+    - Execute indicator-aware, cache-backed data retrieval with filtering,
       ordering, limits, and modifiers (e.g., skiplast).
     - Merge and sort multi-symbol, multi-timeframe query results.
     - Generate API responses in JSON, JSONP, or CSV formats, including
       MT4-compatible CSV output.
 
-Key design notes:
+Design notes:
     - Query execution operates on pre-built, cached OHLCV data rather than
       issuing raw SQL at request time.
     - Indicator warmup rows are automatically included to ensure correct
       computation of rolling and window-based indicators.
-    - The module is optimized for read-heavy, API-driven workloads.
+    - CSV output is streamed to support large result sets with low memory
+      overhead.
+    - The module is optimized for read-heavy, low-latency API workloads.
 
-Functions:
+Public functions:
     normalize_timestamp(ts: str) -> str
         Normalize timestamp strings for consistent parsing.
 
@@ -52,10 +56,9 @@ Functions:
         Resolve user-requested selections against discovered datasets.
 
     generate_output(
-        options: Dict,
-        columns: List[str],
-        results: List[tuple]
-    ) -> dict | PlainTextResponse | None
+        df: pandas.DataFrame,
+        options: Dict[str, Any]
+    ) -> dict | PlainTextResponse | StreamingResponse | None
         Format query results as JSON, JSONP, or CSV.
 
     execute(options: Dict) -> pandas.DataFrame
@@ -63,6 +66,9 @@ Functions:
         merged results.
 
 Internal helpers:
+    _stream_csv(...)
+        Stream a DataFrame as CSV with optional MT4 formatting.
+
     _get_warmup_rows(...)
         Determine indicator warmup row requirements.
 
@@ -74,8 +80,8 @@ Constants:
 Requirements:
     - Python 3.8+
     - Pandas
-    - DuckDB (for build-time processing)
     - FastAPI
+    - DuckDB (build-time / preprocessing only)
 
 License:
     MIT License
@@ -92,7 +98,7 @@ from datetime import datetime, timezone
 from typing import Dict, Any, List
 from urllib.parse import unquote_plus
 from pathlib import Path
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, StreamingResponse
 
 # Import builder utilities for resolving file-backed OHLCV selections
 from builder.config.app_config import load_app_config
@@ -106,6 +112,8 @@ from api.v1_1.plugin import indicator_registry
 CSV_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 CSV_TIMESTAMP_FORMAT_MT4_DATE = "%Y.%m.%d"
 CSV_TIMESTAMP_FORMAT_MT4_TIME = "%H:%M:%S"
+
+available_datasets = []
 
 def normalize_timestamp(ts: str) -> str:
     if not ts:
@@ -237,8 +245,6 @@ def discover_all(options: Dict):
     # Scan the filesystem and return the discovered datasets
     return discovery.scan()
 
-
-
 def discover_options(options: Dict):
     """Resolve and enrich data selection options using filesystem-backed sources.
 
@@ -263,67 +269,63 @@ def discover_options(options: Dict):
     """
 
     try:
+        # Global sets
+        global available_datasets
         # Load builder configuration
-        config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
-        config = load_app_config(config_file)
+        if len(available_datasets) == 0:
+            config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
+            config = load_app_config(config_file)
 
-        # Initialize discovery
-        discovery = DataDiscovery(config.builder)
-        available = discovery.scan()
+            # Initialize discovery
+            discovery = DataDiscovery(config.builder)
+            available_datasets = discovery.scan()
 
         # Resolve selections
-        resolver = SelectionResolver(available)
+        resolver = SelectionResolver(available_datasets)
         options["select_data"], _ = resolver.resolve(options["select_data"])
 
         return options
     except Exception as e:
         raise
 
-def generate_output(options: Dict, columns: List, results: List):
-    """Generate formatted output based on the requested output type.
+def generate_output(df: pd.DataFrame, options: Dict):
+    """Generates formatted output based on the requested output type.
 
-    This function supports JSON, JSONP, and CSV output formats. The output
-    format is determined by the ``output_type`` value in the ``options``
-    dictionary. JSON is used by default when no output type is specified.
+    This function converts a pandas DataFrame into one of several supported
+    output formats, including JSON, JSONP, and CSV. The output format is
+    selected using the ``output_type`` value in the options dictionary.
+    JSON output is used by default when no output type is specified.
 
     Args:
-        options (dict): Configuration options controlling output behavior.
-            Expected keys include:
-                - output_type (str, optional): One of "JSON", "JSONP", or "CSV".
-                  Defaults to "JSON" if not provided.
-                - callback (str, optional): JavaScript callback function name
-                  used when output_type is "JSONP".
-                - mt4 (bool, optional): If True, suppresses CSV header output.
-        columns (list[str]): Column names corresponding to each value in a
-            result row.
-        results (list[tuple]): Query result rows, where each tuple aligns
-            positionally with ``columns``.
+        df (pandas.DataFrame): DataFrame containing the result data to be
+            serialized into the requested output format.
+        options (Dict[str, Any]): Output configuration options. Supported
+            keys include:
+            - output_type (str, optional): One of "JSON", "JSONP", or "CSV".
+              Defaults to "JSON" if not provided.
+            - callback (str, optional): JavaScript callback function name
+              used when output_type is "JSONP".
 
     Returns:
-        dict | PlainTextResponse | None:  
-        - A dictionary for JSON output.  
-        - A PlainTextResponse containing JavaScript for JSONP output.  
-        - A PlainTextResponse containing CSV data for CSV output.  
-        - None if the requested output type is unsupported.
-
+        dict | PlainTextResponse | StreamingResponse | None:
+            - A dictionary for JSON output.
+            - A PlainTextResponse containing JavaScript for JSONP output.
+            - A StreamingResponse containing CSV data.
+            - None if the requested output type is unsupported.
     """
+    # Extract optional JSONP callback function name
     callback = options.get('callback')
+
     # Default JSON output
     if options.get("output_type") == "JSON" or options.get("output_type") is None:
-        return {
-            "status": "ok",
-            "options": options,
-            "result": [dict(zip(columns, row)) for row in results],
-        }
+        # Normalize DataFrame into row-oriented dictionaries
+        return _format_json(df, options)
 
-    # JSONP output for browser-based consumption
+    # JSONP output for browser-based or cross-domain consumption
     if options.get("output_type") == "JSONP":
-        payload = {
-            "status": "ok",
-            "options": options,
-            "result": [dict(zip(columns, row)) for row in results],
-        }
-
+        # Normalize DataFrame into row-oriented dictionaries
+        payload = _format_json(df, options)
+        # Serialize payload and wrap in callback invocation
         json_data = orjson.dumps(payload).decode("utf-8")
         return PlainTextResponse(
             content=f"{callback}({json_data});",
@@ -332,22 +334,249 @@ def generate_output(options: Dict, columns: List, results: List):
 
     # CSV output for file-based or analytical workflows
     if options.get("output_type") == "CSV":
-        output = io.StringIO()
-        if results:
-            dict_results = [dict(zip(columns, row)) for row in results]
-            writer = csv.DictWriter(output, fieldnames=columns)
+        return _stream_csv(df, options)
+
+    # Unsupported output type
+    return None
+
+def _format_json(df, options):
+    """Format a DataFrame into structured JSON output.
+
+    This function serializes a pandas DataFrame into one of several JSON
+    subformats, controlled by the ``subformat`` option. Each subformat is
+    designed for a different consumption pattern, ranging from simple
+    record-oriented JSON to columnar or time-series–optimized layouts.
+
+    Supported subformats:
+        1. Record-oriented JSON (default)
+        2. Column/value arrays (columnar JSON)
+        3. Time-series–optimized structure with explicit OHLCV arrays
+
+    Args:
+        df (pandas.DataFrame): DataFrame containing OHLCV data and optional
+            indicator columns.
+        options (dict): Output options dictionary. Recognized keys:
+            - subformat (int, optional): JSON subformat selector.
+              Defaults to 1 when not provided.
+
+    Returns:
+        dict: A JSON-serializable dictionary containing formatted result
+        data and request options.
+
+    Raises:
+        Exception: If an unsupported subformat is specified.
+    """
+    num_symbols = len(options.get('select_data'))
+    # Resolve requested JSON subformat (default to 1)
+    subformat = options.get('subformat') if options.get('subformat') else 1
+
+    # ------------------------------------------------------------------
+    # Subformat 1: Record-oriented JSON (list of row dictionaries)
+    # ------------------------------------------------------------------
+    if subformat == 1:
+        # Remove internal or non-public columns
+        df.drop(columns=['sort_key', 'year'], inplace=True, errors='ignore')
+
+        return {
+            "status": "ok",
+            "options": options,
+            "result": df.to_dict(orient='records'),
+        }
+
+    # ------------------------------------------------------------------
+    # Subformat 2: Columnar JSON (columns + 2D values array)
+    # ------------------------------------------------------------------
+    elif subformat == 2:
+        # Drop original timestamp columns and normalize sort_key -> time
+        df = (
+            df.drop(columns=['time', 'time_original', 'year'], errors='ignore')
+            .rename(columns={'sort_key': 'time'})
+        )       
+
+        return {
+            "status": "ok",
+            "options": options,
+            "columns": df.columns.tolist(),
+            "values": df.values.tolist(),
+        }
+
+    # ------------------------------------------------------------------
+    # Subformat 3: Time-series–optimized OHLCV structure
+    # ------------------------------------------------------------------
+    elif subformat == 3:
+        # Drop non-essential metadata and normalize sort_key -> time
+        if num_symbols == 1:
+            df = (
+                df.drop(
+                    columns=['symbol', 'timeframe', 'time', 'time_original', 'year', 'indicators'],
+                    errors='ignore'
+                )
+                .rename(columns={'sort_key': 'time'})
+            )
+        else:
+            df = (
+                df.drop(
+                    columns=['time', 'time_original', 'year','indicators'],
+                    errors='ignore'
+                )
+                .rename(columns={'sort_key': 'time'})
+            )
+        
+        result = df.astype(object).where(df.notnull(), None).to_dict(orient='list')
+
+        return {
+            "status": "ok",
+            "options": options,
+            "columns": df.columns.tolist(),
+            "result": result
+        }
+    # ------------------------------------------------------------------
+    # Subformat 4: Stream–optimized OHLCV structure (NDJSON)
+    # ------------------------------------------------------------------
+    elif subformat == 4:
+        return _stream_json(df, options)
+
+    # ------------------------------------------------------------------
+    # Unsupported subformat
+    # ------------------------------------------------------------------
+    else:
+        raise Exception("Unknown subformat, only subformat 1, 2 and 3 is known.")
+
+
+def _stream_json(df, options):
+    """Stream a pandas DataFrame as newline-delimited JSON (NDJSON).
+
+    This function converts each row of a DataFrame into an individual JSON
+    object and streams the result incrementally using the NDJSON format
+    (one JSON object per line). This approach is memory-efficient and well
+    suited for large result sets and streaming consumers.
+
+    Args:
+        df (pandas.DataFrame): DataFrame containing the data to be streamed.
+            Each row is serialized as an independent JSON object.
+        options (dict): Output options dictionary. Currently unused, but
+            included for interface consistency and future extensibility.
+
+    Returns:
+        StreamingResponse: A FastAPI StreamingResponse that emits NDJSON
+        (`application/x-ndjson`) content.
+    """
+    async def json_generator_fast(df):
+        # Convert the DataFrame to a list of row dictionaries and stream
+        # each record as a standalone JSON object followed by a newline
+        for record in df.to_dict(orient='records'):
+            yield orjson.dumps(record) + b"\n"
+
+    # Return a streaming NDJSON response suitable for large datasets
+    return StreamingResponse(
+        json_generator_fast(df),
+        media_type="application/x-ndjson"
+    )
+
+def _stream_csv(df, options):
+    """Streams a pandas DataFrame as a CSV HTTP response.
+
+    This function prepares a DataFrame for CSV export, optionally applying
+    MT4-compatible formatting rules, and returns a streaming response to
+    efficiently handle large datasets. The CSV is generated incrementally
+    to avoid loading the entire output into memory.
+
+    Args:
+        df (pandas.DataFrame): DataFrame containing the data to be exported.
+            May include an ``indicators`` column with nested indicator data.
+        options (Dict[str, Any]): Output configuration options. Supported
+            keys include:
+            - mt4 (bool, optional): If True, applies MT4-compatible column
+              formatting and suppresses the CSV header.
+            - filename (str, optional): Filename to use in the
+              Content-Disposition response header.
+
+    Returns:
+        StreamingResponse | None: A streaming CSV HTTP response if data
+        is present; otherwise, None.
+    """
+    # Remove the temporary columns
+    df.drop(columns=['indicators','sort_key','year'], inplace=True, errors='ignore')
+
+    # Apply MT4-specific column transformations if requested
+    if options.get('mt4'):
+        # Split the combined datetime column into date and time components
+        temp_time = df['time'].astype(str).str.split(' ', expand=True)
+
+        # Drop columns not required for MT4 output
+        cols_to_drop = ['symbol', 'timeframe', 'sort_key', 'time', 'year', 'indicators']
+        df.drop(columns=cols_to_drop, inplace=True, errors='ignore')
+
+        # Insert formatted date (YYYY.MM.DD) and time (HH:MM:SS) columns
+        df.insert(0, 'date', temp_time[0].str.replace('-', '.'))
+        df.insert(1, 'time', temp_time[1])
+
+    # Extract column names and row values for CSV serialization
+    columns = df.columns.tolist()
+    results = df.values.tolist()
+
+    # Only generate a CSV response if there is data to export
+    if results:
+        async def csv_generator_fast():
+            # Emit the CSV header unless MT4-compatible output is requested
             if not options.get('mt4'):
-                # No header if MT4 flag is set
-                writer.writeheader()
+                yield ','.join(columns) + '\n'
 
-            writer.writerows(dict_results)
+            # Stream each row incrementally to minimize memory usage
+            for row in results:
+                formatted = []
+                for val in row:
+                    formatted.append(str(val))
+                yield ','.join(formatted) + '\n'
 
-        return PlainTextResponse(
-            content=output.getvalue(),
+        # Filename handling
+        filename = options.get('filename') if options.get('filename') else 'data.csv'
+
+        # Return a streaming CSV response suitable for large exports
+        return StreamingResponse(
+            csv_generator_fast(),
             media_type="text/csv",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}"
+            }
         )
 
-    return None
+def _get_ms(val):
+    """Convert a numeric or timestamp value to epoch milliseconds (UTC).
+
+    This helper function normalizes different timestamp representations
+    into a single integer value expressed as milliseconds since the Unix
+    epoch (UTC). It supports numeric inputs, digit-only strings, and
+    ISO-formatted datetime strings.
+
+    Args:
+        val (int | float | str):
+            The value to convert. Supported forms include:
+            - int or float: Assumed to already represent milliseconds.
+            - str of digits: Parsed directly as milliseconds.
+            - ISO-formatted datetime string (e.g. "2025-01-12 13:59:00").
+
+    Returns:
+        int: The corresponding timestamp in epoch milliseconds (UTC).
+
+    Raises:
+        ValueError: If the input string cannot be parsed as an ISO datetime.
+        TypeError: If the input type is unsupported.
+    """
+    # Fast path for numeric inputs already representing milliseconds
+    if isinstance(val, (int, float)):
+        return int(val)
+
+    # Handle digit-only strings representing milliseconds
+    if isinstance(val, str) and val.isdigit():
+        return int(val)
+
+    # Parse ISO-formatted datetime strings and convert to epoch milliseconds
+    return int(
+        datetime.fromisoformat(val.replace(' ', 'T'))
+        .replace(tzinfo=timezone.utc)
+        .timestamp() * 1000
+    )
 
 def _get_warmup_rows(symbol: str, timeframe: str, after_str: str, indicators: List[str]) -> int:
     """Determine the maximum warmup row count required by a set of indicators.
@@ -381,7 +610,7 @@ def _get_warmup_rows(symbol: str, timeframe: str, after_str: str, indicators: Li
         if name not in indicator_registry:
             continue
 
-        plugin_func = indicator_registry[name]
+        plugin_func = indicator_registry[name].get('calculate')
 
         # Initialize indicator options with raw positional parameters
         ind_opts = {"params": parts[1:]}
@@ -440,23 +669,15 @@ def execute(options):
         # Determine how many warmup rows are needed for indicators
         warmup_rows = _get_warmup_rows(symbol, timeframe, after_str, indicators)
 
-        # Convert ISO timestamps to epoch milliseconds (UTC)
-        after_ms = int(
-            datetime.fromisoformat(after_str.replace(' ', 'T'))
-            .replace(tzinfo=timezone.utc)
-            .timestamp() * 1000
-        )
-        until_ms = int(
-            datetime.fromisoformat(until_str.replace(' ', 'T'))
-            .replace(tzinfo=timezone.utc)
-            .timestamp() * 1000
-        )
+        # Convert ISO timestamps to epoch milliseconds (UTC), if applicable
+        after_ms = _get_ms(after_str)
+        until_ms = _get_ms(until_str)
 
         # Total number of rows to retrieve, including warmup
         total_limit = limit + warmup_rows
 
         # Find index positions in cache for the requested time range
-        after_idx = cache.find_record(symbol, timeframe, after_ms, "right")
+        after_idx = cache.find_record(symbol, timeframe, after_ms, "left")
         until_idx = cache.find_record(symbol, timeframe, until_ms, "right")
 
         # Extend the start index backward to include warmup rows
@@ -482,8 +703,6 @@ def execute(options):
         # Skiplast handling
         if until_idx == max_idx and "skiplast" in modifiers:
             until_idx -= 1
-
-
 
         # Retrieve the data slice from cache
         chunk_df = cache.get_chunk(symbol, timeframe, after_idx, until_idx)

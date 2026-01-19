@@ -79,7 +79,7 @@ from api.config.app_config import load_app_config
 from api.v1_1.helper import parse_uri, discover_options, generate_output, discover_all
 from api.v1_1.helper import execute
 
-from api.v1_1.plugin import load_indicator_plugins
+from api.v1_1.plugin import load_indicator_plugins, refresh_indicators
 from api.v1_0.version import API_VERSION
 
 
@@ -101,10 +101,11 @@ indicator_registry = load_indicator_plugins()
 async def get_indicator(
     name: str,
     request_uri: str,
-    limit: Optional[int] = Query(1440, gt=0, le=40000),
-    offset: Optional[int] = Query(0, ge=0, le=40000),
+    limit: Optional[int] = Query(1440, gt=0, le=100000),
+    offset: Optional[int] = Query(0, ge=0, le=100000),
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
     callback: Optional[str] = "__bp_callback",
+    filename: Optional[str] = "data.csv",
     config=Depends(get_config),
 ):
     """
@@ -162,8 +163,11 @@ async def get_indicator(
                 "Multi-symbol or multi-timeframe is not supported with MT4 flag"
             )
 
+        # Hot reload support (only for custom user indicators)
+        local_indicator_registry = refresh_indicators(options, indicator_registry, "config.user/plugins/indicators")
+
         # Resolve indicator plugin function
-        plugin_func = indicator_registry[name]
+        plugin_func = local_indicator_registry[name].get('calculate')
         pos_opts = {}
         default_opts = {}
 
@@ -203,7 +207,7 @@ async def get_indicator(
             df["close"] = pd.to_numeric(df["close"], errors="coerce")
 
         # Execute indicator logic and merge results with source data
-        calculated_df = indicator_registry[name](df, ind_opts)
+        calculated_df = indicator_registry[name].get('calculate')(df, ind_opts)
         enriched_df = df.join(calculated_df)
 
         # Apply final sorting order
@@ -246,35 +250,17 @@ async def get_indicator(
             cols.insert(2, "time")
         enriched_df = enriched_df[cols]
 
-        # MT4-specific formatting: split datetime into date and time columns
-        if options.get("mt4"):
-            dt_series = pd.to_datetime(enriched_df["time"])
-            enriched_df.insert(0, "date", dt_series.dt.strftime("%Y.%m.%d"))
-            enriched_df["time"] = dt_series.dt.strftime("%H:%M:%S")
-
-            # Remove unsupported MT4 columns
-            cols = [
-                c
-                for c in enriched_df.columns
-                if c not in ["symbol", "timeframe", "year"]
-            ]
-            enriched_df = enriched_df[cols]
-
-        # Convert DataFrame to output payload
-        columns = enriched_df.columns.tolist()
-        results = enriched_df.values.tolist()
-
         # Update execution metadata
         options.update(
             {
                 "indicator": name,
-                "count": len(results),
+                "count": len(enriched_df),
                 "wall": time.time() - time_start,
             }
         )
 
         # Generate final output
-        output = generate_output(options, columns, results)
+        output = generate_output(enriched_df, options)
         if output:
             return output
 
@@ -398,8 +384,8 @@ async def get_ohlcv_list(
 @router.get(f"/{{request_uri:path}}")
 async def get_ohlcv(
     request_uri: str,
-    limit: Optional[int] = Query(1440, gt=0, le=40000),
-    offset: Optional[int] = Query(0, ge=0, le=40000),
+    limit: Optional[int] = Query(1440, gt=0, le=100000),
+    offset: Optional[int] = Query(0, ge=0, le=100000),
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
     callback: Optional[str] = "__bp_callback",
     config=Depends(get_config),
@@ -481,33 +467,12 @@ async def get_ohlcv(
         cols.insert(2, "year")
         df = df[cols]
 
-        # Apply MT4-specific output formatting
-        if options.get("mt4"):
-            # Convert time column to datetime for safe splitting
-            df["time"] = pd.to_datetime(df["time"])
-
-            # Split datetime into MT4-compatible date and time columns
-            df.insert(0, "date", df["time"].dt.strftime("%Y.%m.%d"))
-            df["time"] = df["time"].dt.strftime("%H:%M:%S")
-
-            # Drop unsupported MT4 columns
-            cols = [
-                c
-                for c in df.columns
-                if c not in ["symbol", "timeframe", "year"]
-            ]
-            df = df[cols]
-
-        # Prepare output payload
-        columns = df.columns.tolist()
-        results = df.values.tolist()
-
         # Attach metadata
-        options["count"] = len(results)
+        options["count"] = len(df)
         options["wall"] = time.time() - time_start
 
         # Generate and return formatted output
-        output = generate_output(options, columns, results)
+        output = generate_output(df, options)
         if output:
             return output
 

@@ -40,7 +40,7 @@ class DownloadEngine:
     merging of Dukascopy JSON delta candle data.
     """
 
-    last_request_time = 0.0 
+    last_request_time = time.monotonic()
 
     def __init__(self, config: DownloadConfig):
         """
@@ -131,9 +131,10 @@ class DownloadEngine:
                 # Retry only on server errors or rate limiting
                 if (
                     attempt < self.config.max_retries - 1
-                    and (status_code >= 500 or status_code == 429)
+                    and (status_code >= 500 or status_code == 429 or status_code == 503)
                 ):
                     wait_time = self.config.backoff_factor ** attempt
+                    print(f"{url} received {status_code}. Retrying in {wait_time}s...")
                     time.sleep(wait_time)
                     continue
 

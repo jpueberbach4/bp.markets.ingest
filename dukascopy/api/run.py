@@ -40,19 +40,19 @@ from typing import List
 from pathlib import Path
 import uvicorn
 
-# Import versioned OHLCV routes
-from api.v1_0.routes import router as ohlcv_router_v1_0
-from api.v1_1.routes import router as ohlcv_router_v1_1
-
-# This is the current main version
-from api.v1_0.version import API_VERSION
-
 # Function to get config
 def get_config():
     from config.app_config import load_app_config
     config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
     app_config = load_app_config(config_file)
     return app_config.http
+
+# Import versioned OHLCV routes
+from api.v1_0.routes import router as ohlcv_router_v1_0
+from api.v1_1.routes import router as ohlcv_router_v1_1
+
+# This is the current main version
+from api.v1_1.version import API_VERSION
 
 # Lifespan context manager for startup/shutdown hooks
 @asynccontextmanager

@@ -68,11 +68,13 @@ Timestamps are flexible and will be normalized to `YYYY-MM-DD HH:MM:SS`.
 
 | Segment | Component | Description | Example |
 | :--- | :--- | :--- | :--- |
-| `select` | `{symbol},{tf}` | **Required.** Asset symbol and timeframe (comma-separated). | `AAPL.US-USD,1h` |
-| `after` | `{timestamp}` | Inclusive start time. Supports `.` or `-` and `,` or ` `. | `2025.11.22,13:59:59` |
-| `until` | `{timestamp}` | Exclusive end time. Supports same flexible formatting. | `2025-12-22 13:59:59` |
+| `select` | `{symbol},{tf}[{indicators}]` | **Required.** Asset symbol and timeframe (comma-separated). | `AAPL.US-USD,1h` |
+| `after` | `{timestamp}` | Inclusive start time. Supports `.` or `-` and `,` or ` `. | `2025.11.22,13:59:59` or `1767992340000` (epoch_ms) |
+| `until` | `{timestamp}` | Exclusive end time. Supports same flexible formatting. | `2025-12-22 13:59:59`  or `1767992340000` (epoch_ms) |
 | `output` | `{format}` | Data format: `CSV`, `JSON`, or `JSONP`. | `JSONP` |
 | `MT4` | *Optional* | Flag for MetaTrader 4 formatting (only valid with `output/CSV`). | `MT4` |
+
+**Note**: Indicators need to be chained as following: [sma(9):macd(12,6,9):ema(200)] or, simplified, [sma_9:macd_12_6_9:ema_200]. Combinations of the two syntaxes are also possible but stick to one format. Chain as many if you like but take into account that the more indicator you add, the more performance you ask.
 
 ### Query Parameters
 
@@ -83,6 +85,7 @@ Used for windowing and wrapping responses.
 | `offset` | `integer` | `0` | Number of records to skip. |
 | `limit` | `integer` | `100` | Maximum number of records to return. |
 | `callback` | `string` | `__bp_callback` | **Use with JSONP.** Function name for the wrapper. |
+| `subformat` | `integer` | `1..4` | **Use with JSON.** Specifies the [response format](json.md). |
 
 ---
 
@@ -103,13 +106,13 @@ When `output/JSONP` is specified, the response is wrapped in the function name p
 
 **Standard JSONP Request:**
 ```sh
-GET /ohlcv/1.0/select/AAPL.US-USD%2C1h/after/2025.11.22,00:00:00/until/ \ 
+GET /ohlcv/1.0/select/AAPL.US-USD%2C1h[ema_9:sma_10]/after/2025.11.22,00:00:00/until/ \ 
 2025.12.22,04:00:00/output/JSONP?callback=my_handler&limit=5
 ```
 
 **MT4 CSV Export:**
 ```sh
-GET /ohlcv/1.0/select/EURUSD,1h/after/2025.01.01+00:00:00/output/CSV/MT4
+GET /ohlcv/1.0/select/EURUSD,1h[macd(12,6,9)]/after/2025.01.01+00:00:00/output/CSV/MT4
 ```
 
 **List request:**
@@ -180,6 +183,8 @@ Example output for JSON URL
   ]
 }
 ```
+
+**Note:** There are 3 different JSON output (sub-) formats. Specify ?subformat=[1,2 or 3] on the URL. Default format is the format above. 
 
 ## Example Error output - Always JSON, statuscode 400
 

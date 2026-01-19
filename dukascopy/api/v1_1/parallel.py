@@ -36,6 +36,7 @@ import concurrent.futures
 from typing import List, Dict, Any
 
 THREAD_EXECUTOR = concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count())
+print("Using concurrency mode: thread")
 
 def parallel_indicators(df: pd.DataFrame, options: Dict[str, Any], plugins: Dict[str, callable], disable_recursive_mapping: bool = False):
     """Calculates technical indicators directly on a provided DataFrame in parallel.
@@ -97,7 +98,7 @@ def parallel_indicators(df: pd.DataFrame, options: Dict[str, Any], plugins: Dict
             if name not in plugins:
                 continue
 
-            plugin_func = plugins[name]
+            plugin_func = plugins[name].get('calculate')
             ind_opts = options.copy()
 
             # Map positional arguments if plugin defines them

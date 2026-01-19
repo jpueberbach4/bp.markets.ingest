@@ -56,7 +56,7 @@ What started as a personal project (private use-case) to tackle the intricate pr
 
 >BP-Markets is a high-performance, local-first data bridge built for indie traders. Unlike cloud-based solutions, it is optimized for zero-latency local execution, allowing your trading terminal and data API to run side by side without resource contention. \
 \
-The system incrementally updates market data every minute, resampling completed 1-minute candles into a set of default higher timeframes that can be customized globally or per symbol. It also tracks open higher-timeframe candles, which can optionally be excluded through modifiers. \
+The system incrementally updates market data, resampling completed 1-minute candles into a set of default higher timeframes that can be customized globally or per symbol. It also tracks open higher-timeframe candles, which can optionally be excluded through modifiers. \
 \
 Data can be queried or constructed directly from a WSL2 terminal or via an HTTP API service. Designed by a trader, for traders, BP-Markets focuses on performance, accuracy, and workflow efficiency. Future releases will introduce high-performance backtesting capabilities that fully eliminate lookahead bias. \
 \
@@ -66,7 +66,7 @@ The code-base is small and heavily documented.
 
 Example 20 year chart of EUR-USD:
 
-![Example GBPUSD](images/webservice-example.png)
+![Example GBPUSD](images/examplevieweurusd.png)
 
 Historical market data can be leveraged in multiple ways to enhance analysis, decision-making, and trading performance:
 
@@ -165,10 +165,10 @@ Optionally, configure a cronjob for periodical execution:
 crontab -e
 ```
 
-Add the following line, adjust path accordingly:
+Add the following line, adjust path accordingly-run once every 15m:
 
 ```sh
-* * * * * sleep 5 && cd /home/repos/bp.markets.ingest/dukascopy && ./run.sh
+*/15 * * * * sleep 5 && cd /home/repos/bp.markets.ingest/dukascopy && ./run.sh
 ```
 
 In order to get the highest possible performance, I recommend to toggle ALL the `fmode` fields in `config.user.yaml` to `binary`. This is considered as "a custom change". When you make custom changes, you cannot use `./setup-dukascopy.sh` anymore since this script will restore the settings back to "text"-this will change in the future now CSV mode is deprecated.
