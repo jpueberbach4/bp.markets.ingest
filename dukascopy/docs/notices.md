@@ -13,6 +13,8 @@ This is not the definitive replay implementation—the final version is signific
 
 That said, feel free to explore and experiment with it. Since this was implemented and reviewed quickly, there may be minor glitches or rough edges.
 
+PS: Oh yes. The url and the script. `config/dukascopy/http-docs/replay.html`, copy it to `config.user/dukascopy/http-docs/`. After copying `http://localhost:8000/replay.html`. You will find a `Jump/Replay` button on the right topside. This should by no means be compared to what is coming.
+
 
 ## **Notice:** Interface (bug-)fixes - 2025-01-19
 
