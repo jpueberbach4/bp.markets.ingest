@@ -33,6 +33,8 @@ us10y_df = bp.get_data('USTBOND.TR-USD', '1h', current_ts - 86400000, current_ts
 
 I am still optimizing this. Trying, testing, encountering bottleneck -> think -> solution -> implement -> reiterate. This is definately not finished yet.
 
+What am I using this system for? A background process that deeply analyses incoming 1h "ticks". Generates signals, those get exported, read and paper-traded atm. Signals and results get compared. 
+
 ## **Notice:** Functional replay mockup - 2025-01-19
 
 For demonstration purposes, I’ve included a fully functional replay mockup in this repository. You can use it to run replays with your own assets, indicators, and configurations.
@@ -47,7 +49,7 @@ The url and the script. `config/dukascopy/http-docs/replay.html`, copy it to `co
 
 **Note:** If you build lookahead bias in your indicators, this replay will just accept that. So make sure you develop your indicators right. If i have time i will build an example on how to implement a cross-asset indicator without losing too much performance. Not today. It will be a Pearson correlation between bond yield change and EURUSD price change over N bars.
 
-**Note:** This is just a basic candlestick replay. It’s meant to show what can be built on top of it and to spark some imagination about what’s possible—and what’s coming next.
+**Note:** This is just a basic candlestick replay. It’s meant to show what can be built on top of it and to spark some imagination about what’s possible—and what’s coming next. What is interesting to mention is that all data-points you see are server-side generated. Not on the browser-side. So everything you can render on the chart is also queryable through the API.
 
 ## **Notice:** Interface (bug-)fixes - 2025-01-19
 
