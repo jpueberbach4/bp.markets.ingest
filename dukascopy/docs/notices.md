@@ -5,6 +5,14 @@ What's next?
 - Replay/Market simulation
 - Write-up
 
+## **Notice:** Apex charts
+
+I have been looking into drawing functionalities. I am not happy with the current interface and i think charting/drawing options should get added. Also, the demo-replay, is a bitch glitchy and should have a rewrite/split to libraries. I am two days on an other mission but expect to be back at it on Friday.
+
+It's a bit busy atm. I will remove the indicators from the repository that are not yet supported or were classified as "invalid"-those with verified:0 in the metadata.
+
+Soon more updates.
+
 ## **Notice:** Functional replay mockup - 2025-01-19
 
 For demonstration purposes, I’ve included a fully functional replay mockup in this repository. You can use it to run replays with your own assets, indicators, and configurations.
