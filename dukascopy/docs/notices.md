@@ -15,12 +15,11 @@ That said, feel free to explore and experiment with it. Since this was implement
 
 ![Mockup](../images/replay_mockup.gif)
 
-PS: Oh yes. The url and the script. `config/dukascopy/http-docs/replay.html`, copy it to `config.user/dukascopy/http-docs/`. After copying `http://localhost:8000/replay.html`. You will find a `Jump/Replay` button on the right topside. This should by no means be compared to what is coming.
+The url and the script. `config/dukascopy/http-docs/replay.html`, copy it to `config.user/dukascopy/http-docs/`. After copying `http://localhost:8000/replay.html`. You will find a `Jump/Replay` button on the right topside.
 
 **Note:** If you build lookahead bias in your indicators, this replay will just accept that. So make sure you develop your indicators right. If i have time i will build an example on how to implement a cross-asset indicator without losing too much performance. Not today. It will be a Pearson correlation between bond yield change and EURUSD price change over N bars.
 
-**Note:** The sharp eye will notice that SMA200 starting later. If you look closely, the start date is at the beginning of the data, 2005-ish, SMA200 needs 200 warmup rows. Since beginning of data, these were not passed. The system handles this correctly. 
-
+**Note:** This is just a basic candlestick replay. It’s meant to show what can be built on top of it and to spark some imagination about what’s possible—and what’s coming next.
 
 ## **Notice:** Interface (bug-)fixes - 2025-01-19
 
