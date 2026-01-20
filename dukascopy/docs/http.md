@@ -536,6 +536,10 @@ We have not programmed for high-concurrency, enterprise-scale environments. If y
 | 5-Minute (5m) | 22-25ms | ~4.8 days | Day trading |
 | 1-Minute (1m) | 45-50ms | ~23 hours | Scalping/backtesting |
 
+**Note:** These are old performance characteristics, since then things have improved.
+
+**Note:** Endpoint has been hammered with 100.000 heavy query requests overnight. 0 failures. Very stable.
+
 **Notes:**
 - **Base overhead**: ~8.37ms (HTTP + JSON serialization + event loop + config loading)
 - **Config loading**: 3-5ms initial overhead (can benefit from cache optimization)
