@@ -1233,6 +1233,31 @@
         resetAndLoad(true);
     }
 
+    document.addEventListener('keydown', (e) => {
+        const timeScale = mainChart.timeScale();
+        const visibleRange = timeScale.getVisibleLogicalRange();
+        if (!visibleRange) return;
+
+        const barsInView = visibleRange.to - visibleRange.from;
+
+        if (e.key === 'PageUp') {
+            e.preventDefault();
+            timeScale.setVisibleLogicalRange({
+                from: visibleRange.from - barsInView,
+                to: visibleRange.to - barsInView
+            });
+        } else if (e.key === 'PageDown') {
+            e.preventDefault();
+            timeScale.setVisibleLogicalRange({
+                from: visibleRange.from + barsInView,
+                to: visibleRange.to + barsInView
+            });
+        } else if (e.key === 'End') {
+            e.preventDefault();
+            timeScale.scrollToRealTime();
+        }
+    });
+
 </script>
 </body>
 </html>
