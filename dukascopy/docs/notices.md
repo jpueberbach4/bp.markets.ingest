@@ -9,7 +9,21 @@ What's next?
 
 1. I have been looking into drawing functionalities. I am not happy with the current interface and i think charting/drawing options should get added. Also, the demo-replay, is a bitch glitchy and should have a rewrite/split to libraries. I am two days on an other mission but expect to be back at it on Friday. OR @tradingview/lightweight-charts with extensions. Decision will be made on Friday.
 
-2. While developing my own indicators i noticed i often was reliant on similar calculations performed by existing indicators. SMA's, RSI etc. I had to copy over the logic to my custom indicators. This is weird. So i came up with a solution. `?executionmode=serial`. This is not yet implemented but will be implemented soon. Basically pipelining inside of your HTTP request will get supported. See http.md for more information. This weekend it will be done. I have an indicator file of nearly 10KB. Thats no good. Fixing.
+2. While developing my own indicators i noticed i often was reliant on similar calculations performed by existing indicators. SMA's, RSI etc. I had to copy over the logic to my custom indicators. This is weird. So i came up with a solution. `?executionmode=serial`. This is not yet implemented but will be implemented soon. Basically pipelining inside of your HTTP request will get supported. See http.md for more information. This weekend it will be done. I have an indicator file of nearly 10KB. Thats no good. Fixing. \
+\
+Something like this will be implemented (multi-core processing of indicators is coming-i had a breakthrough):
+```yaml
+risk_on:
+  indicators:
+  - parallel: [ema(21), ema(55)]          # expliciet parallel groep
+  - parallel: [rsi(14), stoch(14,3,3)]
+  - supertrend(10,3)
+  - my_risk_on_entry
+  prune:
+  - ema_21
+  - ema_55
+  - supertrend_10_3
+```
 
 3. There will be another round of robustness/cleanup/quality operations. This time it will involve the HTTP API. Will be non-breaking. Also an abstraction will be added to easier access data from other symbols and timeframes. Currently i am using API calls but this is overhead, we can go direct as well. The direct mmap approach. Query/Dataframe in, DataFrame out. Eliminating HTTP overhead. So an internal API layer will be added which the indicators can use.
 
