@@ -140,7 +140,9 @@ Serial execution mode:
 \
 The goal is to enable ordered chaining of system indicators, where all preceding indicator outputs are fed into a custom indicator. This allows the custom indicator to operate on all generated columns efficiently and in a fully vectorized way, without leaving main memory or triggering recomputation. \
 \
-In effect, this provides pipelining within a single HTTP API request, with minimal additional effort. Virtual indicators will also be supported, allowing you to configure an indicator chain and assign it a virtual ID. That virtual ID is expanded and resolved at request time.
+In effect, this provides pipelining within a single HTTP API request, with minimal additional effort. Virtual indicators will also be supported, allowing you to configure an indicator chain and assign it a virtual ID. That virtual ID is expanded and resolved at request time. \
+\
+Also, this prevents huge monolitic indicators. Something i am already battling with.
 
 **Note:** Modifier `panama` is unsupported via the API.
 
