@@ -905,7 +905,7 @@
             },
         });
         document.getElementById('replay-toolbar').style.display = 'none';
-        resetAndLoad(true);
+        if (bResetAndLoad ) resetAndLoad(false); 
     }
 
     function openCalendarModal() { document.getElementById('calendarModal').style.display = 'flex'; }
