@@ -151,8 +151,8 @@ Braindump-example virtual indicator config file:
 ```yaml
 risk_on:
   indicators:
-  - ema(21):ema(55)
-  - rsi(14):stoch(14,3,3)
+  - parallel: [ema(21), ema(55)]          # expliciet parallel groep
+  - parallel: [rsi(14), stoch(14,3,3)]
   - supertrend(10,3)
   - my_risk_on_entry
   prune:
