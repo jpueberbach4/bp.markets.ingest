@@ -27,6 +27,10 @@ risk_on:
 
 3. There will be another round of robustness/cleanup/quality operations. This time it will involve the HTTP API. Will be non-breaking. Also an abstraction will be added to easier access data from other symbols and timeframes. Currently i am using API calls but this is overhead, we can go direct as well. The direct mmap approach. Query/Dataframe in, DataFrame out. Eliminating HTTP overhead. So an internal API layer will be added which the indicators can use.
 
+```python
+us10y_df = bp.get_data('USTBOND.TR-USD', '1h', current_ts - 86400000, current_ts, ['rsi_14'], options)
+```
+
 I am still optimizing this. Trying, testing, encountering bottleneck -> think -> solution -> implement -> reiterate. This is definately not finished yet.
 
 ## **Notice:** Functional replay mockup - 2025-01-19
