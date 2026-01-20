@@ -11,7 +11,7 @@ What's next?
 
 2. While developing my own indicators i noticed i often was reliant on similar calculations performed by existing indicators. SMA's, RSI etc. I had to copy over the logic to my custom indicators. This is weird. So i came up with a solution. `?executionmode=serial`. This is not yet implemented but will be implemented soon. Basically pipelining inside of your HTTP request will get supported. See http.md for more information. This weekend it will be done. I have an indicator file of nearly 10KB. Thats no good. Fixing.
 
-3. There will be another round of robustness/cleanup/quality operations. This time it will involve the HTTP API. Will be non-breaking. Also an abstraction will be added to easier access data from other symbols and timeframes. Currently i am using API calls but this is overhead, we can go direct as well. The direct mmap approach. So an internal API layer will be added which the indicators can use.
+3. There will be another round of robustness/cleanup/quality operations. This time it will involve the HTTP API. Will be non-breaking. Also an abstraction will be added to easier access data from other symbols and timeframes. Currently i am using API calls but this is overhead, we can go direct as well. The direct mmap approach. Query/Dataframe in, DataFrame out. Eliminating HTTP overhead. So an internal API layer will be added which the indicators can use.
 
 I am still optimizing this. Trying, testing, encountering bottleneck -> think -> solution -> implement -> reiterate. This is definately not finished yet.
 
