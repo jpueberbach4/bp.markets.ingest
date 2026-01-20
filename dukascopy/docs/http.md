@@ -101,18 +101,18 @@ When `output/JSONP` is specified, the response is wrapped in the function name p
 
 **Standard JSONP Request:**
 ```sh
-GET /ohlcv/1.0/select/AAPL.US-USD%2C1h[ema_9:sma_10]/after/2025.11.22,00:00:00/until/ \ 
+GET /ohlcv/1.1/select/AAPL.US-USD%2C1h[ema_9:sma_10]/after/2025.11.22,00:00:00/until/ \ 
 2025.12.22,04:00:00/output/JSONP?callback=my_handler&limit=5
 ```
 
 **MT4 CSV Export:**
 ```sh
-GET /ohlcv/1.0/select/EURUSD,1h[macd(12,6,9)]/after/2025.01.01+00:00:00/output/CSV/MT4
+GET /ohlcv/1.1/select/EURUSD,1h[macd(12,6,9)]/after/2025.01.01+00:00:00/output/CSV/MT4
 ```
 
-**List request:**
+**Symbol list request:**
 ```sh
-GET /ohlcv/1.0/list/output/JSON
+GET /ohlcv/1.1/list/indicators/output/JSON
 ```
 
 **Indicator list request:**
@@ -122,7 +122,7 @@ GET /ohlcv/1.1/list/indicators/output/JSON
 
 **Extensive example:**
 ```sh
-GET http://localhost:8000/ohlcv/1.0/select/AAPL.US-USD,1h/ \
+GET http://localhost:8000/ohlcv/1.1/select/AAPL.US-USD,1h/ \
 select/EUR-USD,1h:skiplast/after/2025.11.22,13:59:59/ \
 until/2025-12-22+13:59:59/output/CSV
 ```
@@ -130,7 +130,7 @@ until/2025-12-22+13:59:59/output/CSV
 **Even more extensive example:**
 
 ```sh
-GET http://localhost:8000/ohlcv/1.0/select/AAPL.US-USD,1h[sma_9:sma_20:ema_100:macd_12_6_9:bbands_12_2.0]/ \
+GET http://localhost:8000/ohlcv/1.1/select/AAPL.US-USD,1h[sma_9:sma_20:ema_100:macd_12_6_9:bbands_12_2.0]/ \
 after/1767992340000/output/JSON?subformat=3&executionmode=serial
 ```
 
