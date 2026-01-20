@@ -134,7 +134,13 @@ GET http://localhost:8000/ohlcv/1.1/select/AAPL.US-USD,1h[sma_9:sma_20:ema_100:m
 after/1767992340000/output/JSON?subformat=3&executionmode=serial
 ```
 
-**Note:** execution mode serial will feed the first indicators output in the second one, the first and the second in the third one, etc. Not yet supported but coming soon.
+Serial execution mode:
+
+> Serial execution mode passes the output of the first indicator into the second, the outputs of the first and second into the third, and so on. While not yet supported, this feature is coming soon. \
+\
+The goal is to enable ordered chaining of system indicators, where all preceding indicator outputs are fed into a custom indicator. This allows the custom indicator to operate on all generated columns efficiently and in a fully vectorized way, without leaving main memory or triggering recomputation. \
+\
+In effect, this provides pipelining within a single HTTP API request, with minimal additional effort. Virtual indicators will also be supported, allowing you to configure an indicator chain and assign it a virtual ID. That virtual ID is expanded and resolved at request time.
 
 **Note:** Modifier `panama` is unsupported via the API.
 
