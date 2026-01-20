@@ -1,6 +1,6 @@
-# HTTP-Service (v0.6.5 and above)
+# HTTP-Service (v0.6.6 and above)
 
-This directory implements the HTTP-service feature for version 0.6.5.
+This directory implements the HTTP-service feature for version 0.6.6.
 
 ## Functionalities:
 
@@ -11,18 +11,7 @@ This directory implements the HTTP-service feature for version 0.6.5.
 - Basic HTML support for dashboards or minimal personalization
 - Only listens on 127.0.0.1 (localhost)
 - Configuration via central YAML config
-- Text / Binary Memory-mapped version
-
-## Breaking change when switching to 0.6.5
-
-This version is a breaking change version for the API. `http-service` directory name was not a very friendly python name. There were issues with including files that had to be resolved-in order to prepare for the v1.1 API release. After updating, perform:
-
-```sh
-killall python3
-./service.sh start
-```
-
-Brute force is fine. It can handle it.
+- Binary Memory-mapped version
 
 ## Prerequisites
 
@@ -43,7 +32,7 @@ http:
 
 Or, if using default configuration, ```./setup-dukascopy.sh```.
 
-## Start/Stop/Status service
+## Startup## Start/Stop/Status service
 
 ```sh
 ./service.sh start
@@ -53,12 +42,14 @@ Or, if using default configuration, ```./setup-dukascopy.sh```.
 
 After starting service, open a browser and type ```http://localhost:8000/``` (change port if you change port in config.user.yaml).
 
-## API Reference: OHLCV Endpoint
+
+## API Reference: OHLCV Endpoint, two main API versions (1.0 and 1.1)
 
 The API uses a path-based Domain Specific Language (DSL) for primary filtering, followed by standard query parameters for pagination and cross-origin requests.
 
 ### Base URL
 `http://localhost:8000/ohlcv/1.0/`
+`http://localhost:8000/ohlcv/1.1/`
 
 ---
 
@@ -85,7 +76,8 @@ Used for windowing and wrapping responses.
 | `offset` | `integer` | `0` | Number of records to skip. |
 | `limit` | `integer` | `100` | Maximum number of records to return. |
 | `callback` | `string` | `__bp_callback` | **Use with JSONP.** Function name for the wrapper. |
-| `subformat` | `integer` | `1..4` | **Use with JSON.** Specifies the [response format](json.md). |
+| `subformat` | `integer` | `1..4` | **Use with JSON/JSONP.** Specifies the [response format](json.md). |
+| `id` | `string` | `any string` | **Use with JSON/JSONP.** Assigns an id to the request which is returned in the output structure. |
 
 ---
 
@@ -95,6 +87,9 @@ Used for windowing and wrapping responses.
 The parser automatically cleans delimiters to ensure ISO-8601 compatibility:
 * `2025.11.22,13:59:59` → `2025-11-22 13:59:59`
 * `2025.11.22 13:59:59` → `2025-11-22 13:59:59`
+* `1767992340000` (EPOCH_MS)
+
+Internally timestamps are converted to EPOCH_MS. Milliseconds past since EPOCH.
 
 #### JSONP Usage
 When `output/JSONP` is specified, the response is wrapped in the function name provided by the `callback` query parameter.
@@ -120,6 +115,11 @@ GET /ohlcv/1.0/select/EURUSD,1h[macd(12,6,9)]/after/2025.01.01+00:00:00/output/C
 GET /ohlcv/1.0/list/output/JSON
 ```
 
+**Indicator list request:**
+```sh
+GET /ohlcv/1.1/list/indicators/output/JSON
+```
+
 **Extensive example:**
 ```sh
 GET http://localhost:8000/ohlcv/1.0/select/AAPL.US-USD,1h/ \
@@ -127,11 +127,20 @@ select/EUR-USD,1h:skiplast/after/2025.11.22,13:59:59/ \
 until/2025-12-22+13:59:59/output/CSV
 ```
 
+**Even more extensive example:**
+
+```sh
+GET http://localhost:8000/ohlcv/1.0/select/AAPL.US-USD,1h[sma_9:sma_20:ema_100:macd_12_6_9:bbands_12_2.0]/ \
+after/1767992340000/output/JSON?subformat=3&executionmode=serial
+```
+
+**Note:** execution mode serial will feed the first indicators output in the second one, the first and the second in the third one, etc. Not yet supported but coming soon.
+
 **Note:** Modifier `panama` is unsupported via the API.
 
-**Note:** API is limited to a limit of 1440 records. Perform multiple calls for bigger sets, use after/until.
+**Note:** API is limited to a limit of 100.000 records. If you need more, use until/after and multiple requests.
 
-**Note:** No rate-limits on this one ;)
+**Note:** No rate-limits.
 
 ## Standard HTML support
 
@@ -139,92 +148,28 @@ Below the root of the endpoint you can servce your own HTML/JS/CSS documents. Yo
 
 For an example on how to use this API for chart generation, [see here](../config/dukascopy/http-docs/index.html).
 
+There is also an `indicator.html` and a bit glitchy `replay.html` - both are demo-scripts.
+
 ## Output format
 
-Example output for JSON URL
+Various output formats are supported. Output-mode can be altered by using the `/output/{type}?subformat=[1..4]` construction.
+CSV mode and JSON subformat 4 are "streaming modusses".
 
-```json
-{
-  "status": "ok",
-  "result": [
-    {
-      "symbol": "AUD-USD",
-      "timeframe": "4h",
-      "year": "2025",
-      "time": "2025-01-02 00:00:00",
-      "open": 0.61804,
-      "high": 0.62149,
-      "low": 0.61796,
-      "close": 0.6211,
-      "volume": 15103.04
-    },
-    {
-      "symbol": "AUD-USD",
-      "timeframe": "1h",
-      "year": "2025",
-      "time": "2025-01-02 01:00:00",
-      "open": 0.61856,
-      "high": 0.61939,
-      "low": 0.61821,
-      "close": 0.6193,
-      "volume": 3189.15
-    },
-    {
-      "symbol": "AUD-USD",
-      "timeframe": "1h",
-      "year": "2025",
-      "time": "2025-01-02 02:00:00",
-      "open": 0.6193,
-      "high": 0.62026,
-      "low": 0.61878,
-      "close": 0.62,
-      "volume": 3675.22
-    }
-  ]
-}
-```
+For more information on (currently supported) JSON formats, see [here](json.md).
 
-**Note:** There are 3 different JSON output (sub-) formats. Specify ?subformat=[1,2 or 3] on the URL. Default format is the format above. 
-
-## Example Error output - Always JSON, statuscode 400
-
-```json
-{
-  "status": "failure",
-  "exception": "MT4 flag requires output/CSV",
-  "options": {
-    "select_data": [
-      [
-        "AAPL.US-USD",
-        "1h",
-        "/home/jpueberb/repos2/bp.markets.ingest/dukascopy/data/resample/1h/AAPL.US-USD.csv",
-        []
-      ]
-    ],
-    "after": "2025-11-22 13:59:59",
-    "until": "2025-12-22 13:59:59",
-    "output_type": "JSON",
-    "mt4": true,
-    "limit": 1440,
-    "offset": 0,
-    "order": "asc",
-    "callback": "__bp_callback"
-  }
-}
-```
-
+**Note:** a self-describing high performance streaming binary format will soon be added too.
 
 ## Indicators
 
-**Limitations and Future Evolution (v1.0 vs v1.1)**
+### Limitations and Future Evolution (v1.0 vs v1.1)
 
-While the current v1.0 indicator implementation is functional, it is not yet optimal for professional-grade technical analysis. Because the current engine heavily re-uses the "regular select" logic, the API treats indicators as secondary filters rather than integrated data streams. 
+General advice: use the integrated indicator endpoint in API-version 1.1. V1.0 is supported as seen as a "legacy" implementation.
 
-This leads to a warmup period discrepancy: the engine currently drops the first N-rows starting from your after date to accommodate calculations, meaning the response may lack data for the specific start time you requested. To resolve these synchronization issues, we are transitioning to a more robust architecture:
+### Custom indicators
 
-- Version 1.0 (Legacy Support): This version will remain available for existing integrations and simple queries. It is reliable for basic data fetches but requires manual handling of lookback periods and limits.
+Are supported. See [here](indicators.md) for more information.
 
-- Version 1.1 (Next Gen): The upcoming 1.1 API will introduce an integrated selection logic where warmup periods are handled internally. It will automatically fetch the necessary historical data to ensure your requested after date contains a stable, accurate indicator value from the very first row of the response.
+### Indicator list
 
 **RSI**
 
@@ -565,58 +510,11 @@ GET http://localhost:8000/ohlcv/1.0/indicator/linregchannel/after/2026-01-01+00:
 ```
 
 
-**Note:** These are AI generated. Check them thoroughly before you use them. I will check them as soon as V1.1 lands-i can then visualize them more easily.
+**Note:** Most indicators have been generated by AI by have been checked and confirmed to be working correctly. However, some indicators, those with "verified:0" in the meta flags are known to be problematic. These will be removed from the code base. Do not use them. Other indicators will replace them. Example cross-asset indicators will be added. Eg a Pearson correlation indicator between BUND and EUR-USD.
 
 **Note:** Added a small helper script to generate indicator output to CSV. `http://localhost:8000/indicator.html`
 
->While asking an other AI about the code-quality of the other AI: The code quality is excellent - these are well-structured, production-ready implementations. The minor issues noted are mostly cosmetic and don't affect core functionality. The consistent architecture makes maintenance easy and adding new indicators straightforward. The indicators should work correctly for their intended purposes with proper financial data input. A third AI also confirms they are correct. However, i like manual verification. Which will happen just before release of API v1.1.
-
-Above will remain in the 1.0 API. You can use it safely, although its not optimal atm.
-
-**Sorting DESCENDING is currently a good practice**
-
-## Version 1.1
-
-```sh
-GET http://localhost:8000/ohlcv/1.1/select/AAPL.US-USD,1h[sma(20,50),ema(50),macd(12,26,9)]:skiplast/ \
-select/EUR-USD,1h:skiplast/after/2025.11.22,13:59:59/until/2025-12-22+13:59:59/output/JSON
-
-```
-
-The Version 1.1 API introduces a unified selection logic that shifts from sequential processing to a single-stream data architecture. By embedding indicator definitions directly within the selection brackets [...], the engine can perform all mathematical calculations in one pass. 
-
-This version extends the default OHLCV response by injecting a dedicated indicators subsection into every price unit, ensuring that indicators are perfectly time-aligned with their corresponding candles.
-
-Example:
-
-```json
-{
-  "symbol": "AAPL.US-USD",
-  "timeframe": "1h",
-  "data": [
-    {
-      "time": "2025-11-22 14:00:00",
-      "open": 150.00,
-      "high": 155.00,
-      "low": 149.00,
-      "close": 152.00,
-      "volume": 1200,
-      "indicators": {
-        "sma_20": 151.20,
-        "sma_50": 148.50,
-        "ema_50": 149.10,
-        "macd_12_26_9": {
-          "line": 1.2,
-          "signal": 0.8,
-          "hist": 0.4
-        }
-      }
-    }
-  ]
-}
-```
-
-**Note:** If you need to identify your JSON request with an id, you can use `?callback=id` for that. It will return the callback value in the options.
+>While asking an other AI about the code-quality of the other AI: The code quality is excellent - these are well-structured, production-ready 
 
 ## Thread Safety & Concurrency
 
