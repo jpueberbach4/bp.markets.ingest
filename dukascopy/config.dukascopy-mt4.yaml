@@ -67,7 +67,7 @@ http:
   poolmode: thread                    # Poolmode indicator calculations (process/thread)
   fmode: binary                       # Only binary is supported from v0.6.6 onward
   docs: config/dukascopy/http-docs    # Directory where HTML docs will live
-  listen: ":8000"                     # Listen to this port
+  listen: "127.0.0.1:8000"                     # Listen to this port
 
 ## Below you will find the configuration for the orchestrator script
 orchestrator:
