@@ -7,7 +7,6 @@ class BpMarketsEvaluator:
         self.symbol, self.tf = symbol, timeframe
         self.indicators = "atr(14):sma(50):rsi(14)"
         
-        # Load the trained model
         self.model_path = os.path.join(os.getcwd(), f"{self.symbol}-engine.pkl")
         if os.path.exists(self.model_path):
             self.model = joblib.load(self.model_path)
@@ -25,19 +24,26 @@ class BpMarketsEvaluator:
         except: return None
 
     def prepare_features(self, res):
-        # EXACT MATCH to mltrain.py (Zero-Bias Logic)
+        # MUST MATCH mltrain.py EXACTLY (4 FEATURES)
         close = np.array(res['close'])
+        open_p = np.array(res['open'])
         low = np.array(res['low'])
+        atr = np.array(res['atr_14'])
         
-        # 1. Features
-        dist_50 = ((close - np.array(res['sma_50'])) / close) * 100.0
+        # 1. Trend
+        dist_50 = (close - np.array(res['sma_50'])) / close
+        # 2. RSI
         rsi_norm = np.array(res['rsi_14']) / 100.0
-        vol_ratio = (np.array(res['atr_14']) / close) * 1000.0
+        # 3. Volatility
+        vol_ratio = atr / close
+        # 4. Body Strength (The Missing Feature)
+        safe_atr = np.where(atr == 0, 0.00001, atr)
+        body_strength = (close - open_p) / safe_atr
 
-        X = np.column_stack([dist_50, rsi_norm, vol_ratio])
+        X = np.column_stack([dist_50, rsi_norm, vol_ratio, body_strength])
         X = np.nan_to_num(X)
 
-        # 2. Labels (Ground Truth)
+        # Labels (Ground Truth)
         y = np.zeros(len(close))
         window = 12 
         
@@ -46,12 +52,13 @@ class BpMarketsEvaluator:
             local_min = np.min(low[i-window : i+window+1])
             is_absolute_low = (current_low == local_min)
             
+            # Match Trainer Bounce logic (0.5 ATR)
             future_price = close[i+12]
-            required_bounce = 1.5 * np.array(res['atr_14'])[i]
+            required_bounce = 0.5 * atr[i]
             did_bounce = future_price > (current_low + required_bounce)
             
             if is_absolute_low and did_bounce:
-                y[i] = 1 # True Bottom
+                y[i] = 1 
         
         return X[window:-window], y[window:-window]
 
@@ -69,45 +76,36 @@ class BpMarketsEvaluator:
             X, y_true = self.prepare_features(res)
             
             if len(X) > 0:
-                # Predict using the loaded model
-                # We use probability threshold > 0.60 just like the indicator
+                # Predict
                 probs = self.model.predict_proba(X)
                 class_map = {c: i for i, c in enumerate(self.model.classes_)}
                 idx_bottom = class_map.get(1)
                 
                 if idx_bottom is not None:
                     confidence = probs[:, idx_bottom]
-                    y_pred = (confidence > 0.60).astype(int)
+                    # Evaluate at 0.65 threshold (Standard Pro setting)
+                    y_pred = (confidence > 0.65).astype(int)
                     
                     y_true_all.extend(y_true)
                     y_pred_all.extend(y_pred)
             
             current_after = res['time'][-1]
-            # print(f"Processed batch ending: {current_after}")
 
-        # --- FINAL REPORT ---
         print("\n" + "="*40)
         print("     SNIPER MODEL EVALUATION REPORT     ")
         print("="*40)
         
-        # 1. Confusion Matrix
         cm = confusion_matrix(y_true_all, y_pred_all)
         print(f"\n[CONFUSION MATRIX]")
         print(f"True Negatives (Correctly Ignored): {cm[0][0]}")
-        print(f"False Positives (Fake Signals):     {cm[0][1]}  <-- WE WANT THIS LOW")
+        print(f"False Positives (Fake Signals):     {cm[0][1]}")
         print(f"False Negatives (Missed Bottoms):   {cm[1][0]}")
-        print(f"True Positives (Sniper Hits):       {cm[1][1]}  <-- WE WANT THIS HIGH")
+        print(f"True Positives (Sniper Hits):       {cm[1][1]}")
         
-        # 2. Precision (The most important stat)
         precision = precision_score(y_true_all, y_pred_all, pos_label=1)
         print(f"\n[SNIPER ACCURACY]")
         print(f"Precision: {precision:.2%}")
-        print("(This means: When the AI says 'Buy', it is right X% of the time)")
 
-        # 3. Full Report
-        print("\n[DETAILED METRICS]")
-        print(classification_report(y_true_all, y_pred_all, target_names=['Noise', 'Bottom']))
-
-# Run Evaluation (Same period as training to verify learning)
-evaluator = BpMarketsEvaluator("EUR-USD", "1h")
+# Run Evaluation
+evaluator = BpMarketsEvaluator("EUR-USD", "1d")
 evaluator.evaluate(start_ms=1420070400000, end_ms=1768880340000)
