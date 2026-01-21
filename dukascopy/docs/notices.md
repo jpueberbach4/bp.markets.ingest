@@ -5,7 +5,9 @@ What's next?
 - Replay/Market simulation
 - Write-up
 
-## **Notice:** charts and serial execution
+## **Notice:** charts and serial execution  
+
+**Note:** Something i am considering atm is to take the project offline. It's all about P/L. Not about some fancy clone statistics. It will help on focus, if i go this way, the project will get relaunched when completely done. It prevents users from getting frustrated by bugs, the many commits etc etc. I will make a decision soon.
 
 1. I have been looking into drawing functionalities. System will be upgraded to lightview charts + drawing extensions.
 
