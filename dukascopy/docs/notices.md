@@ -12,3 +12,15 @@ What's next?
 Will you completely take it offline or will there be some other repo, containing a locked, stable version? Yes. That is the plan. This one will dissapear, another, thoroughly tested repo, having below functionalities stabilized will be put up. However, there will be no maintenance on that stabilized product and it will be as-is. That project could be considered as a "stable data foundational layer with an API on top of it". And nothing more than that. So after one more development round, this migrates.
 
 What am I using this system for? A background process that deeply analyses incoming 1h "ticks". Generates signals, those get exported, read and paper-traded atm. Signals and results get compared. 
+
+The last public development round will include:
+
+- DAG execution of indicators, virtual indicators
+- drawing options to the index.html + split of js to libs
+- internal API layer for indicators to support high performance cross-asset cross-timeframe querying
+- ONE example cross-asset/cross-timeframe indicator-Pearson correlation between bond and EUR-USD
+- unit-tests
+- load-tests
+- perhaps other polish stuff
+
+How long until migration? ASAP.
