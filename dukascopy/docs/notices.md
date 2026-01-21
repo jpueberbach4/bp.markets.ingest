@@ -25,3 +25,5 @@ The last public development round will include:
 - perhaps other polish stuff
 
 How long until migration? ASAP.
+
+I won't leave this project with everyone empty-handed. There will be a stable version which can be used to do awesome things with-trust me it works. 
