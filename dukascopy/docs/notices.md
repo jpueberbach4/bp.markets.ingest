@@ -34,3 +34,5 @@ I won't leave this project with everyone empty-handed. There will be a stable ve
 You can use this engine for incremental machine learning purposes. I have played a bit with it now, and without tuning, mwah... i think can make something useful from it
 
 ![test-ai](../images/ml_example.png)
+
+This is an example what you can do with this. How I use it. I have added this test stuff to the examples directory. You can apply it to your custom indicator directory. I have tested this only with EUR-USD. I am also learning this stuff atm. So it was heavily guided.
