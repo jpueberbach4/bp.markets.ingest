@@ -9,6 +9,10 @@ What's next?
 
 **Note:** Something i am considering atm is to take the project offline. It's all about P/L. Not about some fancy clone statistics. It will help on focus, if i go this way, the project will get relaunched when completely done. It prevents users from getting frustrated by bugs, the many commits etc etc. I will make a decision soon.
 
+Will you completely take it offline or will there be some other repo, containing a locked, stable version? Yes. That is the plan. This one will dissapear, another, thoroughly tested repo, having below functionalities stabilized will be put up. However, there will be no maintenance on that stabilized product and it will be as-is. That project could be considered as a "stable data foundational layer with an API on top of it". And nothing more than that. So after the below round, a few days will be spend on unit-tests and stabilization. Then migrated.
+
+Furthermore:
+
 1. I have been looking into drawing functionalities. System will be upgraded to lightview charts + drawing extensions.
 
 2. While developing my own indicators i noticed i often was reliant on similar calculations performed by existing indicators. SMA's, RSI etc. I had to copy over the logic to my custom indicators. This is weird. So i came up with a solution. `?executionmode=serial`. This is not yet implemented but will be implemented soon. Basically pipelining inside of your HTTP request will get supported. See http.md for more information. This weekend it will be done. I have an indicator file of nearly 10KB. Thats no good. Fixing. \
