@@ -31,7 +31,7 @@ risk_on:
   - supertrend_10_3
 ```
 
-**Note:** Cascading will be supported here as well. Basically you can build a `tree`.
+**Note:** Cascading will be supported here as well. Basically you can build a `tree`. There is also thought on conditional branching. eg RSI>70, include extra indicator calculation-extra sidestep. All things that massively impact the current code base. 
 
 3. There will be another round of robustness/cleanup/quality operations. This time it will involve the HTTP API. Will be non-breaking. Also an abstraction will be added to easier access data from other symbols and timeframes. Currently i am using API calls but this is overhead, we can go direct as well. The direct mmap approach. Query/Dataframe in, DataFrame out. Eliminating HTTP overhead. So an internal API layer will be added which the indicators can use.
 
