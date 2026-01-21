@@ -68,3 +68,17 @@ THRESHOLD  | SIGNALS    | PRECISION  | WINNERS
 0.80       | 1          | 100.00%    | 1
 0.85       | 0          | 0.00%      | 0
 ```
+
+Assuming you have EUR-USD and 1d TF:
+
+```sh
+pip install --upgrade pip setuptools wheel
+pip install scikit-learn==1.3.2
+python3 -c "import sklearn; print('Scikit-learn version:', sklearn.__version__)"
+cp examples/mlind.py config.user/plugins/indicators/ml-example.py
+python3 examples/mltrain.py
+python3 examples/mleval.py
+python3 examples/mloptimize.py
+```
+
+Test on your localhost, select EUR-USD 1d graph. See recent years history. Its not perfect, but as a demo. Pretty neat.
