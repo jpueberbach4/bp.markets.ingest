@@ -269,16 +269,13 @@ def discover_options(options: Dict):
     """
 
     try:
-        # Global sets
+        # Global sets (cached, shaves of a few ms on API requets)
+        # Todo: regular checking for changes (eg once every few minutes)
         global available_datasets
-        # Load builder configuration
+        # Initialize datasets
         if len(available_datasets) == 0:
-            config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
-            config = load_app_config(config_file)
-
-            # Initialize discovery
-            discovery = DataDiscovery(config.builder)
-            available_datasets = discovery.scan()
+            # Run cached discovery
+            available_datasets = discover_all(options)
 
         # Resolve selections
         resolver = SelectionResolver(available_datasets)
