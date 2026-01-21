@@ -8,11 +8,12 @@ class BpMarketsTrainer:
         self.indicators = "atr(14):sma(50):rsi(14)" 
         
         # STANDARD RANDOM FOREST
-        # Robust, hard to break, proven for financial time-series.
-        # max_depth=8 prevents overfitting (memorizing noise).
+        # This is the industry standard for classification.
+        # n_estimators=200: Uses 200 "brains" to vote.
+        # max_depth=10: Enough depth to see patterns, not enough to memorize noise.
         self.model = RandomForestClassifier(
             n_estimators=200,
-            max_depth=8, 
+            max_depth=10, 
             class_weight='balanced',
             random_state=42,
             n_jobs=-1 
@@ -32,26 +33,26 @@ class BpMarketsTrainer:
         open_p = np.array(res['open'])
         low = np.array(res['low'])
         
-        # --- ROBUST FEATURES ---
-        # 1. Trend Deviation (Value: -0.05 to 0.05)
+        # --- ROBUST FEATURES (Zero-Bias Math) ---
+        # 1. Trend Deviation (Where are we relative to the average?)
         dist_50 = (close - np.array(res['sma_50'])) / close
         
-        # 2. RSI Normalized (Value: 0.0 to 1.0)
+        # 2. RSI Normalized (0.0 to 1.0)
         rsi_norm = np.array(res['rsi_14']) / 100.0
         
-        # 3. Volatility Ratio (Value: 0.001 to 0.005)
+        # 3. Volatility Ratio (How big are the moves?)
         atr = np.array(res['atr_14'])
         vol_ratio = atr / close
         
-        # 4. Candle Body Strength (Value: -2.0 to 2.0)
-        # Did we close higher than we opened? (Green Candle)
+        # 4. Candle Body Strength (Green or Red?)
+        # (Close - Open) / ATR
         safe_atr = np.where(atr == 0, 0.00001, atr)
         body_strength = (close - open_p) / safe_atr
 
         X = np.column_stack([dist_50, rsi_norm, vol_ratio, body_strength])
         X = np.nan_to_num(X)
 
-        # --- STANDARD LABELS ---
+        # --- LABELS ---
         y = np.zeros(len(close))
         window = 12 
         
@@ -60,7 +61,7 @@ class BpMarketsTrainer:
             local_min = np.min(low[i-window : i+window+1])
             is_absolute_low = (current_low == local_min)
             
-            # Standard Bounce: 0.5 ATR (Realistic target)
+            # Standard Bounce: 0.5 ATR (Realistic, not impossible)
             future_price = close[i+12]
             required_bounce = 0.5 * atr[i]
             did_bounce = future_price > (current_low + required_bounce)
@@ -93,16 +94,17 @@ class BpMarketsTrainer:
         X_train = np.vstack(all_X)
         y_train = np.concatenate(all_y)
         
-        print(f"Training Standard Random Forest on {len(y_train)} bars...")
+        print(f"Training Random Forest on {len(y_train)} bars...")
         print(f"Bottoms found: {int(np.sum(y_train))}")
         
         self.model.fit(X_train, y_train)
         
+        # Save as standard 'engine.pkl'
         filename = f"{self.symbol}-engine.pkl"
         save_path = os.path.join(os.getcwd(), filename)
         joblib.dump(self.model, save_path)
         print(f"SAVED TO: {save_path}")
 
 trainer = BpMarketsTrainer("EUR-USD", "1h")
-# Train on recent history (2018-2026) for best relevance
+# Train on recent history (2018-2026)
 trainer.train_loop(start_ms=1514764800000, end_ms=1768880340000)
