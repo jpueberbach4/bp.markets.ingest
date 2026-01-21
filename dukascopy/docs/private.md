@@ -11,7 +11,7 @@ This is ultimately about generating real P/L, not about chasing clone statistics
   - Dukascopy download → transform → aggregate → resample → binary storage  
   - Basic HTTP API for querying OHLCV + simple indicators  
   - **No maintenance, no support, no updates** — as-is forever. Think of it as a clean, reliable data bridge you can fork and build on.  
-- **Private continuation** → everything that actually drives edge: advanced serial DAG execution, realistic replay/slippage sim, cross-symbol direct mmap access, signal generation, etc.
+- **Private continuation** → everything that actually drives edge
 
 **Last public development round (before migration)** includes:  
 - DAG execution of indicators + virtual indicators  
