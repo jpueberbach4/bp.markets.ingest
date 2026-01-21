@@ -21,6 +21,7 @@ The last public development round will include:
 - ONE example cross-asset/cross-timeframe indicator-Pearson correlation between bond and EUR-USD
 - unit-tests
 - load-tests
+- complete strip of CSV support (base-data part)
 - perhaps other polish stuff
 
 How long until migration? ASAP.
