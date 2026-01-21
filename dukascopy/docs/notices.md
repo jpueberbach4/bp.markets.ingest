@@ -27,3 +27,10 @@ The last public development round will include:
 How long until migration? ASAP.
 
 I won't leave this project with everyone empty-handed. There will be a stable version which can be used to do awesome things with-trust me it works. 
+
+
+## Notice
+
+You can use this engine for incremental machine learning purposes. I have played a bit with it now, and without tuning, mwah... i think can make something useful from it
+
+![test-ai](../images/ml_example.png)
