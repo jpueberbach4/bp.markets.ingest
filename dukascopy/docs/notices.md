@@ -36,3 +36,35 @@ You can use this engine for incremental machine learning purposes. I have played
 ![test-ai](../images/ml_example.png)
 
 This is an example what you can do with this. How I use it. I have added this test stuff to the examples directory. You can apply it to your custom indicator directory. I have tested this only with EUR-USD. I am also learning this stuff atm. So it was heavily guided.
+
+Accuracy levels are insane
+
+```sh
+========================================
+     SNIPER MODEL EVALUATION REPORT
+========================================
+
+[CONFUSION MATRIX]
+True Negatives (Correctly Ignored): 2778
+False Positives (Fake Signals):     0
+False Negatives (Missed Bottoms):   49
+True Positives (Sniper Hits):       26
+
+[SNIPER ACCURACY]
+Precision: 100.00%
+jpueberb@LAPTOP-0LK1UE8L:~/repos2/bp.markets.ingest/dukascopy$ python3 examples/mloptimizer.py
+Optimizing: /home/jpueberb/repos2/bp.markets.ingest/dukascopy/EUR-USD-engine.pkl
+Optimizing Thresholds for EUR-USD...
+INFO:     127.0.0.1:59444 - "GET /ohlcv/1.1/select/EUR-USD%2C1d%5Batr%2814%29%3Asma%2850%29%3Arsi%2814%29%5D/after/1420070400000/output/JSONP?limit=5000&subformat=3&order=asc HTTP/1.1" 200 OK
+
+==================================================
+THRESHOLD  | SIGNALS    | PRECISION  | WINNERS
+==================================================
+0.50       | 59         | 89.83%     | 53
+0.60       | 43         | 100.00%    | 43
+0.65       | 26         | 100.00%    | 26
+0.70       | 12         | 100.00%    | 12
+0.75       | 5          | 100.00%    | 5
+0.80       | 1          | 100.00%    | 1
+0.85       | 0          | 0.00%      | 0
+```
