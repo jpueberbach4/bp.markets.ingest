@@ -41,14 +41,14 @@
 
 ## Notice
 
-- [General notices, latest updates, caveats, etc](docs/notices.md) **2026-01-09 update**
+**THIS PRODUCT WILL BE STABILIZED AND MOVED TO A SEPERATE REPO**
+
+This project has gained significant traction causing "pressure" to fix things in a certain way. The decision has been taken to stabilize the project, add unit-tests to it and then move it to a seperate repository URL. This `bp.markets.ingest` will become private. More details soon.
+
+- [General notices, latest updates, caveats, etc](docs/notices.md) **2026-01-21 update**
 - [Limitations](docs/limitations.md)
 
 Don't forget to check the [Tools](docs/tools.md) section. It will ease things even more.
-
-**From Portfolio Project to Platform**
-
-What started as a personal project (private use-case) to tackle the intricate problem of temporal alignment in financial data has evolved into a robust, crash-resilient OHLCV resampling system. It now handles global trading sessions, multiple DST transitions, and aligns with real-world platforms like Metatrader.
 
 ---
 
