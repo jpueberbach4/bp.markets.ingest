@@ -592,6 +592,3 @@ We have not programmed for high-concurrency, enterprise-scale environments. If y
 | **Concurrent users** | 5 | 50–80 | **10–16x** | Virtually unlimited |
 | **Response time (p95)** | 46ms | 15–20ms | **2–3x faster** | Same base stats |
 | **Memory usage** | 50–100MB | 800MB–1.5GB | 8–15x | 1024MB per pod |
-
-
-PS: this is me defining very powerful capabilities. All of this. Really all of it, is a definition for a high performance C++ tickmode engine. I am basically defining all the features the C++ version should have in python first. I am testing with it, when i encounter something not handy, solutionize it, implement in python. Try again. Now good enough? No, another iteration. Until it's perfect. All perfect -> go C++. SIMD, AVX, BID-ASK, spreads, slippage etc.
