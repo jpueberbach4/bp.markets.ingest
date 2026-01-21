@@ -22,7 +22,7 @@ def meta()->Dict:
     return {
         "author": "Google Gemini",
         "version": 1.0,
-        "verified": 0,
+        "verified": 1,
         "needs": "surface-colouring"
     }
     
