@@ -30,3 +30,6 @@ Cleanup:
   - [ ] Update all documentation
   - [ ] Create migration guide
   - [ ] Final bug fix sweep
+
+Rest
+  - [ ] Take a day off
