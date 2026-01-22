@@ -32,9 +32,10 @@ To ensure the AI understands "market context," raw OHLCV data is converted into 
 
 
 ### B. The Labeling Logic (The "Truth")
-The model is trained on a "V-Shape Recovery" pattern. A bar is labeled as a **Target (1)** only if:
-1.  It is a **Local Low** within a 24-period window.
-2.  Price **bounces** by at least 0.5 * ATR within 12 bars following the low.
+The model is trained to find significant structural lows. 
+* **Target**: A Local Low defined by a window of `X` periods. 
+* **Daily Context**: If window=24, the AI treats the setup as a "Monthly Cycle Bottom."
+* **Requirement**: Price must bounce at least 0.5 * ATR within 12 bars to validate the recovery.
 
 ### C. The Random Forest Engine
 The system utilizes 200 independent Decision Trees. Each tree "votes" on whether a setup is a bottom.
