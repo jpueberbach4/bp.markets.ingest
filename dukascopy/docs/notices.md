@@ -28,6 +28,8 @@ How long until migration? ASAP.
 
 I won't leave this project with everyone empty-handed. There will be a stable version which can be used to do awesome things with-trust me it works. 
 
+In short. Basically this project becomes a gift to the community. People may fork, takeover, continue development. There will be no functionality strips, other than the CSV datalayer (which nobody wants).
+
 
 ## Notice
 
