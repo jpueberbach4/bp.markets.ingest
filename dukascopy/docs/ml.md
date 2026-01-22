@@ -154,5 +154,8 @@ Test on your localhost, select EUR-USD 1d graph, select the ml-example indicator
 
 This is an exact showcase on how i use this system. The API calls are pulled by EA's. You can change the scripts to train for other assets as well. This works for more Forex pairs. 
 
+
+**Note:** This favors high accuracy, leading to few trading signals each year for daily per asset. But ofcourse, you dont run this on a single asset but on 40-80 simultaneously..... the above examples can be tuned and become a very usable base.
+
 ---
 *Developed as a high-precision, low-frequency sniper system for quantitative trading. Most accurate on high timeframes*
