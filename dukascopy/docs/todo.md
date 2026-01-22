@@ -6,6 +6,9 @@ DAG Execution:
   - [ ] Dependency resolution
   - [ ] Real parallel execution
 
+DuckDB:
+  - [ ] Eliminate completely
+
 Panama:
   - [ ] Panama prevents text-strip, invent solution for binary
 
