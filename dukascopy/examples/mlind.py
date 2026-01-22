@@ -78,6 +78,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     signal[mask] = 0
 
     return pd.DataFrame({
-        'confidence': confidence, 
+        'confidence': confidence,
+        'threshold': 0.55, 
         'signal': signal
     }, index=df.index)
