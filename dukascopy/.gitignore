@@ -16,3 +16,4 @@ etl/tests/*
 config.user/*
 *.parquet
 *.csv
+*.pkl
