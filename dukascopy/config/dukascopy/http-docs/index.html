@@ -128,6 +128,11 @@
             margin-top: auto;
         }
 
+        #short_message{
+            height: 16px;
+            font-size: 14px;
+        }
+
         .attribution { 
             font-size: 14px; 
             color: var(--text-gray); 
@@ -361,7 +366,10 @@
 
             <button onclick="openExportModal()" style="margin-top:10px; background: #313339; color:white; border:none; padding:10px; border-radius:4px; font-weight:600; cursor:pointer; width:100%;">Export View</button>
 
+            <button onclick="copyUrl()" style="margin-top:10px; background: #313339; color:white; border:none; padding:10px; border-radius:4px; font-weight:600; cursor:pointer; width:100%;">Copy URL</button>
+
             <div class="sidebar-footer">
+                <div id="short_message"></div>
                 <a href="https://www.dukascopy.com" target="_blank" class="attribution">
                     Market data by <strong>Dukascopy</strong>
                 </a>
@@ -632,21 +640,22 @@
         resetAndLoad(true);
     }
 
-    function loadData(direction, referenceTs, limit = 1000) {
-        if (isFetching) return;
+    function getDataUri(direction, referenceTs, limit = 1000, type = "JSONP"){
         const sym = document.getElementById('symbolSelect').value;
         const tf = document.getElementById('tfSelect').value;
         if(!sym || !tf) return;
-
-        isFetching = true;
-        requestDirection = direction;
-        document.getElementById('loader').style.display = 'flex';
         
         const chainStr = chain.length ? `[${chain.map(i => `${i.name}(${i.params.join(',')})`).join(':')}]` : "";
         let url = `/ohlcv/1.1/select/${sym},${tf}${chainStr}`;
         
         const fetchLimit = Math.min(limit, 5000);
-        let params = `output/JSONP?limit=${fetchLimit}&callback=__callbackData&subformat=3`;
+
+        let callback = "";
+        if (type == "JSONP") {
+            callback = "&callback=__callbackData";
+        }
+
+        let params = `output/${type}?limit=${fetchLimit}${callback}&subformat=3`;
 
         if (direction === 'history') {
             url += `/until/${referenceTs || Date.now()}`;
@@ -663,9 +672,42 @@
                 params += `&order=desc`;
             }
         }
+        url = `${url}/${params}`;
+        return url;
+    }
+
+    async function copyToClipboard(text) {
+        try {
+            await navigator.clipboard.writeText(text);
+            document.getElementById('short_message').innerHTML = 'Copied!'
+        } catch (err) {
+            document.getElementById('short_message').innerHTML = 'Failed'
+
+        }
+        setTimeout(() => {
+            document.getElementById('short_message').innerHTML = '';
+        }, 500)
+    }
+
+    function copyUrl() {
+        let url = getDataUri('future', masterData[0].time*1000, 1000, "JSON");
+        copyToClipboard(url);
+    }
+
+    function loadData(direction, referenceTs, limit = 1000) {
+        if (isFetching) return;
+        const sym = document.getElementById('symbolSelect').value;
+        const tf = document.getElementById('tfSelect').value;
+        if(!sym || !tf) return;
+
+        isFetching = true;
+        requestDirection = direction;
+        document.getElementById('loader').style.display = 'flex';
+
+        let url = getDataUri(direction, referenceTs, limit = 1000);
 
         const s = document.createElement('script');
-        s.src = `${url}/${params}`;
+        s.src = url;
         document.body.appendChild(s);
     }
 
