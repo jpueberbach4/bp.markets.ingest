@@ -60,26 +60,33 @@ The system utilizes 200 independent Decision Trees. Each tree "votes" on whether
 * Test the scikit-learn installation
 `python3 -c "import sklearn; print('Scikit-learn version:', sklearn.__version__)"`
 
-* Install the visualization plugin
-`cp examples/mlind.py config.user/plugins/indicators/ml-example.py`
+* Install the visualization plugins
+`cp examples/ml-bottom-ind.py config.user/plugins/indicators/ml-bottom-example.py`
+`cp examples/ml-top-ind.py config.user/plugins/indicators/ml-top-example.py`
 
 ### Workflow
 1.  **Train the Model**:
     ```bash
-    python3 examples/mltrain.py
+    python3 examples/ml-bottom-train.py
+    python3 examples/ml-top-train.py
     ```
-    *This creates `EUR-USD-engine.pkl`.*
+    *This creates `EUR-USD-(bottom|top)-engine.pkl`.*
 
 2.  **Optimize Thresholds**:
     ```bash
-    python3 example/mloptimizer.py
+    python3 example/ml-bottom-optimizer.py
+    python3 example/ml-top-optimizer.py
     ```
     *Look for the threshold that provides >90% precision.*
 
-3.  **Run Live Indicator**:
-    Load `ml-example` into your server or terminal. The internal logic uses:
+3.  **Run LIndicator**:
+    Load `ml-bottom-example` into your server or terminal. The internal logic uses:
     * **Confidence Threshold**: `0.55 - 0.70` (Adjustable)
     * **Safety Filter**: `RSI < 40` and `Body Strength > 0` (Only buys green candles. Its a demo.).
+
+    Load `ml-top-example` into your server or terminal. The internal logic uses:
+    * **Confidence Threshold**: `0.55 - 0.70` (Adjustable)
+    * **Safety Filter**: `RSI > 60` and `Body Strength > 0` (Only sells red candles. Its a demo.).
 
 ---
 
@@ -103,7 +110,7 @@ Based on current training for major pairs (GBP-USD, EUR-USD), the AI prioritizes
 Outputs:
 
 ```sh
-~/repos2/bp.markets.ingest/dukascopy$ python3 examples/mleval.py
+~/repos2/bp.markets.ingest/dukascopy$ python3 examples/ml-bottom-eval.py
 ========================================
      SNIPER MODEL EVALUATION REPORT
 ========================================
@@ -116,7 +123,7 @@ True Positives (Sniper Hits):       26
 
 [SNIPER ACCURACY]
 Precision: 100.00%
-~/repos2/bp.markets.ingest/dukascopy$ python3 examples/mloptimizer.py
+~/repos2/bp.markets.ingest/dukascopy$ python3 examples/ml-bottom-optimizer.py
 Optimizing: ~repos2/bp.markets.ingest/dukascopy/EUR-USD-engine.pkl
 Optimizing Thresholds for EUR-USD...
 

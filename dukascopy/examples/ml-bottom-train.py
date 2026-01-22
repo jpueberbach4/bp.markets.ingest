@@ -100,7 +100,7 @@ class BpMarketsTrainer:
         self.model.fit(X_train, y_train)
         
         # Save as standard 'engine.pkl'
-        filename = f"{self.symbol}-engine.pkl"
+        filename = f"{self.symbol}-bottom-engine.pkl"
         save_path = os.path.join(os.getcwd(), filename)
         joblib.dump(self.model, save_path)
         print(f"SAVED TO: {save_path}")

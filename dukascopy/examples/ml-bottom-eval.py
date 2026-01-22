@@ -7,7 +7,7 @@ class BpMarketsEvaluator:
         self.symbol, self.tf = symbol, timeframe
         self.indicators = "atr(14):sma(50):rsi(14)"
         
-        self.model_path = os.path.join(os.getcwd(), f"{self.symbol}-engine.pkl")
+        self.model_path = os.path.join(os.getcwd(), f"{self.symbol}-bottom-engine.pkl")
         if os.path.exists(self.model_path):
             self.model = joblib.load(self.model_path)
             print(f"LOADED: {self.model_path}")
