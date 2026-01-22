@@ -6,6 +6,9 @@ DAG Execution:
   - [ ] Dependency resolution
   - [ ] Real parallel execution
 
+Panama:
+  - [ ] Panama prevents text-strip, invent solution for binary
+
 Drawing/Visualization:
   - [ ] Split JS to libs (chart.js, drawing.js, ui.js)
   - [ ] Drawing tools (lines, channels, fibs)
