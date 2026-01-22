@@ -31,17 +31,18 @@ I won't leave this project with everyone empty-handed. There will be a stable ve
 In short. Basically this project becomes a gift to the community. People may fork, takeover, continue development. There will be no functionality strips, other than the CSV datalayer (which nobody wants).
 
 
-## Notice
+### Bonus ML Example: Bottom Detection with Random Forest
 
-You can use this engine for incremental machine learning purposes. I have played a bit with it now, and without tuning, mwah... i think can make something useful from it
+Included as a starter demo to show ML integration.
 
-![test-ai](../images/ml_example.png)
-
-This is an example what you can do with this. How I use it. I have added this test stuff to the examples directory. You can apply it to your custom indicator directory. I have tested this only with EUR-USD. I am also learning this stuff atm. So it was heavily guided.
-
-Accuracy levels are insane
+- Features: ATR range, SMA distance, RSI  
+- Model: RF classifier (trained on historical bottoms)  
+- Signal: Confidence > threshold + RSI < 40 + green candle  
+- See `examples/mltrain.py` etc. for training/evaluation.
+- Example output (precision by threshold):
 
 ```sh
+~/repos2/bp.markets.ingest/dukascopy$ python3 examples/mleval.py
 ========================================
      SNIPER MODEL EVALUATION REPORT
 ========================================
@@ -54,10 +55,9 @@ True Positives (Sniper Hits):       26
 
 [SNIPER ACCURACY]
 Precision: 100.00%
-jpueberb@LAPTOP-0LK1UE8L:~/repos2/bp.markets.ingest/dukascopy$ python3 examples/mloptimizer.py
-Optimizing: /home/jpueberb/repos2/bp.markets.ingest/dukascopy/EUR-USD-engine.pkl
+~/repos2/bp.markets.ingest/dukascopy$ python3 examples/mloptimizer.py
+Optimizing: ~repos2/bp.markets.ingest/dukascopy/EUR-USD-engine.pkl
 Optimizing Thresholds for EUR-USD...
-INFO:     127.0.0.1:59444 - "GET /ohlcv/1.1/select/EUR-USD%2C1d%5Batr%2814%29%3Asma%2850%29%3Arsi%2814%29%5D/after/1420070400000/output/JSONP?limit=5000&subformat=3&order=asc HTTP/1.1" 200 OK
 
 ==================================================
 THRESHOLD  | SIGNALS    | PRECISION  | WINNERS
@@ -70,6 +70,10 @@ THRESHOLD  | SIGNALS    | PRECISION  | WINNERS
 0.80       | 1          | 100.00%    | 1
 0.85       | 0          | 0.00%      | 0
 ```
+
+![ml-screenshot](../images/ml_example.png)
+
+Run on EUR-USD 1d to see it in action. Fork and experiment — it's a learning tool!
 
 Assuming you have EUR-USD and 1d TF:
 
