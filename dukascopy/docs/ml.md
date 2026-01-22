@@ -150,7 +150,6 @@ Test on your localhost, select EUR-USD 1d graph, select the ml-example indicator
 
 ![ml-screenshot](../images/ml_example2.png)
 
-More recent example:
 ![ml-screenshot](../images/ml_example3.png)
 
 This is an exact showcase on how i use this system. The API calls are pulled by EA's. You can change the scripts to train for other assets as well. This works for more Forex pairs. 
