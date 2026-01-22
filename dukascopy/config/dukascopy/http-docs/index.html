@@ -690,7 +690,15 @@
     }
 
     function copyUrl() {
-        let url = getDataUri('future', masterData[0].time*1000, 1000, "JSON");
+        const timeScale = mainChart.timeScale();
+        const logicalRange = timeScale.getVisibleLogicalRange();
+        let referenceTs = masterData[0].time*1000;
+        if (logicalRange){
+            // get first visible candle referenceTs
+            const firstVisibleIdx = Math.max(0, Math.floor(logicalRange.from));
+            referenceTs = masterData[firstVisibleIdx].time * 1000;
+        } 
+        let url = getDataUri('future', referenceTs, 1000, "JSON");
         copyToClipboard(url);
     }
 
