@@ -30,7 +30,6 @@ I won't leave this project with everyone empty-handed. There will be a stable ve
 
 In short. Basically this project becomes a gift to the community. People may fork, takeover, continue development. There will be no functionality strips, other than the CSV datalayer (which nobody wants).
 
-
 ### Bonus ML Example: Bottom Detection with Random Forest
 
 Included as a starter demo to show ML integration.
