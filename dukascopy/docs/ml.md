@@ -49,21 +49,30 @@ The system utilizes 200 independent Decision Trees. Each tree "votes" on whether
 ### Prerequisites
 * Python 3.8+
 * Upgrade dependencies
-`pip install --upgrade pip setuptools wheel`
+```sh
+pip install --upgrade pip setuptools wheel
+```
 
 * Install scikit-learn
-`pip install scikit-learn==1.3.2`
+```sh
+pip install scikit-learn==1.3.2
+```
 
 * Install joblib/matplotlib
-`pip install joblib matplotlib`
+```sh
+pip install joblib matplotlib
+```
 
 * Test the scikit-learn installation
-`python3 -c "import sklearn; print('Scikit-learn version:', sklearn.__version__)"`
+```sh
+python3 -c "import sklearn; print('Scikit-learn version:', sklearn.__version__)"
+```
 
-* Install the visualization plugins
-`cp examples/ml-bottom-ind.py config.user/plugins/indicators/ml-bottom-example.py`
-`cp examples/ml-top-ind.py config.user/plugins/indicators/ml-top-example.py`
-
+* Install the visualization/inference plugins
+```sh
+cp examples/ml-bottom-ind.py config.user/plugins/indicators/ml-bottom-example.py
+cp examples/ml-top-ind.py config.user/plugins/indicators/ml-top-example.py
+```
 ### Workflow
 
 Note: Currently configured for GBP-USD.
@@ -82,7 +91,7 @@ Note: Currently configured for GBP-USD.
     ```
     *Look for the threshold that provides >90% precision.*
 
-3.  **Run LIndicator**:
+3.  **Run Indicator**:
     Load `ml-bottom-example` into your server or terminal. The internal logic uses:
     * **Confidence Threshold**: `0.55 - 0.70` (Adjustable)
     * **Safety Filter**: `RSI < 40` and `Body Strength > 0` (Only buys green candles. Its a demo.).
@@ -97,8 +106,12 @@ Note: Currently configured for GBP-USD.
 
 The system is built to prevent the two most common failures in Trading AI:
 
-* **Lookahead Bias (`:skiplast`)**: The system is designed to run with `:skiplast` at the API level. It only predicts based on **Closed Bars**. It never "cheats" by looking at the current live price. Use `:skiplast` during market-opens. eg `http://localhost:8000/ohlcv/1.1/select/EUR-USD,1d[ml(EUR-USD-engine.pkl,0.55)]:skiplast/after/1149033600000/output/JSON?limit=10&subformat=3&order=desc`. Gets you the last closed candle and signals on index 0.
-* **Signal Repainting**: By utilizing index `-2` (the last completed candle), once a signal is generated, it is permanent and never changes.
+* **Lookahead Bias (`:skiplast`)**: The system is designed to run with `:skiplast` at the API level. It only predicts based on **Closed Bars**. It never "cheats" by looking at the current live price. Use `:skiplast` during market-opens. eg 
+```sh
+http://localhost:8000/ohlcv/1.1/select/EUR-USD,1d[ml(EUR-USD-engine.pkl,0.55)]:skiplast/after/1149033600000/output/JSON?limit=10&subformat=3&order=desc
+``` 
+Gets you the last closed candle and signals on **index 0**.
+* **Signal Repainting**: By utilizing index `-1` (the last completed candle), once a signal is generated, it is permanent and never changes.
 * **Warmup Protection**: The system requires a `warmup_count` of 50 bars to ensure Moving Averages and ATRs are mathematically valid before making a prediction.
 
 ---
@@ -153,7 +166,6 @@ Test on your localhost, select EUR-USD 1d graph, select the ml-example indicator
 ![ml-screenshot](../images/ml_example3.png)
 
 This is an exact showcase on how i use this system. The API calls are pulled by EA's. You can change the scripts to train for other assets as well. This works for more Forex pairs. 
-
 
 **Note:** This favors high accuracy, leading to few trading signals each year for daily per asset. But ofcourse, you dont run this on a single asset but on 40-80 simultaneously..... the above examples can be tuned and become a very usable base.
 
