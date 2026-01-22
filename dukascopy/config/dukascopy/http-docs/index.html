@@ -896,15 +896,17 @@
 
     function getSeriesColor(col) {
         const palette = {
-            'stoch_k': '#2962FF',  // Blue
-            'stoch_d': '#FF6D00',  // Orange
-            'signal': '#FF5252',   // Red
-            'macd': '#2962FF',     // Blue
-            'upper': '#787b86',    // Gray
-            'lower': '#787b86',    // Gray
-            'middle': '#FF9800',   // Amber
-            'rsi': '#9c27b0',      // Purple
-            'hist': '#26a69a'      // Teal
+            'stoch_k': '#2962FF',    // Blue
+            'stoch_d': '#FF6D00',    // Orange
+            'signal': '#FF5252',     // Red
+            'macd': '#2962FF',       // Blue
+            'upper': '#787b86',      // Gray
+            'lower': '#787b86',      // Gray
+            'middle': '#FF9800',     // Amber
+            'rsi': '#9c27b0',        // Purple
+            'hist': '#26a69a',       // Teal
+            'confidence': '#FFD600', // Orange
+            'threshold': '#00FF00'   // Lime
         };
         const mainParts = col.split('__');
         const suffix = (mainParts.length > 1 ? mainParts[1] : col.split('_').shift()).toLowerCase();

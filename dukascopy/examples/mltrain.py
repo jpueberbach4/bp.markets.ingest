@@ -105,6 +105,6 @@ class BpMarketsTrainer:
         joblib.dump(self.model, save_path)
         print(f"SAVED TO: {save_path}")
 
-trainer = BpMarketsTrainer("EUR-USD", "1d")
+trainer = BpMarketsTrainer("GBP-USD", "1d")
 # Train on recent history (2018-2026)
 trainer.train_loop(start_ms=1514764800000, end_ms=1768880340000)

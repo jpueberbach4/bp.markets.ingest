@@ -107,5 +107,5 @@ class BpMarketsEvaluator:
         print(f"Precision: {precision:.2%}")
 
 # Run Evaluation
-evaluator = BpMarketsEvaluator("EUR-USD", "1d")
+evaluator = BpMarketsEvaluator("GBP-USD", "1d")
 evaluator.evaluate(start_ms=1420070400000, end_ms=1768880340000)

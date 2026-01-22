@@ -90,3 +90,5 @@ python3 examples/mloptimize.py
 Test on your localhost, select EUR-USD 1d graph. See recent years history. Its not perfect, but as a demo. Pretty neat.
 
 PS: This is an exact showcase on how i use this system. The API calls are pulled by EA's.
+
+![ml-screenshot](../images/ml_example2.png)

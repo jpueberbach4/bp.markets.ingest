@@ -13,11 +13,15 @@ def warmup_count(options: Dict[str, Any]) -> int:
     return 50
 
 def position_args(args: List[str]) -> Dict[str, Any]:
-    return {"model_path": args[0] if len(args) > 0 else "EUR-USD-engine.pkl"}
+    return {
+        "model_path": args[0] if len(args) > 0 else "EUR-USD-engine.pkl",
+        "threshold": args[1] if len(args) > 1 else "0.55"
+    }
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     # 1. LOAD MODEL
     model_name = options.get('model_path', 'EUR-USD-engine.pkl')
+    threshold = float(options.get('threshold', '0.55'))
     path = os.path.join(os.getcwd(), model_name)
     
     if path not in _ENGINE_CACHE:
@@ -68,7 +72,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
         # The safety filters (RSI < 40, Green Candle) do the rest.
         
         signal[
-            (confidence > 0.55) & 
+            (confidence > threshold) & 
             (rsi < 40) & 
             (body_strength > 0) # This means it should be a green candle, this will change aka hammer, doji etc
         ] = 1
@@ -79,6 +83,6 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
 
     return pd.DataFrame({
         'confidence': confidence,
-        'threshold': 0.55, 
+        'threshold': threshold, 
         'signal': signal
     }, index=df.index)

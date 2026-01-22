@@ -94,5 +94,5 @@ class BpMarketsOptimizer:
             else:
                 print(f"{t:<10.2f} | 0          | 0.00%      | 0")
 
-optimizer = BpMarketsOptimizer("EUR-USD", "1d")
+optimizer = BpMarketsOptimizer("GBP-USD", "1d")
 optimizer.optimize(start_ms=1420070400000, end_ms=1768880340000)
