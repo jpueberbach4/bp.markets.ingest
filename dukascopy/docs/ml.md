@@ -65,12 +65,15 @@ The system utilizes 200 independent Decision Trees. Each tree "votes" on whether
 `cp examples/ml-top-ind.py config.user/plugins/indicators/ml-top-example.py`
 
 ### Workflow
+
+Note: Currently configured for GBP-USD.
+
 1.  **Train the Model**:
     ```bash
     python3 examples/ml-bottom-train.py
     python3 examples/ml-top-train.py
     ```
-    *This creates `EUR-USD-(bottom|top)-engine.pkl`.*
+    *This creates `GBP-USD-(bottom|top)-engine.pkl`.*
 
 2.  **Optimize Thresholds**:
     ```bash
