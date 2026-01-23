@@ -244,7 +244,7 @@ def discover_options(options: Dict):
 
     try:
         # Resolve selections
-        resolver = SelectionResolver(cache.datasets)
+        resolver = SelectionResolver(cache.registry.get_available_datasets())
         options["select_data"], _ = resolver.resolve(options["select_data"])
         return options
     except Exception as e:

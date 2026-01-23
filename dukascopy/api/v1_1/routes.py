@@ -95,9 +95,8 @@ from util.cache import cache
 from api.config.app_config import load_app_config
 from api.v1_1.helper import parse_uri, discover_options, generate_output, execute, _get_ms
 
-from api.v1_1.plugin import indicator_registry, get_indicator_plugins, refresh_indicators
+#from api.v1_1.plugin import indicator_registry, get_indicator_plugins, refresh_indicators
 from api.v1_1.version import API_VERSION
-from api.v1_1.parallel import parallel_indicators
 
 from util.api import get_data
 
@@ -160,11 +159,8 @@ async def list_indicators(
     if id: options['id'] = id
 
     try:
-        # Hot reload support (only for custom user indicators)
-        local_indicator_registry = refresh_indicators(options, indicator_registry, "config.user/plugins/indicators")
-
         # Retrieve metadata for all registered indicators
-        data = get_indicator_plugins(local_indicator_registry)
+        data = cache.indicators.get_metadata_registry()
 
         # Record wall-clock execution time
         options["wall"] = time.time() - time_start
@@ -256,10 +252,12 @@ async def get_ohlcv_list(
     """
     # Parse the path-based request URI into structured query options
     options = parse_uri(request_uri)
+    # If an id was passed on the URL, return it in response
+    if id: options['id'] = id
 
     try:
         # Discover available OHLCV data sources from the filesystem
-        available_data = cache.datasets
+        available_data = cache.registry.get_available_datasets()
 
         # Group timeframes by symbol name
         symbols = {}
@@ -285,6 +283,7 @@ async def get_ohlcv_list(
         if options.get("output_type") == "JSON" or options.get("output_type") is None:
             return {
                 "status": "ok",
+                "options": options,
                 "result": symbols,
             }
 
@@ -292,6 +291,7 @@ async def get_ohlcv_list(
         if options.get("output_type") == "JSONP":
             payload = {
                 "status": "ok",
+                "options": options,
                 "result": symbols,
             }
             json_data = orjson.dumps(payload).decode("utf-8")
@@ -398,6 +398,11 @@ async def get_ohlcv(
         limit = options.get('limit', 1000)
         order = options.get('order', 'desc')
 
+        # Output option CSV and subformat 3 require disabled recursive_mapping
+        options['disable_recursive_mapping'] = False
+        if options.get("output_type") == "CSV" or options.get("subformat") == 3:
+            options['disable_recursive_mapping'] = True
+
         # Dataframe array
         select_df = []
 
@@ -411,30 +416,7 @@ async def get_ohlcv(
 
 
         # Join the dataframe array
-        df = pd.concat(select_df)
-
-        # Support for CSV output mode (do not build recursive output)
-        disable_recursive_mapping = False
-        if options.get("output_type") == "CSV":
-            disable_recursive_mapping = True
-        elif options.get("subformat") == 3:
-            disable_recursive_mapping = True
-
-        # Change this:
-
-        # Hot reload support (only for custom user indicators)
-        local_indicator_registry = refresh_indicators(options, indicator_registry, "config.user/plugins/indicators")
-
-        # Enrich the returned result with the requested indicators (parallelized)
-        enriched_df = parallel_indicators(df, options, local_indicator_registry, disable_recursive_mapping)
-
-        if options.get('after'):
-            # Filter to keep only rows >= requested start time
-            enriched_df = enriched_df[enriched_df['sort_key'] >= _get_ms(options['after'])]
-
-        if options.get('until'):
-            # Until is exclusive
-            enriched_df = enriched_df[enriched_df['sort_key'] < _get_ms(options['until'])]
+        enriched_df = pd.concat(select_df)
 
         if options.get('limit'):
             # Limit rows

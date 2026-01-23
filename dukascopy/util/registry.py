@@ -5,6 +5,7 @@ class DatasetRegistry:
     def __init__(self, datasets: List[Dataset]):
         # Internal structure: { 'SYMBOL': { 'TIMEFRAME': Dataset } }
         self._lookup = {}
+        self._datasets = datasets
         self._index_datasets(datasets)
 
     def _index_datasets(self, datasets: List[Dataset]):
@@ -16,6 +17,9 @@ class DatasetRegistry:
 
     def find(self, symbol: str, timeframe: str) -> Optional[Dataset]:
         return self._lookup.get(symbol, {}).get(timeframe)
+
+    def get_available_datasets(self):
+        return self._datasets
 
     def get_available_timeframes(self, symbol: str) -> List[str]:
         """Returns all timeframes available for a specific symbol."""

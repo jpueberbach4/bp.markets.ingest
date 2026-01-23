@@ -91,20 +91,19 @@ class IndicatorRegistry:
                 'size': file_stat.st_size
             }
 
-    def refresh(self, options=None):
+    def refresh(self, indicators: List[str] = []):
         """
         Refreshes plugins based on 'options' selection or reloads 
         user plugins if files have changed on disk.
         """
         # If no options, do a full reload of everything
-        if not options or not options.get('select_data'):
+        if not indicators or not len(indicators) == 0:
             return self.load_all_plugins()
 
         # Extract unique plugin names from select_data strings (e.g., "RSI_14" -> "RSI")
         unique_required = {
-            item[4][0].split('_')[0] 
-            for item in options['select_data'] 
-            if item[4]
+            item.split('_')[0] 
+            for item in indicators
         }
 
         for name in unique_required:

@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 from util.cache import * 
+from util.parallel import *
 
 
 def get_data(symbol: str, timeframe:str, after_ms: int, until_ms: int, \
@@ -16,7 +17,7 @@ def get_data(symbol: str, timeframe:str, after_ms: int, until_ms: int, \
 
     # Determine how many warmup rows are needed for indicators
     warmup_rows = cache.indicators.get_maximum_warmup_rows(indicators)
-    
+
     # Total number of rows to retrieve, including warmup
     total_limit = limit + warmup_rows
 
@@ -51,10 +52,23 @@ def get_data(symbol: str, timeframe:str, after_ms: int, until_ms: int, \
     # Retrieve the data slice from cache
     chunk_df = cache.get_chunk(symbol, timeframe, after_idx, until_idx)
 
-    # TODO: Call the indicators
+    if len(indicators)>0:
+        # Hot reload support (only for custom user indicators)
+        indicator_registry = cache.indicators.refresh(indicators)
 
-    # TODO: drop the rows before after_ms, end-limit and offset need to be done by caller
-    
+        # Recursive mapping disable from options
+        disable_recursive_mapping = options.get('disable_recursive_mapping', False)
+
+        # Enrich the returned result with the requested indicators (parallelized)
+        chunk_df = parallel_indicators(chunk_df, options, indicator_registry, disable_recursive_mapping)
+
+    # Drop the rows before after_ms, end-limit and offset need to be done by caller
+    chunk_df = chunk_df[chunk_df['sort_key'] >= after_ms]
+    chunk_df = chunk_df[chunk_df['sort_key'] < until_ms]
+
+    # Apply the limit - for multiselect via API, this is handled in API
+    chunk_df = chunk_df.iloc[:limit]
+
     return chunk_df
 
     

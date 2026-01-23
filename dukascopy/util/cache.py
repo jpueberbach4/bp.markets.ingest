@@ -81,10 +81,8 @@ TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 class MarketDataCache:
     def __init__(self):
         self.mmaps = {}
-        # Discover datasets
-        self.datasets = discover_all()
-        # Build a registry for quick lookup
-        self.registry = DatasetRegistry(self.datasets)
+        # Discover datasets and build registry
+        self.registry = DatasetRegistry(discover_all())
         # Discover indicators and build registry
         self.indicators = IndicatorRegistry()
 
