@@ -29,8 +29,6 @@ To ensure the AI understands "market context," raw OHLCV data is converted into 
 3.  **Volatility Ratio**: `ATR / Close`. Normalizes price movement relative to current market volatility.
 4.  **Body Strength**: `(Close - Open) / ATR`. Measures the "force" of the current candle.
 
-
-
 ### B. The Labeling Logic (The "Truth")
 The model is trained to find significant structural lows. 
 * **Target**: A Local Low defined by a window of `X` periods. 
@@ -111,7 +109,6 @@ The system is built to prevent the two most common failures in Trading AI:
 http://localhost:8000/ohlcv/1.1/select/EUR-USD,1d[ml(EUR-USD-engine.pkl,0.55)]:skiplast/after/1149033600000/output/JSON?limit=10&subformat=3&order=desc
 ``` 
 Gets you the last closed candle and signals on **index 0**.
-* **Signal Repainting**: By utilizing index `-1` (the last completed candle), once a signal is generated, it is permanent and never changes.
 * **Warmup Protection**: The system requires a `warmup_count` of 50 bars to ensure Moving Averages and ATRs are mathematically valid before making a prediction.
 
 ---
@@ -122,6 +119,8 @@ Based on current training for major pairs (GBP-USD, EUR-USD), the AI prioritizes
 2.  **Trend Deviation** (~26%): Ensures we are buying at a relative discount.
 3.  **Body Strength** (~18%): The "Trigger" that confirms the buyers have returned.
 4.  **Volatility Ratio** (~15%): The "Scale" that adjusts for market noise.
+
+5.  **Geometry** The system no longer uses hard indicator gates. Instead, it applies pattern-adaptive confidence thresholds, allowing strong reversal geometries (e.g. Dragonfly Doji, Hammer) to require less ensemble consensus than weaker structures.
 
 Outputs:
 
