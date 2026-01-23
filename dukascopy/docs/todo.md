@@ -7,6 +7,7 @@
   - [x] Strip of API 1.0
   - [x] Generic QA passes
   - [x] Initial performance tests. Did we lose, yes/no? Answer: no.
+  - [x] Initial bug-checking (since a lot has moved)
 
 Note: we are setup now to integrate the extensions below (weekend work).
 
