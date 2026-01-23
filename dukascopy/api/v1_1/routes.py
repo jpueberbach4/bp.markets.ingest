@@ -385,26 +385,30 @@ async def get_ohlcv(
         order = options.get('order', 'desc')
 
         # Output option CSV and subformat 3 require disabled recursive_mapping
-        options['disable_recursive_mapping'] = False
+        disable_recursive_mapping= False
         if options.get("output_type") == "CSV" or options.get("subformat") == 3:
-            options['disable_recursive_mapping'] = True
+            odisable_recursive_mapping = True
 
         # Dataframe array
         select_df = []
 
         for item in options['select_data']:
 
-            symbol, timeframe, input_filepath, modifiers, indicators = item
-            disable_recursive_mapping = options.get('disable_recursive_mapping', False)
+            # Retrieve the arguments from resolved select_data
+            symbol, timeframe, _, modifiers, indicators = item
+            
+            # Call the new internal get_data functionality
             temp_df = get_data(
                 symbol, timeframe, 
-                after_ms, until_ms, limit, 
-                order, indicators, {
-                    "modifiers": modifiers,
-                    "disable_recursive_mapping": disable_recursive_mapping
+                after_ms, until_ms, 
+                limit, order, indicators, 
+                {
+                    "modifiers": modifiers,                                 # eg skiplast
+                    "disable_recursive_mapping": disable_recursive_mapping  # disables recursive mapping to dicts
                 }
             )
 
+            # Append dataframe for multiselect
             select_df.append(temp_df)
 
 
