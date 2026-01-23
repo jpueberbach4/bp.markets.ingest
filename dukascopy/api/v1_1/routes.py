@@ -404,6 +404,14 @@ async def get_ohlcv(
         # Join the dataframe array
         enriched_df = pd.concat(select_df)
 
+
+        # In case of multi-selects, we need to sort by sort_key
+        if len(options['select_data'])>1:
+            if order == "asc":
+                enriched_df.sort_values(by=['sort_key','symbol','timeframe'], ascending=True, inplace=True)
+            else:
+                enriched_df.sort_values(by=['sort_key','symbol','timeframe'], ascending=False, inplace=True)
+
         if options.get('limit'):
             # Limit rows
             enriched_df = enriched_df.iloc[:options['limit']]

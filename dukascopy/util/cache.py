@@ -87,14 +87,31 @@ class MarketDataCache:
         self.indicators = IndicatorRegistry()
 
     def discover_view(self, symbol, tf):
-        # Find the dataset for symbol and tf
-        dataset = self.registry.find(symbol, tf)
-        if not dataset:
-            raise Exception(f'No dataset found for symbol {symbol}/{tf}')
-        # Register the view
-        self.register_view(symbol, tf, dataset.path)
+        """Discover and register a dataset view for a symbol and timeframe.
 
-    def register_view(self, symbol, tf, file_path):
+        This method looks up a dataset matching the given symbol and timeframe
+        from the registry and registers a view backed by the dataset's file
+        path. If no matching dataset exists, an exception is raised.
+
+        Args:
+            symbol (str): Trading symbol identifier (e.g., "EURUSD").
+            tf (str): Timeframe identifier (e.g., "5m", "1h").
+
+        Raises:
+            Exception: If no dataset is found for the given symbol and timeframe.
+        """
+        # Look up the dataset matching the symbol and timeframe
+        dataset = self.registry.find(symbol, tf)
+
+        # Fail fast if no dataset is available
+        if not dataset:
+            raise Exception(f"No dataset found for symbol {symbol}/{tf}")
+
+        # Register a view using the dataset's file path
+        self._register_view(symbol, tf, dataset.path)
+
+
+    def _register_view(self, symbol, tf, file_path):
         """Register or update a memory-mapped OHLCV view for a given symbol and timeframe.
 
         This method maps the binary OHLCV file into memory using `mmap` and
@@ -269,35 +286,5 @@ class MarketDataCache:
             return idx
 
         return None
-
-    def register_views_from_options(self, options: Dict) -> bool:
-        """Registers DuckDB views based on resolved option selections.
-
-        This method inspects the provided options dictionary and registers
-        DuckDB views for all selected data entries when operating in binary
-        file mode. Each selected entry is expected to resolve to a tuple
-        containing the symbol, timeframe, file path, and any modifiers.
-        View registration is delegated to :meth:`register_view`.
-
-        Args:
-            options (Dict): Configuration dictionary containing runtime
-                options. Must include ``'fmode'`` to indicate file mode and
-                ``'select_data'`` as an iterable of resolved selection tuples.
-
-        Returns:
-            bool: ``True`` if view registration completes successfully or
-            no registration is required.
-        """
-        # Only proceed when operating in binary file mode
-        if options.get('fmode') == "binary":
-            # Iterate over all selected data entries
-            for item in options['select_data']:
-                # Unpack the resolved selection tuple
-                symbol, tf, file_path, modifiers, indicators = item
-                # Register a DuckDB view for the given symbol and timeframe
-                self.register_view(symbol, tf, file_path)
-
-        return True
-
 
 cache = MarketDataCache()
