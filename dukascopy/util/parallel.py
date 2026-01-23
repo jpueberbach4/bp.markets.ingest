@@ -38,6 +38,44 @@ from typing import List, Dict, Any
 THREAD_EXECUTOR = concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count())
 print("Using concurrency mode: thread")
 
+def _worker_task(df_slice, p_func, full_name, p_opts):
+    """Execute an indicator calculation on a DataFrame slice in a worker process.
+
+    This helper function is intended to be executed inside a parallel worker.
+    It applies a single indicator calculation function to a slice of the input
+    DataFrame, normalizes the resulting column names, and returns the enriched
+    DataFrame. Column prefixing is performed inside the worker to minimize
+    overhead in the parent process.
+
+    Args:
+        df_slice (pd.DataFrame): A slice of the input OHLCV DataFrame to which
+            the indicator should be applied.
+        p_func (Callable): Indicator calculation function. This function must
+            accept a DataFrame slice and an options dictionary, and return a
+            Pandas DataFrame.
+        full_name (str): Fully qualified indicator name (including parameters),
+            used as a prefix for output column names.
+        p_opts (dict): Parsed indicator options and parameters passed to the
+            indicator function.
+
+    Returns:
+        Optional[pd.DataFrame]: A DataFrame containing the computed indicator
+        columns with prefixed names, or ``None`` if the indicator produced no
+        output.
+    """
+    res_df = p_func(df_slice, p_opts)
+    if res_df.empty:
+        return None
+
+    # Prefix columns once in the worker to keep the main process fast
+    if len(res_df.columns) > 1:
+        res_df.columns = [f"{full_name}__{c}" for c in res_df.columns]
+    else:
+        res_df.columns = [full_name]
+
+    return res_df
+
+
 def parallel_indicators(df: pd.DataFrame, indicators: List[str], plugins: Dict[str, callable], disable_recursive_mapping: bool = False):
     """Calculates technical indicators directly on a provided DataFrame in parallel.
 
@@ -89,20 +127,7 @@ def parallel_indicators(df: pd.DataFrame, indicators: List[str], plugins: Dict[s
         if hasattr(plugin_func, "__globals__") and "position_args" in plugin_func.__globals__:
             ind_opts.update(plugin_func.__globals__["position_args"](parts[1:]))
 
-        def worker(df_slice, p_func, full_name, p_opts):
-            res_df = p_func(df_slice, p_opts)
-            if res_df.empty:
-                return None
-
-            # Prefix multi-column results with '__', single-column gets full name
-            if len(res_df.columns) > 1:
-                res_df.columns = [f"{full_name}__{c}" for c in res_df.columns]
-            else:
-                res_df.columns = [full_name]
-
-            return res_df
-
-        tasks.append(THREAD_EXECUTOR.submit(worker, df_slice=df, p_func=plugin_func,
+        tasks.append(THREAD_EXECUTOR.submit(_worker_task, df_slice=df, p_func=plugin_func,
                                         full_name=ind_str, p_opts=ind_opts))
 
     # Collect completed results
@@ -118,7 +143,9 @@ def parallel_indicators(df: pd.DataFrame, indicators: List[str], plugins: Dict[s
     indicator_matrix = indicator_matrix.loc[:, ~indicator_matrix.columns.duplicated()].copy()
     indicator_matrix = indicator_matrix.reindex(df.index)
 
-    if not disable_recursive_mapping:
+    if disable_recursive_mapping:
+        df = df.join(indicator_matrix, how='left')
+    else:
         # Vectorized nesting of multi-column indicators into dictionaries
         records = indicator_matrix.to_dict(orient='records')
         nested_list = []
@@ -140,10 +167,8 @@ def parallel_indicators(df: pd.DataFrame, indicators: List[str], plugins: Dict[s
         indicator_matrix['indicators'] = nested_list
         df = df.join(indicator_matrix[['indicators']], how='left')
         df['indicators'] = df['indicators'].apply(lambda x: x if isinstance(x, dict) else {})
-    else:
-        df = df.join(indicator_matrix, how='left')
 
-    # This is interesting.... It cannot find the sort_key without it
+    # Final reset index to restore sort_key as a column
     df = df.reset_index()
     return df
 
