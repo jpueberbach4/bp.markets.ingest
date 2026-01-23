@@ -92,7 +92,7 @@ from datetime import datetime, timezone
 from typing import Dict, Any, List
 from urllib.parse import unquote_plus
 from pathlib import Path
-from fastapi.responses import PlainTextResponse, StreamingResponse
+from fastapi.responses import PlainTextResponse, StreamingResponse, ORJSONResponse
 
 # Import builder utilities for resolving file-backed OHLCV selections
 from builder.config.app_config import load_app_config
@@ -275,7 +275,7 @@ def generate_output(df: pd.DataFrame, options: Dict):
         # Normalize DataFrame into row-oriented dictionaries
         payload = _format_json(df, options)
         # Serialize payload and wrap in callback invocation
-        json_data = orjson.dumps(payload).decode("utf-8")
+        json_data = payload.body.decode("utf-8")
         return PlainTextResponse(
             content=f"{callback}({json_data});",
             media_type="text/javascript",
@@ -335,11 +335,11 @@ def _format_json(df, options):
     if subformat == 1:
         # Remove internal or non-public columns
         df.drop(columns=['sort_key', 'year'], errors='ignore', inplace=True)
-        return {
+        return ORJSONResponse(content={
             "status": "ok",
             "options": options,
             "result": df.to_dict(orient='records'),
-        }
+        })
 
     # ------------------------------------------------------------------
     # Subformat 2: Columnar JSON (columns + 2D values array)
@@ -351,12 +351,12 @@ def _format_json(df, options):
             .rename(columns={'sort_key': 'time'})
         )       
 
-        return {
+        return ORJSONResponse(content={
             "status": "ok",
             "options": options,
             "columns": df.columns.tolist(),
             "values": df.values.tolist(),
-        }
+        })
 
     # ------------------------------------------------------------------
     # Subformat 3: Time-series–optimized OHLCV structure
@@ -382,12 +382,12 @@ def _format_json(df, options):
         
         result = df.astype(object).where(df.notnull(), None).to_dict(orient='list')
 
-        return {
+        return ORJSONResponse(content={
             "status": "ok",
             "options": options,
             "columns": df.columns.tolist(),
             "result": result
-        }
+        })
     # ------------------------------------------------------------------
     # Subformat 4: Stream–optimized OHLCV structure (NDJSON)
     # ------------------------------------------------------------------
