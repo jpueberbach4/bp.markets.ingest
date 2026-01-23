@@ -16,7 +16,7 @@ def get_data(symbol: str, timeframe:str, after_ms: int, until_ms: int, \
 
     # Determine how many warmup rows are needed for indicators
     warmup_rows = cache.indicators.get_maximum_warmup_rows(indicators)
-
+    
     # Total number of rows to retrieve, including warmup
     total_limit = limit + warmup_rows
 
@@ -52,6 +52,8 @@ def get_data(symbol: str, timeframe:str, after_ms: int, until_ms: int, \
     chunk_df = cache.get_chunk(symbol, timeframe, after_idx, until_idx)
 
     # TODO: Call the indicators
+
+    # TODO: drop the rows before after_ms, end-limit and offset need to be done by caller
     
     return chunk_df
 
