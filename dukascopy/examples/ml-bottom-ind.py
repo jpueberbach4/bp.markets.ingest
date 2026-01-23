@@ -15,13 +15,13 @@ def warmup_count(options: Dict[str, Any]) -> int:
 def position_args(args: List[str]) -> Dict[str, Any]:
     return {
         "model_path": args[0] if len(args) > 0 else "GBP-USD-bottom-engine.pkl",
-        "threshold": args[1] if len(args) > 1 else "0.58"
+        "threshold": args[1] if len(args) > 1 else "0.59"
     }
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     # LOAD MODEL
     model_name = options.get('model_path', 'GBP-USD-bottom-engine.pkl')
-    threshold = float(options.get('threshold', '0.60'))
+    threshold = float(options.get('threshold', '0.59'))
     path = os.path.join(os.getcwd(), model_name)
     
     if path not in _ENGINE_CACHE:

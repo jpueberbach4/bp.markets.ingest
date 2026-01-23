@@ -18,12 +18,12 @@ def warmup_count(options: Dict[str, Any]) -> int:
 def position_args(args: List[str]) -> Dict[str, Any]:
     return {
         "model_path": args[0] if len(args) > 0 else "GBP-USD-top-engine.pkl",
-        "threshold": args[1] if len(args) > 1 else "0.55"
+        "threshold": args[1] if len(args) > 1 else "0.59"
     }
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     model_name = options.get('model_path', 'GBP-USD-top-engine.pkl')
-    threshold = float(options.get('threshold', '0.55'))
+    threshold = float(options.get('threshold', '0.59'))
     path = os.path.join(os.getcwd(), model_name)
     
     if path not in _ENGINE_CACHE:
@@ -58,7 +58,35 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
 
     if idx_top is not None:
         confidence = probs[:, idx_top]
-        # TOP LOGIC: Confidence + Overbought RSI + Red Candle
-        signal[(confidence > threshold) & (rsi > 60) & (body_strength < 0)] = 1
+        
+        # Component Extract
+        hi, lo, op, cl = df['high'], df['low'], df['open'], df['close']
+
+        # Get the total range of the candle
+        total_range = hi - lo
+
+        # Avoid div by zero
+        safe_range = total_range.replace(0, 0.00001)
+
+        # We find where the "Meat" (body) of the candle is located.
+        # body_mid is the center point of the Open and Close.
+        body_mid = (op + cl) / 2
+        
+        # Calculate how low the body sits relative to the total candle (0 to 1)
+        # 0.0 = Body is at the very bottom (Shooting Star / Top Rejection)
+        # 1.0 = Body is at the very top (Hammer / Bottom Rejection)
+        relative_height = (body_mid - lo) / safe_range
+
+        # The entire "Meat" of the candle must be in the LOWER 35% of the range.
+        is_shooting_star = (relative_height < 0.35)
+        
+        # Red candle? Is open higher than close?
+        is_red = cl < op
+
+        # If AI says it's a top AND (Price action is DOWN OR Price action is a TOP REJECTION)
+        trigger = (confidence >= threshold) & (is_red | is_shooting_star)
+        
+        # Where trigger true, set signal to one, else zero
+        signal = np.where(trigger, 1, 0)
 
     return pd.DataFrame({'confidence': confidence, 'signal': signal, 'threshold': threshold}, index=df.index)
