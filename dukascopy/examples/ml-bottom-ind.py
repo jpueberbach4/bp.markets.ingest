@@ -56,7 +56,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
         body_strength.fillna(0)
     ])
     
-    # 4. PREDICT
+    # PREDICT
     probs = model.predict_proba(X) 
     class_map = {c: i for i, c in enumerate(model.classes_)}
     idx_bottom = class_map.get(1)
@@ -67,35 +67,38 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     if idx_bottom is not None:
         confidence = probs[:, idx_bottom]
         
-        # Component Extract
+        # Geometry Calculations
         hi, lo, op, cl = df['high'], df['low'], df['open'], df['close']
-        
-        # Get the total range of the candle
         total_range = hi - lo
-        
-        # Avoid div by zero
         safe_range = total_range.replace(0, 0.00001)
-
-        # We find where the "Meat" (body) of the candle is located.
-        # body_mid is the center point of the Open and Close.
+        body_size = np.abs(cl - op)
         body_mid = (op + cl) / 2
-        
-        # Calculate how high the body sits relative to the total candle (0 to 1)
-        # 1.0 = Body is at the very top (no upper wick)
-        # 0.0 = Body is at the very bottom (no lower wick)
         relative_height = (body_mid - lo) / safe_range
 
-        # The entire "Meat" of the candle must be in the upper 35% of the range.
-        is_hammer = (relative_height > 0.65)
+        # Pattern Detection
+        is_doji = (body_size <= (total_range * 0.10)) & (total_range > 0)
         
-        # Green candle? Is close higher than open?
-        is_green = cl > op
+        is_dragonfly   = is_doji & (relative_height > 0.90)
+        is_gravestone  = is_doji & (relative_height < 0.10)
+        is_long_legged = is_doji & (relative_height > 0.40) & (relative_height < 0.60)
+        is_hammer      = (relative_height > 0.60)
+        is_green       = (cl > op)
 
-        # Now combine....
-        # If AI says it's a bottom AND (Price action is UP OR Price action is a REJECTION)
-        trigger = (confidence >= threshold) & (is_green | is_hammer)
+        # Dynamic Threshold Raping
+        # We start with a very high "impossible" threshold and lower it per pattern
+        needed_conf = np.full(len(df), 0.70) # "is_any" fallback
+
+        # Apply specific thresholds (Order matters: more specific patterns last)
+        needed_conf = np.where(is_green,       threshold,    needed_conf)
+        needed_conf = np.where(is_hammer,      0.58,         needed_conf)
+        needed_conf = np.where(is_long_legged, 0.57,         needed_conf)
+        needed_conf = np.where(is_dragonfly,   0.55,         needed_conf)
+        needed_conf = np.where(is_gravestone,  0.63,         needed_conf)
+
+        # Signal if the AI confidence for THIS specific row exceeds 
+        # the required threshold for the pattern found on THIS specific row.
+        trigger = (confidence >= needed_conf)
         
-        # Where trigger true, set signal to one, else zero
         signal = np.where(trigger, 1, 0)
 
     return pd.DataFrame({
