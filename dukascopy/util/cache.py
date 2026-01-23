@@ -1,62 +1,62 @@
 """
 ===============================================================================
-File:        state11.py
+File:        cache.py
 
 Author:      JP Ueberbach
 Created:     2026-01-12
+Updated:     2026-01-23
 
-Module for managing in-memory OHLCV data views using memory-mapped binary files.
-Provides fast, zero-copy access to time-series market data and utility methods
-for registering, slicing, and querying cached OHLCV datasets.
+In-memory cache and view manager for OHLCV market data backed by
+memory-mapped binary files.
 
-This module defines the MarketDataCache class, which:
+This module provides fast, zero-copy access to time-series OHLCV data
+stored in fixed-width binary files. It manages the lifecycle of
+memory-mapped views keyed by symbol and timeframe, supports efficient
+timestamp-based lookups via binary search, and exposes utilities for
+extracting contiguous data slices as normalized Pandas DataFrames.
 
-- Maintains a registry of memory-mapped OHLCV views keyed by symbol/timeframe.
-- Registers views from binary OHLCV files using NumPy structured arrays.
-- Provides fast lookup of records by timestamp using binary search.
-- Returns Pandas DataFrames for contiguous slices of OHLCV data.
-- Caches memory-mapped files, file handles, and timestamps for efficient reuse.
-- Supports runtime registration of views based on resolved query options.
-- Ensures safe cleanup of existing memory maps before replacing them.
+The primary entry point is the `MarketDataCache` class, which integrates
+with the dataset discovery layer and indicator registry to dynamically
+register views at runtime based on resolved query options.
+
+Key capabilities:
+    - Maintain a registry of memory-mapped OHLCV views by symbol/timeframe.
+    - Register and refresh views from binary OHLCV files using NumPy
+      structured arrays.
+    - Detect file changes and safely replace stale memory maps.
+    - Perform fast timestamp lookups using `np.searchsorted`.
+    - Extract contiguous OHLCV slices as Pandas DataFrames.
+    - Lazily register views on demand via dataset discovery.
+    - Share memory-mapped files across queries for efficient reuse.
+
+Design notes:
+    - Binary files are assumed to use a fixed 64-byte record layout.
+    - Data access is read-only and optimized for random access.
+    - Memory maps are reused when file size and modification time
+      are unchanged.
+    - Timestamp indices are stored as NumPy arrays for efficient search.
+    - Indicator execution is handled externally; this module provides
+      only the underlying OHLCV data views.
 
 Classes:
     MarketDataCache:
-        Core cache manager for OHLCV views. Handles view registration, record
-        indexing, and data extraction as Pandas DataFrames.
+        Core cache manager responsible for view registration, memory-map
+        lifecycle management, record indexing, and data extraction.
 
-Variables:
+Module-level objects:
     cache (MarketDataCache):
-        Singleton instance of MarketDataCache for global access to OHLCV views.
-
-Key Methods:
-    register_view(symbol, tf, file_path):
-        Register or update a memory-mapped OHLCV view for a symbol/timeframe.
-
-    get_chunk(symbol, tf, from_idx, to_idx):
-        Retrieve a contiguous slice of OHLCV data as a Pandas DataFrame.
-
-    get_record_count():
-        Return the number of records available in a cached view.
-
-    find_record(symbol, tf, target_ts, side="right"):
-        Find the index of the closest record to a target timestamp.
-
-    register_views_from_options(options: Dict):
-        Bulk-register views from resolved runtime options in binary file mode.
+        Singleton cache instance used by downstream query and API layers.
 
 Requirements:
     - Python 3.8+
     - NumPy
     - Pandas
-    - FastAPI (optional for integration with API endpoints)
     - mmap (standard library)
 
 License:
     MIT License
 ===============================================================================
 """
-
-
 import numpy as np
 import pandas as pd
 import os
@@ -218,6 +218,7 @@ class MarketDataCache:
             'volume': subset['ohlcv'][:, 4],
         })
 
+        # TODO: move this to generate_output, only support for output types that require it
         # Convert epoch milliseconds to timezone-aware UTC datetimes
         dt_series = pd.to_datetime(df['sort_key'], unit='ms', utc=True)
 

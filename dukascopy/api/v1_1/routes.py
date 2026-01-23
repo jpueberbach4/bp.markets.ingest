@@ -402,8 +402,7 @@ async def get_ohlcv(
 
 
         # Join the dataframe array
-        enriched_df = pd.concat(select_df)
-
+        enriched_df = pd.concat(select_df, ignore_index=True, copy=False)
 
         # In case of multi-selects, we need to sort by sort_key
         if len(options['select_data'])>1:
