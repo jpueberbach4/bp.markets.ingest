@@ -82,6 +82,7 @@ License:
 import time
 import orjson
 import re
+import pandas as pd
 
 from fastapi import APIRouter, Query
 from fastapi.responses import PlainTextResponse, JSONResponse
@@ -90,13 +91,15 @@ from pathlib import Path
 from functools import lru_cache
 from fastapi import Depends
 
-from api.state11 import cache
+from util.cache import cache
 from api.config.app_config import load_app_config
-from api.v1_1.helper import parse_uri, discover_options, generate_output, execute, discover_all, _get_ms
+from api.v1_1.helper import parse_uri, discover_options, generate_output, execute, _get_ms
 
 from api.v1_1.plugin import indicator_registry, get_indicator_plugins, refresh_indicators
 from api.v1_1.version import API_VERSION
 from api.v1_1.parallel import parallel_indicators
+
+from util.api import get_data
 
 @lru_cache
 def get_config():
@@ -256,7 +259,7 @@ async def get_ohlcv_list(
 
     try:
         # Discover available OHLCV data sources from the filesystem
-        available_data = discover_all(options)
+        available_data = cache.datasets
 
         # Group timeframes by symbol name
         symbols = {}
@@ -389,12 +392,26 @@ async def get_ohlcv(
         if options.get("mt4") and options.get("output_type") != "CSV":
             raise Exception("MT4 flag requires output/CSV")
 
+        # Get default settings
+        after_ms = _get_ms(options.get('after', '1970-01-01 00:00:00'))
+        until_ms = _get_ms(options.get('until', '3000-01-01 00:00:00'))
+        limit = options.get('limit', 1000)
+        order = options.get('order', 'desc')
 
-        # In binary mode, we register MMap views            
-        cache.register_views_from_options(options)
+        # Dataframe array
+        select_df = []
 
-        # Execute data-engine
-        df = execute(options)
+        for item in options['select_data']:
+
+            symbol, timeframe, input_filepath, modifiers, indicators = item
+
+            temp_df = get_data(symbol, timeframe, after_ms, until_ms, limit, order, indicators, options)
+
+            select_df.append(temp_df)
+
+
+        # Join the dataframe array
+        df = pd.concat(select_df)
 
         # Support for CSV output mode (do not build recursive output)
         disable_recursive_mapping = False
@@ -402,6 +419,8 @@ async def get_ohlcv(
             disable_recursive_mapping = True
         elif options.get("subformat") == 3:
             disable_recursive_mapping = True
+
+        # Change this:
 
         # Hot reload support (only for custom user indicators)
         local_indicator_registry = refresh_indicators(options, indicator_registry, "config.user/plugins/indicators")

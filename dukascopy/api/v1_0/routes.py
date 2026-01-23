@@ -74,9 +74,9 @@ from pathlib import Path
 from functools import lru_cache
 from fastapi import Depends
 
-from api.state11 import cache
+from util.cache import cache
 from api.config.app_config import load_app_config
-from api.v1_1.helper import parse_uri, discover_options, generate_output, discover_all
+from api.v1_1.helper import parse_uri, discover_options, generate_output
 from api.v1_1.helper import execute
 
 from api.v1_1.plugin import load_indicator_plugins, refresh_indicators
@@ -326,7 +326,7 @@ async def get_ohlcv_list(
 
     try:
         # Discover available OHLCV data sources from the filesystem
-        available_data = discover_all(options)
+        available_data = cache.datasets
 
         # Group timeframes by symbol name
         symbols = {}

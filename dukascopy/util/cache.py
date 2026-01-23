@@ -63,6 +63,9 @@ import os
 import mmap
 from typing import Dict
 from numpy.lib.stride_tricks import as_strided
+from util.helper import *
+from util.registry import *
+from util.indicator import *
 
 # Define the C-struct equivalent for numpy
 DTYPE = np.dtype([
@@ -78,6 +81,20 @@ TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 class MarketDataCache:
     def __init__(self):
         self.mmaps = {}
+        # Discover datasets
+        self.datasets = discover_all()
+        # Build a registry for quick lookup
+        self.registry = DatasetRegistry(self.datasets)
+        # Discover indicators and build registry
+        self.indicators = IndicatorRegistry()
+
+    def discover_view(self, symbol, tf):
+        # Find the dataset for symbol and tf
+        dataset = self.registry.find(symbol, tf)
+        if not dataset:
+            raise Exception(f'No dataset found for symbol {symbol}/{tf}')
+        # Register the view
+        self.register_view(symbol, tf, dataset.path)
 
     def register_view(self, symbol, tf, file_path):
         """Register or update a memory-mapped OHLCV view for a given symbol and timeframe.
@@ -243,18 +260,7 @@ class MarketDataCache:
         # Retrieve the cached data for this view
         cached = self.mmaps.get(view_name)
 
-        # Cast the target timestamp to np.uint64 (search_key is a Python object)
-        # Teaching modus. It caught me completely off-guard.
-        # 
-        # Passing a standard Python integer forces NumPy to perform expensive "Type Promotion" 
-        # and Python-object comparisons at every branch of the binary search tree. Casting to 
-        # np.uint64 keeps the entire operation in high-speed C-memory, eliminating the overhead of 
-        # dropping back into the Python interpreter for every comparison.
-        #
-        # Huge performance benefit 0.25s -> 0.05. This took me 2 hours to unravel. Just couldnt
-        # understand why the profiler said that np.searchsorted took that long. Couldnt see the
-        # internals of that function (the calls it performs). So it was guessing, researching.
-        # Until eventually i found it. Profiling will not show you what exactly is up.
+        # Cast to numpy uint64 to avoid re-entry to GIL on each search
         search_key = np.uint64(target_ts)
 
         # Perform a binary search on the sorted timestamp index

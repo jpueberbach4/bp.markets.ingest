@@ -105,9 +105,10 @@ from builder.config.app_config import load_app_config
 from util.dataclass import *
 from util.discovery import *
 from util.resolver import *
-from api.state11 import *
 
 from api.v1_1.plugin import indicator_registry
+#from util.helper import discover_all
+from util.cache import cache
 
 CSV_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 CSV_TIMESTAMP_FORMAT_MT4_DATE = "%Y.%m.%d"
@@ -218,33 +219,6 @@ def parse_uri(uri: str) -> Dict[str, Any]:
 
     return result
 
-
-def discover_all(options: Dict):
-    """Discovers all datasets based on the application configuration.
-
-    This function loads the application configuration from a user-specific
-    YAML file if it exists, otherwise it falls back to the default config.
-    It then initializes a `DataDiscovery` instance using the builder
-    configuration and scans the filesystem for available datasets.
-
-    Args:
-        options (Dict): A dictionary of optional parameters (currently unused).
-
-    Returns:
-        List[Dataset]: A list of Dataset instances found in the filesystem.
-    """
-    # Determine which configuration file to load: user-specific or default
-    config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
-
-    # Load the application configuration from the YAML file
-    config = load_app_config(config_file)
-
-    # Initialize the DataDiscovery instance with the builder configuration
-    discovery = DataDiscovery(config.builder)
-
-    # Scan the filesystem and return the discovered datasets
-    return discovery.scan()
-
 def discover_options(options: Dict):
     """Resolve and enrich data selection options using filesystem-backed sources.
 
@@ -269,18 +243,9 @@ def discover_options(options: Dict):
     """
 
     try:
-        # Global sets (cached, shaves of a few ms on API requets)
-        # Todo: regular checking for changes (eg once every few minutes)
-        global available_datasets
-        # Initialize datasets
-        if len(available_datasets) == 0:
-            # Run cached discovery
-            available_datasets = discover_all(options)
-
         # Resolve selections
-        resolver = SelectionResolver(available_datasets)
+        resolver = SelectionResolver(cache.datasets)
         options["select_data"], _ = resolver.resolve(options["select_data"])
-
         return options
     except Exception as e:
         raise

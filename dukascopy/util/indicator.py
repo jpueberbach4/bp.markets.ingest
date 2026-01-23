@@ -33,8 +33,9 @@ import os
 import sys
 import importlib.util
 from pathlib import Path
+from typing import List
 
-class IndicatorManager:
+class IndicatorRegistry:
     """
     Manages the lifecycle of indicator plugins, including discovery, 
     dynamic loading, hot-reloading, and metadata extraction.
@@ -170,7 +171,7 @@ class IndicatorManager:
         # Return sorted by key
         return {k: metadata_map[k] for k in sorted(metadata_map)}
 
-    def get_maximum_warmup_rows(indicators: List[str]) -> int:
+    def get_maximum_warmup_rows(self, indicators: List[str]) -> int:
         """Determine the maximum warmup row count required by a set of indicators.
 
         This function inspects each requested indicator plugin to determine how many
