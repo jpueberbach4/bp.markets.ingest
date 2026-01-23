@@ -1,12 +1,14 @@
 ## Short term todo list
 
-Initial refactor/preparation stage:
+[x] Initial refactor/preparation stage:
   - [x] Abstracting indicator registry
   - [x] Implementation get_data method (internal API)
   - [x] Minimalization of API 1.1 (no functionality strip)
   - [x] Strip of API 1.0
   - [x] Generic QA passes
   - [x] Initial performance tests. Did we lose, yes/no? Answer: no.
+
+Note: we are setup now to integrate the extensions below (weekend work).
 
 DAG Execution:
   - [ ] Directed Acyclic Graph for indicators
