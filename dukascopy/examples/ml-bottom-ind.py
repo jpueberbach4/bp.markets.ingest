@@ -84,7 +84,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
         is_hammer      = (relative_height > 0.60)
         is_green       = (cl > op)
 
-        # Dynamic Threshold Raping
+        # Dynamic Threshold Trapping
         # We start with a very high "impossible" threshold and lower it per pattern
         needed_conf = np.full(len(df), 0.70) # "is_any" fallback
 
