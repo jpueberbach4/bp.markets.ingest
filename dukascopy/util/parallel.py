@@ -65,15 +65,12 @@ def parallel_indicators(df: pd.DataFrame, indicators: List[str], plugins: Dict[s
     if df.empty:
         return df
 
-    # Determine multi-index keys for symbol, timeframe, date, time
-    join_keys = [k for k in ['symbol', 'timeframe', 'date', 'time'] if k in df.columns]
-
     # Ensure numeric type for 'close' column if it exists
     if 'close' in df.columns:
         df['close'] = pd.to_numeric(df['close'], errors='coerce')
 
-    # Set multi-index for efficient slicing by symbol/timeframe
-    df.set_index(join_keys, inplace=True)
+    # We only use one index now, sort_key
+    df.set_index('sort_key', inplace=True)
 
     tasks = []
 
@@ -118,7 +115,8 @@ def parallel_indicators(df: pd.DataFrame, indicators: List[str], plugins: Dict[s
 
     # Combine all indicator DataFrames and handle duplicate columns
     indicator_matrix = pd.concat(results, axis=1)
-    indicator_matrix = indicator_matrix.groupby(level=0, axis=1).first()
+    indicator_matrix = indicator_matrix.loc[:, ~indicator_matrix.columns.duplicated()].copy()
+    indicator_matrix = indicator_matrix.reindex(df.index)
 
     if not disable_recursive_mapping:
         # Vectorized nesting of multi-column indicators into dictionaries
@@ -143,7 +141,9 @@ def parallel_indicators(df: pd.DataFrame, indicators: List[str], plugins: Dict[s
         df = df.join(indicator_matrix[['indicators']], how='left')
         df['indicators'] = df['indicators'].apply(lambda x: x if isinstance(x, dict) else {})
     else:
-        df = df.join(indicator_matrix)
+        df = df.join(indicator_matrix, how='left')
 
+    # This is interesting.... It cannot find the sort_key without it
+    df = df.reset_index()
     return df
 

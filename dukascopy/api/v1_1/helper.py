@@ -324,13 +324,16 @@ def _format_json(df, options):
     cols.insert(2, 'time')
     df = df[cols]
 
+    # Just drop the index column HARD
+    if isinstance(df, pd.DataFrame):
+        df = df.drop(columns=['index', 'level_0'], errors='ignore')
+
     # ------------------------------------------------------------------
     # Subformat 1: Record-oriented JSON (list of row dictionaries)
     # ------------------------------------------------------------------
     if subformat == 1:
         # Remove internal or non-public columns
-        df.drop(columns=['sort_key', 'year'], errors='ignore')
-
+        df.drop(columns=['sort_key', 'year'], errors='ignore', inplace=True)
         return {
             "status": "ok",
             "options": options,
@@ -450,7 +453,7 @@ def _stream_csv(df, options):
         is present; otherwise, None.
     """
     # Remove the temporary columns
-    df.drop(columns=['indicators','sort_key','year'], inplace=True, errors='ignore')
+    df.drop(columns=['index','indicators','sort_key','year'], inplace=True, errors='ignore')
 
     # Compatibility fix
     cols = list(df.columns)

@@ -387,7 +387,7 @@ async def get_ohlcv(
         # Output option CSV and subformat 3 require disabled recursive_mapping
         disable_recursive_mapping= False
         if options.get("output_type") == "CSV" or options.get("subformat") == 3:
-            odisable_recursive_mapping = True
+            disable_recursive_mapping = True
 
         # Dataframe array
         select_df = []
@@ -410,7 +410,6 @@ async def get_ohlcv(
 
             # Append dataframe for multiselect
             select_df.append(temp_df)
-
 
         # Join the dataframe array
         enriched_df = pd.concat(select_df, ignore_index=True, copy=False)
