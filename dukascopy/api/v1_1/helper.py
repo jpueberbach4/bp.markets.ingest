@@ -102,6 +102,7 @@ from util.resolver import *
 
 from util.cache import cache
 
+TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 def normalize_timestamp(ts: str) -> str:
     if not ts:
@@ -288,6 +289,49 @@ def generate_output(df: pd.DataFrame, options: Dict):
     # Unsupported output type
     return None
 
+def _add_human_readable_time_column(df):
+    """Add human-readable time and year columns derived from the sort key.
+
+    This helper function converts the millisecond-based ``sort_key`` timestamp
+    into a UTC-aware datetime, derives a calendar year column for partitioning
+    or grouping, and adds a formatted, human-readable timestamp column. It also
+    reorders the DataFrame columns so that core identity and time-related fields
+    appear first.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing a ``sort_key`` column with
+            epoch timestamps in milliseconds.
+
+    Returns:
+        pd.DataFrame: The updated DataFrame including ``year`` and ``time``
+        columns, with columns reordered for consistent downstream consumption.
+    """
+    # Convert the millisecond epoch sort key into a UTC datetime series
+    dt_series = pd.to_datetime(df['sort_key'], unit='ms', utc=True)
+
+    # Extract the calendar year for partitioning or grouping use cases
+    df['year'] = dt_series.dt.year
+
+    # Format the timestamp into a human-readable string representation
+    df['time'] = dt_series.dt.strftime(TIMESTAMP_FORMAT)
+
+    # Define preferred column ordering for identity and time-related fields
+    priority = ['symbol', 'timeframe', 'year', 'time', 'sort_key']
+
+    # Capture the current column order
+    all_cols = df.columns.tolist()
+
+    # Build the reordered column list with priority columns first
+    # Column juggling....
+    head = [c for c in priority if c in all_cols]
+    tail = [c for c in all_cols if c not in priority]
+
+    # Reindex the DataFrame to apply the new column ordering
+    df = df.reindex(columns=head + tail)
+
+    return df
+
+
 def _format_json(df, options):
     """Format a DataFrame into structured JSON output.
 
@@ -319,12 +363,6 @@ def _format_json(df, options):
     # Resolve requested JSON subformat (default to 1)
     subformat = options.get('subformat') if options.get('subformat') else 1
 
-    # Compatibility fix
-    cols = list(df.columns)
-    cols.remove('time')
-    cols.insert(2, 'time')
-    df = df[cols]
-
     # Just drop the index column HARD
     if isinstance(df, pd.DataFrame):
         df = df.drop(columns=['index', 'level_0'], errors='ignore')
@@ -333,6 +371,8 @@ def _format_json(df, options):
     # Subformat 1: Record-oriented JSON (list of row dictionaries)
     # ------------------------------------------------------------------
     if subformat == 1:
+        # This format has a human-readable time column
+        df = _add_human_readable_time_column(df)
         # Remove internal or non-public columns
         df.drop(columns=['sort_key', 'year'], errors='ignore', inplace=True)
         return ORJSONResponse(content={
@@ -392,6 +432,9 @@ def _format_json(df, options):
     # Subformat 4: Stream–optimized OHLCV structure (NDJSON)
     # ------------------------------------------------------------------
     elif subformat == 4:
+        # This format has a human-readable time column
+        df = _add_human_readable_time_column(df)
+        # Return a streaming NDJSON response
         return _stream_json(df, options)
 
     # ------------------------------------------------------------------
@@ -453,14 +496,11 @@ def _stream_csv(df, options):
         StreamingResponse | None: A streaming CSV HTTP response if data
         is present; otherwise, None.
     """
+    # This format has a human-readable time column
+    df = _add_human_readable_time_column(df)
+
     # Remove the temporary columns
     df.drop(columns=['index','indicators','sort_key','year'], inplace=True, errors='ignore')
-
-    # Compatibility fix
-    cols = list(df.columns)
-    cols.remove('time')
-    cols.insert(2, 'time')
-    df = df[cols]
 
     # Apply MT4-specific column transformations if requested
     if options.get('mt4'):

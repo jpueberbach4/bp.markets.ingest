@@ -76,8 +76,6 @@ DTYPE = np.dtype([
 
 RECORD_SIZE = 64
 
-TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
-
 class MarketDataCache:
     def __init__(self):
         self.mmaps = {}
@@ -218,16 +216,7 @@ class MarketDataCache:
             'volume': subset['ohlcv'][:, 4],
         })
 
-        # TODO: move this to generate_output, only support for output types that require it
-        # Convert epoch milliseconds to timezone-aware UTC datetimes
-        dt_series = pd.to_datetime(df['sort_key'], unit='ms', utc=True)
-
-        # Extract the year component for partitioning or grouping
-        df['year'] = dt_series.dt.year
-
-        # Format the timestamp into a human-readable string
-        df['time'] = dt_series.dt.strftime(TIMESTAMP_FORMAT)
-
+        # Return the dataframe
         return df
 
     def get_record_count(self, symbol, tf):
