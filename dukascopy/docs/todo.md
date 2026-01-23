@@ -6,6 +6,9 @@ DAG Execution:
   - [ ] Dependency resolution
   - [ ] Real parallel execution
 
+ASX:
+  - [ ] Custom timeshifting
+
 DuckDB:
   - [ ] Eliminate completely
 

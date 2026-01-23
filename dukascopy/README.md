@@ -2,7 +2,6 @@
 
 - [Notice](#notice)
 - [What Is This Tool Used For?](#what-is-this-tool-used-for)
-- [Target audience](#target-audience)
 - [Server Kindness](#server-kindness)
 - [Key Design Principles](docs/architecture.md#key-design-principles)
 - [Quick Start](#quick-start)
@@ -10,21 +9,17 @@
   - Directory Permissions
   - First Run & Incremental Mode
   - Automatic Updates (cron)
-- [Symbols Configuration](#symbols-configuration)
+- [Initial Configuration](#symbols-configuration)
   - Adding New Symbols
-- [Pipeline Configuration](docs/configuration.md#pipeline-configuration-v03-and-above)
+- [Advanded Configuration](docs/configuration.md#pipeline-configuration-v03-and-above)
   - Overriding timeframes, etc
 - [Output schema](docs/architecture.md#output-schema)
   - Details on generated files
 - [Quick Check](#quick-check)
-- [Parquet converter](docs/tools.md#parquetcsv-export-v04-and-above)
+- [Converter and Panama](docs/tools.md#parquetcsv-export-v04-and-above)
   - Details on CSV->Parquet conversion
 - [HTTP API service](docs/http.md)
   - Details on HTTP API
-- [Performance Benchmarks](docs/benchmarks.md#performance-benchmarks)
-  - Cold Run (Full History)
-  - Incremental Daily Update
-  - TMPFS Pro Tip
 - [Fail-Fast](docs/architecture.md#fail-fast)
 - [Directory Structure](docs/architecture.md#directory-structure)
 - [Troubleshooting](docs/troubleshooting.md)
@@ -41,9 +36,7 @@
 
 ## Notice
 
-**THIS PRODUCT WILL BE STABILIZED AND MOVED TO A SEPERATE REPO**
-
-This project has gained significant traction causing "pressure" to fix things in a certain way. The decision has been taken to stabilize the project, add unit-tests to it and then move it to a seperate repository URL. This `bp.markets.ingest` will become private. More details soon.
+Development of this repository will continue privately. A public, clean version, containing all functionalities of this version, plus some additional "last round" updates will be made available. 
 
 - [General notices, latest updates, caveats, etc](docs/notices.md) **2026-01-21 update**
 - [Limitations](docs/limitations.md)
@@ -238,7 +231,7 @@ It will show you your localized data.
 
 ## Final word
 
-Thank you for using this toolkit. The goal of the project is simple: provide a fast and fully transparent pipeline for high-quality historical market data. **This architecture prioritizes speed and simplicity via CSV output over the analytical performance of enterprise binary formats.** If you have ideas, find issues, or want to contribute, feel free to open a GitHub issue or pull request.
+Thank you for using this toolkit. The goal of the project is simple: provide a fast and fully transparent pipeline for high-quality historical market data. **This architecture prioritizes speed through binary formats.** If you have ideas, find issues, or want to contribute, feel free to open a GitHub issue or pull request.
 
 A more advanced, tick-ready successor—planned as a C++ DuckDB extension—is under development and will be announced when ready.
 
@@ -294,8 +287,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Dukascopy Ready](https://img.shields.io/badge/Dukascopy-Ready-006400?style=flat&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgMThjLTQuNDEgMC04LTMuNTktOC04czMuNTktOCA4LTggOCAzLjU5IDggOC0zLjU5IDgtOCA4eiIvPjxwYXRoIGQ9Ik0xNi4yIDkuNEwxMiAxMmw0LjIgMi42bC0yLjYgNC4ybC0yLjYtMi42LTQuMiAyLjZ2LTIuNi00LjJ6Ii8+PC9zdmc+)
-
-[![Stars](https://img.shields.io/github/stars/jpueberbach4/bp.markets.ingest?style=social)](https://github.com/jpueberbach4/bp.markets.ingest)
 
 
 
