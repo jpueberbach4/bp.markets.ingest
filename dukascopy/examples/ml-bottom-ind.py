@@ -90,10 +90,10 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
 
         # Apply specific thresholds (Order matters: more specific patterns last)
         needed_conf = np.where(is_green,       threshold,    needed_conf)
+        needed_conf = np.where(is_gravestone,  0.63,         needed_conf)
         needed_conf = np.where(is_hammer,      0.58,         needed_conf)
         needed_conf = np.where(is_long_legged, 0.57,         needed_conf)
         needed_conf = np.where(is_dragonfly,   0.55,         needed_conf)
-        needed_conf = np.where(is_gravestone,  0.63,         needed_conf)
 
         # Signal if the AI confidence for THIS specific row exceeds 
         # the required threshold for the pattern found on THIS specific row.
