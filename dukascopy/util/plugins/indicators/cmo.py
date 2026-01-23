@@ -1,0 +1,95 @@
+import pandas as pd
+import numpy as np
+from typing import List, Dict, Any
+
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "Chande Momentum Oscillator (CMO) is a technical momentum indicator that "
+        "measures the difference between the sum of all recent gains and the sum "
+        "of all recent losses, then divides the result by the sum of all price "
+        "movement over the period. Unlike RSI, it uses unfiltered data in its "
+        "numerator, making it more sensitive to extreme price movements."
+    )
+
+def meta()->Dict:
+    """
+    Any other metadata to pass via API
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.0,
+        "panel": 1,
+        "verified": 1
+    }
+    
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Calculates the required warmup rows for CMO.
+    CMO requires a full 'period' to calculate rolling sums of gains/losses.
+    We use 3x period for stabilization and consistency.
+    """
+    try:
+        period = int(options.get('period', 9))
+    except (ValueError, TypeError):
+        period = 9
+
+    # Consistent with SMA/RSI stabilization buffers
+    return period * 3
+
+def position_args(args: List[str]) -> Dict[str, Any]:
+    """
+    Maps positional URL arguments to dictionary keys.
+    Example: cmo_9 -> {'period': '9'}
+    """
+    return {
+        "period": args[0] if len(args) > 0 else "9"
+    }
+
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    High-performance vectorized Chande Momentum Oscillator (CMO) calculation.
+    Formula: 100 * (SumG - SumL) / (SumG + SumL)
+    """
+    # 1. Parse Parameters
+    try:
+        period = int(options.get('period', 14))
+    except (ValueError, TypeError):
+        period = 14
+
+    # 2. Determine Price Precision for rounding
+    try:
+        sample_price = str(df['close'].iloc[0])
+        precision = len(sample_price.split('.')[1])+1 if '.' in sample_price else 2
+    except (IndexError, AttributeError):
+        precision = 5
+
+    # 3. Calculate Price Change (Delta)
+    delta = df['close'].diff()
+    
+    # 4. Identify Gains and Losses
+    # Gains are positive changes, Losses are absolute values of negative changes
+    gains = delta.where(delta > 0, 0)
+    losses = delta.where(delta < 0, 0).abs()
+    
+    # 5. Calculate Rolling Sums
+    sum_gains = gains.rolling(window=period).sum()
+    sum_losses = losses.rolling(window=period).sum()
+    
+    # 6. Calculate CMO
+    # total_movement = Sum of Gains + Sum of Losses
+    total_movement = sum_gains + sum_losses
+    
+    # Handle division by zero for stagnant periods using replace(0, np.nan)
+    cmo_values = 100 * ((sum_gains - sum_losses) / total_movement.replace(0, np.nan))
+    
+    # 7. Final Formatting and Rounding
+    # Returns a DataFrame with the original index for O(1) merging in parallel.py
+    res = pd.DataFrame({
+        'cmo': cmo_values.round(precision)
+    }, index=df.index)
+    
+    # Drop rows where the window hasn't filled (warmup period)
+    return res.dropna(subset=['cmo'])
