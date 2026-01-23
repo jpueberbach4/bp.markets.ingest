@@ -1,1 +1,0 @@
-https://freeserv.dukascopy.com/2.0/index.php?path=chart%2Fjson3&instrument=EUR%2FUSD&offer_side=B&interval=1MIN&splits=true&stocks=true&limit=2030&time_direction=P&timestamp=1765805160000&jsonp=_callbacks____wmkk5tgbe

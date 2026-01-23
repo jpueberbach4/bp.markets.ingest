@@ -107,9 +107,6 @@ def parallel_indicators(df: pd.DataFrame, indicators: List[str], plugins: Dict[s
     if 'close' in df.columns:
         df['close'] = pd.to_numeric(df['close'], errors='coerce')
 
-    # We only use one index now, sort_key
-    df.set_index('sort_key', inplace=True)
-
     tasks = []
 
     for ind_str in indicators:
@@ -141,7 +138,6 @@ def parallel_indicators(df: pd.DataFrame, indicators: List[str], plugins: Dict[s
     # Combine all indicator DataFrames and handle duplicate columns
     indicator_matrix = pd.concat(results, axis=1)
     indicator_matrix = indicator_matrix.loc[:, ~indicator_matrix.columns.duplicated()].copy()
-    indicator_matrix = indicator_matrix.reindex(df.index)
 
     if disable_recursive_mapping:
         df = df.join(indicator_matrix, how='left')
@@ -167,8 +163,6 @@ def parallel_indicators(df: pd.DataFrame, indicators: List[str], plugins: Dict[s
         indicator_matrix['indicators'] = nested_list
         df = df.join(indicator_matrix[['indicators']], how='left')
         df['indicators'] = df['indicators'].apply(lambda x: x if isinstance(x, dict) else {})
-
-    # Final reset index to restore sort_key as a column
-    df = df.reset_index()
+    
     return df
 

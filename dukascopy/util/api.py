@@ -32,8 +32,9 @@
 import numpy as np
 import pandas as pd
 
-from util.cache import * 
-from util.parallel import *
+from typing import Dict,List
+from util.cache import cache
+from util.parallel import parallel_indicators
 
 def get_data(
     symbol: str,
@@ -136,6 +137,10 @@ def get_data(
 
         # Enrich the returned result with the requested indicators (parallelized)
         chunk_df = parallel_indicators(chunk_df, indicators, indicator_registry, disable_recursive_mapping)
+
+    else:
+        # When no indicators are queries, set to empty dics
+        chunk_df['indicators'] = [{} for _ in range(len(chunk_df))]
 
     # Drop the rows before after_ms, end-limit and offset need to be done by caller
     chunk_df = chunk_df[chunk_df['sort_key'] >= after_ms]
