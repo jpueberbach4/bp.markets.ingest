@@ -329,7 +329,7 @@ def _format_json(df, options):
     # ------------------------------------------------------------------
     if subformat == 1:
         # Remove internal or non-public columns
-        df.drop(columns=['sort_key', 'year'], inplace=True, errors='ignore')
+        df.drop(columns=['sort_key', 'year'], errors='ignore')
 
         return {
             "status": "ok",

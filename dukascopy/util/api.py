@@ -122,7 +122,6 @@ def get_data(
         indicator_registry = cache.indicators.refresh(indicators)
 
         # Recursive mapping disable from options
-        print(options)
         disable_recursive_mapping = options.get('disable_recursive_mapping', False)
 
         # Enrich the returned result with the requested indicators (parallelized)
