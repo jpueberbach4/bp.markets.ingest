@@ -93,9 +93,7 @@ from fastapi import Depends
 
 from util.cache import cache
 from api.config.app_config import load_app_config
-from api.v1_1.helper import parse_uri, discover_options, generate_output, execute, _get_ms
-
-#from api.v1_1.plugin import indicator_registry, get_indicator_plugins, refresh_indicators
+from api.v1_1.helper import parse_uri, discover_options, generate_output, _get_ms
 from api.v1_1.version import API_VERSION
 
 from util.api import get_data

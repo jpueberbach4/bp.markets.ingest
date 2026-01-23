@@ -48,7 +48,6 @@ def get_config():
     return app_config.http
 
 # Import versioned OHLCV routes
-from api.v1_0.routes import router as ohlcv_router_v1_0
 from api.v1_1.routes import router as ohlcv_router_v1_1
 
 # This is the current main version
@@ -72,8 +71,7 @@ app = FastAPI(
 # GZIP compression support
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-# Include the OHLCV API router v1.0
-app.include_router(ohlcv_router_v1_0)
+# Include the OHLCV API router v1.1
 app.include_router(ohlcv_router_v1_1)
 
 
