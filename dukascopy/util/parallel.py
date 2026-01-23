@@ -38,7 +38,7 @@ from typing import List, Dict, Any
 THREAD_EXECUTOR = concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count())
 print("Using concurrency mode: thread")
 
-def parallel_indicators(df: pd.DataFrame, options: Dict[str, Any], plugins: Dict[str, callable], disable_recursive_mapping: bool = False):
+def parallel_indicators(df: pd.DataFrame, indicators: List[str], plugins: Dict[str, callable], disable_recursive_mapping: bool = False):
     """Calculates technical indicators directly on a provided DataFrame in parallel.
 
     This function applies user-specified indicator plugins to grouped slices of
@@ -68,10 +68,6 @@ def parallel_indicators(df: pd.DataFrame, options: Dict[str, Any], plugins: Dict
     # Determine multi-index keys for symbol, timeframe, date, time
     join_keys = [k for k in ['symbol', 'timeframe', 'date', 'time'] if k in df.columns]
 
-    # Determine chronological sort order
-    temp_sort = ['date', 'time'] if 'date' in df.columns else ['time']
-    df.sort_values(by=temp_sort, ascending=True, inplace=True)
-
     # Ensure numeric type for 'close' column if it exists
     if 'close' in df.columns:
         df['close'] = pd.to_numeric(df['close'], errors='coerce')
@@ -80,45 +76,37 @@ def parallel_indicators(df: pd.DataFrame, options: Dict[str, Any], plugins: Dict
     df.set_index(join_keys, inplace=True)
 
     tasks = []
-    select_data = options.get('select_data', [])
 
-    # Process each selection in parallel using a thread pool
-    for symbol, timeframe, _, _, indicators in select_data:
-        try:
-            # Slice the DataFrame for the specific symbol/timeframe
-            sub_df = df.xs((symbol, timeframe), level=('symbol', 'timeframe'), drop_level=False)
-        except KeyError:
-            continue  # Skip if no data for this symbol/timeframe
+    for ind_str in indicators:
+        parts = ind_str.split('_')
+        name = parts[0]
 
-        for ind_str in indicators:
-            parts = ind_str.split('_')
-            name = parts[0]
+        # Skip unknown plugins
+        if name not in plugins:
+            continue
 
-            # Skip unknown plugins
-            if name not in plugins:
-                continue
+        plugin_func = plugins[name].get('calculate')
+        ind_opts = {}
 
-            plugin_func = plugins[name].get('calculate')
-            ind_opts = options.copy()
+        # Map positional arguments if plugin defines them
+        if hasattr(plugin_func, "__globals__") and "position_args" in plugin_func.__globals__:
+            ind_opts.update(plugin_func.__globals__["position_args"](parts[1:]))
 
-            # Map positional arguments if plugin defines them
-            if hasattr(plugin_func, "__globals__") and "position_args" in plugin_func.__globals__:
-                ind_opts.update(plugin_func.__globals__["position_args"](parts[1:]))
+        def worker(df_slice, p_func, full_name, p_opts):
+            res_df = p_func(df_slice, p_opts)
+            if res_df.empty:
+                return None
 
-            def worker(df_slice, p_func, full_name, p_opts):
-                res_df = p_func(df_slice, p_opts)
-                if res_df.empty:
-                    return None
+            # Prefix multi-column results with '__', single-column gets full name
+            if len(res_df.columns) > 1:
+                res_df.columns = [f"{full_name}__{c}" for c in res_df.columns]
+            else:
+                res_df.columns = [full_name]
 
-                # Prefix multi-column results with '__', single-column gets full name
-                if len(res_df.columns) > 1:
-                    res_df.columns = [f"{full_name}__{c}" for c in res_df.columns]
-                else:
-                    res_df.columns = [full_name]
-                return res_df
+            return res_df
 
-            tasks.append(THREAD_EXECUTOR.submit(worker, df_slice=sub_df, p_func=plugin_func,
-                                            full_name=ind_str, p_opts=ind_opts))
+        tasks.append(THREAD_EXECUTOR.submit(worker, df_slice=df, p_func=plugin_func,
+                                        full_name=ind_str, p_opts=ind_opts))
 
     # Collect completed results
     results = [f.result() for f in concurrent.futures.as_completed(tasks) if f.result() is not None]
@@ -126,8 +114,7 @@ def parallel_indicators(df: pd.DataFrame, options: Dict[str, Any], plugins: Dict
     # If no results, initialize empty indicator dicts
     if not results:
         df['indicators'] = [{} for _ in range(len(df))]
-        is_asc = options.get('order', 'asc').lower() == 'asc'
-        return df.reset_index().sort_values(by=temp_sort, ascending=is_asc)
+        return df
 
     # Combine all indicator DataFrames and handle duplicate columns
     indicator_matrix = pd.concat(results, axis=1)
@@ -158,7 +145,5 @@ def parallel_indicators(df: pd.DataFrame, options: Dict[str, Any], plugins: Dict
     else:
         df = df.join(indicator_matrix)
 
-    # Restore requested sort order
-    is_asc = options.get('order', 'asc').lower() == 'asc'
-    return df.reset_index().sort_values(by=temp_sort, ascending=is_asc)
+    return df
 

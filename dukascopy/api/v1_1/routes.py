@@ -395,8 +395,15 @@ async def get_ohlcv(
         for item in options['select_data']:
 
             symbol, timeframe, input_filepath, modifiers, indicators = item
-
-            temp_df = get_data(symbol, timeframe, after_ms, until_ms, limit, order, indicators, options)
+            disable_recursive_mapping = options.get('disable_recursive_mapping', False)
+            temp_df = get_data(
+                symbol, timeframe, 
+                after_ms, until_ms, limit, 
+                order, indicators, {
+                    "modifiers": modifiers,
+                    "disable_recursive_mapping": disable_recursive_mapping
+                }
+            )
 
             select_df.append(temp_df)
 
@@ -404,12 +411,17 @@ async def get_ohlcv(
         # Join the dataframe array
         enriched_df = pd.concat(select_df, ignore_index=True, copy=False)
 
-        # In case of multi-selects, we need to sort by sort_key
-        if len(options['select_data'])>1:
-            if order == "asc":
-                enriched_df.sort_values(by=['sort_key','symbol','timeframe'], ascending=True, inplace=True)
-            else:
-                enriched_df.sort_values(by=['sort_key','symbol','timeframe'], ascending=False, inplace=True)
+        # Default, we sort on sort_key (thats what it is for)
+        sort_columns = ['sort_key']
+
+        # In case of multi-selects, we need to sort by sort_key, symbol and timeframe
+        if len(options['select_data'])>1: sort_columns = ['sort_key','symbol','timeframe']
+        
+        # Apply the final sorting
+        if order == "asc":
+            enriched_df.sort_values(by=sort_columns, ascending=True, inplace=True)
+        else:
+            enriched_df.sort_values(by=sort_columns, ascending=False, inplace=True)            
 
         if options.get('limit'):
             # Limit rows

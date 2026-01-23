@@ -122,14 +122,18 @@ def get_data(
         indicator_registry = cache.indicators.refresh(indicators)
 
         # Recursive mapping disable from options
+        print(options)
         disable_recursive_mapping = options.get('disable_recursive_mapping', False)
 
         # Enrich the returned result with the requested indicators (parallelized)
-        chunk_df = parallel_indicators(chunk_df, options, indicator_registry, disable_recursive_mapping)
+        chunk_df = parallel_indicators(chunk_df, indicators, indicator_registry, disable_recursive_mapping)
 
     # Drop the rows before after_ms, end-limit and offset need to be done by caller
     chunk_df = chunk_df[chunk_df['sort_key'] >= after_ms]
     chunk_df = chunk_df[chunk_df['sort_key'] < until_ms]
+
+    # Apply the sort
+    chunk_df = chunk_df.reset_index().sort_values(by='sort_key', ascending=(order == 'asc'))
 
     # Apply the limit - for multiselect via API, this is handled in API
     chunk_df = chunk_df.iloc[:limit]
