@@ -329,9 +329,6 @@ def _format_json(df, options):
     if isinstance(df, pd.DataFrame):
         df = df.drop(columns=['index', 'level_0'], errors='ignore')
 
-    # Replace np.nan to null
-    #df = df.fillna(np.nan).replace([np.nan], [None])
-
     # ------------------------------------------------------------------
     # Subformat 1: Record-oriented JSON (list of row dictionaries)
     # ------------------------------------------------------------------
