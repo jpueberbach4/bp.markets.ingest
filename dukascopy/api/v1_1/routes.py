@@ -7,70 +7,58 @@ File:        routes.py
 Author:      JP Ueberbach
 Created:     2026-01-12
 Updated:     2026-01-15
+             2026-01-23
 
-FastAPI router implementing a versioned OHLCV and indicator execution API.
+FastAPI router implementing a versioned OHLCV query and indicator execution API.
 
 This module defines the public HTTP interface for querying OHLCV
 (Open, High, Low, Close, Volume) time-series market data and applying
 derived technical indicators using a path-based, slash-delimited query
 DSL. All endpoints are exposed under the "/ohlcv/{version}" namespace.
 
-The API is designed for high-throughput, low-latency market data access
-and supports CSV-backed datasets, memory-mapped binary sources, and
-parallel indicator execution for CPU-bound workloads.
+The router translates encoded request URIs into structured query options,
+discovers available datasets and indicators, executes data retrieval,
+applies indicator logic, and serializes results into the requested
+output format.
 
 Key Features:
-    - Path-based DSL for expressing OHLCV queries and indicator selection.
-    - Filesystem-backed discovery of symbols and supported timeframes.
-    - Dynamic indicator plugin registry with runtime introspection.
-    - Parallelized indicator execution using multiprocessing.
-    - DuckDB-powered query execution over CSV and binary data sources.
-    - Optional MT4-compatible output formatting.
-    - Multiple output formats: JSON, JSONP, and CSV.
-    - Wall-clock execution timing included in response metadata.
+    - Path-based DSL for expressing OHLCV queries and indicator selection
+    - Filesystem-backed discovery of symbols and supported timeframes
+    - Integration with a dynamic indicator plugin registry
+    - Pagination, ordering, temporal filtering, and MT4 compatibility
+    - Multiple output formats: JSON, JSONP, and CSV
+    - Wall-clock execution timing included in response metadata
 
 Request Processing Pipeline:
-    1. Parse the path-based DSL into structured query options.
-    2. Validate pagination, ordering, output mode, and platform constraints.
-    3. Discover symbol/timeframe selections from filesystem-backed datasets.
-    4. Register memory-mapped views for binary OHLCV sources (when enabled).
-    5. Execute DuckDB queries against CSV or binary-backed OHLCV data.
-    6. Apply indicator plugins in parallel to the result set.
-    7. Apply temporal filtering, row limits, and column normalization.
-    8. Serialize results into the requested output format.
+    1. Parse the path-based DSL into structured query options
+    2. Validate pagination, ordering, output mode, and platform constraints
+    3. Discover symbol/timeframe selections from filesystem-backed datasets
+    4. Retrieve OHLCV data via the configured data access layer
+    5. Apply indicator plugins to the result set
+    6. Apply temporal filtering, row limits, and column normalization
+    7. Serialize results into the requested output format
 
 Indicator System:
-    - Indicator plugins are dynamically loaded at application startup.
-    - Each plugin exposes a callable compatible with the parallel
-      execution engine.
-    - Optional plugin metadata (defaults, warmup, description, meta)
-      is introspected and exposed via discovery endpoints.
-    - Indicator execution is isolated per worker to avoid GIL and
-      pickling constraints.
+    - Indicator plugins are dynamically loaded at application startup
+    - Plugin metadata (defaults, warmup, description, meta) is exposed
+      via discovery endpoints
+    - Indicator execution is coordinated through the shared cache layer
 
-Special Endpoints:
-    - `/list/indicators/{request_uri}`:
-        Returns metadata for all registered indicator plugins.
-    - `/list/symbols/{request_uri}`:
-        Lists available symbols and their supported timeframes.
-    - `/quack`:
-        Provides a deliberately inefficient DuckDB-themed demo endpoint.
+Public Endpoints:
+    - GET /ohlcv/{version}/{request_uri}:
+        Execute OHLCV queries and indicator calculations
+    - GET /ohlcv/{version}/list/indicators/{request_uri}:
+        Enumerate available indicator plugins and metadata
+    - GET /ohlcv/{version}/list/symbols/{request_uri}:
+        List available symbols and supported timeframes
 
 Usage:
-    - This module is registered as part of the FastAPI router configuration.
-    - It is not intended to be executed as a standalone script.
-
-Primary Endpoints:
-    - get_ohlcv(): Resolve and execute path-based OHLCV queries.
-    - list_indicators(): Enumerate available indicator plugins.
-    - get_ohlcv_list(): Discover available symbols and timeframes.
-    - quack(): Demonstration endpoint.
+    - This module is registered as part of the FastAPI router configuration
+    - It is not intended to be executed as a standalone script
 
 Requirements:
     - Python 3.8+
     - FastAPI
-    - DuckDB
-    - NumPy
     - Pandas
     - orjson
 

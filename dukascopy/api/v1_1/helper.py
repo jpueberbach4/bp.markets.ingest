@@ -1,45 +1,43 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 ===============================================================================
-helper.py
+File:        helper.py
 
 Author:      JP Ueberbach
 Created:     2026-01-02
+Updated:     2026-01-23
 
 Core helper utilities for path-based OHLCV query parsing, resolution,
-execution, and output formatting.
+and output formatting.
 
-This module implements the core execution pipeline for the OHLCV API.
-It parses a slash-delimited query DSL embedded in request paths, resolves
-symbol and timeframe selections against filesystem-backed datasets,
-determines indicator warmup requirements, retrieves cached market data,
-and serializes results for API delivery.
+This module implements the shared execution support layer for the OHLCV
+API. It parses a slash-delimited query DSL embedded in request paths,
+normalizes timestamps and query options, resolves symbol and timeframe
+selections against filesystem-backed datasets, and formats query results
+for API delivery.
 
-The helpers in this module are shared across API endpoints to ensure
-consistent behavior between path-based HTTP queries and internal,
-programmatic query execution. The module integrates tightly with the
-dataset discovery layer, selection resolver, indicator plugin system,
-and cache-backed execution engine.
+The helpers defined here are used by multiple API routes to ensure
+consistent behavior between HTTP-based requests and internal,
+programmatic query execution. The module integrates with the dataset
+discovery layer, selection resolver, indicator registry, and cache-backed
+data access layer, but does not directly execute database queries itself.
 
 Primary responsibilities:
     - Parse and normalize path-encoded OHLCV query URIs.
     - Normalize and validate timestamp inputs.
-    - Discover available OHLCV datasets from the filesystem using builder
-      configuration.
-    - Resolve user selections into concrete dataset definitions.
-    - Inspect indicator plugins to determine warmup row requirements.
-    - Execute indicator-aware, cache-backed data retrieval with filtering,
-      ordering, limits, and modifiers (e.g., skiplast).
-    - Merge and sort multi-symbol, multi-timeframe query results.
-    - Generate API responses in JSON, JSONP, or CSV formats, including
-      MT4-compatible CSV output.
+    - Resolve user selections into concrete dataset definitions using
+      filesystem-backed discovery.
+    - Enrich query options with resolved symbol/timeframe selections.
+    - Format query results into JSON, JSONP, CSV, or NDJSON outputs.
+    - Apply MT4-compatible CSV formatting when requested.
+    - Stream large result sets efficiently to minimize memory usage.
 
 Design notes:
-    - Query execution operates on pre-built, cached OHLCV data rather than
-      issuing raw SQL at request time.
-    - Indicator warmup rows are automatically included to ensure correct
-      computation of rolling and window-based indicators.
-    - CSV output is streamed to support large result sets with low memory
-      overhead.
+    - Query parsing and resolution are decoupled from data retrieval.
+    - Indicator warmup and execution are handled by downstream layers.
+    - Streaming responses (CSV, NDJSON) are used for large datasets to
+      reduce memory pressure.
     - The module is optimized for read-heavy, low-latency API workloads.
 
 Public functions:
@@ -49,44 +47,39 @@ Public functions:
     parse_uri(uri: str) -> Dict[str, Any]
         Parse a path-based OHLCV query DSL into structured options.
 
-    discover_all(options: Dict) -> List[Dataset]
-        Discover all available OHLCV datasets from the filesystem.
-
-    discover_options(options: Dict) -> Dict
-        Resolve user-requested selections against discovered datasets.
+    discover_options(options: Dict[str, Any]) -> Dict[str, Any]
+        Resolve user selections against discovered datasets.
 
     generate_output(
         df: pandas.DataFrame,
         options: Dict[str, Any]
     ) -> dict | PlainTextResponse | StreamingResponse | None
-        Format query results as JSON, JSONP, or CSV.
-
-    execute(options: Dict) -> pandas.DataFrame
-        Execute indicator-aware queries against cached OHLCV data and return
-        merged results.
+        Format query results as JSON, JSONP, CSV, or NDJSON.
 
 Internal helpers:
+    _format_json(...)
+        Serialize DataFrame results into structured JSON subformats.
+
+    _stream_json(...)
+        Stream newline-delimited JSON (NDJSON).
+
     _stream_csv(...)
-        Stream a DataFrame as CSV with optional MT4 formatting.
+        Stream CSV output with optional MT4 compatibility.
 
-    _get_warmup_rows(...)
-        Determine indicator warmup row requirements.
-
-Constants:
-    CSV_TIMESTAMP_FORMAT
-    CSV_TIMESTAMP_FORMAT_MT4_DATE
-    CSV_TIMESTAMP_FORMAT_MT4_TIME
+    _get_ms(...)
+        Convert timestamps to epoch milliseconds (UTC).
 
 Requirements:
     - Python 3.8+
     - Pandas
     - FastAPI
-    - DuckDB (build-time / preprocessing only)
+    - orjson
 
 License:
     MIT License
 ===============================================================================
 """
+
 
 import csv
 import io
@@ -106,15 +99,8 @@ from util.dataclass import *
 from util.discovery import *
 from util.resolver import *
 
-from api.v1_1.plugin import indicator_registry
-#from util.helper import discover_all
 from util.cache import cache
 
-CSV_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
-CSV_TIMESTAMP_FORMAT_MT4_DATE = "%Y.%m.%d"
-CSV_TIMESTAMP_FORMAT_MT4_TIME = "%H:%M:%S"
-
-available_datasets = []
 
 def normalize_timestamp(ts: str) -> str:
     if not ts:
@@ -332,6 +318,12 @@ def _format_json(df, options):
     # Resolve requested JSON subformat (default to 1)
     subformat = options.get('subformat') if options.get('subformat') else 1
 
+    # Compatibility fix
+    cols = list(df.columns)
+    cols.remove('time')
+    cols.insert(2, 'time')
+    df = df[cols]
+
     # ------------------------------------------------------------------
     # Subformat 1: Record-oriented JSON (list of row dictionaries)
     # ------------------------------------------------------------------
@@ -459,6 +451,12 @@ def _stream_csv(df, options):
     """
     # Remove the temporary columns
     df.drop(columns=['indicators','sort_key','year'], inplace=True, errors='ignore')
+
+    # Compatibility fix
+    cols = list(df.columns)
+    cols.remove('time')
+    cols.insert(2, 'time')
+    df = df[cols]
 
     # Apply MT4-specific column transformations if requested
     if options.get('mt4'):
