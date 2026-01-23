@@ -74,6 +74,16 @@ def get_data(
             - "symbol", "timeframe", "sort_key", "open", "high", "low",
               "close", "volume", and any indicator columns.
     """
+    # Validate inputs
+    if after_ms >= until_ms:
+        raise ValueError("after_ms must be less than until_ms")
+    
+    if limit <= 0:
+        raise ValueError("limit must be positive")
+    
+    if order not in ["asc", "desc"]:
+        raise ValueError("order must be 'asc' or 'desc'")
+
     # Extract modifiers, eg skiplast
     modifiers = options.get('modifiers', [])
 
