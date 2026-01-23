@@ -4,7 +4,7 @@ from typing import Dict, Any, List
 _ENGINE_CACHE = {}
 
 def description() -> str:
-    return "ML Sniper: Random Forest AI Bottoms + Green Candle Confirmation (RSI Filtered)"
+    return "ML Sniper: Random Forest AI Bottoms + Green Candle OR Rejection Confirmation (RSI Filtered)"
 
 def meta() -> Dict:
     return {"author": "Google Gemini", "version": 200.0, "verified": 1, "panel": 1}
@@ -15,11 +15,11 @@ def warmup_count(options: Dict[str, Any]) -> int:
 def position_args(args: List[str]) -> Dict[str, Any]:
     return {
         "model_path": args[0] if len(args) > 0 else "GBP-USD-bottom-engine.pkl",
-        "threshold": args[1] if len(args) > 1 else "0.60"
+        "threshold": args[1] if len(args) > 1 else "0.58"
     }
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
-    # 1. LOAD MODEL
+    # LOAD MODEL
     model_name = options.get('model_path', 'GBP-USD-bottom-engine.pkl')
     threshold = float(options.get('threshold', '0.60'))
     path = os.path.join(os.getcwd(), model_name)
@@ -32,7 +32,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     
     model = _ENGINE_CACHE[path]
 
-    # 2. INDICATORS
+    # INDICATORS
     sma50 = df['close'].rolling(50).mean()
     tr = pd.concat([(df['high']-df['low']), (df['high']-df['close'].shift(1)).abs(), (df['low']-df['close'].shift(1)).abs()], axis=1).max(axis=1)
     atr = tr.ewm(com=13, adjust=False).mean()
@@ -42,7 +42,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     loss = (-delta.where(delta < 0, 0)).ewm(com=13, adjust=False).mean()
     rsi = 100 - (100 / (1 + (gain / loss.replace(0, np.nan))))
 
-    # 3. FEATURES (4-Feature Set)
+    # FEATURES (4-Feature Set)
     dist_50 = (df['close'] - sma50) / df['close']
     rsi_norm = rsi / 100.0
     vol_ratio = atr / df['close']
@@ -67,19 +67,36 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     if idx_bottom is not None:
         confidence = probs[:, idx_bottom]
         
-        # 5. TRIGGER LOGIC (Based on Optimizer Results)
-        # Threshold 0.55 gives you the best balance of frequency and 95%+ accuracy.
-        # The safety filters (RSI < 40, Green Candle) do the rest.
+        # Component Extract
+        hi, lo, op, cl = df['high'], df['low'], df['open'], df['close']
         
-        signal[
-            (confidence > threshold) & 
-            (rsi < 40) & 
-            (body_strength > 0) # This means it should be a green candle, this will change aka hammer, doji etc
-        ] = 1
+        # Get the total range of the candle
+        total_range = hi - lo
+        
+        # Avoid div by zero
+        safe_range = total_range.replace(0, 0.00001)
 
-    mask = df['close'].rolling(50).count() < 50
-    confidence[mask] = 0
-    signal[mask] = 0
+        # We find where the "Meat" (body) of the candle is located.
+        # body_mid is the center point of the Open and Close.
+        body_mid = (op + cl) / 2
+        
+        # Calculate how high the body sits relative to the total candle (0 to 1)
+        # 1.0 = Body is at the very top (no upper wick)
+        # 0.0 = Body is at the very bottom (no lower wick)
+        relative_height = (body_mid - lo) / safe_range
+
+        # The entire "Meat" of the candle must be in the upper 35% of the range.
+        is_hammer = (relative_height > 0.65)
+        
+        # Green candle? Is close higher than open?
+        is_green = cl > op
+
+        # Now combine....
+        # If AI says it's a bottom AND (Price action is UP OR Price action is a REJECTION)
+        trigger = (confidence >= threshold) & (is_green | is_hammer)
+        
+        # Where trigger true, set signal to one, else zero
+        signal = np.where(trigger, 1, 0)
 
     return pd.DataFrame({
         'confidence': confidence,
