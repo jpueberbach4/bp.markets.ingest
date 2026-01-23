@@ -76,7 +76,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
         relative_height = (body_mid - lo) / safe_range
 
         # Pattern Detection
-        is_doji = (body_size <= (total_range * 0.10)) & (total_range > 0)
+        is_doji = (body_size <= (total_range * 0.38)) & (total_range > 0)
         
         is_dragonfly   = is_doji & (relative_height > 0.90)
         is_gravestone  = is_doji & (relative_height < 0.10)
@@ -91,18 +91,19 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
         # Apply specific thresholds (Order matters: more specific patterns last)
         needed_conf = np.where(is_green,       threshold,    needed_conf)
         needed_conf = np.where(is_gravestone,  0.63,         needed_conf)
-        needed_conf = np.where(is_hammer,      0.58,         needed_conf)
-        needed_conf = np.where(is_long_legged, 0.57,         needed_conf)
-        needed_conf = np.where(is_dragonfly,   0.55,         needed_conf)
+        needed_conf = np.where(is_hammer,      0.55,         needed_conf)
+        needed_conf = np.where(is_long_legged, 0.53,         needed_conf)
+        needed_conf = np.where(is_dragonfly,   0.52,         needed_conf)
 
         # Signal if the AI confidence for THIS specific row exceeds 
         # the required threshold for the pattern found on THIS specific row.
-        trigger = (confidence >= needed_conf)
+        trigger = (confidence >= (needed_conf - 0.000001))
         
         signal = np.where(trigger, 1, 0)
 
     return pd.DataFrame({
         'confidence': confidence,
         'threshold': threshold, 
+        'relative-height':relative_height,
         'signal': signal
     }, index=df.index)
