@@ -256,7 +256,7 @@ async def get_ohlcv_list(
     try:
         # Setup cache
         cache = MarketDataCache()
-        
+
         # Discover available OHLCV data sources from the filesystem
         available_data = cache.registry.get_available_datasets()
 
@@ -429,11 +429,11 @@ async def get_ohlcv(
         # Join the dataframe array
         enriched_df = pd.concat(select_df, ignore_index=True, copy=False)
 
-        # Default, we sort on sort_key (thats what it is for)
-        sort_columns = ['sort_key']
+        # Default, we sort on time_ms (thats what it is for)
+        sort_columns = ['time_ms']
 
-        # In case of multi-selects, we need to sort by sort_key, symbol and timeframe
-        if len(options['select_data'])>1: sort_columns = ['sort_key','symbol','timeframe']
+        # In case of multi-selects, we need to sort by time_ms, symbol and timeframe
+        if len(options['select_data'])>1: sort_columns = ['time_ms','symbol','timeframe']
         
         # Apply the final sorting
         if order == "asc":

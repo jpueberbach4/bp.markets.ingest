@@ -233,7 +233,7 @@ def discover_options(options: Dict):
     try:
         # Setup cache
         cache = MarketDataCache()
-        
+
         # Resolve selections
         resolver = SelectionResolver(cache.registry.get_available_datasets())
         options["select_data"], _ = resolver.resolve(options["select_data"])
@@ -295,14 +295,14 @@ def generate_output(df: pd.DataFrame, options: Dict):
 def _add_human_readable_time_column(df):
     """Add human-readable time and year columns derived from the sort key.
 
-    This helper function converts the millisecond-based ``sort_key`` timestamp
+    This helper function converts the millisecond-based ``time_ms`` timestamp
     into a UTC-aware datetime, derives a calendar year column for partitioning
     or grouping, and adds a formatted, human-readable timestamp column. It also
     reorders the DataFrame columns so that core identity and time-related fields
     appear first.
 
     Args:
-        df (pd.DataFrame): DataFrame containing a ``sort_key`` column with
+        df (pd.DataFrame): DataFrame containing a ``time_ms`` column with
             epoch timestamps in milliseconds.
 
     Returns:
@@ -310,7 +310,7 @@ def _add_human_readable_time_column(df):
         columns, with columns reordered for consistent downstream consumption.
     """
     # Convert the millisecond epoch sort key into a UTC datetime series
-    dt_series = pd.to_datetime(df['sort_key'], unit='ms', utc=True)
+    dt_series = pd.to_datetime(df['time_ms'], unit='ms', utc=True)
 
     # Extract the calendar year for partitioning or grouping use cases
     df['year'] = dt_series.dt.year
@@ -319,7 +319,7 @@ def _add_human_readable_time_column(df):
     df['time'] = dt_series.dt.strftime(TIMESTAMP_FORMAT)
 
     # Define preferred column ordering for identity and time-related fields
-    priority = ['symbol', 'timeframe', 'year', 'time', 'sort_key']
+    priority = ['symbol', 'timeframe', 'year', 'time', 'time_ms']
 
     # Capture the current column order
     all_cols = df.columns.tolist()
@@ -377,7 +377,7 @@ def _format_json(df, options):
         # This format has a human-readable time column
         df = _add_human_readable_time_column(df)
         # Remove internal or non-public columns
-        df.drop(columns=['sort_key', 'year'], errors='ignore', inplace=True)
+        df.drop(columns=['time_ms', 'year'], errors='ignore', inplace=True)
         return ORJSONResponse(content={
             "status": "ok",
             "options": options,
@@ -388,10 +388,10 @@ def _format_json(df, options):
     # Subformat 2: Columnar JSON (columns + 2D values array)
     # ------------------------------------------------------------------
     elif subformat == 2:
-        # Drop original timestamp columns and normalize sort_key -> time
+        # Drop original timestamp columns and normalize time_ms -> time
         df = (
             df.drop(columns=['time', 'time_original', 'year'], errors='ignore')
-            .rename(columns={'sort_key': 'time'})
+            .rename(columns={'time_ms': 'time'})
         )       
 
         return ORJSONResponse(content={
@@ -405,14 +405,14 @@ def _format_json(df, options):
     # Subformat 3: Time-series–optimized OHLCV structure
     # ------------------------------------------------------------------
     elif subformat == 3:
-        # Drop non-essential metadata and normalize sort_key -> time
+        # Drop non-essential metadata and normalize time_ms -> time
         if num_symbols == 1:
             df = (
                 df.drop(
                     columns=['symbol', 'timeframe', 'time', 'time_original', 'year', 'indicators'],
                     errors='ignore'
                 )
-                .rename(columns={'sort_key': 'time'})
+                .rename(columns={'time_ms': 'time'})
             )
         else:
             df = (
@@ -420,7 +420,7 @@ def _format_json(df, options):
                     columns=['time', 'time_original', 'year','indicators'],
                     errors='ignore'
                 )
-                .rename(columns={'sort_key': 'time'})
+                .rename(columns={'time_ms': 'time'})
             )
         
         result = df.astype(object).where(df.notnull(), None).to_dict(orient='list')
@@ -503,7 +503,7 @@ def _stream_csv(df, options):
     df = _add_human_readable_time_column(df)
 
     # Remove the temporary columns
-    df.drop(columns=['index','indicators','sort_key','year'], inplace=True, errors='ignore')
+    df.drop(columns=['index','indicators','time_ms','year'], inplace=True, errors='ignore')
 
     # Apply MT4-specific column transformations if requested
     if options.get('mt4'):
@@ -511,7 +511,7 @@ def _stream_csv(df, options):
         temp_time = df['time'].astype(str).str.split(' ', expand=True)
 
         # Drop columns not required for MT4 output
-        cols_to_drop = ['symbol', 'timeframe', 'sort_key', 'time', 'year', 'indicators']
+        cols_to_drop = ['symbol', 'timeframe', 'time_ms', 'time', 'year', 'indicators']
         df.drop(columns=cols_to_drop, inplace=True, errors='ignore')
 
         # Insert formatted date (YYYY.MM.DD) and time (HH:MM:SS) columns

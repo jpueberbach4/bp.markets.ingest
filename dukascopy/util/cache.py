@@ -230,7 +230,7 @@ class MarketDataCache:
         df = pd.DataFrame({
             'symbol': symbol,
             'timeframe': tf,
-            'sort_key': subset['ts'],
+            'time_ms': subset['ts'],
             'open':   subset['ohlcv'][:, 0],
             'high':   subset['ohlcv'][:, 1],
             'low':    subset['ohlcv'][:, 2],
