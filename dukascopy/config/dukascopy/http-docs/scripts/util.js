@@ -22,6 +22,16 @@ function formatUnixToLiteral(unix) {
     return d.toISOString().replace('T', ' ').split('.')[0];
 }
 
+function getCurrentTimeframe(){
+    const tfSelect = document.getElementById('tfSelect');
+    return tfSelect.value;
+}
+
+function getCurrentSymbol(){
+      const symSelect = document.getElementById('symbolSelect');
+      return symSelect.value;
+}
+
 function getDataUri(direction, referenceTs, limit = 1000, type = "JSONP"){
     const sym = document.getElementById('symbolSelect').value;
     const tf = document.getElementById('tfSelect').value;

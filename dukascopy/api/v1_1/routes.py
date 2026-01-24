@@ -104,6 +104,8 @@ async def list_indicators(
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
     callback: Optional[str] = "__bp_callback",
     id: Optional[str] = None, 
+    symbol: Optional[str] = None, 
+    timeframe: Optional[str] = None, 
     config=Depends(get_config),
 ):
     """
@@ -147,6 +149,13 @@ async def list_indicators(
     try:
         # Retrieve metadata for all registered indicators
         data = cache.indicators.get_metadata_registry()
+
+        # Resolve template strings
+        if symbol or timeframe:
+            for indicator_name in data:
+                for default_name in data[indicator_name]['defaults']:
+                    val = data[indicator_name]['defaults'][default_name]
+                    data[indicator_name]['defaults'][default_name] = val.format(**locals())
 
         # Record wall-clock execution time
         options["wall"] = time.time() - time_start

@@ -229,7 +229,7 @@ function renderParams() {
 
 function resetAndLoad(clear = false) {
     const s = document.createElement('script');
-    s.src = "/ohlcv/1.1/list/indicators/output/JSONP?callback=__callbackIndicators";
+    s.src = `/ohlcv/1.1/list/indicators/output/JSONP?callback=__callbackIndicators&symbol=${getCurrentSymbol()}&timeframe=${getCurrentTimeframe()}`;
     document.body.appendChild(s);
     if (clear) {
         clearOnUpdate();
