@@ -26,7 +26,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     row = df.iloc[0]
 
     symbol, timeframe = row.symbol, row.timeframe
-    after_ms, until_ms = int(row.sort_key), int(df.iloc[-1].sort_key)
+    after_ms, until_ms = int(row.time_ms), int(df.iloc[-1].time_ms)
     
     indicators = ['atr_14', 'sma_50', 'rsi_14', 'bbands_20_2', 'macd_12_26_9', 'cci_20', 'adx_14', 'stoch_14_3_3']
     df_ext = get_data(symbol, timeframe, after_ms, until_ms+1, len(df), "asc", indicators, {"disable_recursive_mapping": True})
@@ -66,7 +66,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     adx_norm = df_ext['adx_14__adx'] / 100.0
     cci_norm = df_ext['cci_20__cci'] / 200.0
 
-    time_dt = pd.to_datetime(df_ext['sort_key'], unit='ms')
+    time_dt = pd.to_datetime(df_ext['time_ms'], unit='ms')
     day_sin, day_cos = np.sin(2*np.pi*time_dt.dt.dayofweek/7), np.cos(2*np.pi*time_dt.dt.dayofweek/7)
 
     # 4. PREDICT
@@ -83,14 +83,14 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
 
     # 1. Create a results dataframe from the external data
     raw_results = pd.DataFrame({
-        'sort_key': df_ext['sort_key'],
+        'time_ms': df_ext['time_ms'],
         'confidence': confidence,
         'signal': np.where(confidence >= threshold, 1, 0)
     })
 
-    # 2. Map these results back to the original 'df' using sort_key
+    # 2. Map these results back to the original 'df' using time_ms
     # This ensures every confidence value matches the correct timestamp
-    final_df = df[['sort_key']].merge(raw_results, on='sort_key', how='left')
+    final_df = df[['time_ms']].merge(raw_results, on='time_ms', how='left')
 
     # 3. Return with the original index preserved
     return final_df[['confidence', 'signal']].set_index(df.index).fillna(0)
