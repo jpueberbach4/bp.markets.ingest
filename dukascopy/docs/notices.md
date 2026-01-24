@@ -12,6 +12,28 @@ What's next?
 
 Now I am really working on the prediction part, this is really insanely powerful. Especially the last version (not yet released). You can for example put moving averages over RSI, do interdata queries with indicators. And it all. stays. fast. 
 
+Perhaps i don't need to implement virtual indicators or dependencies. I can now altready do exactly all that with the get_data API. Eg if my indicator is dependent on SMA, EMA and MACD, i just query the get_data api with:
+
+```python
+    # building a subquery for our current data, we extract the parameters of the incoming dataframe
+    # select symbol and timeframe for .bin resolution by get_data
+    symbol, timeframe = df.iloc[0].symbol, df.iloc[0].timeframe
+    # get start and end time in ms and limit by the number of records in the current data frame
+    after_ms, until_ms, limit = df.iloc[0].time_ms, df.iloc[-1].time_ms, len(df)
+
+    # Now get the exact same slice as the incoming data but with the 3 required indicators calculated
+    # This is megafast since the slice is already in page-cache
+    ex_df = get_data(symbol, timeframe, after_ms, until_ms + 1, limit, "asc", ['sma_20','ema_20','macd_16_9_12'], {'disable_recursive_mapping': True})
+
+    # Do my stuff... my dance, my magic, query other data sets etc etc etc.... extend the ex_df with anything i want
+    
+    # All stuff done ? ...
+    final_res = df[['time_ms']].merge(results_df, on='time_ms', how='left').set_index(df.index)
+    # And return... final_res will have only my_calc_result* columns (will be merged back)
+    return final_res[['my_calc_result1', 'my_calc_result2']]
+    
+```
+
 You can do something like this on the new version:
 
 ```python
@@ -119,5 +141,6 @@ Price-only API pushes now ~1.8 million bars per second. 10.000 in ~6ms. Without 
 ### Bonus ML Example: Bottom Detection with Random Forest
 
 this works not oke. building new one
+
 
 
