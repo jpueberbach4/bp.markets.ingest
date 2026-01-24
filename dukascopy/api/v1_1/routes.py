@@ -79,7 +79,7 @@ from pathlib import Path
 from functools import lru_cache
 from fastapi import Depends
 
-from util.cache import cache
+from util.cache import MarketDataCache
 from api.config.app_config import load_app_config
 from api.v1_1.helper import parse_uri, discover_options, generate_output, _get_ms
 from api.v1_1.version import API_VERSION
@@ -147,6 +147,9 @@ async def list_indicators(
     if id: options['id'] = id
 
     try:
+        # Setup cache
+        cache = MarketDataCache()
+
         # Retrieve metadata for all registered indicators
         data = cache.indicators.get_metadata_registry()
 
@@ -251,6 +254,9 @@ async def get_ohlcv_list(
     if id: options['id'] = id
 
     try:
+        # Setup cache
+        cache = MarketDataCache()
+        
         # Discover available OHLCV data sources from the filesystem
         available_data = cache.registry.get_available_datasets()
 

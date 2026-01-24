@@ -100,7 +100,7 @@ from util.dataclass import *
 from util.discovery import *
 from util.resolver import *
 
-from util.cache import cache
+from util.cache import MarketDataCache
 
 TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 
@@ -231,6 +231,9 @@ def discover_options(options: Dict):
     """
 
     try:
+        # Setup cache
+        cache = MarketDataCache()
+        
         # Resolve selections
         resolver = SelectionResolver(cache.registry.get_available_datasets())
         options["select_data"], _ = resolver.resolve(options["select_data"])

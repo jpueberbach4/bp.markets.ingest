@@ -106,7 +106,7 @@ class BpMarketsTrainer:
 
 # RUN TRAINER
 assets = ['EUR-USD', 'GBP-USD', 'USD-CAD', 'USD-JPY', 'AUD-USD']
-after_ms = int(datetime.strptime("2018-01-01", "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp() * 1000)
+after_ms = int(datetime.strptime("2006-01-01", "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp() * 1000)
 until_ms = int((datetime.now(timezone.utc) - timedelta(days=100)).timestamp() * 1000)
 save_dir = Path(__file__).resolve().parent.parent / "models"
 

@@ -174,6 +174,9 @@ class IndicatorRegistry:
                 'mtime': file_stat.st_mtime,     # Last modification timestamp
                 'size': file_stat.st_size        # File size for change detection
             }
+            print(f"Registered plugin {path} succesfully.")
+        else:
+            print(f"Registering plugin {path} failed. No calculate method found.")
 
     def refresh(self, indicators: List[str] = []):
         """Reload or refresh indicator plugins from disk based on specified names.

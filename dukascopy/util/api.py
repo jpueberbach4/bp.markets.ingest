@@ -33,7 +33,7 @@ import numpy as np
 import pandas as pd
 
 from typing import Dict,List
-from util.cache import cache
+from util.cache import MarketDataCache
 from util.parallel import parallel_indicators
 
 def get_data(
@@ -75,6 +75,9 @@ def get_data(
             - "symbol", "timeframe", "sort_key", "open", "high", "low",
               "close", "volume", and any indicator columns.
     """
+    # Setup cache
+    cache = MarketDataCache()
+
     # Validate inputs
     if after_ms >= until_ms:
         raise ValueError("after_ms must be less than until_ms")

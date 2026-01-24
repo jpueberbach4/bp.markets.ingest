@@ -60,6 +60,7 @@ License:
 import numpy as np
 import pandas as pd
 import os
+import sys
 import mmap
 from typing import Dict
 from numpy.lib.stride_tricks import as_strided
@@ -77,12 +78,33 @@ DTYPE = np.dtype([
 RECORD_SIZE = 64
 
 class MarketDataCache:
+    # Singleton instance
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        # Singleton handling, we only want one global instance of this class
+        if not cls._instance:
+            # If we dont have an instance yet
+            cls._instance = super(MarketDataCache, cls).__new__(cls)
+            # Set initialized to true
+            cls._instance._initialized = False
+
+        # Return the singleton instance
+        return cls._instance
+
     def __init__(self):
+        # If we are already initialized, return
+        if self._initialized:
+            return
+        
+        # Setup the memory-maps
         self.mmaps = {}
         # Discover datasets and build registry
         self.registry = DatasetRegistry(discover_all())
         # Discover indicators and build registry
         self.indicators = IndicatorRegistry()
+        # Set initialized to true
+        self._initialized = True
 
     def discover_view(self, symbol, tf):
         """Discover and register a dataset view for a symbol and timeframe.
@@ -277,4 +299,3 @@ class MarketDataCache:
 
         return None
 
-cache = MarketDataCache()
