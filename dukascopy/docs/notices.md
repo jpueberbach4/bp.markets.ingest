@@ -45,7 +45,7 @@ def warmup_count(options: Dict[str, Any]) -> int:
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     from util.api import get_data
 
-    # 1. Metadata & Data Fetching
+    # Metadata & Data Fetching
     symbol, timeframe = df.iloc[0].symbol, df.iloc[0].timeframe
     after_ms, until_ms, limit = df.iloc[0].time_ms, df.iloc[-1].time_ms, len(df)
 
@@ -55,6 +55,8 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     sma_window = 8
 
     indicators = [rsi_setting]
+
+    # Query data for same symbol, timeframe and time-range, with indicators array (this example has only one, but you can specify any amount)
     ex_df = get_data(symbol, timeframe, after_ms, until_ms + 1, limit, "asc", indicators, {'disable_recursive_mapping': True})
 
     # Moving Average Calculation
@@ -66,7 +68,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     
     # Use rolling sum to find at least 5 consecutive bars where this is true
     # We use .fillna(0) to handle the first few bars of the data
-    suppression_streak = is_below_sma.rolling(window=5).sum().fillna(0)
+    suppression_streak = is_below_sma.rolling(window=streak_setting).sum().fillna(0)
     
     print(suppression_streak)
 
@@ -77,7 +79,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
 
     print(is_bottom_signal)
 
-    # 5. Result Mapping
+    # Result Mapping
     results_df = pd.DataFrame({
         'time_ms': ex_df['time_ms'],
         'rsi': ex_df[rsi_setting],
@@ -85,6 +87,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
         'is_bottom': np.where(is_bottom_signal, 100, 0)
     })
 
+    # Merging of intermediate result with main dataframe
     final_res = df[['time_ms']].merge(results_df, on='time_ms', how='left').set_index(df.index)
     
     return final_res[['rsi', 'sma', 'is_bottom']]
@@ -99,4 +102,5 @@ Price-only API pushes now ~1.8 million bars per second. 10.000 in ~6ms. Without 
 ### Bonus ML Example: Bottom Detection with Random Forest
 
 this works not oke. building new one
+
 
