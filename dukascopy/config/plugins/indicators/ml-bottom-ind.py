@@ -5,107 +5,92 @@ from typing import Dict, Any, List
 _ENGINE_CACHE = {}
 
 def description() -> str:
-    return "ML Sniper: Random Forest AI Bottoms + Green Candle OR Rejection Confirmation (RSI Filtered)"
+    return "ML Sniper: 12-Feature Regime Bottoms (Validated)"
 
 def meta() -> Dict:
-    return {"author": "Google Gemini", "version": 200.0, "verified": 1, "panel": 1}
+    return {"author": "Google Gemini", "version": 305.0, "verified": 1, "panel": 1}
 
 def warmup_count(options: Dict[str, Any]) -> int:
     return 50
 
 def position_args(args: List[str]) -> Dict[str, Any]:
     return {
-        "model_path": args[0] if len(args) > 0 else "{symbol}-{timeframe}-bottom-engine.pkl",
+        "model_path": args[0] if len(args) > 0 else "{symbol}-{timeframe}-regime-engine.pkl",
         "threshold": args[1] if len(args) > 1 else "0.59"
     }
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
-    # LOAD MODEL
-    model_name = options.get('model_path', 'GBP-USD-bottom-engine.pkl')
+    from util.api import get_data
+    
+    # 1. SETUP & FETCH
+    row = df.iloc[0]
+
+    symbol, timeframe = row.symbol, row.timeframe
+    after_ms, until_ms = int(row.sort_key), int(df.iloc[-1].sort_key)
+    
+    indicators = ['atr_14', 'sma_50', 'rsi_14', 'bbands_20_2', 'macd_12_26_9', 'cci_20', 'adx_14', 'stoch_14_3_3']
+    df_ext = get_data(symbol, timeframe, after_ms, until_ms+1, len(df), "asc", indicators, {"disable_recursive_mapping": True})
+
+    if df_ext is None or df_ext.empty:
+        return pd.DataFrame({'confidence': 0, 'signal': 0}, index=df.index)
+
+    # 2. LOAD MODEL
+    model_name = options.get('model_path', f"{symbol}-{timeframe}-regime-engine.pkl")
     threshold = float(options.get('threshold', '0.59'))
     path = os.path.join(Path(__file__).resolve().parent / "models", model_name)
     
     if path not in _ENGINE_CACHE:
-        if os.path.exists(path): 
-            _ENGINE_CACHE[path] = joblib.load(path)
-        else:
-            return pd.DataFrame({'confidence': 0, 'signal': 0}, index=df.index)
+        _ENGINE_CACHE[path] = joblib.load(path) if os.path.exists(path) else None
     
     model = _ENGINE_CACHE[path]
+    if not model: return pd.DataFrame({'confidence': 0, 'signal': 0}, index=df.index)
 
-    # INDICATORS
-    sma50 = df['close'].rolling(50).mean()
-    tr = pd.concat([(df['high']-df['low']), (df['high']-df['close'].shift(1)).abs(), (df['low']-df['close'].shift(1)).abs()], axis=1).max(axis=1)
-    atr = tr.ewm(com=13, adjust=False).mean()
+    # 3. FEATURE ENGINEERING (Sync with bottoms.py)
+    rsi_norm = df_ext['rsi_14'] / 100.0
+    stoch_key = 'stoch_14_3_3__k' if 'stoch_14_3_3__k' in df_ext else 'rsi_14'
+    stoch_k = df_ext[stoch_key] / 100.0
     
-    delta = df['close'].diff()
-    gain = delta.where(delta > 0, 0).ewm(com=13, adjust=False).mean()
-    loss = (-delta.where(delta < 0, 0)).ewm(com=13, adjust=False).mean()
-    rsi = 100 - (100 / (1 + (gain / loss.replace(0, np.nan))))
+    hist = df_ext['macd_12_26_9__hist']
+    macd_hist_z = (hist - hist.rolling(50).mean()) / hist.rolling(50).std()
+    
+    vol_ratio = df_ext['atr_14'] / df_ext['close']
+    bb_width = (df_ext['bbands_20_2__upper'] - df_ext['bbands_20_2__lower']) / df_ext['bbands_20_2__mid']
 
-    # FEATURES (4-Feature Set)
-    dist_50 = (df['close'] - sma50) / df['close']
-    rsi_norm = rsi / 100.0
-    vol_ratio = atr / df['close']
-    safe_atr = atr.replace(0, 0.00001)
-    body_strength = (df['close'] - df['open']) / safe_atr
+    dist_sma50 = (df_ext['close'] - df_ext['sma_50']) / df_ext['close']
+    body_strength = (df_ext['close'] - df_ext['open']) / df_ext['atr_14'].replace(0, 0.001)
+    
+    total_range = (df_ext['high'] - df_ext['low']).replace(0, 0.001)
+    body_mid = (df_ext['open'] + df_ext['close']) / 2
+    rel_height = (body_mid - df_ext['low']) / total_range
 
+    adx_norm = df_ext['adx_14__adx'] / 100.0
+    cci_norm = df_ext['cci_20__cci'] / 200.0
+
+    time_dt = pd.to_datetime(df_ext['sort_key'], unit='ms')
+    day_sin, day_cos = np.sin(2*np.pi*time_dt.dt.dayofweek/7), np.cos(2*np.pi*time_dt.dt.dayofweek/7)
+
+    # 4. PREDICT
     X = np.column_stack([
-        dist_50.fillna(0), 
-        rsi_norm.fillna(0), 
-        vol_ratio.fillna(0),
-        body_strength.fillna(0)
+        rsi_norm.fillna(0.5), stoch_k.fillna(0.5), macd_hist_z.fillna(0),
+        vol_ratio.fillna(0), bb_width.fillna(0), dist_sma50.fillna(0),
+        body_strength.fillna(0), rel_height.fillna(0), # SYNCED
+        adx_norm.fillna(0.2), cci_norm.fillna(0), day_sin, day_cos
     ])
     
-    # PREDICT
-    probs = model.predict_proba(X) 
-    class_map = {c: i for i, c in enumerate(model.classes_)}
-    idx_bottom = class_map.get(1)
+    probs = model.predict_proba(X)
+    idx_bottom = {c: i for i, c in enumerate(model.classes_)}.get(1)
+    confidence = probs[:, idx_bottom] if idx_bottom is not None else np.zeros(len(df_ext))
 
-    confidence = np.zeros(len(df))
-    signal = np.zeros(len(df))
-
-    if idx_bottom is not None:
-        confidence = probs[:, idx_bottom]
-        
-        # Geometry Calculations
-        hi, lo, op, cl = df['high'], df['low'], df['open'], df['close']
-        total_range = hi - lo
-        safe_range = total_range.replace(0, 0.00001)
-        body_size = np.abs(cl - op)
-        body_mid = (op + cl) / 2
-        relative_height = (body_mid - lo) / safe_range
-
-        # Pattern Detection
-        is_doji = (body_size <= (total_range * 0.38)) & (total_range > 0)
-        
-        is_dragonfly   = is_doji & (relative_height > 0.90)
-        is_gravestone  = is_doji & (relative_height < 0.10)
-        is_long_legged = is_doji & (relative_height > 0.40) & (relative_height < 0.60)
-        is_hammer      = (relative_height > 0.60)
-        is_green       = (cl > op)
-
-        # Dynamic Threshold Trapping
-        # We start with a very high "impossible" threshold and lower it per pattern
-        needed_conf = np.full(len(df), 0.70) # "is_any" fallback
-
-        # Apply specific thresholds (Order matters: more specific patterns last)
-        needed_conf = np.where(is_green,       threshold,    needed_conf)
-        needed_conf = np.where(is_gravestone,  0.63,         needed_conf)
-        needed_conf = np.where(is_hammer,      0.55,         needed_conf)
-        needed_conf = np.where(is_long_legged, 0.53,         needed_conf)
-        needed_conf = np.where(is_dragonfly,   0.52,         needed_conf)
-
-        # Signal if the AI confidence for THIS specific row exceeds 
-        # the required threshold for the pattern found on THIS specific row.
-        trigger = (confidence >= (needed_conf - 0.000001))
-        
-        signal = np.where(trigger, 1, 0)
-
-    return pd.DataFrame({
+    # 1. Create a results dataframe from the external data
+    raw_results = pd.DataFrame({
+        'sort_key': df_ext['sort_key'],
         'confidence': confidence,
-        'threshold': threshold, 
-        'relative-height':relative_height,
-        #'is_doji': is_doji,
-        'signal': signal
-    }, index=df.index)
+        'signal': np.where(confidence >= threshold, 1, 0)
+    })
+
+    # 2. Map these results back to the original 'df' using sort_key
+    # This ensures every confidence value matches the correct timestamp
+    final_df = df[['sort_key']].merge(raw_results, on='sort_key', how='left')
+
+    # 3. Return with the original index preserved
+    return final_df[['confidence', 'signal']].set_index(df.index).fillna(0)
