@@ -20,14 +20,8 @@ import numpy as np
 from typing import List, Dict, Any
  
 def description() -> str:
-    """
-    Identifies market bottoms using Volume Climax, Lower Wick Absorption, 
-    and Price Exhaustion (Distance from EMA 200).
-    """
     return (
-        "Bottom Sniper is a reversal-seeking indicator. It fires a signal when "
-        "forced liquidations (Volume Climax) meet heavy aggressive buying "
-        "(Wick Absorption) at prices significantly extended below the 200 EMA."
+        "Bottom Sniper is a reversal-seeking indicator. It fires a signal when... "
     )
 
 def meta() -> Dict:
@@ -48,50 +42,73 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     # Metadata & Data Fetching
     symbol, timeframe = df.iloc[0].symbol, df.iloc[0].timeframe
     after_ms, until_ms, limit = df.iloc[0].time_ms, df.iloc[-1].time_ms, len(df)
-
+    
     rsi_setting = 'rsi_7'
-    streak_setting = 3
-    oversold_setting = 30
-    sma_window = 8
+    sma_window = 9
+    streak_req = 4
+    pip_req = 0.010 # 100 pips for EUR/USD or GBP/USD
+    angle_req = 2.5 # Minimum RSI point jump for a "30 degree" sharp turn
 
     indicators = [rsi_setting]
 
-    # Query data for same symbol, timeframe and time-range, with indicators array (this example has only one, but you can specify any amount)
+    # Fetch our data
     ex_df = get_data(symbol, timeframe, after_ms, until_ms + 1, limit, "asc", indicators, {'disable_recursive_mapping': True})
 
-    # Moving Average Calculation
+    # Base Indicators
     ex_df['sma'] = ex_df[rsi_setting].rolling(window=sma_window).mean()
-
-    # Suppression Logic
-    # Check if RSI is below SMA 9
-    is_below_sma = ex_df[rsi_setting] < ex_df['sma']
+    rsi = ex_df[rsi_setting]
+    sma = ex_df['sma']
     
-    # Use rolling sum to find at least 5 consecutive bars where this is true
-    # We use .fillna(0) to handle the first few bars of the data
-    suppression_streak = is_below_sma.rolling(window=streak_setting).sum().fillna(0)
+    # Detect the "Crush" (Suppression + Pip Drop)
+    is_below = rsi < sma
     
-    print(suppression_streak)
+    # Track the start price of the RSI dip to measure the 100-pip drop
+    is_start = is_below & (~is_below.shift(1).fillna(False))
+    ex_df['anchor'] = np.where(is_start, ex_df['close'], np.nan)
+    ex_df['anchor'] = ex_df['anchor'].ffill()
+    ex_df['anchor'] = np.where(is_below, ex_df['anchor'], np.nan)
+    
+    price_drop = ex_df['anchor'] - ex_df['low']
+    
+    # Calculate consecutive bars below SMA
+    streak = is_below.groupby((is_below != is_below.shift()).cumsum()).cumcount() + 1
+    streak = np.where(is_below, streak, 0)
 
-    # Signal Trigger
-    # Trigger if we have a streak of AT LEAST 5 AND current bar is oversold (< 30)
-    # This captures the 5th bar and every bar after that stays suppressed
-    is_bottom_signal = (suppression_streak >= streak_setting) & (ex_df[rsi_setting] < oversold_setting)
+    # Check if this specific dip qualified as a "Momentum Crush"
+    ex_df['crush_qualified'] = (streak >= streak_req) & (price_drop >= pip_req)
+    
+    # Use rolling max to remember the qualification for up to 20 bars
+    # fillna(0).astype(bool) ensures we don't crash when comparing with &
+    ex_df['has_history'] = ex_df['crush_qualified'].rolling(window=20, min_periods=1).max().fillna(0).astype(bool)
 
-    print(is_bottom_signal)
+    # Mark the bar where RSI crosses ABOVE SMA
+    crossed_above = (rsi > sma) & (rsi.shift(1) <= sma.shift(1))
+    
+    # Measure RSI Velocity (Angle)
+    rsi_velocity = rsi - rsi.shift(1)
+    strong_angle = rsi_velocity >= angle_req
+
+    # We use .shift(1) on history because we want the history to be TRUE 
+    # BEFORE the current crossover bar.
+    is_bottom_signal = ex_df['has_history'].shift(1).fillna(False) & crossed_above & strong_angle
 
     # Result Mapping
     results_df = pd.DataFrame({
         'time_ms': ex_df['time_ms'],
-        'rsi': ex_df[rsi_setting],
-        'sma': ex_df['sma'],
+        'rsi': rsi,
+        'sma': sma,
         'is_bottom': np.where(is_bottom_signal, 100, 0)
     })
 
-    # Merging of intermediate result with main dataframe
     final_res = df[['time_ms']].merge(results_df, on='time_ms', how='left').set_index(df.index)
     
+    # Returning RSI and SMA will draw them as lines; is_bottom will draw markers
     return final_res[['rsi', 'sma', 'is_bottom']]
 ```
+
+Result:
+
+![example](../images/no_ml_example.png)
 
 ### Notice: clean-version is in the making
 
