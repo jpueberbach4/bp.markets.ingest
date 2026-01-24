@@ -23,7 +23,13 @@ Perhaps i don't need to implement virtual indicators or dependencies. I can now 
 
     # Now get the exact same slice as the incoming data but with the 3 required indicators calculated
     # This is megafast since the slice is already in page-cache
-    ex_df = get_data(symbol, timeframe, after_ms, until_ms + 1, limit, "asc", ['sma_20','ema_20','macd_16_9_12'], {'disable_recursive_mapping': True})
+    ex_df = get_data(
+        symbol,
+        timeframe,
+        after_ms, until_ms + 1, limit, "asc",
+        ['sma_20','ema_20','macd_16_9_12'],
+        {'disable_recursive_mapping': True}    # This prevents the recursive merging of the columns to dict
+    )
 
     # Do my stuff... my dance, my magic, query other data sets etc etc etc.... extend the ex_df with anything i want
     
@@ -141,6 +147,7 @@ Price-only API pushes now ~1.8 million bars per second. 10.000 in ~6ms. Without 
 ### Bonus ML Example: Bottom Detection with Random Forest
 
 this works not oke. building new one
+
 
 
 
