@@ -40,6 +40,8 @@ Perhaps i don't need to implement virtual indicators or dependencies. I can now 
     
 ```
 
+**Note:** use merge_asof when frames do not fully align because of different opening-hours. Eg aligning SGD.IDX with the EUR (bad example but explains context enough).
+
 You can do something like this on the new version:
 
 ```python
@@ -147,6 +149,7 @@ Price-only API pushes now ~1.8 million bars per second. 10.000 in ~6ms. Without 
 ### Bonus ML Example: Bottom Detection with Random Forest
 
 this works not oke. building new one
+
 
 
 
