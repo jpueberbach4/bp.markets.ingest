@@ -326,12 +326,16 @@ function updateChartUI(cols = [], requestDirection) {
             }
 
             const seriesData = masterData.map(d => {
-                const item = { time: d.time, value: d.indicators[col] };
-                if (col.includes('hist')) {
-                    item.color = d.indicators[col] >= 0 ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)';
+                const val = d.indicators[col];
+                const item = { time: d.time };
+                if (val !== null && val !== undefined) {
+                    item.value = val;
+                    if (col.includes('hist')) {
+                        item.color = val >= 0 ? 'rgba(38, 166, 154, 0.5)' : 'rgba(239, 83, 80, 0.5)';
+                    }
                 }
                 return item;
-            }).filter(v => v.value !== null);
+            });
 
             pObj.series[col].setData(seriesData);
         }
