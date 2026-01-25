@@ -68,7 +68,7 @@ class IndicatorRegistry:
                 default user plugin directory is used.
         """
         # Default paths if not provided
-        self.core_dir = core_dir or (Path(__file__).parent / "plugins/indicators")
+        self.core_dir = core_dir or Path("util/plugins/indicators")
         self.user_dir = user_dir or Path("config.user/plugins/indicators")
         
         # Internal registry to store loaded plugin functions and file stats
@@ -132,7 +132,7 @@ class IndicatorRegistry:
                 continue
 
             # Iterate over Python files in the plugin directory
-            for file in os.listdir(plugin_dir):
+            for file in sorted(os.listdir(plugin_dir)):
                 # Ignore non-plugin files and dunder modules
                 if file.endswith(".py") and not file.startswith("__"):
                     # Derive the plugin name from the filename

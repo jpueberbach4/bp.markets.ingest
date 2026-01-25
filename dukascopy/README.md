@@ -1,6 +1,5 @@
 ## Table of Contents
 
-- [Notice](#notice)
 - [What Is This Tool Used For?](#what-is-this-tool-used-for)
 - [Server Kindness](#server-kindness)
 - [Key Design Principles](docs/architecture.md#key-design-principles)
@@ -32,16 +31,6 @@
 - [Final Word](#final-word)
 - [Terms of use](#terms-of-use)
 - [License](#license)
-
-
-## Notice
-
-Development of this repository will continue privately. A public, clean version, containing all functionalities of this version, plus some additional "last round" updates will be made available. 
-
-- [General notices, latest updates, caveats, etc](docs/notices.md) **2026-01-21 update**
-- [Limitations](docs/limitations.md)
-
-Don't forget to check the [Tools](docs/tools.md) section. It will ease things even more.
 
 ---
 
