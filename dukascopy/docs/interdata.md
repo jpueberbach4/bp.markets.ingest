@@ -10,6 +10,55 @@ By importing `util.api.get_data`, your plugin can request any other cached asset
 ## 2. Implementation: Pearson Correlation Example
 This example shows how to build a `pearson.py` plugin. It calculates the correlation between the current symbol and a target symbol (e.g., `pearson_US10Y_20`).
 
+### Main API call: get_data
+
+```python
+def get_data(
+    symbol: str,
+    timeframe: str,
+    after_ms: int,
+    until_ms: int,
+    limit: int = 1000,
+    order: str = "desc",
+    indicators: List[str] = [],
+    options: Dict = {}
+) -> pd.DataFrame:
+```
+
+**Example:** suppose you want to get indicator rsi(7) and sma(20) values for the current symbol, timeframe and time-region.
+
+```python
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    # Important! import get_data from within the calculate function! Not globally.
+    from util.api import get_data
+    # We first collect all of our metadata required to make the get_data call
+
+    # Metadata & Data Fetching
+    symbol, timeframe = df.iloc[0].symbol, df.iloc[0].timeframe
+    after_ms, until_ms, limit = df.iloc[0].time_ms, df.iloc[-1].time_ms, len(df)
+
+    # We define the array of indicators we need
+    indicators = ['rsi_7', 'sma_20']
+
+    # Now we query the data. Note that this call is extremely fast since the dataframe is already in page cache
+    # Only indicator calculations need to be performed (they happen in parallel)
+    # Note that we specify until_ms + 1 since until_ms is EXCLUSIVE and we need the last origin df record too,
+    # which has time_ms set to until_ms. If we would not increase with +1 it would miss out on that last record. 
+    ex_df = get_data(symbol, timeframe, after_ms, until_ms + 1, limit, "asc", indicators)
+
+    # We now have an identical dataframe with two additional columns: rsi_7 and sma_20
+
+    # Debugging: print the external dataframe to the WSL2 console
+    print(ex_df)
+
+    # Rest of code ....
+
+    # Return the joined dataframe (see below)
+    return final_df
+```
+
+It’s straightforward to use after you gain some familiarity with the structure.
+
 ### Code Structure - Pseudo code
 
 ```python
