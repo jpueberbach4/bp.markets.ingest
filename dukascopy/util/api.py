@@ -102,7 +102,7 @@ def get_data(
     after_ms: int,
     until_ms: int,
     limit: int = 1000,
-    order: str = "desc",
+    order: str = "asc",
     indicators: List[str] = [],
     options: Dict = {}
 ) -> pd.DataFrame:
