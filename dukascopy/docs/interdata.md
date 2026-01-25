@@ -69,6 +69,20 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     return final_df[['rsi_7','is_bottom']]
 ```
 
+OR use the convenience function get_data_auto if you only need to get indicators for the current symbol, timeframe:
+
+```python
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    # Important! import get_data_auto from within the calculate function! Not globally.
+    from util.api import get_data_auto
+    
+    # Fetch our data, automatically determine after_ms, until_ms, symbol, etc from origin df
+    ex_df = get_data_auto(df=df, indicators=['rsi_7', 'sma_20'])
+
+    # We now have the two indicators in ex_df for the current origin df
+```
+
+
 It’s straightforward to use after you gain some familiarity with the structure.
 
 ### Code Structure - Pseudo code

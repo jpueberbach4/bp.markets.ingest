@@ -36,6 +36,66 @@ from typing import Dict,List
 from util.cache import MarketDataCache
 from util.parallel import parallel_indicators
 
+
+
+def get_data_auto(
+    df: pd.DataFrame,
+    limit: int = -1,
+    order: str = "asc",
+    indicators: List[str] = []
+) -> pd.DataFrame:
+    """Automatically retrieve OHLCV data and indicators based on an existing DataFrame.
+
+    This is a convenience wrapper around `get_data` that infers the symbol,
+    timeframe, and time range directly from an existing OHLCV DataFrame.
+    It is commonly used when re-querying or extending previously fetched data
+    while preserving consistent parameters.
+
+    The time range is derived from the first and last rows of the input
+    DataFrame, and the limit defaults to the full length of the DataFrame
+    unless explicitly overridden.
+
+    Args:
+        df (pd.DataFrame): Source DataFrame containing at least the columns
+            `symbol`, `timeframe`, and `time_ms`. The first and last rows are
+            used to infer query boundaries.
+        limit (int, optional): Maximum number of rows to return. If set to -1,
+            the length of the input DataFrame is used. Defaults to -1.
+        order (str, optional): Sort order of the returned data ("asc" or "desc").
+            Currently passed through but enforced as ascending internally.
+            Defaults to "asc".
+        indicators (List[str], optional): List of indicator strings to compute
+            (e.g., ["sma_20", "rsi_14"]). Defaults to empty list.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing OHLCV data and requested indicators
+        for the inferred symbol, timeframe, and time range.
+    """
+    # Extract symbol and timeframe from the first row
+    symbol = df.iloc[0].symbol
+    timeframe = df.iloc[0].timeframe
+
+    # Infer time boundaries from the DataFrame
+    after_ms = df.iloc[0].time_ms
+    until_ms = df.iloc[-1].time_ms
+
+    # If limit is unset, default to the full DataFrame length
+    if limit == -1:
+        limit = len(df)
+
+    # Delegate to the core get_data API
+    # Note: until_ms is incremented to make the upper bound exclusive
+    return get_data(
+        symbol=symbol,
+        timeframe=timeframe,
+        after_ms=after_ms,
+        until_ms=until_ms + 1,
+        limit=limit,
+        order=order,
+        indicators=indicators
+    )
+
+
 def get_data(
     symbol: str,
     timeframe: str,
