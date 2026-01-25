@@ -12,10 +12,12 @@
 Note: we are setup now to integrate the extensions below (weekend work).
 
 DAG Execution:
-  - [ ] Directed Acyclic Graph for indicators
-  - [ ] Virtual indicators
-  - [ ] Dependency resolution
+  - [x] ~~Directed Acyclic Graph for indicators~~
+  - [x] ~~Virtual indicators~~
+  - [x] ~~Dependency resolution~~
   - [ ] Real parallel execution
+
+Note: strike-through of above is because get_data is powerful enough to handle dependencies
 
 ASX:
   - [ ] Custom timeshifting
@@ -27,13 +29,15 @@ Panama:
   - [ ] Panama prevents text-strip, invent solution for binary
 
 Drawing/Visualization:
-  - [ ] Split JS to libs (chart.js, drawing.js, ui.js)
+  - [x] Split JS to libs (chart.js, drawing.js, ui.js)
   - [ ] Drawing tools (lines, channels, fibs)
-  - [ ] Export to PNG/SVG?
+  - [x] ~~Export to PNG/SVG?~~
 
-API Layer:
-  - [ ] Cross-asset queries
-  - [ ] Cross-timeframe queries
+Note: strike-through=wont do
+
+[x] API Layer:
+  - [X] Cross-asset queries
+  - [X] Cross-timeframe queries
 
 Example Indicator:
   - [x] ML integration example
