@@ -132,7 +132,7 @@ class IndicatorRegistry:
                 continue
 
             # Iterate over Python files in the plugin directory
-            for file in os.listdir(plugin_dir):
+            for file in sorted(os.listdir(plugin_dir)):
                 # Ignore non-plugin files and dunder modules
                 if file.endswith(".py") and not file.startswith("__"):
                     # Derive the plugin name from the filename
