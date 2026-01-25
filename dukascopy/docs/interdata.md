@@ -53,8 +53,20 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
 
     # Rest of code ....
 
-    # Return the joined dataframe (see below)
-    return final_df
+    is_bottom_signal = ... crossed_above & strong_angle & is_below_sma_threshold
+
+    # Result Mapping
+    results_df = pd.DataFrame({
+        'time_ms': ex_df['time_ms'],
+        'rsi_7': ex_df['rsi_7'],
+        'is_bottom': np.where(is_bottom_signal, 100, 0)
+    })
+
+    # Making sure the index aligns...
+    final_df = df[['time_ms']].merge(results_df, on='time_ms', how='left').set_index(df.index)
+
+    # Return the rsi_7 and is_bottom column
+    return final_df[['rsi_7','is_bottom']]
 ```
 
 It’s straightforward to use after you gain some familiarity with the structure.
