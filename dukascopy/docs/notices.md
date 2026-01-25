@@ -23,3 +23,8 @@ git checkout origin beta/0.6.7
 
 As always with beta's: use at your own risk. There were no changes to the ETL ingestion. Should be backward-compatible/non-breaking.
 
+Expected release date: weekend of 31st January.
+
+
+
+

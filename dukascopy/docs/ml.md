@@ -2,6 +2,10 @@
 
 The ML Sniper system is a quantitative infrastructure that uses **Random Forest Classification** to identify high-probability reversal points (bottoms) in financial markets. It is designed to be conservative, prioritizing **precision (accuracy)** over **recall (frequency)**.
 
+NOTE: THIS WORKS FINE ON HISTORIC DATA IT WAS TRAINED ON BUT FAILS COMPLETELY WHEN BACKTESTING/LIVE DATA. IE TRAIN UNTIL 2024, APPLY TO 2025... MISSES ALMOST ALL BOTTOMS OR CONFIDENCE IS BELOW 0.4. IT IS ONLY A SHOWCASE ON HOW TO USE ML. DO NOT USE FOR LIVE SIGNAL GENERATION. IT WILL FAIL GLORIOUSLY. I EXPECTED MORE OF ML. MORE USABILITY, MORE PRECISION. IF YOU USE ML, LIKE RANDOMFOREST, USE IT ONLY AS A SIGNAL-FILTER. GATE-KEEPING.
+
+PERSONALLY, I DROPPED ML COMPLETELY NOW THAT I HAVE TRIED A COUPLE OF THINGS. PERHAPS MY DATASET WAS TOO SMALL BECAUSE I WORK ON DAILY. PERHAPS WHEN MORE DATAPOINTS IT PERFORMS BETTER. H4 AND BELOW ARE NOT MY TIMEFRAMES. I TRADE THE UPPER ONLY.
+
 ---
 
 ## 🏗️ 1. System Architecture
@@ -170,4 +174,6 @@ This is an exact showcase on how i use this system. The API calls are pulled by 
 **Note:** This favors high accuracy, leading to few trading signals each year for daily per asset. But ofcourse, you dont run this on a single asset but on 40-80 simultaneously..... the above examples can be tuned and become a very usable base.
 
 ---
+
 *Developed as a high-precision, low-frequency sniper system for quantitative trading. Most accurate on high timeframes*
+
