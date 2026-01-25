@@ -116,3 +116,5 @@ Vectorization: Always use pandas or numpy vectorized functions. Avoid for loops 
 Precision: Use the first row of data to determine the asset's precision and round your outputs accordingly to keep the API responses clean.
 
 Stability: If your indicator uses division, always use .replace(0, np.nan) on the denominator to avoid Inf errors.
+
+For inter-data/indicator querying within indicators, consult [this documentation](interdata.md).
