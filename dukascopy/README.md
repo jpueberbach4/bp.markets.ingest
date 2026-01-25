@@ -42,7 +42,7 @@ The system incrementally updates market data, resampling completed 1-minute cand
 \
 Data can be queried or constructed directly from a WSL2 terminal or via an HTTP API service. Designed by a trader, for traders, BP-Markets focuses on performance, accuracy, and workflow efficiency. Future releases will introduce high-performance backtesting capabilities that fully eliminate lookahead bias. \
 \
-The tool features a customizable, advanced indicator engine and uses an internal API to query data across assets and timeframes, including access to indicator values from other instruments.
+The tool features a customizable, advanced indicator engine and uses an internal API to query data across assets and timeframes, including access to indicator values from other instruments. \
 \
 Any modern laptop having NVMe will do. Storage requirements are about 1 GB per configured symbol. \
 \
