@@ -135,8 +135,9 @@ def get_data(
         # Hot reload support (only for custom user indicators)
         indicator_registry = cache.indicators.refresh(indicators)
 
-        # Recursive mapping disable from options
-        disable_recursive_mapping = options.get('disable_recursive_mapping', False)
+        # Recursive mapping disable from options, True by default since get_data API in 
+        # indicators mostly needs it to be True 
+        disable_recursive_mapping = options.get('disable_recursive_mapping', True)
 
         # Enrich the returned result with the requested indicators (parallelized)
         chunk_df = parallel_indicators(chunk_df, indicators, indicator_registry, disable_recursive_mapping)
