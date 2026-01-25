@@ -1,4 +1,4 @@
-# 🎯 ML Sniper: AI-Powered Market Bottom Detector
+# 🎯 ML Sniper: AI-Powered Market Bottom Detector - Example
 
 The ML Sniper system is a quantitative infrastructure that uses **Random Forest Classification** to identify high-probability reversal points (bottoms) in financial markets. It is designed to be conservative, prioritizing **precision (accuracy)** over **recall (frequency)**.
 
@@ -158,15 +158,5 @@ THRESHOLD  | SIGNALS    | PRECISION  | WINNERS
 
 Run on EUR-USD 1d to see it in action. Fork and experiment — it's a learning tool!
 
-Test on your localhost, select EUR-USD 1d graph, select the ml-example indicator, default settings if EUR-USD. Browse. See recent years history-it was trained on recent years. Its not perfect, but as a demo. Pretty neat.
-
-![ml-screenshot](../images/ml_example2.png)
-
-![ml-screenshot](../images/ml_example3.png)
-
-This is an exact showcase on how i use this system. The API calls are pulled by EA's. You can change the scripts to train for other assets as well. This works for more Forex pairs. 
-
-**Note:** This favors high accuracy, leading to few trading signals each year for daily per asset. But ofcourse, you dont run this on a single asset but on 40-80 simultaneously..... the above examples can be tuned and become a very usable base.
-
 ---
-*Developed as a high-precision, low-frequency sniper system for quantitative trading. Most accurate on high timeframes*
+*Developed as a high-precision, low-frequency sniper system for quantitative trading. Most accurate on high timeframes. Note, needs large training set to become accurate. This may not work for your specific setup.*

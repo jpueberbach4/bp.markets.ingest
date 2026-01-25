@@ -1,4 +1,4 @@
-# Developer's Guide: Horizontal Scaling Strategy
+# Horizontal Scaling Strategy: A Developer's Guide 
 
 ## 1. Overview
 This documentation provides a strategic framework for scaling the platform. While the software is currently in an MVP state, its architectural characteristics—specifically its single-threaded, high-performance event loop—offer precise opportunities for horizontal scaling within a Kubernetes environment.

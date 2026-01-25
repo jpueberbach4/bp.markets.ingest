@@ -149,9 +149,3 @@ tail temp/csv/test_EUR-USD_1h.csv -n 5
 2025.12.10,20:00:00,1.16586,1.16609,1.16535,1.16552,3237.46
 2025.12.10,21:00:00,1.16549,1.1681,1.16467,1.16782,24032.88
 ```
-
->You now have your own local forex high-performance analytics and data stack. Don't forget to thank Dukascopy.
-
-## Where is the advanced section?
-
-It has currently been removed since its incompatible with the new binary format. A new, more detailed, advanced section will be written.

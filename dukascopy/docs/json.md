@@ -1,4 +1,4 @@
-# API 1.1 Developer's Guide: OHLCV JSON Subformats
+# API 1.1 OHLCV JSON Subformats: A Developer's Guide
 
 This guide defines the four available JSON subformats in API 1.1. These formats allow developers to choose the optimal balance between human readability, data density, and streaming performance.
 

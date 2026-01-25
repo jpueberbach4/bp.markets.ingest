@@ -1,6 +1,6 @@
 # HTTP-Service (v0.6.6 and above)
 
-This directory implements the HTTP-service feature for version 0.6.6.
+FastAPI endpoint for OHLCV data and indicator execution engine
 
 ## Functionalities:
 
@@ -32,7 +32,7 @@ http:
 
 Or, if using default configuration, ```./setup-dukascopy.sh```.
 
-## Startup## Start/Stop/Status service
+## Startup - Start/Stop/Status service
 
 ```sh
 ./service.sh start

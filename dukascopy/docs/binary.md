@@ -1,4 +1,4 @@
-# Binary OHLCV Format Specification
+# Binary OHLCV Format Specification (v0.5 and above)
 
 This document provides a technical specification for the high-performance binary OHLCV (Open, High, Low, Close, Volume) format. It is designed to guide advanced users and developers in implementing compatible I/O engines or debugging data at the byte level.
 
