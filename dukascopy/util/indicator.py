@@ -68,7 +68,7 @@ class IndicatorRegistry:
                 default user plugin directory is used.
         """
         # Default paths if not provided
-        self.core_dir = core_dir or (Path(__file__).parent / "plugins/indicators")
+        self.core_dir = core_dir or Path("util/plugins/indicators")
         self.user_dir = user_dir or Path("config.user/plugins/indicators")
         
         # Internal registry to store loaded plugin functions and file stats
