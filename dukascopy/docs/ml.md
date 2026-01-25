@@ -1,12 +1,6 @@
-# 🎯 ML Sniper: AI-Powered Market Bottom Detector
+# 🎯 ML Sniper: AI-Powered Market Bottom Detector - Example
 
 The ML Sniper system is a quantitative infrastructure that uses **Random Forest Classification** to identify high-probability reversal points (bottoms) in financial markets. It is designed to be conservative, prioritizing **precision (accuracy)** over **recall (frequency)**.
-
-NOTE: THIS WORKS FINE ON HISTORIC DATA IT WAS TRAINED ON BUT FAILS COMPLETELY WHEN BACKTESTING/LIVE DATA. IE TRAIN UNTIL 2024, APPLY TO 2025... MISSES ALMOST ALL BOTTOMS OR CONFIDENCE IS BELOW 0.4. IT IS ONLY A SHOWCASE ON HOW TO USE ML. DO NOT USE FOR LIVE SIGNAL GENERATION. IT WILL FAIL GLORIOUSLY. I EXPECTED MORE OF ML. MORE USABILITY, MORE PRECISION. IF YOU USE ML, LIKE RANDOMFOREST, USE IT ONLY AS A SIGNAL-FILTER. GATE-KEEPING.
-
-PERSONALLY, I DROPPED ML COMPLETELY NOW THAT I HAVE TRIED A COUPLE OF THINGS. PERHAPS MY DATASET WAS TOO SMALL BECAUSE I WORK ON DAILY. PERHAPS WHEN MORE DATAPOINTS IT PERFORMS BETTER. H4 AND BELOW ARE NOT MY TIMEFRAMES. I TRADE THE UPPER ONLY.
-
----
 
 ## 🏗️ 1. System Architecture
 
@@ -32,8 +26,6 @@ To ensure the AI understands "market context," raw OHLCV data is converted into 
 2.  **Normalized RSI**: `RSI / 100`. Standardizes momentum into a fixed 0.0 to 1.0 range.
 3.  **Volatility Ratio**: `ATR / Close`. Normalizes price movement relative to current market volatility.
 4.  **Body Strength**: `(Close - Open) / ATR`. Measures the "force" of the current candle.
-
-
 
 ### B. The Labeling Logic (The "Truth")
 The model is trained to find significant structural lows. 
@@ -115,7 +107,6 @@ The system is built to prevent the two most common failures in Trading AI:
 http://localhost:8000/ohlcv/1.1/select/EUR-USD,1d[ml(EUR-USD-engine.pkl,0.55)]:skiplast/after/1149033600000/output/JSON?limit=10&subformat=3&order=desc
 ``` 
 Gets you the last closed candle and signals on **index 0**.
-* **Signal Repainting**: By utilizing index `-1` (the last completed candle), once a signal is generated, it is permanent and never changes.
 * **Warmup Protection**: The system requires a `warmup_count` of 50 bars to ensure Moving Averages and ATRs are mathematically valid before making a prediction.
 
 ---
@@ -126,6 +117,8 @@ Based on current training for major pairs (GBP-USD, EUR-USD), the AI prioritizes
 2.  **Trend Deviation** (~26%): Ensures we are buying at a relative discount.
 3.  **Body Strength** (~18%): The "Trigger" that confirms the buyers have returned.
 4.  **Volatility Ratio** (~15%): The "Scale" that adjusts for market noise.
+
+5.  **Geometry** The system no longer uses hard indicator gates. Instead, it applies pattern-adaptive confidence thresholds, allowing strong reversal geometries (e.g. Dragonfly Doji, Hammer) to require less ensemble consensus than weaker structures.
 
 Outputs:
 
@@ -163,17 +156,6 @@ THRESHOLD  | SIGNALS    | PRECISION  | WINNERS
 
 Run on EUR-USD 1d to see it in action. Fork and experiment — it's a learning tool!
 
-Test on your localhost, select EUR-USD 1d graph, select the ml-example indicator, default settings if EUR-USD. Browse. See recent years history-it was trained on recent years. Its not perfect, but as a demo. Pretty neat.
-
-![ml-screenshot](../images/ml_example2.png)
-
-![ml-screenshot](../images/ml_example3.png)
-
-This is an exact showcase on how i use this system. The API calls are pulled by EA's. You can change the scripts to train for other assets as well. This works for more Forex pairs. 
-
-**Note:** This favors high accuracy, leading to few trading signals each year for daily per asset. But ofcourse, you dont run this on a single asset but on 40-80 simultaneously..... the above examples can be tuned and become a very usable base.
-
 ---
 
-*Developed as a high-precision, low-frequency sniper system for quantitative trading. Most accurate on high timeframes*
-
+*Developed as a high-precision, low-frequency sniper system for quantitative trading. Most accurate on high timeframes. Note, needs large training set to become accurate. This may not work for your specific setup.*

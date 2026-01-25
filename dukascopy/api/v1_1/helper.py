@@ -1,45 +1,43 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 ===============================================================================
-helper.py
+File:        helper.py
 
 Author:      JP Ueberbach
 Created:     2026-01-02
+Updated:     2026-01-23
 
 Core helper utilities for path-based OHLCV query parsing, resolution,
-execution, and output formatting.
+and output formatting.
 
-This module implements the core execution pipeline for the OHLCV API.
-It parses a slash-delimited query DSL embedded in request paths, resolves
-symbol and timeframe selections against filesystem-backed datasets,
-determines indicator warmup requirements, retrieves cached market data,
-and serializes results for API delivery.
+This module implements the shared execution support layer for the OHLCV
+API. It parses a slash-delimited query DSL embedded in request paths,
+normalizes timestamps and query options, resolves symbol and timeframe
+selections against filesystem-backed datasets, and formats query results
+for API delivery.
 
-The helpers in this module are shared across API endpoints to ensure
-consistent behavior between path-based HTTP queries and internal,
-programmatic query execution. The module integrates tightly with the
-dataset discovery layer, selection resolver, indicator plugin system,
-and cache-backed execution engine.
+The helpers defined here are used by multiple API routes to ensure
+consistent behavior between HTTP-based requests and internal,
+programmatic query execution. The module integrates with the dataset
+discovery layer, selection resolver, indicator registry, and cache-backed
+data access layer, but does not directly execute database queries itself.
 
 Primary responsibilities:
     - Parse and normalize path-encoded OHLCV query URIs.
     - Normalize and validate timestamp inputs.
-    - Discover available OHLCV datasets from the filesystem using builder
-      configuration.
-    - Resolve user selections into concrete dataset definitions.
-    - Inspect indicator plugins to determine warmup row requirements.
-    - Execute indicator-aware, cache-backed data retrieval with filtering,
-      ordering, limits, and modifiers (e.g., skiplast).
-    - Merge and sort multi-symbol, multi-timeframe query results.
-    - Generate API responses in JSON, JSONP, or CSV formats, including
-      MT4-compatible CSV output.
+    - Resolve user selections into concrete dataset definitions using
+      filesystem-backed discovery.
+    - Enrich query options with resolved symbol/timeframe selections.
+    - Format query results into JSON, JSONP, CSV, or NDJSON outputs.
+    - Apply MT4-compatible CSV formatting when requested.
+    - Stream large result sets efficiently to minimize memory usage.
 
 Design notes:
-    - Query execution operates on pre-built, cached OHLCV data rather than
-      issuing raw SQL at request time.
-    - Indicator warmup rows are automatically included to ensure correct
-      computation of rolling and window-based indicators.
-    - CSV output is streamed to support large result sets with low memory
-      overhead.
+    - Query parsing and resolution are decoupled from data retrieval.
+    - Indicator warmup and execution are handled by downstream layers.
+    - Streaming responses (CSV, NDJSON) are used for large datasets to
+      reduce memory pressure.
     - The module is optimized for read-heavy, low-latency API workloads.
 
 Public functions:
@@ -49,71 +47,62 @@ Public functions:
     parse_uri(uri: str) -> Dict[str, Any]
         Parse a path-based OHLCV query DSL into structured options.
 
-    discover_all(options: Dict) -> List[Dataset]
-        Discover all available OHLCV datasets from the filesystem.
-
-    discover_options(options: Dict) -> Dict
-        Resolve user-requested selections against discovered datasets.
+    discover_options(options: Dict[str, Any]) -> Dict[str, Any]
+        Resolve user selections against discovered datasets.
 
     generate_output(
         df: pandas.DataFrame,
         options: Dict[str, Any]
     ) -> dict | PlainTextResponse | StreamingResponse | None
-        Format query results as JSON, JSONP, or CSV.
-
-    execute(options: Dict) -> pandas.DataFrame
-        Execute indicator-aware queries against cached OHLCV data and return
-        merged results.
+        Format query results as JSON, JSONP, CSV, or NDJSON.
 
 Internal helpers:
+    _format_json(...)
+        Serialize DataFrame results into structured JSON subformats.
+
+    _stream_json(...)
+        Stream newline-delimited JSON (NDJSON).
+
     _stream_csv(...)
-        Stream a DataFrame as CSV with optional MT4 formatting.
+        Stream CSV output with optional MT4 compatibility.
 
-    _get_warmup_rows(...)
-        Determine indicator warmup row requirements.
-
-Constants:
-    CSV_TIMESTAMP_FORMAT
-    CSV_TIMESTAMP_FORMAT_MT4_DATE
-    CSV_TIMESTAMP_FORMAT_MT4_TIME
+    _get_ms(...)
+        Convert timestamps to epoch milliseconds (UTC).
 
 Requirements:
     - Python 3.8+
     - Pandas
     - FastAPI
-    - DuckDB (build-time / preprocessing only)
+    - orjson
 
 License:
     MIT License
 ===============================================================================
 """
 
+
 import csv
 import io
 import orjson
 import re
 import pandas as pd
+import numpy as np
 
 from datetime import datetime, timezone
 from typing import Dict, Any, List
 from urllib.parse import unquote_plus
 from pathlib import Path
-from fastapi.responses import PlainTextResponse, StreamingResponse
+from fastapi.responses import PlainTextResponse, StreamingResponse, ORJSONResponse
 
 # Import builder utilities for resolving file-backed OHLCV selections
 from builder.config.app_config import load_app_config
 from util.dataclass import *
 from util.discovery import *
 from util.resolver import *
-from api.state11 import *
 
-from api.v1_1.plugin import indicator_registry
+from util.cache import MarketDataCache
 
-CSV_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
-CSV_TIMESTAMP_FORMAT_MT4_DATE = "%Y.%m.%d"
-CSV_TIMESTAMP_FORMAT_MT4_TIME = "%H:%M:%S"
-
-available_datasets = []
+TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 def normalize_timestamp(ts: str) -> str:
     if not ts:
@@ -218,33 +207,6 @@ def parse_uri(uri: str) -> Dict[str, Any]:
 
     return result
 
-
-def discover_all(options: Dict):
-    """Discovers all datasets based on the application configuration.
-
-    This function loads the application configuration from a user-specific
-    YAML file if it exists, otherwise it falls back to the default config.
-    It then initializes a `DataDiscovery` instance using the builder
-    configuration and scans the filesystem for available datasets.
-
-    Args:
-        options (Dict): A dictionary of optional parameters (currently unused).
-
-    Returns:
-        List[Dataset]: A list of Dataset instances found in the filesystem.
-    """
-    # Determine which configuration file to load: user-specific or default
-    config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
-
-    # Load the application configuration from the YAML file
-    config = load_app_config(config_file)
-
-    # Initialize the DataDiscovery instance with the builder configuration
-    discovery = DataDiscovery(config.builder)
-
-    # Scan the filesystem and return the discovered datasets
-    return discovery.scan()
-
 def discover_options(options: Dict):
     """Resolve and enrich data selection options using filesystem-backed sources.
 
@@ -269,18 +231,12 @@ def discover_options(options: Dict):
     """
 
     try:
-        # Global sets (cached, shaves of a few ms on API requets)
-        # Todo: regular checking for changes (eg once every few minutes)
-        global available_datasets
-        # Initialize datasets
-        if len(available_datasets) == 0:
-            # Run cached discovery
-            available_datasets = discover_all(options)
+        # Setup cache
+        cache = MarketDataCache()
 
         # Resolve selections
-        resolver = SelectionResolver(available_datasets)
+        resolver = SelectionResolver(cache.registry.get_available_datasets())
         options["select_data"], _ = resolver.resolve(options["select_data"])
-
         return options
     except Exception as e:
         raise
@@ -323,7 +279,7 @@ def generate_output(df: pd.DataFrame, options: Dict):
         # Normalize DataFrame into row-oriented dictionaries
         payload = _format_json(df, options)
         # Serialize payload and wrap in callback invocation
-        json_data = orjson.dumps(payload).decode("utf-8")
+        json_data = payload.body.decode("utf-8")
         return PlainTextResponse(
             content=f"{callback}({json_data});",
             media_type="text/javascript",
@@ -335,6 +291,49 @@ def generate_output(df: pd.DataFrame, options: Dict):
 
     # Unsupported output type
     return None
+
+def _add_human_readable_time_column(df):
+    """Add human-readable time and year columns derived from the sort key.
+
+    This helper function converts the millisecond-based ``time_ms`` timestamp
+    into a UTC-aware datetime, derives a calendar year column for partitioning
+    or grouping, and adds a formatted, human-readable timestamp column. It also
+    reorders the DataFrame columns so that core identity and time-related fields
+    appear first.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing a ``time_ms`` column with
+            epoch timestamps in milliseconds.
+
+    Returns:
+        pd.DataFrame: The updated DataFrame including ``year`` and ``time``
+        columns, with columns reordered for consistent downstream consumption.
+    """
+    # Convert the millisecond epoch sort key into a UTC datetime series
+    dt_series = pd.to_datetime(df['time_ms'], unit='ms', utc=True)
+
+    # Extract the calendar year for partitioning or grouping use cases
+    df['year'] = dt_series.dt.year
+
+    # Format the timestamp into a human-readable string representation
+    df['time'] = dt_series.dt.strftime(TIMESTAMP_FORMAT)
+
+    # Define preferred column ordering for identity and time-related fields
+    priority = ['symbol', 'timeframe', 'year', 'time', 'time_ms']
+
+    # Capture the current column order
+    all_cols = df.columns.tolist()
+
+    # Build the reordered column list with priority columns first
+    # Column juggling....
+    head = [c for c in priority if c in all_cols]
+    tail = [c for c in all_cols if c not in priority]
+
+    # Reindex the DataFrame to apply the new column ordering
+    df = df.reindex(columns=head + tail)
+
+    return df
+
 
 def _format_json(df, options):
     """Format a DataFrame into structured JSON output.
@@ -367,48 +366,53 @@ def _format_json(df, options):
     # Resolve requested JSON subformat (default to 1)
     subformat = options.get('subformat') if options.get('subformat') else 1
 
+    # Just drop the index column HARD
+    if isinstance(df, pd.DataFrame):
+        df = df.drop(columns=['index', 'level_0'], errors='ignore')
+
     # ------------------------------------------------------------------
     # Subformat 1: Record-oriented JSON (list of row dictionaries)
     # ------------------------------------------------------------------
     if subformat == 1:
+        # This format has a human-readable time column
+        df = _add_human_readable_time_column(df)
         # Remove internal or non-public columns
-        df.drop(columns=['sort_key', 'year'], inplace=True, errors='ignore')
-
-        return {
+        df.drop(columns=['time_ms', 'year'], errors='ignore', inplace=True)
+        return ORJSONResponse(content={
             "status": "ok",
             "options": options,
             "result": df.to_dict(orient='records'),
-        }
+        })
 
     # ------------------------------------------------------------------
     # Subformat 2: Columnar JSON (columns + 2D values array)
     # ------------------------------------------------------------------
     elif subformat == 2:
-        # Drop original timestamp columns and normalize sort_key -> time
+        # Drop original timestamp columns and normalize time_ms -> time
         df = (
             df.drop(columns=['time', 'time_original', 'year'], errors='ignore')
-            .rename(columns={'sort_key': 'time'})
+            .rename(columns={'time_ms': 'time'})
         )       
 
-        return {
+        return ORJSONResponse(content={
             "status": "ok",
             "options": options,
             "columns": df.columns.tolist(),
             "values": df.values.tolist(),
-        }
+        })
 
     # ------------------------------------------------------------------
     # Subformat 3: Time-series–optimized OHLCV structure
     # ------------------------------------------------------------------
     elif subformat == 3:
-        # Drop non-essential metadata and normalize sort_key -> time
+        # Drop non-essential metadata and normalize time_ms -> time
         if num_symbols == 1:
             df = (
                 df.drop(
                     columns=['symbol', 'timeframe', 'time', 'time_original', 'year', 'indicators'],
                     errors='ignore'
                 )
-                .rename(columns={'sort_key': 'time'})
+                .rename(columns={'time_ms': 'time'})
             )
         else:
             df = (
@@ -416,21 +420,24 @@ def _format_json(df, options):
                     columns=['time', 'time_original', 'year','indicators'],
                     errors='ignore'
                 )
-                .rename(columns={'sort_key': 'time'})
+                .rename(columns={'time_ms': 'time'})
             )
         
         result = df.astype(object).where(df.notnull(), None).to_dict(orient='list')
 
-        return {
+        return ORJSONResponse(content={
             "status": "ok",
             "options": options,
             "columns": df.columns.tolist(),
             "result": result
-        }
+        })
     # ------------------------------------------------------------------
     # Subformat 4: Stream–optimized OHLCV structure (NDJSON)
     # ------------------------------------------------------------------
     elif subformat == 4:
+        # This format has a human-readable time column
+        df = _add_human_readable_time_column(df)
+        # Return a streaming NDJSON response
         return _stream_json(df, options)
 
     # ------------------------------------------------------------------
@@ -492,8 +499,11 @@ def _stream_csv(df, options):
         StreamingResponse | None: A streaming CSV HTTP response if data
         is present; otherwise, None.
     """
+    # This format has a human-readable time column
+    df = _add_human_readable_time_column(df)
+
     # Remove the temporary columns
-    df.drop(columns=['indicators','sort_key','year'], inplace=True, errors='ignore')
+    df.drop(columns=['index','indicators','time_ms','year'], inplace=True, errors='ignore')
 
     # Apply MT4-specific column transformations if requested
     if options.get('mt4'):
@@ -501,7 +511,7 @@ def _stream_csv(df, options):
         temp_time = df['time'].astype(str).str.split(' ', expand=True)
 
         # Drop columns not required for MT4 output
-        cols_to_drop = ['symbol', 'timeframe', 'sort_key', 'time', 'year', 'indicators']
+        cols_to_drop = ['symbol', 'timeframe', 'time_ms', 'time', 'year', 'indicators']
         df.drop(columns=cols_to_drop, inplace=True, errors='ignore')
 
         # Insert formatted date (YYYY.MM.DD) and time (HH:MM:SS) columns
@@ -574,143 +584,6 @@ def _get_ms(val):
         .replace(tzinfo=timezone.utc)
         .timestamp() * 1000
     )
-
-def _get_warmup_rows(symbol: str, timeframe: str, after_str: str, indicators: List[str]) -> int:
-    """Determine the maximum warmup row count required by a set of indicators.
-
-    This function inspects each requested indicator plugin to determine how many
-    historical rows are required before the `after_str` timestamp in order to
-    correctly compute indicator values (e.g., rolling windows). The maximum
-    warmup requirement across all indicators is returned.
-
-    Args:
-        symbol (str): Trading symbol (e.g., "EURUSD"). Included for interface
-            consistency and future extensibility.
-        timeframe (str): Timeframe identifier (e.g., "5m", "1h"). Included for
-            interface consistency and future extensibility.
-        after_str (str): ISO-formatted timestamp string representing the starting
-            point of the query. Not modified by this function.
-        indicators (List[str]): List of indicator strings (e.g., ["sma_20", "bbands_20_2"]).
-
-    Returns:
-        int: The maximum number of warmup rows required across all indicators.
-    """
-    # Track the largest warmup requirement found
-    max_rows = 0
-
-    # Iterate through all requested indicators
-    for ind_str in indicators:
-        parts = ind_str.split('_')
-        name = parts[0]
-
-        # Skip indicators that are not registered
-        if name not in indicator_registry:
-            continue
-
-        plugin_func = indicator_registry[name].get('calculate')
-
-        # Initialize indicator options with raw positional parameters
-        ind_opts = {"params": parts[1:]}
-
-        # Map positional arguments if the plugin defines a mapper
-        if hasattr(plugin_func, "__globals__") and "position_args" in plugin_func.__globals__:
-            ind_opts.update(plugin_func.__globals__["position_args"](parts[1:]))
-
-        # Query the plugin for its warmup row requirement, if defined
-        if hasattr(plugin_func, "__globals__") and "warmup_count" in plugin_func.__globals__:
-            warmup_rows = plugin_func.__globals__["warmup_count"](ind_opts)
-            max_rows = max(max_rows, warmup_rows)
-
-    return max_rows
-
-def execute(options):
-    """Executes parameterized queries against cached market data and returns
-    a combined DataFrame.
-
-    For each requested (symbol, timeframe) pair, this function determines the
-    required indicator warmup window, converts time boundaries to epoch
-    milliseconds, computes record index ranges, retrieves the corresponding
-    data chunks from cache, and concatenates all results into a single
-    DataFrame.
-
-    Args:
-        options (dict): Query configuration dictionary with the following keys:
-            select_data (list): List of selections in the form
-                [symbol, timeframe, input_filepath, modifiers, indicators].
-            order (str, optional): Sort order, either 'asc' or 'desc'.
-                Defaults to 'asc'.
-            limit (int, optional): Maximum number of rows to return per
-                selection, excluding warmup rows. Defaults to 1440.
-            offset (int, optional): Row offset (currently unused).
-            after (str): ISO-format timestamp indicating the start time.
-            until (str): ISO-format timestamp indicating the end time.
-
-    Returns:
-        pd.DataFrame: Concatenated DataFrame containing all retrieved market
-        data, sorted by time.
-    """
-    # Containers for intermediate DataFrames
-    select_df = []
-
-    # Extract common query options with defaults
-    order = options.get('order', 'asc').lower()
-    limit = options.get('limit', 1440)
-    offset = options.get('offset', 0)
-    after_str = options.get('after')
-    until_str = options.get('until')
-
-    # Process each requested dataset
-    for item in options['select_data']:
-        symbol, timeframe, input_filepath, modifiers, indicators = item
-
-        # Determine how many warmup rows are needed for indicators
-        warmup_rows = _get_warmup_rows(symbol, timeframe, after_str, indicators)
-
-        # Convert ISO timestamps to epoch milliseconds (UTC), if applicable
-        after_ms = _get_ms(after_str)
-        until_ms = _get_ms(until_str)
-
-        # Total number of rows to retrieve, including warmup
-        total_limit = limit + warmup_rows
-
-        # Find index positions in cache for the requested time range
-        after_idx = cache.find_record(symbol, timeframe, after_ms, "left")
-        until_idx = cache.find_record(symbol, timeframe, until_ms, "right")
-
-        # Extend the start index backward to include warmup rows
-        after_idx = after_idx - warmup_rows
-
-        # Enforce the total row limit depending on sort order
-        if until_idx - after_idx > total_limit:
-            if order == "desc":
-                after_idx = until_idx - total_limit
-            if order == "asc":
-                until_idx = after_idx + total_limit
-
-        max_idx = cache.get_record_count(symbol, timeframe)
-
-        # Never slice beyond last row
-        if until_idx > max_idx:
-            until_idx = max_idx
-
-        # Clamp the start index to zero to avoid negative indexing
-        if after_idx < 0:
-            after_idx = 0
-
-        # Skiplast handling
-        if until_idx == max_idx and "skiplast" in modifiers:
-            until_idx -= 1
-
-        # Retrieve the data slice from cache
-        chunk_df = cache.get_chunk(symbol, timeframe, after_idx, until_idx)
-
-        # Accumulate results for later concatenation
-        select_df.append(chunk_df)
-
-    # Concatenate all retrieved chunks into a single DataFrame
-    df = pd.concat(select_df)
-    return df
-
 
 
 

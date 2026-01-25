@@ -1,10 +1,23 @@
 ## Short term todo list
 
+[x] Initial refactor/preparation stage:
+  - [x] Abstracting indicator registry
+  - [x] Implementation get_data method (internal API)
+  - [x] Minimalization of API 1.1 (no functionality strip)
+  - [x] Strip of API 1.0
+  - [x] Generic QA passes
+  - [x] Initial performance tests. Did we lose, yes/no? Answer: no.
+  - [x] Initial bug-checking (since a lot has moved)
+
+Note: we are setup now to integrate the extensions below (weekend work).
+
 DAG Execution:
-  - [ ] Directed Acyclic Graph for indicators
-  - [ ] Virtual indicators
-  - [ ] Dependency resolution
+  - [x] ~~Directed Acyclic Graph for indicators~~
+  - [x] ~~Virtual indicators~~
+  - [x] ~~Dependency resolution~~
   - [ ] Real parallel execution
+
+Note: strike-through of above is because get_data is powerful enough to handle dependencies
 
 ASX:
   - [ ] Custom timeshifting
@@ -16,13 +29,15 @@ Panama:
   - [ ] Panama prevents text-strip, invent solution for binary
 
 Drawing/Visualization:
-  - [ ] Split JS to libs (chart.js, drawing.js, ui.js)
+  - [x] Split JS to libs (chart.js, drawing.js, ui.js)
   - [ ] Drawing tools (lines, channels, fibs)
-  - [ ] Export to PNG/SVG?
+  - [x] ~~Export to PNG/SVG?~~
 
-API Layer:
-  - [ ] Cross-asset queries
-  - [ ] Cross-timeframe queries
+Note: strike-through=wont do
+
+[x] API Layer:
+  - [X] Cross-asset queries
+  - [X] Cross-timeframe queries
 
 Example Indicator:
   - [x] ML integration example
