@@ -1,6 +1,10 @@
     const MS_PER_DAY = 24 * 60 * 60 * 1000;
     
     window.__callbackList = (res) => {
+        if (res && res.status == "failure") {
+            alert("There was a failure, check your service console: "+res.exception)
+            return
+        }
         symbolData = res.result;
         const sel = document.getElementById('symbolSelect');
         sel.innerHTML = Object.keys(symbolData).sort().map(s => `<option value="${s}">${s}</option>`).join('');
@@ -9,6 +13,10 @@
     };
 
     window.__callbackIndicators = (res) => {
+        if (res && res.status == "failure") {
+            alert("There was a failure, check your service console: "+res.exception)
+            return
+        }
         indicatorMeta = res.result;
         document.getElementById('indicatorSelect').innerHTML = Object.keys(indicatorMeta).map(i => `<option value="${i}">${i.toUpperCase()}</option>`).join('');
         renderParams();
@@ -17,6 +25,11 @@
     window.__callbackData = function(response) {
         isFetching = false;
         document.getElementById('loader').style.display = 'none';
+
+        if (response && response.status == "failure") {
+            alert("There was a failure, check your service console: "+response.exception)
+            return
+        }
         
         if (response.result && response.result.time && response.result.time.length > 0) {
             gapRetryCount = 0;
@@ -97,4 +110,5 @@
             const nextTs = requestDirection === 'history' ? currentTs - MS_PER_DAY : currentTs + MS_PER_DAY;
             loadData(requestDirection, nextTs);
         }
+
     };

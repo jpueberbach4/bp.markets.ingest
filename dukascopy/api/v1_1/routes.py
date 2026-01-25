@@ -205,7 +205,7 @@ async def list_indicators(
         # Return JSONP error response if requested
         if options.get("output_type") == "JSONP":
             return PlainTextResponse(
-                content=f"{callback}({orjson.dumps(error_payload)});",
+                content=f"{callback}({orjson.dumps(error_payload).decode('utf-8')});",
                 media_type="text/javascript",
             )
 
@@ -311,7 +311,7 @@ async def get_ohlcv_list(
         error_payload = {"status": "failure", "exception": f"{e}","options": options}
         if options.get("output_type") == "JSONP":
             return PlainTextResponse(
-                content=f"{callback}({orjson.dumps(error_payload)});",
+                content=f"{callback}({orjson.dumps(error_payload).decode('utf-8')});",
                 media_type="text/javascript",
             )
 
@@ -469,7 +469,7 @@ async def get_ohlcv(
 
         if options.get("output_type") == "JSONP":
             return PlainTextResponse(
-                content=f"{callback}({orjson.dumps(error_payload)});",
+                content=f"{callback}({orjson.dumps(error_payload).decode('utf-8')});",
                 media_type="text/javascript",
             )
 
