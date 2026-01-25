@@ -5,18 +5,18 @@ from typing import Dict, Any, List
 _ENGINE_CACHE = {}
 
 def description() -> str:
-    return "ML Sniper: 12-Feature Regime Bottoms (Validated)"
+    return "ML Sniper: 2024-Tuned V-Bottom Detector"
 
 def meta() -> Dict:
-    return {"author": "Google Gemini", "version": 305.0, "verified": 1, "panel": 1}
+    return {"author": "Gemini", "version": 1.5, "verified": 1, "panel": 1}
 
 def warmup_count(options: Dict[str, Any]) -> int:
     return 50
 
 def position_args(args: List[str]) -> Dict[str, Any]:
     return {
-        "model_path": args[0] if len(args) > 0 else "{symbol}-{timeframe}-regime-engine.pkl",
-        "threshold": args[1] if len(args) > 1 else "0.59"
+        "model_path": args[0] if len(args) > 0 else "{symbol}-{timeframe}-engine.pkl",
+        "threshold": args[1] if len(args) > 1 else "0.70"
     }
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
@@ -24,73 +24,66 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     
     # 1. SETUP & FETCH
     row = df.iloc[0]
-
     symbol, timeframe = row.symbol, row.timeframe
     after_ms, until_ms = int(row.time_ms), int(df.iloc[-1].time_ms)
     
-    indicators = ['atr_14', 'sma_50', 'rsi_14', 'bbands_20_2', 'macd_12_26_9', 'cci_20', 'adx_14', 'stoch_14_3_3']
+    # CHANGED: Request RSI(7) to match the new 2024-Tuned Trainer
+    # Indicators: ATR(14), SMA(50), RSI(7)
+    indicators = ['atr_14', 'sma_50', 'rsi_7']
     df_ext = get_data(symbol, timeframe, after_ms, until_ms+1, len(df), "asc", indicators, {"disable_recursive_mapping": True})
 
+    # Default Return if no data
     if df_ext is None or df_ext.empty:
-        return pd.DataFrame({'confidence': 0, 'signal': 0}, index=df.index)
+        return pd.DataFrame({'confidence': 0, 'threshold': 0, 'signal': 0}, index=df.index)
 
     # 2. LOAD MODEL
-    model_name = options.get('model_path', f"{symbol}-{timeframe}-regime-engine.pkl")
-    threshold = float(options.get('threshold', '0.59'))
+    model_name = options.get('model_path', f"{symbol}-{timeframe}-engine.pkl").replace("{symbol}", symbol)
+    threshold = float(options.get('threshold', '0.70'))
+    
     path = os.path.join(Path(__file__).resolve().parent / "models", model_name)
     
     if path not in _ENGINE_CACHE:
         _ENGINE_CACHE[path] = joblib.load(path) if os.path.exists(path) else None
     
     model = _ENGINE_CACHE[path]
-    if not model: return pd.DataFrame({'confidence': 0, 'signal': 0}, index=df.index)
+    if not model: 
+        return pd.DataFrame({'confidence': 0, 'threshold': threshold, 'signal': 0}, index=df.index)
 
-    # 3. FEATURE ENGINEERING (Sync with bottoms.py)
-    rsi_norm = df_ext['rsi_14'] / 100.0
-    stoch_key = 'stoch_14_3_3__k' if 'stoch_14_3_3__k' in df_ext else 'rsi_14'
-    stoch_k = df_ext[stoch_key] / 100.0
+    # 3. FEATURE ENGINEERING (Strict 1:1 Match with the new Trainer)
+    # Feature 1: Trend Deviation (Close vs SMA50)
+    trend_dev = (df_ext['close'] - df_ext['sma_50']) / df_ext['close']
     
-    hist = df_ext['macd_12_26_9__hist']
-    macd_hist_z = (hist - hist.rolling(50).mean()) / hist.rolling(50).std()
+    # Feature 2: Normalized RSI (NOW USING RSI 7)
+    rsi_norm = df_ext['rsi_7'] / 100.0
     
+    # Feature 3: Volatility Ratio (ATR vs Close)
     vol_ratio = df_ext['atr_14'] / df_ext['close']
-    bb_width = (df_ext['bbands_20_2__upper'] - df_ext['bbands_20_2__lower']) / df_ext['bbands_20_2__mid']
-
-    dist_sma50 = (df_ext['close'] - df_ext['sma_50']) / df_ext['close']
-    body_strength = (df_ext['close'] - df_ext['open']) / df_ext['atr_14'].replace(0, 0.001)
     
-    total_range = (df_ext['high'] - df_ext['low']).replace(0, 0.001)
-    body_mid = (df_ext['open'] + df_ext['close']) / 2
-    rel_height = (body_mid - df_ext['low']) / total_range
-
-    adx_norm = df_ext['adx_14__adx'] / 100.0
-    cci_norm = df_ext['cci_20__cci'] / 200.0
-
-    time_dt = pd.to_datetime(df_ext['time_ms'], unit='ms')
-    day_sin, day_cos = np.sin(2*np.pi*time_dt.dt.dayofweek/7), np.cos(2*np.pi*time_dt.dt.dayofweek/7)
+    # Feature 4: Body Strength (Candle Body vs ATR)
+    body_strength = (df_ext['close'] - df_ext['open']) / df_ext['atr_14'].replace(0, 0.001)
 
     # 4. PREDICT
+    # X Vector Order: [trend_dev, rsi_norm, vol_ratio, body_strength]
     X = np.column_stack([
-        rsi_norm.fillna(0.5), stoch_k.fillna(0.5), macd_hist_z.fillna(0),
-        vol_ratio.fillna(0), bb_width.fillna(0), dist_sma50.fillna(0),
-        body_strength.fillna(0), rel_height.fillna(0), # SYNCED
-        adx_norm.fillna(0.2), cci_norm.fillna(0), day_sin, day_cos
+        trend_dev.fillna(0),
+        rsi_norm.fillna(0.5),
+        vol_ratio.fillna(0),
+        body_strength.fillna(0)
     ])
     
+    # Get Consensus Confidence
     probs = model.predict_proba(X)
     idx_bottom = {c: i for i, c in enumerate(model.classes_)}.get(1)
     confidence = probs[:, idx_bottom] if idx_bottom is not None else np.zeros(len(df_ext))
 
-    # 1. Create a results dataframe from the external data
+    # 5. MAPPING RESULTS
     raw_results = pd.DataFrame({
         'time_ms': df_ext['time_ms'],
         'confidence': confidence,
+        'threshold': threshold,
         'signal': np.where(confidence >= threshold, 1, 0)
     })
 
-    # 2. Map these results back to the original 'df' using time_ms
-    # This ensures every confidence value matches the correct timestamp
+    # Merge back to ensure index alignment
     final_df = df[['time_ms']].merge(raw_results, on='time_ms', how='left')
-
-    # 3. Return with the original index preserved
-    return final_df[['confidence', 'signal']].set_index(df.index).fillna(0)
+    return final_df[['confidence', 'threshold', 'signal']].set_index(df.index).fillna(0)
