@@ -22,5 +22,6 @@ Also, it has now become critical to start handling these rollover gaps in the bi
 
 Rollover gaps are absolutely wrecking my indicators and ML models right now. They poison the data, distort the signals, and generally make everything unreliable—so fixing this mess has shot straight into my top-three priorities. I will take on the stocksplits as well. Its more or less the same logic.
 
-I have done an initial exploratory round. The backadjustment/stocksplit fixes will touch the ETL part of this engine. DuckDB will be thrown out of the window. 
+I’ve completed an initial exploratory pass. The back-adjustment and stock-split fixes will impact the ETL layer of this engine. DuckDB is being removed. It served us well until it couldn’t efficiently fetch the first 100 records before a given date without a full table scan.
 
+There’s only a small piece left where DuckDB is still in use—the Panama back-adjusted export in the builder component. It’s time to quack it out of existence in this repository.
