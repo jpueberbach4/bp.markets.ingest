@@ -152,7 +152,7 @@ crontab -e
 Add the following line, adjust path accordingly-run once every 15m:
 
 ```sh
-*/15 * * * * sleep 5 && cd /home/repos/bp.markets.ingest/dukascopy && ./run.sh
+*/15 * * * * sleep $(( (RANDOM \% 27) + 5 )) && cd /home/jpueberb/repos2/bp.markets.ingest/dukascopy && ./run.sh
 ```
 
 In order to get the highest possible performance, I recommend to toggle ALL the `fmode` fields in `config.user.yaml` to `binary`. This is considered as "a custom change". When you make custom changes, you cannot use `./setup-dukascopy.sh` anymore since this script will restore the settings back to "text"-this will change in the future now CSV mode is deprecated.
