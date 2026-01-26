@@ -3,24 +3,7 @@
 
 **Notice:** datafeeds are not updated at provider. They have stopped working since `2026-01-26 18:59:00  1.18839  1.18860  1.18838  1.18859  154.20`. I am monitoring the situation. Readded dump.py script. I will think of creating a warning system to report these `outages`. 
 
-![issue](../images/issue.png)
-
-This datasource does not have an SLA. Perhaps its time to start reaching out in order to see if we can get paid access to these feeds, covered by an SLA. Likely a weekly-rebuild.sh will be needed when the source comes back. As a safety precaution. Will let you know.
-
-It's the same error as before: "x-cache: Error from cloudfront". However, there is a difference this time. Data is actually downloadable by our engine. Like it's whitelisted or something, just not updated. Direct browser queries: fail. Private mode: fails. Curl without headers: fails. I am not going to look into further detail atm. I expect the datasource to come back online automatically. 
-
-I am still in a development stage atm and my trading system is NOT YET required to have reliable feeds. When that turning point happens, i am going to pay for the feed in order to get stability. I will certainly reach out at that moment.
-
-When are you ready? In about 2-3 months.
-
-PS: tip. you can check here: https://www.dukascopy.com/swiss/english/marketwatch/charts/. when these update again, our engine will update as well.
-
->May the CloudFront caches clear, the origin servers wake up refreshed, and the minutes start flowing again like it's 2025 all over.
-whispers to the ether; Blessed be the feed, may it resurrect swiftly and without drama. No more frozen candles at 18:59:00. Let the 1.18859 close become ancient history by morning. Quack quack, amen. 🦆🙏
-
-I just hope the outages are not caused by this tool........ given the >11000 clones in 46 days........ if half of these are installations with each 40 symbols configured and 1 minute cronjobs....... then..... 220k requests every minute. Thats DDOS territory. So, please... if you dont need minute level updates... etc. Help to not create a thundering herd. At least randomize your sleep interval if you really need minute level updates.
-
-`* * * * * sleep $(( (RANDOM \% 27) + 5 )) && cd /path/bp.markets.ingest/dukascopy && ./run.sh`
+I have added a randomized wait on run.sh. Please update.
 
 ---
 
