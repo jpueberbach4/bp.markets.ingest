@@ -5,6 +5,16 @@
 
 I have added a randomized wait on run.sh. Please update.
 
+**A note on feed stability and longer-term direction.**
+
+At the moment, the project is still in an active development phase. During this stage, occasional upstream feed interruptions are something I expect and actively monitor.
+
+A long-term solution for this is the use of SLA-backed, perhaps enterprise-grade, data feeds. Right now, the system does not require that level of guaranteed uptime yet, but that moment will come as the project matures.
+
+My current expectation is that within the next ~3 months, moving toward more stable, SLA-covered feeds will make sense. Until then, the focus remains on development, correctness, and stability of the software.
+
+I’ll continue to be transparent when outages occur and when changes are made.
+
 ---
 
 What's next?
