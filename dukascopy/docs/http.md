@@ -135,36 +135,7 @@ after/1767992340000/output/JSON?subformat=3&executionmode=serial
 
 **Serial execution mode:**
 
-Serial execution mode passes the output of the first indicator into the second, the outputs of the first and second into the third, and so on. While not yet supported, this feature is coming soon. \
-\
-The goal is to enable ordered chaining of system indicators, where all preceding indicator outputs are fed into a custom indicator. This allows the custom indicator to operate on all generated columns efficiently and in a fully vectorized way, without leaving main memory or triggering recomputation. \
-\
-In effect, this provides pipelining within a single HTTP API request, with minimal additional effort. Virtual indicators will also be supported, allowing you to configure an indicator chain and assign it a virtual ID. That virtual ID is expanded and resolved at request time. \
-\
-Also, this prevents huge monolitic indicators. Something i am already battling with. Another added benefit is that you can better debug the individual components that provide the input for your very powerful custom indicator. Since the current "parallel" mode is just timesharing on the same CPU, there will be no expected performance degradation on using this mode. In fact, it may even be faster because of no more context switching, improving CPU cache utilization. \
-\
-The last indicator in the chain will be able to specify the final output columns. Aka it can drop intermediate columns not needed in the output.
-
-Braindump-example virtual indicator config file:
-
-```yaml
-risk_on:
-  indicators:
-  - parallel: [ema(21), ema(55)]          # expliciet parallel groep
-  - parallel: [rsi(14), stoch(14,3,3)]
-  - supertrend(10,3)
-  - my_risk_on_entry
-  prune:
-  - sma_21
-  - sma_55
-  - supertrend_10_3
-```
-
-Example call:
-
-```sh
-GET http://localhost:8000/ohlcv/1.1/select/AAPL.US-USD,1h[risk_on]/....
-``` 
+This is not needed anymore. One can call indicators in parallel using get_data or get_data_auto API calls. There are other, more important features, that need to get build. Perhaps in the future this will be build. Has moved to longer term feature-list.
 
 
 **Note:** Modifier `panama` is unsupported via the API.
