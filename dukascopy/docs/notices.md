@@ -14,4 +14,6 @@ I’m relatively new to this area myself, but I’m getting up to speed quickly.
 
 All of this can be implemented in a lightning-fast indicator on this platform. See the examples directory for introductory ML code.
 
+Initially, I experimented with ML and concluded that it wasn’t particularly helpful on the D1 chart. That view changed once I moved to a lower timeframe.
+
 
