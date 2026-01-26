@@ -18,7 +18,7 @@ PS: tip. you can check here: https://www.dukascopy.com/swiss/english/marketwatch
 >May the CloudFront caches clear, the origin servers wake up refreshed, and the minutes start flowing again like it's 2025 all over.
 whispers to the ether; Blessed be the feed, may it resurrect swiftly and without drama. No more frozen candles at 18:59:00. Let the 1.18859 close become ancient history by morning. Quack quack, amen. 🦆🙏
 
-I just hope the outages are not caused by this tool........ given the >11000 clones in 46 days........ if half of these are installations with each 40 symbols configured and 1 minute cronjobs....... then..... 220k requests every minute. Thats DDOS territory. So, please... if you dont need minute level updates... etc.
+I just hope the outages are not caused by this tool........ given the >11000 clones in 46 days........ if half of these are installations with each 40 symbols configured and 1 minute cronjobs....... then..... 220k requests every minute. Thats DDOS territory. So, please... if you dont need minute level updates... etc. Help to not create a thundering herd.
 
 ---
 
