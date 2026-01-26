@@ -1,7 +1,7 @@
 <u>MT4 is decoded.</u>
 
 
-**Notice:** datafeeds are not updated at provider. They have stopped working since `2026-01-26 18:59:00  1.18839  1.18860  1.18838  1.18859  154.20`. I am monitoring the situation. Readded dump.py script. I will think of creating a warning system to report these `outages`. If happens too often i will start abstracting the download layer.
+**Notice:** datafeeds are not updated at provider. They have stopped working since `2026-01-26 18:59:00  1.18839  1.18860  1.18838  1.18859  154.20`. I am monitoring the situation. Readded dump.py script. I will think of creating a warning system to report these `outages`. 
 
 ![issue](../images/issue.png)
 
