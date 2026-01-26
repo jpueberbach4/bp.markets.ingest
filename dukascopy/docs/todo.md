@@ -11,6 +11,9 @@
 
 Note: we are setup now to integrate the extensions below (weekend work).
 
+Early warning:
+  - [ ] Warning/Reporting system for datasource outages
+
 DAG Execution:
   - [x] ~~Directed Acyclic Graph for indicators~~
   - [x] ~~Virtual indicators~~
