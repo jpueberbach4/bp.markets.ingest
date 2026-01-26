@@ -5,8 +5,13 @@
 
 ![issue](../images/issue.png)
 
-This datasource does not have an SLA. Perhaps its time to start reaching out in order to see if we can get paid access to these feeds, covered by an SLA. Will think about it. Likely a weekly-rebuild.sh will be needed when the source comes back. As a safety precaution. Will let you know.
+This datasource does not have an SLA. Perhaps its time to start reaching out in order to see if we can get paid access to these feeds, covered by an SLA. Likely a weekly-rebuild.sh will be needed when the source comes back. As a safety precaution. Will let you know.
 
+It's the same error as before: "x-cache: Error from cloudfront". However, there is a difference this time. Data is actually downloadable by our engine. Like it's whitelisted or something, just not updated. Direct browser queries: fail. Private mode: fails. Curl without headers: fails. I am not going to look into further detail atm. I expect the datasource to come back online automatically. 
+
+I am still in a development stage atm and my trading system is NOT YET required to have reliable feeds. When that turning point happens, i am going to pay for the feed in order to get stability. I will certainly reach out at that moment.
+
+---
 
 What's next?
 
