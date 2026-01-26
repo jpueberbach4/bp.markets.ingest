@@ -16,4 +16,6 @@ All of this can be implemented in a lightning-fast indicator on this platform. S
 
 Initially, I experimented with ML and concluded that it wasn’t particularly helpful on the D1 chart. That view changed once I moved to a lower timeframe.
 
+Also, it has now become critical to start handling these rollover gaps in the binary format. This will become one of my primary development area's the upcoming days. Likely a data "side-track" approach will be chosen that automatically corrects on rollovers. The side-track approach basically tracks two seperate data-streams (yes, for rollover assets this will require twice as much storage but you will have access to both the corrected version as well as the "broker-live" version (a corrected set is just another dataset within the system)).
+
 
