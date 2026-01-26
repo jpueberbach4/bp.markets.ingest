@@ -11,6 +11,8 @@ It's the same error as before: "x-cache: Error from cloudfront". However, there 
 
 I am still in a development stage atm and my trading system is NOT YET required to have reliable feeds. When that turning point happens, i am going to pay for the feed in order to get stability. I will certainly reach out at that moment.
 
+When are you ready? In about 2-3 months i am expected to have an automated private cash-ATM. I hope ;)
+
 PS: tip. you can check here: https://www.dukascopy.com/swiss/english/marketwatch/charts/. when these update again, our engine will update as well.
 
 ---
