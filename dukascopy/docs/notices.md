@@ -3,6 +3,11 @@
 
 **Notice:** datafeeds are not updated at provider. They have stopped working since `2026-01-26 18:59:00  1.18839  1.18860  1.18838  1.18859  154.20`. I am monitoring the situation. Readded dump.py script. I will think of creating a warning system to report these `outages`. If happens too often i will start abstracting the download layer.
 
+![issue](../images/issue.png)
+
+This datasource does not have an SLA. Perhaps its time to start reaching out in order to see if we can get paid access to these feeds, covered by an SLA. Will think about it.
+
+
 What's next?
 
 This moves to seperate (clean) repository by 31st of January.
