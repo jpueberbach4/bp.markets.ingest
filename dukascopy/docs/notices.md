@@ -20,5 +20,5 @@ Also, it has now become critical to start handling these rollover gaps in the bi
 
 Rollover gaps are absolutely wrecking my indicators and ML models right now. They poison the data, distort the signals, and generally make everything unreliable—so fixing this mess has shot straight into my top-three priorities. I will take on the stocksplits as well. Its more or less the same logic.
 
-I have done an initial exploratory round. The backadjustment/stocksplit fixes will touch the ETL part of this engine. 
+I have done an initial exploratory round. The backadjustment/stocksplit fixes will touch the ETL part of this engine. DuckDB will be thrown out of the window. 
 
