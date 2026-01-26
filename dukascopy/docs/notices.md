@@ -12,6 +12,8 @@ Until I’ve made a final decision, there’s an example included that demonstra
 
 I’m relatively new to this area myself, but I’m getting up to speed quickly. When working with ML, make sure to implement proper safety gates. As confidence levels increase, additional validation logic should kick in—for example, confirmation using other assets or well-known candle patterns such as gravestones, shooting stars, long-legged dojis, iSHS, SHS, engulfings, and similar formations.
 
+New tip: provide the formations as features to your ML models.
+
 All of this can be implemented in a lightning-fast indicator on this platform. See the examples directory for introductory ML code.
 
 Initially, I experimented with ML and concluded that it wasn’t particularly helpful on the D1 chart. That view changed once I moved to a lower timeframe.
