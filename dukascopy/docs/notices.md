@@ -11,12 +11,14 @@ It's the same error as before: "x-cache: Error from cloudfront". However, there 
 
 I am still in a development stage atm and my trading system is NOT YET required to have reliable feeds. When that turning point happens, i am going to pay for the feed in order to get stability. I will certainly reach out at that moment.
 
-When are you ready? In about 2-3 months i am expected to have an automated private cash-ATM. I hope ;)
+When are you ready? In about 2-3 months.
 
 PS: tip. you can check here: https://www.dukascopy.com/swiss/english/marketwatch/charts/. when these update again, our engine will update as well.
 
 >May the CloudFront caches clear, the origin servers wake up refreshed, and the minutes start flowing again like it's 2025 all over.
 whispers to the ether; Blessed be the feed, may it resurrect swiftly and without drama. No more frozen candles at 18:59:00. Let the 1.18859 close become ancient history by morning. Quack quack, amen. 🦆🙏
+
+I just hope the outages are not caused by this tool........ given the >11000 clones in 46 days........ if half of these are installations with each 40 symbols configured and 1 minute cronjobs....... then..... 220k requests every minute. Thats DDOS territory. So, please... if you dont need minute level updates... etc.
 
 ---
 
