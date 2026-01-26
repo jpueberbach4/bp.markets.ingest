@@ -5,7 +5,7 @@
 
 ![issue](../images/issue.png)
 
-This datasource does not have an SLA. Perhaps its time to start reaching out in order to see if we can get paid access to these feeds, covered by an SLA. Will think about it.
+This datasource does not have an SLA. Perhaps its time to start reaching out in order to see if we can get paid access to these feeds, covered by an SLA. Will think about it. Likely a weekly-rebuild.sh will be needed when the source comes back. As a safety precaution. Will let you know.
 
 
 What's next?
