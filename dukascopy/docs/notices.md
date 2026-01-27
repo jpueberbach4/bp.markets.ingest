@@ -6,7 +6,7 @@ Feeds are back online. No further actions required.
 
 **Status: bottom sniper**
 
-I am currently developing an H4 bottom-sniper model using a 7–10 feature machine-learning setup.
+I am currently developing an H4 bottom-sniper model using a 10-20 feature machine-learning setup.
 
 The feature set includes, but is not limited to:
 
@@ -25,3 +25,6 @@ The main challenges at the moment are technical, as most of the work involves tr
 Ofcourse there is the problem of overfitting. But... Let's see how far we get.
 
 The system will get heavily tested as a feature engineering factory. Lets see how it holds up. 
+
+It is possible or even likely that the above will spawn another round of updates. Efficiency updates etc. Will try to limit it to feature branches.
+
