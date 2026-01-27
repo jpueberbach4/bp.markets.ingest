@@ -1,7 +1,7 @@
 
 
 
-**Notice: Upstream datafeeds are currently not updating.**
+**Status: Upstream datafeeds are currently not updating.**
 
 I am monitoring the situation. The dump.py script has been re-added, and a randomized startup delay was introduced in run.sh to reduce synchronized load. Please update.
 
