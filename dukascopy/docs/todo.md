@@ -59,4 +59,4 @@ Cleanup:
   - [ ] Final bug fix sweep
 
 Rest
-  - [ ] Take a day off
+  - [x] Take a day off (today)
