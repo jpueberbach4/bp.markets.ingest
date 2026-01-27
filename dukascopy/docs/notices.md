@@ -21,4 +21,7 @@ The feature set includes, but is not limited to:
 
 The main challenges at the moment are technical, as most of the work involves translating discretionary chart “reading” into precise mathematical representations. What is visually intuitive for a human trader is significantly harder to encode in pure math.
 
+
 Ofcourse there is the problem of overfitting. But... Let's see how far we get.
+
+The system will get heavily tested as a feature engineering factory. Lets see how it holds up. 
