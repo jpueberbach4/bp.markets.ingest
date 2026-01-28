@@ -72,11 +72,18 @@ timestamp_str = "2025-11-17+19:00:00"
 dt = datetime.strptime(timestamp_str, "%Y-%m-%d+%H:%M:%S")
 after_ms = int(dt.replace(tzinfo=timezone.utc).timestamp() * 1000)
 
-df = get_data(symbol="EUR-USD", timeframe="1m", indicators=indicators, after_ms=after_ms, limit=10000, order="asc" )
+start = time.perf_counter()
+df = get_data(symbol="EUR-USD", timeframe="1m", indicators=indicators, after_ms=after_ms, limit=100, order="asc" )
+print(f"100 records, time-passed: {(time.perf_counter()-start)*1000} (this is with one-time plugin load)  + 5 indicators\n\n")
+
+start = time.perf_counter()
+df = get_data(symbol="EUR-USD", timeframe="1m", indicators=indicators, after_ms=after_ms, limit=1000, order="asc" )
+print(f"1.000 records, time-passed: {(time.perf_counter()-start)*1000} + 5 indicators\n\n")
+
 
 start = time.perf_counter()
 df = get_data(symbol="EUR-USD", timeframe="1m", indicators=indicators, after_ms=after_ms, limit=10000, order="asc" )
+print(f"10.0000 records, time-passed: {(time.perf_counter()-start)*1000} + 5 indicators\n\n")
 
 
 print(df.tail())
-print(f"time-passed: {(time.perf_counter()-start)*1000}\n\n")
