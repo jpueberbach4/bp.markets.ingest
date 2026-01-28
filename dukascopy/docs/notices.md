@@ -4,6 +4,10 @@
 
 Feeds are back online. No further actions required.
 
+**Less codechanges**
+
+I am currently a bit low profile because of back-issues. 
+
 **Status: slower endpoint**
 
 The endpoint appears to be rate-limited, which is likely a consequence of the recent outages on the Jetta endpoint. As a result, a full sync from scratch may require some patience.
