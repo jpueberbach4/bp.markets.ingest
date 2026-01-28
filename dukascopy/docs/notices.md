@@ -4,6 +4,14 @@
 
 Feeds are back online. No further actions required.
 
+**Status: slower endpoint**
+
+The endpoint appears to be rate-limited, which is likely a consequence of the recent outages on the Jetta endpoint. As a result, a full sync from scratch may require some patience.
+
+If you are already in sync, you’re in luck. If not, be prepared for a slower process—sometimes you may need to restart ./rebuild-full.sh a few times before it completes successfully.
+
+This software is still in active development, and at this stage high-speed data feeds are not a requirement (at least for my use case). Once the system is stable, I’ll reach out to Dukascopy to explore options for paid or higher-throughput feeds.
+
 **Status: bottom sniper**
 
 I am currently developing an H4 bottom-sniper model using a 10-20 feature machine-learning setup.
