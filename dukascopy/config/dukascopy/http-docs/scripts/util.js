@@ -169,21 +169,31 @@ function syncBufferLimit() {
     }
 }
 
-function runExport() {
+function runExportGetUrl() {
     const sym = document.getElementById('symbolSelect').value;
     let tf = document.getElementById('tfSelect').value;
     
     if (document.getElementById('export-skiplast').checked) tf += ':skiplast';
     const output = document.getElementById('export-mt4').checked ? 'CSV/MT4' : 'CSV';
     
-    const after = encodeURIComponent(document.getElementById('export-after').value);
+    const after = document.getElementById('export-after').value.replace(/ /g, "+");
     const limit = document.getElementById('export-limit').value;
     const order = document.getElementById('export-order').value;
-    
     const chainStr = chain.length ? `[${chain.map(i => `${i.name}(${i.params.join(',')})`).join(':')}]` : "";
     
-    const exportUrl = `/ohlcv/1.1/select/${sym},${tf}${chainStr}/after/${after}/output/${output}?limit=${limit}&order=${order}`;
+    const exportUrl = `${location.protocol}//${location.host}/ohlcv/1.1/select/${sym},${tf}${chainStr}/after/${after}/output/${output}?limit=${limit}&order=${order}`;
+    return exportUrl;
+}
 
+
+function runExportUrl(){
+    exportUrl = runExportGetUrl();
+    copyToClipboard(exportUrl);
+}
+
+
+function runExport() {
+    exportUrl = runExportGetUrl();
     window.location.href = exportUrl;
 }
 
