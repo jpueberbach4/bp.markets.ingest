@@ -174,6 +174,11 @@ div[id^="tv-attr-logo"],
     background: var(--accent-blue); color: white; border: none; padding: 10px; 
     border-radius: 4px; font-weight: 600; cursor: pointer; width: 48%; 
 }
+.copy-btn { 
+    background: #e0e3eb; color: #131722; border: none; padding: 10px; 
+    border-radius: 4px; font-weight: 600; cursor: pointer; width: 48%; 
+}
+
 
 @keyframes spin {
     0% { transform: rotate(0deg); }

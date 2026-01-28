@@ -137,3 +137,8 @@ body.dark-theme #export-modal .cancel-btn {
     background-color: #363c4e !important;
     color: #d1d4dc !important;
 }
+
+body.dark-theme #export-modal .copy-btn {
+    background-color: #363c4e !important;
+    color: #d1d4dc !important;
+}
