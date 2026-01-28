@@ -38,7 +38,7 @@ function getDataUri(direction, referenceTs, limit = 1000, type = "JSONP"){
     if(!sym || !tf) return;
     
     const chainStr = chain.length ? `[${chain.map(i => `${i.name}(${i.params.join(',')})`).join(':')}]` : "";
-    let url = `${location.protocol}//${location.hostname}:${location.port}/ohlcv/1.1/select/${sym},${tf}${chainStr}`;
+    let url = `${location.protocol}//${location.host}/ohlcv/1.1/select/${sym},${tf}${chainStr}`;
     
     const fetchLimit = Math.min(limit, 5000);
 
