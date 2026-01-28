@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Get exclusive lock
+mkdir -p `pwd`/data/locks
 exec 200>`pwd`/data/locks/run.lock
 flock -x 200  
 echo Deleting data/*...
