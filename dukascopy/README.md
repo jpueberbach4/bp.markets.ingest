@@ -48,7 +48,7 @@ Any modern laptop having NVMe will do. Storage requirements are about 1 GB per c
 \
 The code-base is small and heavily documented. This is a high-performance system. \
 \
-Note: This is not a click-and-go or “magical” project. It’s intended for data preparation to support downstream analysis, such as machine learning. You can use it to test and design indicators or to extract inter-asset features for ML workflows—that’s how I use it. While indicator-integrated data can be extracted, that is not the primary purpose of this project.
+Note: This is not a click-and-go or “magical” project. It’s intended for data preparation to support downstream analysis, such as machine learning. You can use it to test and design indicators or to extract inter-asset features for ML workflows—that’s how I use it. While indicator-integrated data can be extracted, that is not the primary purpose of this project. You will need to know Python if you want to use this project efficiently.
 
 Example 20 year chart of EUR-USD:
 
