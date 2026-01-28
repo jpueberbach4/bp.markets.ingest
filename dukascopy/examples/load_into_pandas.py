@@ -20,9 +20,9 @@ import time
 # First example, loading from HTTP API. Using CSV mode
 # ---------------------------------------------------------------------------------------------------------
 
-url = ("http://localhost:8000/ohlcv/1.1/select/EUR-USD,1h["
+url = ("http://localhost:8000/ohlcv/1.1/select/EUR-USD,1m["
       "adx(14):atr(14):ema(20):bbands(20,2.0):macd(12,26,9)"
-      "]/after/2025-11-17+19:00:00/output/CSV?limit=1000&order=asc")
+      "]/after/2025-11-17+19:00:00/output/CSV?limit=10000&order=asc")
 
 start = time.perf_counter()
 df = pd.read_csv(url)
@@ -35,9 +35,9 @@ print(f"time-passed: {(time.perf_counter()-start)*1000}\n\n")
 
 import requests
 
-url = ("http://localhost:8000/ohlcv/1.1/select/EUR-USD,1h["
+url = ("http://localhost:8000/ohlcv/1.1/select/EUR-USD,1m["
       "adx(14):atr(14):ema(20):bbands(20,2.0):macd(12,26,9)"
-      "]/after/2025-11-17+19:00:00/output/JSON?limit=1000&order=asc&subformat=3")
+      "]/after/2025-11-17+19:00:00/output/JSON?limit=10000&order=asc&subformat=3")
 
 # Execute the Request
 start = time.perf_counter()
@@ -72,7 +72,7 @@ timestamp_str = "2025-11-17+19:00:00"
 dt = datetime.strptime(timestamp_str, "%Y-%m-%d+%H:%M:%S")
 after_ms = int(dt.replace(tzinfo=timezone.utc).timestamp() * 1000)
 
-df = get_data(symbol="EUR-USD", timeframe="1h", indicators=indicators, after_ms=after_ms, limit=1000, order="asc" )
+df = get_data(symbol="EUR-USD", timeframe="1m", indicators=indicators, after_ms=after_ms, limit=10000, order="asc" )
 
 print(df.tail())
 print(f"time-passed: {(time.perf_counter()-start)*1000}\n\n")
