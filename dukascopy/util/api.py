@@ -99,8 +99,8 @@ def get_data_auto(
 def get_data(
     symbol: str,
     timeframe: str,
-    after_ms: int,
-    until_ms: int,
+    after_ms: int=0,
+    until_ms: int=32503680000000,
     limit: int = 1000,
     order: str = "asc",
     indicators: List[str] = [],
