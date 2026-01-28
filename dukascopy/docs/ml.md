@@ -2,6 +2,8 @@
 
 The ML Sniper system is a quantitative infrastructure that uses **Random Forest Classification** to identify high-probability reversal points (bottoms) in financial markets. It is designed to be conservative, prioritizing **precision (accuracy)** over **recall (frequency)**.
 
+This is a heavily overfitted example. Use it as an example.
+
 ## 🏗️ 1. System Architecture
 
 The project is divided into three distinct phases: **Training**, **Evaluation/Optimization**, and **Inference**.
