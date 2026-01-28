@@ -6,7 +6,20 @@ Feeds are back online. No further actions required.
 
 **Less codechanges**
 
-I am currently a bit low profile because of back-issues. 
+~~I am currently a bit low profile because of back-issues.~~ improving
+
+Performance example, EUR-USD 1m data, random 2025 data, 5 indicators.
+
+```sh
+100 records, time-passed: 30.578309088014066 ms (this is with one-time plugin load)  + 5 indicators
+1.000 records, time-passed: 28.57433701865375 ms + 5 indicators
+10.000 records, time-passed: 37.17033995781094 ms + 5 indicators
+100.000 records, time-passed: 129.57307707984 ms + 5 indicators
+```
+
+Sub-lineair scaling. To compare: For 100,000 rows, TimescaleDB will take 500ms to 2 seconds to return the data and calculate indicators. This does it in 0.12 seconds.
+
+I will put the last critical fix in tomorrow-make the internal API usable from external code.
 
 **Status: slower endpoint**
 

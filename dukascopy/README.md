@@ -50,18 +50,6 @@ The code-base is small and heavily documented. This is a high-performance system
 \
 Note: This is not a click-and-go or “magical” project. It’s intended for data preparation to support downstream analysis, such as machine learning. You can use it to test and design indicators or to extract inter-asset features for ML workflows—that’s how I use it. While indicator-integrated data can be extracted, that is not the primary purpose of this project. You will need to know Python if you want to use this project efficiently.
 
-Performance example, EUR-USD 1m data, random 2025 data, 5 indicators.
-I still need to fix inclusion of the internal API from external code, tomorrow.
-
-```sh
-100 records, time-passed: 30.578309088014066 ms (this is with one-time plugin load)  + 5 indicators
-1.000 records, time-passed: 28.57433701865375 ms + 5 indicators
-10.000 records, time-passed: 37.17033995781094 ms + 5 indicators
-100.000 records, time-passed: 129.57307707984 ms + 5 indicators
-```
-
-Sub-lineair scaling. To compare: For 100,000 rows, TimescaleDB will take 500ms to 2 seconds to return the data and calculate indicators. This does it in 0.12 seconds.
-
 Example 20 year chart of EUR-USD:
 
 ![Example GBPUSD](images/examplevieweurusd.png)
