@@ -74,5 +74,9 @@ after_ms = int(dt.replace(tzinfo=timezone.utc).timestamp() * 1000)
 
 df = get_data(symbol="EUR-USD", timeframe="1m", indicators=indicators, after_ms=after_ms, limit=10000, order="asc" )
 
+start = time.perf_counter()
+df = get_data(symbol="EUR-USD", timeframe="1m", indicators=indicators, after_ms=after_ms, limit=10000, order="asc" )
+
+
 print(df.tail())
 print(f"time-passed: {(time.perf_counter()-start)*1000}\n\n")
