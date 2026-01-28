@@ -60,7 +60,7 @@ I still need to fix inclusion of the internal API from external code, tomorrow.
 100.000 records, time-passed: 129.57307707984 ms + 5 indicators
 ```
 
-Sub-lineair scaling.
+Sub-lineair scaling. To compare: For 100,000 rows, TimescaleDB will take 500ms to 2 seconds to return the data and calculate indicators. This does it in 0.12 seconds.
 
 Example 20 year chart of EUR-USD:
 
