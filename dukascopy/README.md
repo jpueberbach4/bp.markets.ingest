@@ -57,6 +57,7 @@ I still need to fix inclusion of the internal API from external code, tomorrow.
 100 records, time-passed: 30.578309088014066 ms (this is with one-time plugin load)  + 5 indicators
 1.000 records, time-passed: 28.57433701865375 ms + 5 indicators
 10.0000 records, time-passed: 37.17033995781094 ms + 5 indicators
+100.000 records, time-passed: 129.57307707984 ms + 5 indicators
 ```
 
 Sub-lineair scaling.

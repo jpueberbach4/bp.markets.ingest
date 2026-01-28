@@ -83,7 +83,7 @@ print(f"1.000 records, time-passed: {(time.perf_counter()-start)*1000} + 5 indic
 
 start = time.perf_counter()
 df = get_data(symbol="EUR-USD", timeframe="1m", indicators=indicators, after_ms=after_ms, limit=10000, order="asc" )
-print(f"10.0000 records, time-passed: {(time.perf_counter()-start)*1000} + 5 indicators\n\n")
+print(f"10.000 records, time-passed: {(time.perf_counter()-start)*1000} + 5 indicators\n\n")
 
 
 print(df.tail())
