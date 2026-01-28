@@ -46,7 +46,9 @@ The tool features a customizable, advanced indicator engine and uses an internal
 \
 Any modern laptop having NVMe will do. Storage requirements are about 1 GB per configured symbol. \
 \
-The code-base is small and heavily documented. This is a high-performance system.
+The code-base is small and heavily documented. This is a high-performance system. \
+\
+Note: This is not a click-and-go or “magical” project. It’s intended for data preparation to support downstream analysis, such as machine learning. You can use it to test and design indicators or to extract inter-asset features for ML workflows—that’s how I use it.
 
 Example 20 year chart of EUR-USD:
 
