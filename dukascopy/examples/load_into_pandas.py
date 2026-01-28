@@ -8,6 +8,8 @@ export PYTHONPATH=$PYTHONPATH:$(pwd)
 
 from the root url (the directory where config.yaml exists)
 
+(I will eliminate the need for this soon)
+
 then
 
 python3 examples/load_into_pandas.py
