@@ -98,4 +98,11 @@ print(f"10.000 records, time-passed: {(time.perf_counter()-start)*1000} + 5 indi
 
 print(df)
 
+"""
+This should return about ~50ms in time-passed. About 180k rows a second with 5 indicators.
+When querying for bigger chunks, the API gets more efficient in terms of time spent per row.
+
+Also. The first query to get_data includes an overhead for indicator loading. This is a one-time event.
+"""
+
 
