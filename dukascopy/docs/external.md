@@ -2,6 +2,8 @@
 
 This guide provides the necessary steps to integrate the `get_data` API from the `bp.markets.ingest` repository into external Python projects. Because this API is designed as part of a specific directory hierarchy, it requires a **bootstrap** approach to resolve its internal dependencies.
 
+"This is the way"-would the mandolorian say- to currently include the internal-api of `bp.markets.ingest` in your external code. While not yet a formal library (Librarization is on the roadmap), this bootstrap method provides a robust, high-performance link to the core engine.
+
 ## 1. API Architecture Overview
 
 The `api.py` module acts as the high-performance gateway to the Dukascopy data pipeline. Key features include:
@@ -88,7 +90,7 @@ except Exception as e:
     print(f"❌ Bootstrap failed: {e}")
 
 
-    
+
 ```
 
 ## 3. Usage Example
