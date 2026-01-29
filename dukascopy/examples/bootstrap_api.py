@@ -103,6 +103,12 @@ This should return about ~50ms in time-passed. About 180k rows a second with 5 i
 When querying for bigger chunks, the API gets more efficient in terms of time spent per row.
 
 Also. The first query to get_data includes an overhead for indicator loading. This is a one-time event.
+
+One more note. When pages in cache, it does 
+
+100.000 records, time-passed: 231.91176902037114 + 5 indicators
+
+This is what i mean with getting more efficient on bigger chunk. Performance is really good. For Python.
 """
 
 
