@@ -204,6 +204,7 @@ def get_data(
 
     else:
         # When no indicators are queries, set to empty dics
+        # TODO: this needs to get removed. Needs to move to HTTP API
         chunk_df['indicators'] = [{} for _ in range(len(chunk_df))]
 
     # Drop the rows before after_ms, end-limit and offset need to be done by caller
