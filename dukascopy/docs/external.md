@@ -150,3 +150,5 @@ The engine is engineered for **Hyperparameter Optimization (HPO)** and large-sca
 
 > **Pro Tip**: The first query to `get_data` includes a one-time overhead for indicator registry loading. For accurate benchmarking, always discard the first "cold" run.
 
+>For ludacrous speeds: use a processpool executor and use get_data from each process. Its literally "stunning".
+
