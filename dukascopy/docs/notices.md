@@ -19,6 +19,8 @@ Sub-lineair scaling. To compare: For 100,000 rows, TimescaleDB will take 500ms t
 
 ~~I will put the last critical fix in tomorrow-make the internal API usable from external code.~~ Its available in main. See [here](external.md).
 
+Now i go rest again. I have the flu. But a promise is a promise. Delivered.
+
 **Status: slower endpoint**
 
 The endpoint appears to be rate-limited, which is likely a consequence of the recent outages on the Jetta endpoint. As a result, a full sync from scratch may require some patience.
