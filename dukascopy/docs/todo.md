@@ -41,6 +41,7 @@ Note: strike-through=wont do
 [x] API Layer:
   - [X] Cross-asset queries
   - [X] Cross-timeframe queries
+  - [x] Make internal API queryable from external code (bootstrapping)
 
 Example Indicator:
   - [x] ML integration example
