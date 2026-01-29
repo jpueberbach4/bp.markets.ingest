@@ -8,7 +8,7 @@ export PYTHONPATH=$PYTHONPATH:$(pwd)
 
 from the root url (the directory where config.yaml exists)
 
-(I will eliminate the need for this soon)
+There is now a solution to the above problem. See bootstrap_api.py for details. Consult external.md.
 
 then
 
