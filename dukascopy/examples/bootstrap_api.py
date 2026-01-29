@@ -99,7 +99,6 @@ print(f"100.000 records, time-passed: {(time.perf_counter()-start)*1000} ms + 5 
 print(df)
 
 """
-This should return about ~50ms in time-passed. About 180k rows a second with 5 indicators.
 When querying for bigger chunks, the API gets more efficient in terms of time spent per row.
 
 Also. The first query to get_data includes an overhead for indicator loading. This is a one-time event.
@@ -110,7 +109,7 @@ One more note. When pages in cache, it does
 
 ~520,176 rows/second
 
-This is what i mean with getting more efficient on bigger chunk. Performance is really good. For Python.
+Performance is really good. For Python.
 """
 
 start = time.perf_counter()
@@ -125,7 +124,9 @@ This should print about 30ms for 100.000 records.
 
 ~2,999,801 rows/second
 
-This speed makes the engine ideal for Hyperparameter Optimization (HPO). A researcher can test 1,000 different indicator combinations in under 3.5 minutes, whereas the same task would take nearly half an hour on a standard database setup.
+This speed makes the engine ideal for Hyperparameter Optimization (HPO). 
+A researcher can test 1,000 different indicator combinations in under 3.5 minutes, 
+whereas the same task would take nearly half an hour on a standard database setup.
 
 """
 
