@@ -6,7 +6,7 @@ Feeds are back online. No further actions required.
 
 **Less codechanges**
 
-~~I am currently a bit low profile because of back-issues.~~ improving
+~~I am currently a bit low profile because of back-issues.~~ improving. its the flu. damn
 
 Performance example, EUR-USD 1m data, random 2025 data, 5 indicators.
 
@@ -52,4 +52,5 @@ Ofcourse there is the problem of overfitting. But... Let's see how far we get.
 The system will get heavily tested as a feature engineering factory. Lets see how it holds up. 
 
 It is possible or even likely that the above will spawn another round of updates. Efficiency updates etc. Will try to limit it to feature branches.
+
 
