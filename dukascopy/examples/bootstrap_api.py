@@ -86,7 +86,7 @@ except Exception as e:
 from datetime import datetime, timezone
 import time
 # Convert the timestring
-timestamp_str = "2025-11-17+19:00:00"
+timestamp_str = "2024-11-17+19:00:00"
 dt = datetime.strptime(timestamp_str, "%Y-%m-%d+%H:%M:%S")
 after_ms = int(dt.replace(tzinfo=timezone.utc).timestamp() * 1000)
 
@@ -119,6 +119,6 @@ print(f"100.000 records, time-passed: {(time.perf_counter()-start)*1000} ms (pri
 print(df)
 
 """
-This should print about 20ms for 100.000 records.
+This should print about 30ms for 100.000 records.
 """
 
