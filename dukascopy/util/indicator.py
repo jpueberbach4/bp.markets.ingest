@@ -44,6 +44,7 @@ import sys
 import importlib.util
 from pathlib import Path
 from typing import List
+from util.helper import resolve_path
 
 class IndicatorRegistry:
     """
@@ -68,8 +69,8 @@ class IndicatorRegistry:
                 default user plugin directory is used.
         """
         # Default paths if not provided
-        self.core_dir = core_dir or Path("util/plugins/indicators")
-        self.user_dir = user_dir or Path("config.user/plugins/indicators")
+        self.core_dir = resolve_path(core_dir or Path("util/plugins/indicators"))
+        self.user_dir = resolve_path(user_dir or Path("config.user/plugins/indicators"))
         
         # Internal registry to store loaded plugin functions and file stats
         self.registry = {}
@@ -97,7 +98,7 @@ class IndicatorRegistry:
             del sys.modules[name]
 
         # Create a module specification from the given file path
-        spec = importlib.util.spec_from_file_location(name, path)
+        spec = importlib.util.spec_from_file_location(name, resolve_path(path))
 
         # Instantiate a new module object from the specification
         module = importlib.util.module_from_spec(spec)
@@ -165,7 +166,7 @@ class IndicatorRegistry:
         file_stat = path.stat()
 
         # Dynamically import the plugin module
-        module = self._import_plugin(name, path)
+        module = self._import_plugin(name, resolve_path(path))
 
         # Only register modules that implement the `calculate` function
         if hasattr(module, "calculate"):
