@@ -1,0 +1,72 @@
+Using concurrency mode: thread
+🚀 Internal get_data successfully linked and ready for high-performance retrieval.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/adl.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/adx.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/aroon.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/atr.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/bbands.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/cci.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/chaikin.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/cmo.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/donchian.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/elderray.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/ema.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/fibonacci.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/fractaldimension.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/hma.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/hurst.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/ichimoku.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/kdj.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/keltner.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/linregchannel.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/macd.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/mfi.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/obv.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/pivot.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/psar.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/roc.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/rsi.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/shannonentropy.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/sma.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/stc.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/stddev.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/stochastic.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/uo.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/vwap.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/williamsr.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/plugins/indicators/zscore.py succesfully.
+Registered plugin /home/jpueberb/repos2/bp.markets.ingest/dukascopy/config.user/plugins/indicators/test-sma.py succesfully.
+100.000 records, time-passed: 186.89346394967288 ms + 5 indicators
+
+
+        index   symbol timeframe        time_ms     open     high  ...  bbands_20_2.0__mid  bbands_20_2.0__lower    atr_14  adx_14__adx  adx_14__plus_di  adx_14__minus_di
+0          78  EUR-USD        1m  1731888000000  1.05280  1.05300  ...            1.053361              1.052865  0.000221    40.428276        26.990311         38.492240
+1          79  EUR-USD        1m  1731888060000  1.05300  1.05321  ...            1.053352              1.052839  0.000220    37.932237        31.977382         35.862952
+2          80  EUR-USD        1m  1731888120000  1.05305  1.05310  ...            1.053342              1.052813  0.000208    35.616902        31.426951         35.245638
+3          81  EUR-USD        1m  1731888180000  1.05305  1.05307  ...            1.053330              1.052786  0.000195    33.506488        31.081255         35.224603
+4          82  EUR-USD        1m  1731888240000  1.05305  1.05305  ...            1.053317              1.052753  0.000185    31.705260        30.479482         36.091513
+...       ...      ...       ...            ...      ...      ...  ...                 ...                   ...       ...          ...              ...               ...
+99995  100073  EUR-USD        1m  1741078140000  1.04820  1.04830  ...            1.048507              1.048078  0.000147    28.374126        12.450361         23.105877
+99996  100074  EUR-USD        1m  1741078200000  1.04829  1.04843  ...            1.048494              1.048071  0.000148    26.997474        17.764124         21.321287
+99997  100075  EUR-USD        1m  1741078260000  1.04841  1.04859  ...            1.048490              1.048071  0.000151    25.786410        23.737202         19.404649
+99998  100076  EUR-USD        1m  1741078320000  1.04856  1.04861  ...            1.048486              1.048075  0.000149    24.810122        23.218321         18.199188
+99999  100077  EUR-USD        1m  1741078380000  1.04859  1.04861  ...            1.048466              1.048076  0.000158    23.359044        20.385759         22.304706
+
+[100000 rows x 20 columns]
+100.000 records, time-passed: 29.749223962426186 ms (price-only API)
+
+
+       index   symbol timeframe        time_ms     open     high      low    close  volume indicators
+0          0  EUR-USD        1m  1731888000000  1.05280  1.05300  1.05280  1.05300   33.30         {}
+1          1  EUR-USD        1m  1731888060000  1.05300  1.05321  1.05300  1.05305   22.86         {}
+2          2  EUR-USD        1m  1731888120000  1.05305  1.05310  1.05305  1.05305   22.50         {}
+3          3  EUR-USD        1m  1731888180000  1.05305  1.05307  1.05304  1.05305   10.80         {}
+4          4  EUR-USD        1m  1731888240000  1.05305  1.05305  1.05300  1.05300    2.70         {}
+...      ...      ...       ...            ...      ...      ...      ...      ...     ...        ...
+99995  99995  EUR-USD        1m  1741078140000  1.04820  1.04830  1.04820  1.04827   70.05         {}
+99996  99996  EUR-USD        1m  1741078200000  1.04829  1.04843  1.04827  1.04841   95.79         {}
+99997  99997  EUR-USD        1m  1741078260000  1.04841  1.04859  1.04840  1.04858   58.17         {}
+99998  99998  EUR-USD        1m  1741078320000  1.04856  1.04861  1.04848  1.04861   93.21         {}
+99999  99999  EUR-USD        1m  1741078380000  1.04859  1.04861  1.04834  1.04838  158.49         {}
+
+[100000 rows x 10 columns]
