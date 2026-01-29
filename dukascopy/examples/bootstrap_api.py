@@ -93,8 +93,8 @@ after_ms = int(dt.replace(tzinfo=timezone.utc).timestamp() * 1000)
 
 start = time.perf_counter()
 indicators = ['adx_14', 'atr_14', 'ema_20', 'bbands_20_2.0', 'macd_12_26_9']
-df = get_data(symbol="EUR-USD", timeframe="1m", indicators=indicators, after_ms=after_ms, limit=10000, order="asc" )
-print(f"10.000 records, time-passed: {(time.perf_counter()-start)*1000} + 5 indicators\n\n")
+df = get_data(symbol="EUR-USD", timeframe="1m", indicators=indicators, after_ms=after_ms, limit=100000, order="asc" )
+print(f"100.000 records, time-passed: {(time.perf_counter()-start)*1000} ms + 5 indicators\n\n")
 
 print(df)
 
@@ -111,4 +111,14 @@ One more note. When pages in cache, it does
 This is what i mean with getting more efficient on bigger chunk. Performance is really good. For Python.
 """
 
+start = time.perf_counter()
+indicators = []
+df = get_data(symbol="EUR-USD", timeframe="1m", indicators=indicators, after_ms=after_ms, limit=100000, order="asc" )
+print(f"100.000 records, time-passed: {(time.perf_counter()-start)*1000} ms (price-only API)\n\n")
+
+print(df)
+
+"""
+This should print about 20ms for 100.000 records.
+"""
 
