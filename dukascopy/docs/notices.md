@@ -6,8 +6,6 @@ Feeds are back online. No further actions required.
 
 **Less codechanges**
 
-~~I am currently a bit low profile because of back-issues.~~ improving. its the flu. damn
-
 Performance example, EUR-USD 1m data, random 2025 data, 5 indicators.
 
 ```sh
@@ -19,7 +17,7 @@ Performance example, EUR-USD 1m data, random 2025 data, 5 indicators.
 
 Sub-lineair scaling. To compare: For 100,000 rows, TimescaleDB will take 500ms to 2 seconds to return the data and calculate indicators. This does it in 0.12 seconds.
 
-I will put the last critical fix in tomorrow-make the internal API usable from external code.
+~~I will put the last critical fix in tomorrow-make the internal API usable from external code.~~ Its available in main. See [here](external.md).
 
 **Status: slower endpoint**
 
