@@ -108,6 +108,8 @@ One more note. When pages in cache, it does
 
 100.000 records, time-passed: 231.91176902037114 + 5 indicators
 
+~520,176 rows/second
+
 This is what i mean with getting more efficient on bigger chunk. Performance is really good. For Python.
 """
 
@@ -120,5 +122,8 @@ print(df)
 
 """
 This should print about 30ms for 100.000 records.
+
+~2,999,801 rows/second
+
 """
 
