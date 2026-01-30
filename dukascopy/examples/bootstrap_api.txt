@@ -153,4 +153,7 @@ This is SHM process mode:
 
 Actually slower. I will profile it in order to see where the loss exactly is. Weekend work.
 
+
 Also, i dont like those data differences. We have had the same before. Hence, two reasons to deny SHM.
+
+Update: i know what the issue is. Lock contention. I will fix it and retry.
