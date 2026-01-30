@@ -50,7 +50,9 @@ The code-base is small and heavily documented. This is a high-performance system
 \
 Note: This is not a click-and-go or “magical” project. It’s intended for data preparation to support downstream analysis, such as machine learning. You can use it to test and design indicators or to extract inter-asset features for ML workflows—that’s how I use it. While indicator-integrated data can be extracted, that is not the primary purpose of this project. You will need to know Python if you want to use this project efficiently. \
 \
-I will be adding (more) examples for integration with other Python projects, Excel, Jupyter notebooks and Ensemble-learning (ML) while I am developing this project. This project is not even close to "finished". There is still a lot of work to do. 
+I will be adding (more) examples for integration with other Python projects, Excel, Jupyter notebooks and Ensemble-learning (ML) while I am developing this project. This project is not even close to "finished". There is still a lot of work to do. \
+\
+One more thing: there has been a discussion to take the project private and continue advanced features in a private setting. Some users may have read this a little while ago. This is off-the-table. Development will continue to be public.
 
 Example 20 year chart of EUR-USD:
 
