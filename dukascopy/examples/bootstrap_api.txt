@@ -200,3 +200,5 @@ Update: target reached. Wanted to have <1 second for 1 million rows and 55 indic
 999999  EUR-USD        1m  1754274360000  1.15802  1.15802  1.15779  1.15790   42.07    14.776648        12.798869  ...  1.158696  1.158655  1.158630  1.158608  1.158589  1.158555  1.158510  1.158435  1.158349  1.158270
 
 Cleaning up.
+
+This is a whopping 233 MILLION calculations per second, on a laptop. I am satisfied now.
