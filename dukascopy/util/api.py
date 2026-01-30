@@ -228,6 +228,9 @@ def get_data(
     # Apply the limit - for multiselect via API, this is handled in API
     chunk_df = chunk_df.iloc[:limit]
 
+    # Drop the messy index column. Merging is happening on time_ms and optionally on symbol and tf
+    chunk_df.drop(columns=['index'], errors='ignore', inplace=True)
+    
     return chunk_df
 
     
