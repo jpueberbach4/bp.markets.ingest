@@ -124,7 +124,7 @@ def parallel_indicators(
         df['close'] = pd.to_numeric(df['close'], errors='coerce')
 
     # Convert to Polars LazyFrame for query optimization
-    main_pl = pl.from_pandas(df).lazy()
+    main_pl = pl.from_pandas(df, rechunk=False).lazy()
     total_rows = len(df)
 
     pandas_tasks = []
@@ -194,49 +194,36 @@ def parallel_indicators(
     if not pandas_results and not polars_expressions:
         df['indicators'] = [{} for _ in range(len(df))]
         return df
-
+        
     if disable_recursive_mapping:
-        # Flat-column merge path for performance-critical workflows
-        indicator_series = []
+        indicator_frames = [main_pl]
+        
+        if pandas_tasks:
+            # Gather all thread-pool results
+            pandas_results = [f.result() for f in concurrent.futures.as_completed(pandas_tasks) if f.result() is not None]
+            
+            for res_df in pandas_results:
+                # Schema-Safe Vectorized Padding
+                p_res = pl.from_pandas(res_df)
+                if len(p_res) < len(df):
+                    pad_len = len(df) - len(p_res)
+                    # Create a null-pad with matching schema to prevent SchemaError
+                    pad = pl.DataFrame(
+                        {c: [None] * pad_len for c in p_res.columns},
+                        schema=p_res.schema
+                    )
+                    p_res = pl.concat([pad, p_res])
+                indicator_frames.append(p_res)
 
-        # Align Pandas results to the full dataset length
-        for res_df in pandas_results:
-            for col_name in res_df.columns:
-                vals = res_df[col_name].values
-                if len(vals) < total_rows:
-                    full_vals = np.full(total_rows, np.nan)
-                    full_vals[total_rows - len(vals):] = vals
-                    indicator_series.append(pl.Series(col_name, full_vals))
-                else:
-                    indicator_series.append(pl.Series(col_name, vals))
-            del res_df
+        # Batch Merge: Multi-threaded horizontal join in Rust
+        combined_pl = pl.concat(indicator_frames, how="horizontal")
 
-        # Horizontally concatenate base data and indicator columns
-        combined_pl = pl.concat(
-            [main_pl] + [pl.DataFrame(indicator_series)],
-            how="horizontal"
-        )
-
-        # Deduplicate columns while preserving order
-        cols_to_keep = []
-        visited = set()
-        for c in combined_pl.columns:
-            if c not in visited:
-                cols_to_keep.append(c)
-                visited.add(c)
-
-        combined_pl = combined_pl.select(cols_to_keep)
-
-        # Apply final rounding to indicator columns
+        # Final Rounding: Done once in vectorized Rust (Very Fast)
         indicator_cols = [c for c in combined_pl.columns if c not in df.columns]
-        combined_pl = combined_pl.with_columns(
-            [pl.col(c).round(6) for c in indicator_cols]
-        )
+        combined_pl = combined_pl.with_columns([pl.col(c).round(6) for c in indicator_cols])
 
-        return combined_pl.to_pandas(
-            use_threads=True,
-            types_mapper=pd.ArrowDtype if hasattr(pd, 'ArrowDtype') else None
-        )
+        # Zero-Copy Handover back to Pandas
+        return combined_pl.to_pandas(use_threads=True, types_mapper=pd.ArrowDtype if hasattr(pd, 'ArrowDtype') else None)
 
     else:
         # Legacy nested-dictionary assembly path
