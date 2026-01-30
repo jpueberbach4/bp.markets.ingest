@@ -122,6 +122,7 @@ print(df.head())
 | `after_ms` | `int` | Inclusive lower bound timestamp in epoch milliseconds. |
 | `until_ms` | `int` | Exclusive upper bound timestamp in epoch milliseconds. |
 | `limit` | `int` | Maximum rows to return (default: 1000). |
+| `order` | `str` | Order of the returned data-slice (default: asc). Other value: desc |
 | `indicators` | `List[str]` | List of indicator strings to calculate (e.g., `["sma_20", "bbands_20_2"]`). |
 | `options` | `Dict` | Dictionary of additional options and modifiers (e.g., `{"modifiers": ["skiplast"]}`). |
 
