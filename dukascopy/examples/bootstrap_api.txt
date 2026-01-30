@@ -110,50 +110,7 @@ More tests:
 
 [1000000 rows x 9 columns]
 
-Conclusion: indicator calculation really needs to get TRUE parallelization. will work on that (SHM model).
+New conclusion: parallelism doesnt gain the required benefit. I have tested with 100 indicators.
+The delegation of the frames to the subprocesses is so expensive that there is almost no gain.
 
-New target: 5+ indicators and SHM, get that 4.5s down to < 1s on a decent multi-core machine. Currently i 
-get around around it using processpool executor in an external code. But i will implement it in the core
-this weekend. Current performance is impressive but i need to have it at maximum scores. 
-
-I have a first version of the SHM processpool executor done. However, i need to loadtest it severely first,
-before i release it. Also, it should be configurable. That is not yet done. 
-
-These are the new performance stats:
-
-1.000.000 records, time-passed: 1322.9834069497883 ms + 5 indicators
-
-
-         symbol timeframe        time_ms     open     high      low  ...  macd_12_26_9__macd  macd_12_26_9__signal  macd_12_26_9__hist  adx_14__adx  adx_14__plus_di  adx_14__minus_di
-0       EUR-USD        1m  1668711600000  1.03388  1.03460  1.03388  ...            0.000390              0.000201            0.000188    25.159386        44.656601         13.088095
-1       EUR-USD        1m  1668711660000  1.03459  1.03477  1.03421  ...            0.000423              0.000246            0.000177    27.467776        43.182878         11.739217
-2       EUR-USD        1m  1668711720000  1.03423  1.03459  1.03420  ...            0.000470              0.000291            0.000180    29.568397        40.084503         11.080902
-3       EUR-USD        1m  1668711780000  1.03456  1.03480  1.03456  ...            0.000511              0.000335            0.000176    31.751162        42.236785         10.577918
-4       EUR-USD        1m  1668711840000  1.03468  1.03470  1.03429  ...            0.000529              0.000374            0.000156    32.692736        38.981461         14.838196
-...         ...       ...            ...      ...      ...      ...  ...                 ...                   ...                 ...          ...              ...               ...
-999995  EUR-USD        1m  1754274120000  1.15810  1.15813  1.15801  ...           -0.000025              0.000000           -0.000025    11.913853        17.619368         21.961207
-999996  EUR-USD        1m  1754274180000  1.15812  1.15812  1.15804  ...           -0.000033             -0.000007           -0.000027    11.846408        17.023747         21.218811
-999997  EUR-USD        1m  1754274240000  1.15808  1.15809  1.15801  ...           -0.000046             -0.000014           -0.000032    12.002973        16.353956         21.695451
-999998  EUR-USD        1m  1754274300000  1.15798  1.15811  1.15780  ...           -0.000053             -0.000022           -0.000030    13.414726        14.271156         27.559818
-999999  EUR-USD        1m  1754274360000  1.15802  1.15802  1.15779  ...           -0.000069             -0.000031           -0.000038    14.776648        12.798869         25.113392
-
-[1000000 rows x 19 columns]
-1.000.000 records, time-passed: 482.32078889850527 ms (price-only API)
-
-
-         symbol timeframe        time_ms     open     high      low    close  volume indicators
-0       EUR-USD        1m  1668711600000  1.03388  1.03460  1.03388  1.03458  875.68         {}
-1       EUR-USD        1m  1668711660000  1.03459  1.03477  1.03421  1.03423  835.14         {}
-2       EUR-USD        1m  1668711720000  1.03423  1.03459  1.03420  1.03456  569.59         {}
-3       EUR-USD        1m  1668711780000  1.03456  1.03480  1.03456  1.03467  651.64         {}
-4       EUR-USD        1m  1668711840000  1.03468  1.03470  1.03429  1.03457  380.68         {}
-...         ...       ...            ...      ...      ...      ...      ...     ...        ...
-999995  EUR-USD        1m  1754274120000  1.15810  1.15813  1.15801  1.15809   37.80         {}
-999996  EUR-USD        1m  1754274180000  1.15812  1.15812  1.15804  1.15810   11.70         {}
-999997  EUR-USD        1m  1754274240000  1.15808  1.15809  1.15801  1.15801   20.07         {}
-999998  EUR-USD        1m  1754274300000  1.15798  1.15811  1.15780  1.15805   48.96         {}
-999999  EUR-USD        1m  1754274360000  1.15802  1.15802  1.15779  1.15790   42.07         {}
-
-[1000000 rows x 9 columns]
-
-So, i didnt achieve sub-second performance (yet). Close though. 1.2 seconds for 1 million rows with 5 indicators.
+Will have a look at it again later. The branch 032 remains for testing purposes, temporarily.
