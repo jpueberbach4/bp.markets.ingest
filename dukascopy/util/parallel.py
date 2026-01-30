@@ -135,12 +135,43 @@ def parallel_indicators(df: pd.DataFrame, indicators: List[str], plugins: Dict[s
         df['indicators'] = [{} for _ in range(len(df))]
         return df
 
-    # Combine all indicator DataFrames and handle duplicate columns
-    indicator_matrix = pd.concat(results, axis=1)
-    indicator_matrix = indicator_matrix.loc[:, ~indicator_matrix.columns.duplicated()].copy()
+    import time
+    import polars as pl
+    t_merge_start = time.perf_counter()
 
     if disable_recursive_mapping:
-        df = df.join(indicator_matrix, how='left')
+        # Convert main DataFrame to Polars (Zero-copy conversion)
+        main_pl = pl.from_pandas(df)
+        total_rows = len(df)
+        indicator_series = []
+
+        for res_df in results:
+            for col_name in res_df.columns:
+                vals = res_df[col_name].values
+                
+                # Ensure shorter result sets (warmups/SMA drops) match the tail
+                if len(vals) < total_rows:
+                    full_vals = np.full(total_rows, np.nan)
+                    full_vals[total_rows - len(vals):] = vals
+                    indicator_series.append(pl.Series(col_name, full_vals))
+                else:
+                    indicator_series.append(pl.Series(col_name, vals))
+
+        # Horizontal Concatenation: Pointers are pasted together
+        combined_pl = pl.concat([main_pl, pl.DataFrame(indicator_series)], how="horizontal")
+        
+        # Select unique column names by position to avoid InvalidOperationError
+        cols_to_keep = []
+        visited = set()
+        for c in combined_pl.columns:
+            if c not in visited:
+                cols_to_keep.append(c)
+                visited.add(c)
+        
+        combined_pl = combined_pl.select(cols_to_keep)
+
+        print(f"time spend (Polars Horizontal Merge): {time.perf_counter()-t_merge_start:.4f}s")
+        return combined_pl.to_pandas()
     else:
         # Vectorized nesting of multi-column indicators into dictionaries
         records = indicator_matrix.to_dict(orient='records')
