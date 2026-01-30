@@ -111,3 +111,7 @@ More tests:
 [1000000 rows x 9 columns]
 
 Conclusion: indicator calculation really needs to get TRUE parallelization. will work on that (SHM model).
+
+New target: 5+ indicators and SHM, get that 4.5s down to < 1s on a decent multi-core machine. Currently i 
+get around around it using processpool executor in an external code. But i will implement it in the core
+this weekend. Current performance is impressive but i need to have it at maximum scores. 
