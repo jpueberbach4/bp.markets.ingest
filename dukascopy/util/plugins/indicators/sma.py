@@ -1,5 +1,4 @@
-import pandas as pd
-import numpy as np
+import polars as pl
 from typing import List, Dict, Any
 
 def description() -> str:
@@ -14,28 +13,26 @@ def description() -> str:
         "trend direction, and act as dynamic support or resistance levels."
     )
 
-def meta()->Dict:
+def meta() -> Dict:
     """
-    Any other metadata to pass via API
+    Metadata for the dual-engine orchestrator.
     """
     return {
         "author": "Google Gemini",
-        "version": 1.0,
-        "verified": 1
+        "version": 1.1,
+        "verified": 1,
+        "polars": True  # Flag to trigger high-speed Polars execution
     }
 
-def warmup_count(options: Dict[str, Any]) -> Dict[str, Any]:
+def warmup_count(options: Dict[str, Any]) -> int:
     """
-    Calculates the required warmup time in seconds based on the SMA period
-    and a wide range of timeframe strings (1m to 1Y).
+    Calculates the required warmup rows for the SMA.
     """
-    # 1. Parse the period from options
     try:
         period = int(options.get('period', 9))
     except (ValueError, TypeError):
         period = 9
-
-    return period*3
+    return period * 3
 
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
@@ -46,9 +43,9 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "period": args[0] if len(args) > 0 else "9"
     }
 
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     """
-    High-performance vectorized Simple Moving Average (SMA).
+    High-performance Polars-native calculation using Lazy expressions.
     """
     # 1. Parse Parameters
     try:
@@ -56,22 +53,17 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     except (ValueError, TypeError):
         period = 14
 
-    # 2. Determine Price Precision for rounding
-    try:
-        sample_price = str(df['close'].iloc[0])
-        precision = len(sample_price.split('.')[1])+1 if '.' in sample_price else 2
-    except (IndexError, AttributeError):
-        precision = 5
+    # 2. Polars Expression Logic
+    # We use a rolling mean and alias it to the indicator string (e.g., sma_50)
+    # This allows Polars to run 1,000s of these in parallel at the Rust level.
+    return pl.col("close").rolling_mean(window_size=period).alias(indicator_str)
 
-    # 3. Vectorized Calculation Logic
-    # Calculates the rolling mean across the entire segment at once
+def calculate(df: Any, options: Dict[str, Any]) -> Any:
+    """
+    Legacy fallback for Pandas-only environments.
+    """
+    # If the engine is still Pandas, we maintain the original logic
+    import pandas as pd
+    period = int(options.get('period', 14))
     sma = df['close'].rolling(window=period).mean()
-
-    # 4. Final Formatting and Rounding
-    # Preserving the original index for O(1) merging in parallel.py
-    res = pd.DataFrame({
-        'sma': sma.round(precision)
-    }, index=df.index)
-    
-    # Drop the warm-up period rows where the SMA hasn't stabilized
-    return res.dropna(subset=['sma'])
+    return pd.DataFrame({'sma': sma}, index=df.index).dropna()
