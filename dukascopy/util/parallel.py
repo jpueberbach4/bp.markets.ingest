@@ -236,7 +236,11 @@ def parallel_indicators(
         combined_pl = combined_pl.select(cols_to_keep)
 
         # print(f"time spend (Hybrid Merge): {time.perf_counter()-t_merge_start:.4f}s")
-
+        # Rounding
+        indicator_cols = [c for c in combined_pl.columns if c not in df.columns]
+        combined_pl = combined_pl.with_columns([
+            pl.col(c).round(6) for c in indicator_cols
+        ])
         return combined_pl.to_pandas(
             use_threads=True,
             types_mapper=pd.ArrowDtype if hasattr(pd, 'ArrowDtype') else None
@@ -264,6 +268,8 @@ def parallel_indicators(
             :, ~indicator_matrix.columns.duplicated()
         ].copy()
 
+        # Rounding
+        indicator_matrix = indicator_matrix.round(6)
         # Vectorized nesting of indicators into per-row dictionaries
         records = indicator_matrix.to_dict(orient='records')
         nested_list = []
