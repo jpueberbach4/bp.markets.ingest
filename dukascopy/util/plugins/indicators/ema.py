@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import polars as pl
 from typing import List, Dict, Any
 
 def description() -> str:
@@ -14,20 +15,21 @@ def description() -> str:
         "reversals and momentum in fast-moving markets."
     )
 
-def meta()->Dict:
+def meta() -> Dict:
     """
-    Any other metadata to pass via API
+    Metadata for the dual-engine orchestrator.
+    Note: polars is set to 1 as requested.
     """
     return {
         "author": "Google Gemini",
-        "version": 1.0,
-        "verified": 1
+        "version": 1.1,
+        "verified": 1,
+        "polars": 1  
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for the EMA.
-    EMA is a recursive calculation that requires history to stabilize.
     We use 3x the period as the industry standard for convergence.
     """
     try:
@@ -35,47 +37,45 @@ def warmup_count(options: Dict[str, Any]) -> int:
     except (ValueError, TypeError):
         period = 9
 
-    # 3x period ensures the initial seed value has decayed 
-    # and the EMA is mathematically accurate.
     return period * 3
 
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.
-    Example: ema_9 -> {'period': '9'}
+    Example: ema_20 -> {'period': '20'}
     """
     return {
         "period": args[0] if len(args) > 0 else "9"
     }
 
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     """
-    High-performance vectorized Exponential Moving Average (EMA) calculation.
+    High-performance Polars-native EMA calculation using Lazy expressions.
     """
-    # 1. Parse Parameters
     try:
         period = int(options.get('period', 14))
     except (ValueError, TypeError):
         period = 14
 
-    # 2. Determine Price Precision for rounding
-    try:
-        # Detect decimals from the first available close price
-        sample_price = str(df['close'].iloc[0])
-        precision = len(sample_price.split('.')[1])+1 if '.' in sample_price else 2
-    except (IndexError, AttributeError):
-        precision = 5
+    # Using ewm_mean for recursive calculation (adjust=False matches standard TA)
+    # This runs in Rust and bypasses the Python GIL.
+    return pl.col("close").ewm_mean(span=period, adjust=False).alias(indicator_str)
 
-    # 3. Vectorized EMA Calculation
-    # adjust=False ensures we use the standard recursive EMA formula 
-    # (suitable for technical analysis matching MT4/TradingView)
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    Legacy Pandas fallback.
+    """
+    try:
+        period = int(options.get('period', 14))
+    except (ValueError, TypeError):
+        period = 14
+
+    # Vectorized EMA Calculation
     ema = df['close'].ewm(span=period, adjust=False).mean()
 
-    # 4. Final Formatting and Rounding
-    # Preserving the original index for O(1) merging in the parallel engine
+    # Preserving original index for merging
     res = pd.DataFrame({
-        'ema': ema.round(precision)
+        'ema': ema
     }, index=df.index)
     
-    # Drop the warm-up period rows where the EMA hasn't stabilized
     return res.dropna(subset=['ema']).iloc[period:]

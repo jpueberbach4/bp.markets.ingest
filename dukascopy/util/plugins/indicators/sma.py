@@ -21,7 +21,7 @@ def meta() -> Dict:
         "author": "Google Gemini",
         "version": 1.1,
         "verified": 1,
-        "polars": True  # Flag to trigger high-speed Polars execution
+        "polars": 1  # Flag to trigger high-speed Polars execution
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -47,15 +47,13 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     """
     High-performance Polars-native calculation using Lazy expressions.
     """
-    # 1. Parse Parameters
+    # Parse Parameters
     try:
         period = int(options.get('period', 14))
     except (ValueError, TypeError):
         period = 14
 
-    # 2. Polars Expression Logic
-    # We use a rolling mean and alias it to the indicator string (e.g., sma_50)
-    # This allows Polars to run 1,000s of these in parallel at the Rust level.
+    # This is an instruction, not a calculation yet.
     return pl.col("close").rolling_mean(window_size=period).alias(indicator_str)
 
 def calculate(df: Any, options: Dict[str, Any]) -> Any:

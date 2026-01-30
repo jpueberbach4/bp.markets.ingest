@@ -147,13 +147,15 @@ def parallel_indicators(
 
         # Determine execution engine via plugin metadata
         meta_func = plugin_entry.get('meta')
+
         plugin_meta = meta_func() if callable(meta_func) else {}
-        is_polars = plugin_meta.get('polars', False)
+        is_polars = plugin_meta.get('polars', 0)
 
         # Resolve indicator arguments from positional syntax
         plugin_func = plugin_entry.get('calculate')
         ind_opts = {}
         pos_args_func = plugin_entry.get('position_args')
+
         if callable(pos_args_func):
             ind_opts.update(pos_args_func(parts[1:]))
         elif hasattr(plugin_func, "__globals__") and "position_args" in plugin_func.__globals__:
@@ -162,6 +164,7 @@ def parallel_indicators(
         if is_polars:
             # Route Polars-native indicators as lazy expressions
             calc_func_pl = plugin_entry.get('calculate_polars', plugin_func)
+
             expr = calc_func_pl(ind_str, ind_opts)
             if isinstance(expr, list):
                 polars_expressions.extend(expr)

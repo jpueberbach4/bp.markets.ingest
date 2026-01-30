@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import polars as pl
 from typing import List, Dict, Any
 
 def description() -> str:
@@ -10,34 +11,30 @@ def description() -> str:
         "Average True Range (ATR) is a technical indicator that measures market "
         "volatility by decomposing the entire range of an asset price for a given "
         "period. Unlike directional indicators, ATR solely quantifies the degree "
-        "of price fluctuation, including gaps from previous sessions. It is widely "
-        "used for determining stop-loss distances and position sizing."
+        "of price fluctuation, including gaps from previous sessions."
     )
 
-def meta()->Dict:
+def meta() -> Dict:
     """
-    Any other metadata to pass via API
+    Metadata for the dual-engine orchestrator.
     """
     return {
         "author": "Google Gemini",
-        "version": 1.0,
+        "version": 1.1,
         "panel": 1,
-        "verified": 1
+        "verified": 1,
+        "polars": 0  # Trigger high-speed Polars execution path
     }
-    
+
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for ATR.
-    ATR uses Wilder's Smoothing (EWM) and requires roughly 3x the period 
-    to provide stabilized values compared to standard charting platforms.
+    Wilder's smoothing (EWM) typically requires 3x the period to converge.
     """
-    # 1. Parse the period from options (default to 14)
     try:
         period = int(options.get('period', 14))
     except (ValueError, TypeError):
         period = 14
-
-    # Wilder's smoothing needs a longer tail (memory) to converge accurately.
     return period * 3
 
 def position_args(args: List[str]) -> Dict[str, Any]:
@@ -49,42 +46,46 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "period": args[0] if len(args) > 0 else "14"
     }
 
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     """
-    High-performance vectorized Average True Range (ATR) calculation.
+    High-performance Polars-native ATR calculation.
     """
-    # 1. Parse Period
     try:
         period = int(options.get('period', 14))
     except (ValueError, TypeError):
         period = 14
 
-    # 2. Determine Price Precision for rounding
-    try:
-        sample_price = str(df['close'].iloc[0])
-        precision = len(sample_price.split('.')[1])+1 if '.' in sample_price else 2
-    except (IndexError, AttributeError):
-        precision = 5
+    # 1. Get Previous Close
+    prev_close = pl.col("close").shift(1)
 
-    # 3. Calculate True Range (TR)
+    # 2. Calculate the 3 components of True Range
+    tr1 = pl.col("high") - pl.col("low")
+    tr2 = (pl.col("high") - prev_close).abs()
+    tr3 = (pl.col("low") - prev_close).abs()
+
+    # 3. Calculate True Range (TR) using high-speed horizontal max
+    # This avoids the 'concat' overhead found in Pandas
+    tr = pl.max_horizontal([tr1, tr2, tr3])
+
+    # 4. Apply Wilder's Smoothing
+    # Alpha = 1/N for Wilder's. In Polars ewm_mean, span = 2N - 1
+    return tr.ewm_mean(span=2 * period - 1, adjust=False).alias(indicator_str)
+
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    Legacy Pandas fallback.
+    """
+    try:
+        period = int(options.get('period', 14))
+    except (ValueError, TypeError):
+        period = 14
+
     prev_close = df['close'].shift(1)
-    
     tr1 = df['high'] - df['low']
     tr2 = (df['high'] - prev_close).abs()
     tr3 = (df['low'] - prev_close).abs()
     
-    # Vectorized max across the three TR components
     tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
-    
-    # 4. Calculate ATR using Wilder's Smoothing
-    # Wilder's Smoothing is equivalent to an EWM with alpha = 1/period
-    # or com = period - 1
     atr = tr.ewm(com=period - 1, min_periods=period).mean()
     
-    # 5. Final Formatting and Rounding
-    res = pd.DataFrame({
-        'atr': atr.round(precision)
-    }, index=df.index)
-    
-    # Drop rows where ATR hasn't finished its warmup period
-    return res.dropna()
+    return pd.DataFrame({'atr': atr}, index=df.index).dropna()

@@ -169,11 +169,17 @@ class IndicatorRegistry:
         module = self._import_plugin(name, resolve_path(path))
 
         # Only register modules that implement the `calculate` function
-        if hasattr(module, "calculate"):
+        if hasattr(module, "calculate") or hasattr(module, "calculate_polars"):
             self.registry[name] = {
-                'calculate': module.calculate,   # Reference to plugin function
-                'mtime': file_stat.st_mtime,     # Last modification timestamp
-                'size': file_stat.st_size        # File size for change detection
+
+                'calculate': getattr(module, "calculate", None),                # Reference to plugin function
+                'calculate_polars': getattr(module, "calculate_polars", None),  # Reference to plugin polars function
+                'meta': getattr(module, "meta", lambda: {}),                    # Reference to meta function
+                'warmup_count': getattr(module, "warmup_count", None),          # Reference to warmup_count function
+                'description': getattr(module, "description", lambda: "N/A"),   # Reference to description function
+                'position_args': getattr(module, "position_args", None),        # Reference to position_args function
+                'mtime': file_stat.st_mtime,                                    # Last modification timestamp
+                'size': file_stat.st_size                                       # File size for change detection
             }
             print(f"Registered plugin {path} succesfully.")
         else:
@@ -255,9 +261,6 @@ class IndicatorRegistry:
 
         # Iterate over all registered plugins
         for name, plugin_data in self.registry.items():
-            func = plugin_data.get('calculate')
-            globals_dict = getattr(func, "__globals__", {})
-
             # Initialize standardized metadata structure
             info = {
                 "name": name,
@@ -268,20 +271,20 @@ class IndicatorRegistry:
             }
 
             # Extract default parameters from plugin if defined
-            if "position_args" in globals_dict:
-                info["defaults"].update(globals_dict["position_args"]([]))
+            if plugin_data.get("position_args"):
+                info["defaults"].update(plugin_data.get("position_args")([]))
 
             # Determine warmup row requirement if defined
-            if "warmup_count" in globals_dict:
-                info["warmup"] = globals_dict["warmup_count"](info["defaults"])
+            if plugin_data.get("warmup_count"):
+                info["warmup"] = plugin_data.get("warmup_count")(info["defaults"])
 
             # Extract human-readable description if defined
-            if "description" in globals_dict:
-                info["description"] = globals_dict["description"]()
+            if plugin_data.get("description"):
+                info["description"] = plugin_data.get("description")()
 
             # Extract additional plugin metadata if defined
-            if "meta" in globals_dict:
-                info["meta"].update(globals_dict["meta"]())
+            if plugin_data.get("meta"):
+                info["meta"].update(plugin_data.get("meta")())
 
             # Add to metadata map
             metadata_map[name] = info
@@ -322,18 +325,16 @@ class IndicatorRegistry:
             if name not in self.registry:
                 continue
 
-            plugin_func = self.registry[name].get('calculate')
-
             # Initialize indicator options with raw positional parameters
             ind_opts = {"params": parts[1:]}
 
-            # Map positional arguments if the plugin defines a mapper
-            if hasattr(plugin_func, "__globals__") and "position_args" in plugin_func.__globals__:
-                ind_opts.update(plugin_func.__globals__["position_args"](parts[1:]))
+            # Query the plugin for its arguments, if defined
+            if self.registry[name].get('position_args'):
+                ind_opts.update(self.registry[name].get('position_args')(parts[1:]))
 
             # Query the plugin for its warmup row requirement, if defined
-            if hasattr(plugin_func, "__globals__") and "warmup_count" in plugin_func.__globals__:
-                warmup_rows = plugin_func.__globals__["warmup_count"](ind_opts)
+            if self.registry[name].get('warmup_count'):
+                warmup_rows = self.registry[name].get('warmup_count')(ind_opts)
                 max_rows = max(max_rows, warmup_rows)
 
         return max_rows
