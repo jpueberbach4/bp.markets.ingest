@@ -157,6 +157,12 @@ def parallel_indicators(df: pd.DataFrame, indicators: List[str], plugins: Dict[s
                 else:
                     indicator_series.append(pl.Series(col_name, vals))
 
+            del res_df 
+        
+        # Force cleanup before the giant concat
+        import gc
+        gc.collect()
+
         # Horizontal Concatenation: Pointers are pasted together
         combined_pl = pl.concat([main_pl, pl.DataFrame(indicator_series)], how="horizontal")
         
@@ -171,7 +177,7 @@ def parallel_indicators(df: pd.DataFrame, indicators: List[str], plugins: Dict[s
         combined_pl = combined_pl.select(cols_to_keep)
 
         print(f"time spend (Polars Horizontal Merge): {time.perf_counter()-t_merge_start:.4f}s")
-        return combined_pl.to_pandas()
+        return combined_pl.to_pandas(use_threads=True, types_mapper=pd.ArrowDtype if hasattr(pd, 'ArrowDtype') else None)
     else:
         # Vectorized nesting of multi-column indicators into dictionaries
         records = indicator_matrix.to_dict(orient='records')
