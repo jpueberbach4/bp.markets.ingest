@@ -8,44 +8,37 @@
  Updated:     2026-01-30
 
  Description:
-     High-performance, hybrid-parallel execution engine for technical indicators.
+     High-performance, hybrid-parallel execution engine for technical indicators
+     in market data. This module leverages Polars LazyFrame execution for
+     vectorized, multi-threaded calculations, while supporting legacy Pandas-based
+     indicator plugins via concurrent thread execution.
 
-     This module provides the `parallel_indicators` orchestration layer used by
-     BP-Markets to compute technical indicators efficiently across large market
-     datasets. It supports a mixed execution model combining:
-
-       - Polars-native indicators for vectorized, multi-threaded execution
-       - Legacy Pandas-based indicators executed concurrently via a thread pool
-
-     The system is plugin-driven and designed to be extensible, deterministic,
-     and cache-friendly. Indicator results may be returned either as flat columns
-     or nested per-row dictionaries to preserve backward compatibility with
-     existing consumers.
-
- Key Features:
-     - Hybrid Pandas / Polars execution model
-     - Parallel indicator computation
-     - Support for multi-column indicators
-     - Optional legacy dictionary nesting
-     - Zero-copy alignment where possible
-     - Deterministic, reproducible results
-
- Intended Use:
-     This module is intended for data preparation and feature engineering in
-     quantitative research pipelines. It is optimized for local execution and
-     tight iteration loops rather than end-user-facing APIs.
+     Key Features:
+       - Executes both Polars-native and Pandas-based indicators in parallel.
+       - Supports multi-column indicators and structured nesting per row.
+       - Maintains the original dataset alongside calculated indicators.
+       - Optional flat-column output for performance-critical workflows.
+       - Handles missing or NaN values gracefully.
+       - Fully compatible with Python 3.8+ environments.
 
  Requirements:
      - Python 3.8+
      - pandas
      - numpy
      - polars
-     - concurrent.futures
+     - concurrent.futures (standard library)
+
+ Usage:
+     The `parallel_indicators` function is the primary interface. Pass a Pandas
+     DataFrame with OHLCV data, a list of indicator strings, and a plugin registry.
+     The function returns a DataFrame with calculated indicators either nested under
+     an 'indicators' column or as flat columns if `disable_recursive_mapping=True`.
 
  License:
      MIT License
 ===============================================================================
 """
+
 import pandas as pd
 import numpy as np
 import os
@@ -64,27 +57,31 @@ THREAD_EXECUTOR = concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count
 
 
 def _worker_task(df_slice, p_func, full_name, p_opts):
-    """Executes a single Pandas-based indicator calculation in a worker thread.
+    """
+    Executes a single Pandas-based indicator calculation inside a worker thread.
 
-    This function runs a legacy Pandas indicator plugin, normalizes its output,
-    and prefixes column names to preserve uniqueness during later merges.
+    This helper function is designed to be dispatched via a thread pool. It runs
+    the indicator calculation, normalizes the output column names to avoid name
+    collisions, and returns the resulting DataFrame for later merging.
 
     Args:
-        df_slice: Input Pandas DataFrame slice (typically the full dataset).
-        p_func: Indicator calculation function.
-        full_name: Fully qualified indicator name (including parameters).
-        p_opts: Parsed indicator options.
+        df_slice (pd.DataFrame): Input DataFrame containing market data.
+        p_func (Callable): Indicator calculation function to execute.
+        full_name (str): Fully qualified indicator name (used as column prefix).
+        p_opts (dict): Parsed indicator-specific options.
 
     Returns:
-        pd.DataFrame | None: Resulting DataFrame with prefixed columns,
-        or None if the indicator produced no output.
+        Optional[pd.DataFrame]: A DataFrame containing the calculated indicator
+        values with prefixed column names, or None if the result is empty.
     """
     # Execute the indicator calculation
     res_df = p_func(df_slice, p_opts)
+
+    # Skip empty or invalid results
     if res_df is None or res_df.empty:
         return None
 
-    # Prefix output columns to avoid collisions during merge
+    # Prefix column names to prevent collisions during merge
     if len(res_df.columns) > 1:
         res_df.columns = [f"{full_name}__{c}" for c in res_df.columns]
     else:
@@ -92,32 +89,31 @@ def _worker_task(df_slice, p_func, full_name, p_opts):
 
     return res_df
 
-
 def parallel_indicators(
     df: pd.DataFrame,
     indicators: List[str],
     plugins: Dict[str, Any],
     disable_recursive_mapping: bool = False
 ):
-    """Calculates multiple technical indicators in parallel.
+    """Computes technical indicators in parallel using a hybrid Pandas/Polars engine.
 
-    This function orchestrates hybrid indicator execution using:
-    - Polars for native, vectorized, multi-threaded indicators
-    - Pandas + ThreadPoolExecutor for legacy plugins
+    This function orchestrates indicator execution using a mixed strategy:
+    Polars-native indicators are executed as lazy expressions and optimized
+    into a single execution plan, while legacy Pandas-based indicators are
+    executed concurrently using a thread pool.
 
-    Results can either be returned as flat columns or nested dictionaries
-    to maintain backward compatibility with older data consumers.
+    Results can be returned either as flat indicator columns or nested per-row
+    dictionaries to preserve backward compatibility with existing consumers.
 
     Args:
         df: Input OHLCV Pandas DataFrame.
         indicators: List of indicator specification strings.
         plugins: Registry mapping indicator names to plugin definitions.
-        disable_recursive_mapping: If True, returns a flat DataFrame instead
-            of nesting indicators into per-row dictionaries.
+        disable_recursive_mapping: If True, returns a flat DataFrame with
+            indicator columns instead of nesting them under `indicators`.
 
     Returns:
-        pd.DataFrame: DataFrame containing calculated indicators, either as
-        flat columns or nested under the `indicators` column.
+        pd.DataFrame: DataFrame containing calculated indicators.
     """
     # Short-circuit for empty input
     if df.empty:
@@ -127,8 +123,8 @@ def parallel_indicators(
     if 'close' in df.columns:
         df['close'] = pd.to_numeric(df['close'], errors='coerce')
 
-    # Convert to Polars for native execution and final assembly
-    main_pl = pl.from_pandas(df)
+    # Convert to Polars LazyFrame for query optimization
+    main_pl = pl.from_pandas(df).lazy()
     total_rows = len(df)
 
     pandas_tasks = []
@@ -147,15 +143,14 @@ def parallel_indicators(
 
         # Determine execution engine via plugin metadata
         meta_func = plugin_entry.get('meta')
-
         plugin_meta = meta_func() if callable(meta_func) else {}
         is_polars = plugin_meta.get('polars', 0)
 
-        # Resolve indicator arguments from positional syntax
         plugin_func = plugin_entry.get('calculate')
         ind_opts = {}
-        pos_args_func = plugin_entry.get('position_args')
 
+        # Resolve positional arguments from indicator string
+        pos_args_func = plugin_entry.get('position_args')
         if callable(pos_args_func):
             ind_opts.update(pos_args_func(parts[1:]))
         elif hasattr(plugin_func, "__globals__") and "position_args" in plugin_func.__globals__:
@@ -164,14 +159,13 @@ def parallel_indicators(
         if is_polars:
             # Route Polars-native indicators as lazy expressions
             calc_func_pl = plugin_entry.get('calculate_polars', plugin_func)
-
             expr = calc_func_pl(ind_str, ind_opts)
             if isinstance(expr, list):
                 polars_expressions.extend(expr)
             else:
                 polars_expressions.append(expr)
         else:
-            # Dispatch Pandas-based indicators to the thread pool
+            # Dispatch legacy Pandas indicators to the thread pool
             pandas_tasks.append(
                 THREAD_EXECUTOR.submit(
                     _worker_task,
@@ -182,13 +176,14 @@ def parallel_indicators(
                 )
             )
 
-    t_merge_start = time.perf_counter()
-
-    # Execute all Polars expressions in a single pass
+    # Apply all Polars expressions to the lazy execution plan
     if polars_expressions:
         main_pl = main_pl.with_columns(polars_expressions)
 
-    # Collect completed Pandas results
+    # Trigger optimized execution of the full Polars plan
+    main_pl = main_pl.collect()
+
+    # Collect completed Pandas indicator results
     pandas_results = [
         f.result()
         for f in concurrent.futures.as_completed(pandas_tasks)
@@ -201,10 +196,10 @@ def parallel_indicators(
         return df
 
     if disable_recursive_mapping:
-        # Optimized flat-column merge path
+        # Flat-column merge path for performance-critical workflows
         indicator_series = []
 
-        # Align Pandas results to full dataset length
+        # Align Pandas results to the full dataset length
         for res_df in pandas_results:
             for col_name in res_df.columns:
                 vals = res_df[col_name].values
@@ -215,9 +210,6 @@ def parallel_indicators(
                 else:
                     indicator_series.append(pl.Series(col_name, vals))
             del res_df
-
-        # Force cleanup of temporary Pandas objects
-        gc.collect()
 
         # Horizontally concatenate base data and indicator columns
         combined_pl = pl.concat(
@@ -235,12 +227,12 @@ def parallel_indicators(
 
         combined_pl = combined_pl.select(cols_to_keep)
 
-        # print(f"time spend (Hybrid Merge): {time.perf_counter()-t_merge_start:.4f}s")
-        # Rounding
+        # Apply final rounding to indicator columns
         indicator_cols = [c for c in combined_pl.columns if c not in df.columns]
-        combined_pl = combined_pl.with_columns([
-            pl.col(c).round(6) for c in indicator_cols
-        ])
+        combined_pl = combined_pl.with_columns(
+            [pl.col(c).round(6) for c in indicator_cols]
+        )
+
         return combined_pl.to_pandas(
             use_threads=True,
             types_mapper=pd.ArrowDtype if hasattr(pd, 'ArrowDtype') else None
@@ -268,12 +260,11 @@ def parallel_indicators(
             :, ~indicator_matrix.columns.duplicated()
         ].copy()
 
-        # Rounding
         indicator_matrix = indicator_matrix.round(6)
-        # Vectorized nesting of indicators into per-row dictionaries
         records = indicator_matrix.to_dict(orient='records')
         nested_list = []
 
+        # Nest multi-column indicators into structured dictionaries
         for rec in records:
             row_dict = {}
             for k, v in rec.items():
@@ -288,6 +279,6 @@ def parallel_indicators(
                     row_dict[k] = v
             nested_list.append(row_dict)
 
-        # Attach nested indicator payloads to the original DataFrame
+        # Attach nested indicators to the original DataFrame
         df['indicators'] = nested_list
         return df
