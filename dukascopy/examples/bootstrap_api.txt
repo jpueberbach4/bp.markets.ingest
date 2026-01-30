@@ -152,3 +152,5 @@ This is SHM process mode:
 999999  EUR-USD        1m  1754274360000  1.15802  1.15802  1.15779  1.15790   42.07  1.158132  ...  1.158189  1.158189  1.158189  1.158189  1.158189  1.158189  1.158189  1.158189  1.158189
 
 Actually slower. I will profile it in order to see where the loss exactly is. Weekend work.
+
+Also, i dont like those data differences. We have had the same before. Hence, two reasons to deny SHM.
