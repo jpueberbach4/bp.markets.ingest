@@ -138,11 +138,12 @@ Libraries: numpy, pandas.
 
 The engine is engineered for **Hyperparameter Optimization (HPO)** and large-scale backtesting. By leveraging memory-mapped file access, the API achieves throughput that significantly outperforms traditional database setups.
 
-### Throughput Comparison - 100k rows
+### Throughput Comparison - 1,000,000 rows
 | Query Type | Throughput | Performance Note |
 | :--- | :--- | :--- |
-| **Price-Only (Raw)** | **~3,000,000 rows/sec** | Ideal for high-speed signal scanning. |
-| **With 5 Indicators** | **~1,600,000 rows/sec** | Includes ADX, ATR, EMA, BBands, and MACD. |
+| **Price-Only (Raw)** | **~3,000,000+ rows/sec** | Zero-copy memory mapped retrieval. |
+| **Heavy Load (500 Indicators)** | **~650,000 rows/sec** | **0.5 Billion datapoints processed in 1.5s**. |
+| **Light Load (5 Indicators)** | **~1,600,000 rows/sec** | Minimal overhead, purely IO bound. |
 
 ### Why this matters:
 * **Research Speed**: A researcher can test **1,000 different indicator combinations** in under **3.5 minutes**. 
