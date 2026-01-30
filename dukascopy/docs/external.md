@@ -142,7 +142,7 @@ The engine is engineered for **Hyperparameter Optimization (HPO)** and large-sca
 | Query Type | Throughput | Performance Note |
 | :--- | :--- | :--- |
 | **Price-Only (Raw)** | **~3,000,000 rows/sec** | Ideal for high-speed signal scanning. |
-| **With 5 Indicators** | **~800,000 rows/sec** | Includes ADX, ATR, EMA, BBands, and MACD. |
+| **With 5 Indicators** | **~1,600,000 rows/sec** | Includes ADX, ATR, EMA, BBands, and MACD. |
 
 ### Why this matters:
 * **Research Speed**: A researcher can test **1,000 different indicator combinations** in under **3.5 minutes**. 
