@@ -53,9 +53,9 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     High-performance Polars-native EMA calculation using Lazy expressions.
     """
     try:
-        period = int(options.get('period', 14))
+        period = int(options.get('period', 9))
     except (ValueError, TypeError):
-        period = 14
+        period = 9
 
     # Using ewm_mean for recursive calculation (adjust=False matches standard TA)
     # This runs in Rust and bypasses the Python GIL.

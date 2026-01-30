@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import polars as pl
 from typing import List, Dict, Any
 
 def description() -> str:
@@ -8,36 +9,30 @@ def description() -> str:
     """
     return (
         "Fibonacci Retracements identify potential support and resistance levels "
-        "based on the golden ratio. It calculates the vertical distance between "
-        "the highest high and lowest low over a set period and plots horizontal "
-        "lines at the key Fibonacci levels (23.6%, 38.2%, 50%, 61.8%, and 78.6%). "
-        "Traders use these levels to identify areas where a price correction might "
-        "reverse and join the primary trend."
+        "based on the golden ratio. It calculates horizontal lines at key levels "
+        "(23.6%, 38.2%, 50%, 61.8%, and 78.6%) between the highest high and lowest low."
     )
 
-def meta()->Dict:
+def meta() -> Dict:
     """
-    Any other metadata to pass via API
+    Metadata for the dual-engine orchestrator.
     """
     return {
         "author": "Google Gemini",
-        "version": 1.0,
+        "version": 1.1,
         "verified": 1,
+        "polars": 1,  # Trigger high-speed Polars execution path
         "needs": "extension"
     }
-    
+
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for Fibonacci Retracements.
-    Requires a full 'period' to identify the rolling High/Low extremes.
-    We use 3x period for stability and consistency across the engine.
     """
     try:
         period = int(options.get('period', 100))
     except (ValueError, TypeError):
         period = 100
-
-    # Consistent with SMA and Donchian stabilization buffers
     return period * 3
 
 def position_args(args: List[str]) -> Dict[str, Any]:
@@ -49,33 +44,47 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "period": args[0] if len(args) > 0 else "100"
     }
 
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     """
-    High-performance vectorized Fibonacci Retracement calculation.
-    Calculates levels (0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0) based on 
-    rolling High/Low extremes over a specific period.
+    High-performance Polars-native calculation for Fibonacci levels.
     """
-    # 1. Parse Parameters
     try:
         period = int(options.get('period', 100))
     except (ValueError, TypeError):
         period = 100
 
-    # 2. Determine Price Precision for rounding
-    try:
-        sample_price = str(df['close'].iloc[0])
-        precision = len(sample_price.split('.')[1])+1 if '.' in sample_price else 2
-    except (IndexError, AttributeError):
-        precision = 5
+    # 1. Calculate Rolling Extremes
+    # Polars uses highly optimized Rust kernels for rolling_max and rolling_min
+    hh = pl.col("high").rolling_max(window_size=period)
+    ll = pl.col("low").rolling_min(window_size=period)
+    diff = hh - ll
 
-    # 3. Calculate Rolling Extremes (HH and LL)
+    # 2. Define Fibonacci Levels
+    # We return a list of aliased expressions for the nested orchestrator
+    return [
+        hh.alias(f"{indicator_str}__fib_0"),
+        (hh - (0.236 * diff)).alias(f"{indicator_str}__fib_236"),
+        (hh - (0.382 * diff)).alias(f"{indicator_str}__fib_382"),
+        (hh - (0.500 * diff)).alias(f"{indicator_str}__fib_50"),
+        (hh - (0.618 * diff)).alias(f"{indicator_str}__fib_618"),
+        (hh - (0.786 * diff)).alias(f"{indicator_str}__fib_786"),
+        ll.alias(f"{indicator_str}__fib_100")
+    ]
+
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    Legacy Pandas fallback.
+    """
+    try:
+        period = int(options.get('period', 100))
+    except (ValueError, TypeError):
+        period = 100
+
     hh = df['high'].rolling(window=period).max()
     ll = df['low'].rolling(window=period).min()
     diff = hh - ll
 
-    # 4. Vectorized Level Calculation
-    # We create a dictionary of levels to easily convert to a DataFrame
-    levels = {
+    return pd.DataFrame({
         'fib_0': hh,
         'fib_236': hh - (0.236 * diff),
         'fib_382': hh - (0.382 * diff),
@@ -83,13 +92,4 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
         'fib_618': hh - (0.618 * diff),
         'fib_786': hh - (0.786 * diff),
         'fib_100': ll
-    }
-
-    # 5. Final Formatting and Rounding
-    res = pd.DataFrame(levels, index=df.index)
-    
-    # Round all columns to detected price precision
-    res = res.round(precision)
-    
-    # Drop rows where the window hasn't filled (warm-up period)
-    return res.dropna()
+    }, index=df.index).dropna()

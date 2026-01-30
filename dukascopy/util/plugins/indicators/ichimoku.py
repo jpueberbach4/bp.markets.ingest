@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import polars as pl
 from typing import List, Dict, Any
 
 def description() -> str:
@@ -7,30 +8,26 @@ def description() -> str:
     Returns a human-readable description for the API and UI.
     """
     return (
-        "The Ichimoku Cloud (Ichimoku Kinko Hyo) is a comprehensive indicator that "
-        "defines support and resistance, identifies trend direction, and gauges "
-        "momentum. It consists of five lines: the Tenkan-sen (Conversion), Kijun-sen "
-        "(Base), Senkou Span A and B (which form the 'Cloud'), and the Chikou Span "
-        "(Lagging). A price above the cloud indicates a bullish trend, while price "
-        "below suggests a bearish trend."
+        "The Ichimoku Cloud (Ichimoku Kinko Hyo) defines support and resistance, "
+        "identifies trend direction, and gauges momentum. It consists of five lines: "
+        "Tenkan-sen, Kijun-sen, Senkou Span A/B (the Cloud), and Chikou Span."
     )
 
-def meta()->Dict:
+def meta() -> Dict:
     """
-    Any other metadata to pass via API
+    Metadata for the dual-engine orchestrator.
     """
     return {
         "author": "Google Gemini",
-        "version": 1.0,
+        "version": 1.1,
         "verified": 1,
+        "polars": 1,  # Trigger high-speed Polars execution path
         "needs": "surface-colouring"
     }
-    
+
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for Ichimoku Cloud.
-    Requires the largest window (senkou_p) plus the displacement 
-    to ensure the cloud is fully formed at the start date.
     """
     try:
         kijun_p = int(options.get('kijun', 26))
@@ -39,16 +36,11 @@ def warmup_count(options: Dict[str, Any]) -> int:
     except (ValueError, TypeError):
         senkou_p, displace = 52, 26
 
-    # Mathematical Requirement:
-    # We need senkou_p rows to calculate Span B, 
-    # then it is shifted by 'displace' rows.
-    # We use a 2x buffer on the total to ensure trend stability.
     return (senkou_p + displace) * 2
 
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.
-    Example: ichimoku_9_26_52 -> {'tenkan': '9', 'kijun': '26', 'senkou': '52'}
     """
     return {
         "tenkan": args[0] if len(args) > 0 else "9",
@@ -56,57 +48,67 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "senkou": args[2] if len(args) > 2 else "52"
     }
 
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     """
-    High-performance vectorized Ichimoku Cloud calculation.
+    High-performance Polars-native calculation using Lazy expressions.
     """
-    # 1. Parse Parameters
     try:
         tenkan_p = int(options.get('tenkan', 9))
         kijun_p = int(options.get('kijun', 26))
         senkou_p = int(options.get('senkou', 52))
-        # Displacement is typically equal to the Kijun period
         displace = int(options.get('displacement', kijun_p))
     except (ValueError, TypeError):
         tenkan_p, kijun_p, senkou_p, displace = 9, 26, 52, 26
 
-    # 2. Determine Price Precision
-    try:
-        sample_price = str(df['close'].iloc[0])
-        precision = len(sample_price.split('.')[1])+1 if '.' in sample_price else 2
-    except (IndexError, AttributeError):
-        precision = 5
+    # 1. Tenkan-sen (9-period high + 9-period low) / 2
+    tenkan = (pl.col("high").rolling_max(window_size=tenkan_p) + 
+              pl.col("low").rolling_min(window_size=tenkan_p)) / 2
 
-    # 3. Vectorized Calculations
-    # Tenkan-sen (Conversion Line): (9-period high + 9-period low) / 2
-    tenkan_h = df['high'].rolling(window=tenkan_p).max()
-    tenkan_l = df['low'].rolling(window=tenkan_p).min()
-    tenkan = (tenkan_h + tenkan_l) / 2
+    # 2. Kijun-sen (26-period high + 26-period low) / 2
+    kijun = (pl.col("high").rolling_max(window_size=kijun_p) + 
+             pl.col("low").rolling_min(window_size=kijun_p)) / 2
 
-    # Kijun-sen (Base Line): (26-period high + 26-period low) / 2
-    kijun_h = df['high'].rolling(window=kijun_p).max()
-    kijun_l = df['low'].rolling(window=kijun_p).min()
-    kijun = (kijun_h + kijun_l) / 2
-
-    # Senkou Span A (Leading Span A): (Tenkan + Kijun) / 2, shifted forward
+    # 3. Senkou Span A (Leading Span A): (Tenkan + Kijun) / 2, shifted forward
     span_a = ((tenkan + kijun) / 2).shift(displace)
 
-    # Senkou Span B (Leading Span B): (52-period high + 52-period low) / 2, shifted forward
-    senkou_h = df['high'].rolling(window=senkou_p).max()
-    senkou_l = df['low'].rolling(window=senkou_p).min()
-    span_b = ((senkou_h + senkou_l) / 2).shift(displace)
+    # 4. Senkou Span B (Leading Span B): (52-period high + 52-period low) / 2, shifted forward
+    span_b = ((pl.col("high").rolling_max(window_size=senkou_p) + 
+               pl.col("low").rolling_min(window_size=senkou_p)) / 2).shift(displace)
 
-    # Chikou Span (Lagging Span): Close shifted back
+    # 5. Chikou Span (Lagging Span): Close shifted back
+    chikou = pl.col("close").shift(-displace)
+
+    # Return as aliased expressions for the nested orchestrator
+    return [
+        tenkan.alias(f"{indicator_str}__tenkan"),
+        kijun.alias(f"{indicator_str}__kijun"),
+        span_a.alias(f"{indicator_str}__span_a"),
+        span_b.alias(f"{indicator_str}__span_b"),
+        chikou.alias(f"{indicator_str}__chikou")
+    ]
+
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    Legacy Pandas fallback.
+    """
+    try:
+        tenkan_p = int(options.get('tenkan', 9))
+        kijun_p = int(options.get('kijun', 26))
+        senkou_p = int(options.get('senkou', 52))
+        displace = int(options.get('displacement', kijun_p))
+    except (ValueError, TypeError):
+        tenkan_p, kijun_p, senkou_p, displace = 9, 26, 52, 26
+
+    tenkan = (df['high'].rolling(window=tenkan_p).max() + df['low'].rolling(window=tenkan_p).min()) / 2
+    kijun = (df['high'].rolling(window=kijun_p).max() + df['low'].rolling(window=kijun_p).min()) / 2
+    span_a = ((tenkan + kijun) / 2).shift(displace)
+    span_b = ((df['high'].rolling(window=senkou_p).max() + df['low'].rolling(window=senkou_p).min()) / 2).shift(displace)
     chikou = df['close'].shift(-displace)
 
-    # 4. Final Formatting and Rounding
-    res = pd.DataFrame({
-        'tenkan': tenkan.round(precision),
-        'kijun': kijun.round(precision),
-        'span_a': span_a.round(precision),
-        'span_b': span_b.round(precision),
-        'chikou': chikou.round(precision)
-    }, index=df.index)
-    
-    # We drop rows where the Kijun (base trend) is not yet available
-    return res.dropna(subset=['kijun'])
+    return pd.DataFrame({
+        'tenkan': tenkan,
+        'kijun': kijun,
+        'span_a': span_a,
+        'span_b': span_b,
+        'chikou': chikou
+    }, index=df.index).dropna(subset=['kijun'])

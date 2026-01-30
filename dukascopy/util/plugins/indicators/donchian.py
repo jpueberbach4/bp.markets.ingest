@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
+import polars as pl
 from typing import List, Dict, Any
-
 
 def description() -> str:
     """
@@ -14,29 +14,26 @@ def description() -> str:
         "period), and the Midline (average of the Upper and Lower bands)."
     )
 
-def meta()->Dict:
+def meta() -> Dict:
     """
-    Any other metadata to pass via API
+    Metadata for the dual-engine orchestrator.
     """
     return {
         "author": "Google Gemini",
-        "version": 1.0,
+        "version": 1.1,
         "verified": 1,
+        "polars": 1,  # Trigger high-speed Polars execution path
         "needs": "surface-colour"
     }
-    
+
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for Donchian Channels.
-    Donchian Channels require a full 'period' to find the highest high 
-    and lowest low. We use 3x period for stability and consistency.
     """
     try:
         period = int(options.get('period', 20))
     except (ValueError, TypeError):
         period = 20
-
-    # Consistent with SMA and Bollinger Bands stabilization buffers
     return period * 3
 
 def position_args(args: List[str]) -> Dict[str, Any]:
@@ -48,40 +45,46 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "period": args[0] if len(args) > 0 else "20"
     }
 
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     """
-    High-performance vectorized Donchian Channels calculation.
-    Formula:
-    - Upper: Highest High over N periods
-    - Lower: Lowest Low over N periods
-    - Mid:   (Upper + Lower) / 2
+    High-performance Polars-native calculation using Lazy expressions.
     """
-    # 1. Parse Parameters
     try:
         period = int(options.get('period', 20))
     except (ValueError, TypeError):
         period = 20
 
-    # 2. Determine Price Precision for rounding
-    try:
-        sample_price = str(df['close'].iloc[0])
-        precision = len(sample_price.split('.')[1])+1 if '.' in sample_price else 2
-    except (IndexError, AttributeError):
-        precision = 5
+    # 1. Define the rolling extremes
+    # Polars uses highly optimized Rust kernels for rolling_max/min
+    upper = pl.col("high").rolling_max(window_size=period)
+    lower = pl.col("low").rolling_min(window_size=period)
 
-    # 3. Vectorized Calculation
-    # We use a rolling window to find the extremes
+    # 2. Derive the Midline
+    mid = (upper + lower) / 2
+
+    # 3. Return as a list of aliased expressions for the nested orchestrator
+    # Using the __ prefix to trigger the dictionary grouping in parallel.py
+    return [
+        upper.alias(f"{indicator_str}__upper"),
+        mid.alias(f"{indicator_str}__mid"),
+        lower.alias(f"{indicator_str}__lower")
+    ]
+
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    Legacy Pandas fallback.
+    """
+    try:
+        period = int(options.get('period', 20))
+    except (ValueError, TypeError):
+        period = 20
+
     upper = df['high'].rolling(window=period).max()
     lower = df['low'].rolling(window=period).min()
     mid = (upper + lower) / 2
 
-    # 4. Final Formatting and Rounding
-    # We return a DataFrame with the same index as the input for O(1) merging
-    res = pd.DataFrame({
-        'upper': upper.round(precision),
-        'mid': mid.round(precision),
-        'lower': lower.round(precision)
-    }, index=df.index)
-    
-    # Drop rows where the rolling window hasn't filled (warmup period)
-    return res.dropna(subset=['upper'])
+    return pd.DataFrame({
+        'upper': upper,
+        'mid': mid,
+        'lower': lower
+    }, index=df.index).dropna(subset=['upper'])

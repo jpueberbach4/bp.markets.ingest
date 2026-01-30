@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import polars as pl
 from typing import List, Dict, Any
 
 def description() -> str:
@@ -7,36 +8,31 @@ def description() -> str:
     Returns a human-readable description for the API and UI.
     """
     return (
-        "The Elder Ray Index (also known as Bull and Bear Power) measures the amount "
-        "of buying and selling pressure in the market. It uses an Exponential Moving "
-        "Average (EMA) as a baseline for value. Bull Power is calculated by subtracting "
-        "the EMA from the high of each bar, while Bear Power is calculated by "
-        "subtracting the EMA from the low of each bar."
+        "The Elder Ray Index (Bull and Bear Power) measures buying and selling "
+        "pressure. Bull Power is High minus EMA, and Bear Power is Low minus EMA. "
+        "It uses an EMA as a baseline for value."
     )
 
-def meta()->Dict:
+def meta() -> Dict:
     """
-    Any other metadata to pass via API
+    Metadata for the dual-engine orchestrator.
     """
     return {
         "author": "Google Gemini",
-        "version": 1.0,
+        "version": 1.1,
         "panel": 1,
-        "verified": 1
+        "verified": 1,
+        "polars": 1  # Trigger high-speed Polars execution path
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for the Elder Ray Index.
-    Elder Ray uses an EMA (Exponential Moving Average) for its baseline.
-    We use 3x the period to ensure the EMA has converged.
     """
     try:
         period = int(options.get('period', 13))
     except (ValueError, TypeError):
         period = 13
-
-    # Consistent with EMA-based indicators (3x period)
     return period * 3
 
 def position_args(args: List[str]) -> Dict[str, Any]:
@@ -48,40 +44,44 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "period": args[0] if len(args) > 0 else "13"
     }
 
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     """
-    High-performance vectorized Elder Ray Index calculation.
-    Formula: 
-    - Bull Power = High - EMA(period)
-    - Bear Power = Low - EMA(period)
+    High-performance Polars-native calculation for Elder Ray Index.
     """
-    # 1. Parse Parameters
     try:
         period = int(options.get('period', 13))
     except (ValueError, TypeError):
         period = 13
 
-    # 2. Determine Price Precision for rounding
-    try:
-        sample_price = str(df['close'].iloc[0])
-        precision = len(sample_price.split('.')[1])+1 if '.' in sample_price else 2
-    except (IndexError, AttributeError):
-        precision = 5
+    # 1. Calculate the baseline EMA
+    # Polars ewm_mean is GIL-free and optimized in Rust
+    ema = pl.col("close").ewm_mean(span=period, adjust=False)
 
-    # 3. Calculation Logic
-    # Calculate EMA using the ewm function (adjust=False matches the standard formula)
+    # 2. Calculate Power components
+    bull_power = pl.col("high") - ema
+    bear_power = pl.col("low") - ema
+
+    # 3. Return aliased expressions for the nested orchestrator
+    # Using __ prefix to trigger dictionary grouping in parallel.py
+    return [
+        bull_power.alias(f"{indicator_str}__bull_power"),
+        bear_power.alias(f"{indicator_str}__bear_power")
+    ]
+
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    Legacy Pandas fallback.
+    """
+    try:
+        period = int(options.get('period', 13))
+    except (ValueError, TypeError):
+        period = 13
+
     ema = df['close'].ewm(span=period, adjust=False).mean()
-    
-    # Calculate Power components (Vectorized)
     bull_power = df['high'] - ema
     bear_power = df['low'] - ema
 
-    # 4. Final Formatting and Rounding
-    # Preserving the original index for O(1) merging in parallel.py
-    res = pd.DataFrame({
-        'bull_power': bull_power.round(precision),
-        'bear_power': bear_power.round(precision)
-    }, index=df.index)
-    
-    # Drop rows where the EMA hasn't stabilized (warm-up period)
-    return res.dropna()
+    return pd.DataFrame({
+        'bull_power': bull_power,
+        'bear_power': bear_power
+    }, index=df.index).dropna()
