@@ -208,17 +208,25 @@ def get_data(
         chunk_df['indicators'] = [{} for _ in range(len(chunk_df))]
 
     # Drop the rows before after_ms, end-limit and offset need to be done by caller
-    chunk_df = chunk_df[chunk_df['time_ms'] >= after_ms]
-    chunk_df = chunk_df[chunk_df['time_ms'] < until_ms]
+    #chunk_df = chunk_df[(chunk_df['time_ms'] >= after_ms) & (chunk_df['time_ms'] < until_ms)].copy()
+    if not chunk_df.empty:
+        times = chunk_df['time_ms'].to_numpy() # Zero-copy view if possible
+        
+        # Binary search for the slice bounds (O(log N)) instead of scanning (O(N))
+        start_iloc = np.searchsorted(times, after_ms, side='left')
+        end_iloc = np.searchsorted(times, until_ms, side='left')
+        
+        # Use positional slicing (Fastest possible operation)
+        chunk_df = chunk_df.iloc[start_iloc:end_iloc]
 
     # Apply the sort
     chunk_df = chunk_df.reset_index().sort_values(by='time_ms', ascending=(order == 'asc'))
 
+    # Reset the index to have nice 0...N indices
+    chunk_df = chunk_df.reset_index(drop=True)
+
     # Apply the limit - for multiselect via API, this is handled in API
     chunk_df = chunk_df.iloc[:limit]
-
-    # Drop the messy index column. Merging is happening on time_ms and optionally on symbol and tf
-    chunk_df.drop(columns=['index'], errors='ignore', inplace=True)
 
     return chunk_df
 

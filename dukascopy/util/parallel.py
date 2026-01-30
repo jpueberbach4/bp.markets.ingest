@@ -218,13 +218,18 @@ def parallel_indicators(
         # Batch Merge: Multi-threaded horizontal join in Rust
         combined_pl = pl.concat(indicator_frames, how="horizontal")
 
-        # Final Rounding: Done once in vectorized Rust (Very Fast)
+        combined_pl = combined_pl.rechunk()
+
+        # Deduplicate and Round
         indicator_cols = [c for c in combined_pl.columns if c not in df.columns]
         combined_pl = combined_pl.with_columns([pl.col(c).round(6) for c in indicator_cols])
 
-        # Zero-Copy Handover back to Pandas
-        return combined_pl.to_pandas(use_threads=True, types_mapper=pd.ArrowDtype if hasattr(pd, 'ArrowDtype') else None)
-
+        # Use the ArrowDtype mapper to keep data in the high-performance 
+        # Arrow memory space during the handover.
+        return combined_pl.to_pandas(
+            use_threads=True,
+            types_mapper=pd.ArrowDtype if hasattr(pd, 'ArrowDtype') else None
+        )
     else:
         # Legacy nested-dictionary assembly path
         if pandas_results:
