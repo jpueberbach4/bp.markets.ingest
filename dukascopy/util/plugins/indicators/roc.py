@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import polars as pl
 from typing import List, Dict, Any
 
 def description() -> str:
@@ -15,29 +16,27 @@ def description() -> str:
         "overbought/oversold conditions, and momentum divergences."
     )
 
-def meta()->Dict:
+def meta() -> Dict:
     """
-    Any other metadata to pass via API
+    Metadata for the dual-engine orchestrator.
     """
     return {
         "author": "Google Gemini",
-        "version": 1.0,
+        "version": 1.1,
         "panel": 1,
-        "verified": 1
+        "verified": 1,
+        "polars": 1  # Flag to trigger high-speed Polars execution
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for Rate of Change (ROC).
-    Requires 'period' rows to find the historical price comparison.
-    We use 3x period for stability and engine consistency.
+    Requires 'period' rows for historical comparison.
     """
     try:
         period = int(options.get('period', 9))
     except (ValueError, TypeError):
         period = 9
-
-    # Consistent with other rolling-window stabilization buffers
     return period * 3
 
 def position_args(args: List[str]) -> Dict[str, Any]:
@@ -49,34 +48,44 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "period": args[0] if len(args) > 0 else "9"
     }
 
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     """
-    High-performance vectorized Rate of Change (ROC) calculation.
-    ROC = ((Price - Price_n) / Price_n) * 100
+    High-performance Polars-native calculation for ROC.
+    Uses Lazy expressions for O(1) memory mapping.
     """
-    # 1. Parse Parameters
     try:
         period = int(options.get('period', 12))
     except (ValueError, TypeError):
         period = 12
 
-    # 2. Determine Precision
-    # Momentum indicators are typically rounded to 2 or 3 decimals
+    # 1. Historical Price Lookup
+    # We shift 'close' by the period to get the comparison base
+    price_n = pl.col("close").shift(period)
+
+    # 2. Percentage Change Calculation
+    # Polars handles division by zero by producing 'null' or 'inf', 
+    # which we fill for stability.
+    roc = ((pl.col("close") - price_n) / price_n) * 100
+
+    # 3. Final Alias and Rounding
+    return roc.fill_nan(0).fill_null(0).round(3).alias(indicator_str)
+
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    Legacy fallback for Pandas-only environments.
+    """
+    try:
+        period = int(options.get('period', 12))
+    except (ValueError, TypeError):
+        period = 12
+
     precision = 3 
 
-    # 3. Vectorized Calculation Logic
-    # Shift price by n periods to get 'Price_n'
     price_n = df['close'].shift(period)
-    
-    # Calculate ROC percentage change
-    # Handle division by zero using .replace(0, np.nan)
     roc = ((df['close'] - price_n) / price_n.replace(0, np.nan)) * 100
 
-    # 4. Final Formatting and Rounding
-    # Preserving the original index for O(1) merging in parallel.py
     res = pd.DataFrame({
         'roc': roc.round(precision)
     }, index=df.index)
     
-    # Drop rows where the shifting period hasn't filled (warm-up period)
     return res.dropna(subset=['roc'])

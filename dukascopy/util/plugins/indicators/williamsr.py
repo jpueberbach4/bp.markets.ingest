@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import polars as pl
 from typing import List, Dict, Any
 
 def description() -> str:
@@ -16,29 +17,26 @@ def description() -> str:
         "potential reversals and trend strength."
     )
 
-def meta()->Dict:
+def meta() -> Dict:
     """
-    Any other metadata to pass via API
+    Metadata for the dual-engine orchestrator.
     """
     return {
         "author": "Google Gemini",
-        "version": 1.0,
+        "version": 1.1,
         "panel": 1,
-        "verified": 1
+        "verified": 1,
+        "polars": 1  # Flag to trigger high-speed Polars execution
     }
     
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for Williams %R.
-    Requires a full 'period' to identify rolling highs and lows.
-    We use 3x period for stability and engine-wide consistency.
     """
     try:
         period = int(options.get('period', 14))
     except (ValueError, TypeError):
         period = 14
-
-    # 3x period ensures the rolling extremes are well-established
     return period * 3
 
 def position_args(args: List[str]) -> Dict[str, Any]:
@@ -50,10 +48,30 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "period": args[0] if len(args) > 0 else "14"
     }
 
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
+    """
+    High-performance Polars-native calculation for Williams %R.
+    """
+    try:
+        period = int(options.get('period', 14))
+    except (ValueError, TypeError):
+        period = 14
+
+    # 1. Get rolling high and low over the lookback period
+    hh = pl.col("high").rolling_max(window_size=period)
+    ll = pl.col("low").rolling_min(window_size=period)
+    
+    # 2. Williams %R Formula: ((HH - Close) / (HH - LL)) * -100
+    # Handle division by zero for flat price action by filling with a neutral -50
+    range_diff = hh - ll
+    williams_r = ((hh - pl.col("close")) / range_diff) * -100
+
+    # 3. Final Alias and Rounding
+    return williams_r.fill_nan(-50).fill_null(-50).round(2).alias(indicator_str)
+
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     """
-    High-performance vectorized Williams %R calculation.
-    Formula: %R = (Highest High - Close) / (Highest High - Lowest Low) * -100
+    High-performance vectorized Williams %R calculation (Pandas Fallback).
     """
     # 1. Parse Parameters
     try:
@@ -71,22 +89,14 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
         precision = 2
 
     # 3. Vectorized Calculation Logic
-    # Get rolling high and low over the lookback period
     hh = df['high'].rolling(window=period).max()
     ll = df['low'].rolling(window=period).min()
-    
-    # Range calculation (Highest High - Lowest Low)
-    # Handle division by zero for flat price action (HH == LL)
     range_diff = (hh - ll).replace(0, np.nan)
-    
-    # Williams %R Formula
     williams_r = ((hh - df['close']) / range_diff) * -100
 
     # 4. Final Formatting and Rounding
-    # Preserving the original index for O(1) merging in parallel.py
     res = pd.DataFrame({
         'williams_r': williams_r.round(precision)
     }, index=df.index)
     
-    # Drop rows where the window hasn't filled (warm-up period)
     return res.dropna(subset=['williams_r'])

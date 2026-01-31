@@ -1,3 +1,4 @@
+import polars as pl
 import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
@@ -15,30 +16,26 @@ def description() -> str:
         "indicate oversold conditions."
     )
 
-def meta()->Dict:
+def meta() -> Dict:
     """
-    Any other metadata to pass via API
+    Metadata for the dual-engine orchestrator.
     """
     return {
         "author": "Google Gemini",
-        "version": 1.0,
+        "version": 1.1,
         "panel": 1,
-        "verified": 1
+        "verified": 1,
+        "polars": 1  # Flag to trigger high-speed Polars execution
     }
-    
+
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for the Stochastic Oscillator.
-    %K needs k_period, and %D needs d_period to average %K.
-    We use 3x the primary period for engine-wide consistency.
     """
     try:
         k_period = int(options.get('k_period', 14))
     except (ValueError, TypeError):
         k_period = 14
-
-    # 3x k_period ensures the rolling high/low extremes 
-    # and the subsequent %D smoothing are well-established.
     return k_period * 3
 
 def position_args(args: List[str]) -> Dict[str, Any]:
@@ -51,42 +48,57 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "d_period": args[1] if len(args) > 1 else "3"
     }
 
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     """
-    High-performance vectorized Stochastic Oscillator (%K and %D).
-    %K = 100 * (Current Close - Lowest Low) / (Highest High - Lowest Low)
-    %D = 3-period SMA of %K
+    High-performance Polars-native calculation for Stochastic Oscillator.
     """
-    # 1. Parse Parameters
     try:
         k_period = int(options.get('k_period', 14))
         d_period = int(options.get('d_period', 3))
     except (ValueError, TypeError):
         k_period, d_period = 14, 3
 
-    # 2. Determine Precision
-    # Oscillators are typically rounded to 2 decimals
+    # 1. Rolling Low and High over the k_period
+    low_min = pl.col("low").rolling_min(window_size=k_period)
+    high_max = pl.col("high").rolling_max(window_size=k_period)
+    
+    # 2. Calculate %K (Fast Line)
+    # Handle division by zero for flat price action by filling nulls/NaNs with 50 (neutral)
+    denom = high_max - low_min
+    stoch_k = (100 * (pl.col("close") - low_min) / denom).fill_nan(50).fill_null(50)
+    
+    # 3. Calculate %D (Slow Line - SMA of %K)
+    stoch_d = stoch_k.rolling_mean(window_size=d_period)
+
+    # 4. Return as aliased expressions for structural nesting
+    return [
+        stoch_k.round(2).alias(f"{indicator_str}__stoch_k"),
+        stoch_d.round(2).alias(f"{indicator_str}__stoch_d")
+    ]
+
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    Legacy fallback for Pandas-only environments.
+    """
+    try:
+        k_period = int(options.get('k_period', 14))
+        d_period = int(options.get('d_period', 3))
+    except (ValueError, TypeError):
+        k_period, d_period = 14, 3
+
     precision = 2 
 
-    # 3. Vectorized Calculation Logic
-    # Rolling Low and High over the k_period
     low_min = df['low'].rolling(window=k_period).min()
     high_max = df['high'].rolling(window=k_period).max()
     
-    # Calculate %K
-    # Handle division by zero for flat price action using .replace(0, np.nan)
     denom = (high_max - low_min).replace(0, np.nan)
     stoch_k = 100 * (df['close'] - low_min) / denom
     
-    # Calculate %D (Simple Moving Average of %K)
     stoch_d = stoch_k.rolling(window=d_period).mean()
 
-    # 4. Final Formatting and Rounding
-    # Preserving the original index for O(1) merging in parallel.py
     res = pd.DataFrame({
         'stoch_k': stoch_k.round(precision),
         'stoch_d': stoch_d.round(precision)
     }, index=df.index)
     
-    # Drop rows where the window hasn't filled (warm-up period)
     return res.dropna(subset=['stoch_d'])

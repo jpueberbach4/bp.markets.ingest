@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import polars as pl
 from typing import List, Dict, Any
 
 def description() -> str:
@@ -15,24 +16,22 @@ def description() -> str:
         "stop-loss levels."
     )
 
-def meta()->Dict:
+def meta() -> Dict:
     """
-    Any other metadata to pass via API
+    Metadata for the dual-engine orchestrator.
     """
     return {
         "author": "Google Gemini",
-        "version": 1.0,
-        "verified": 1
+        "version": 1.1,
+        "verified": 1,
+        "polars": 1  # Flag to trigger high-speed Polars execution
     }
-    
+
 def warmup_count(options: Dict[str, Any]) -> int:
     """
-    PSAR is a recursive state machine. 
-    A warmup is required to establish the correct trend direction (Bull/Bear),
-    the Extreme Point (EP), and the Acceleration Factor (AF).
+    PSAR requires a warmup to establish the correct trend direction and 
+    acceleration factor stability. 100 bars is the industry standard.
     """
-    # 100 bars is the industry standard to ensure the Parabolic SAR 
-    # has locked onto the trend and the acceleration has stabilized.
     return 100
 
 def position_args(args: List[str]) -> Dict[str, Any]:
@@ -45,49 +44,27 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "max_step": args[1] if len(args) > 1 else "0.2"
     }
 
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+def _psar_backend(highs: np.ndarray, lows: np.ndarray, step: float, max_step: float) -> np.ndarray:
     """
-    High-performance Parabolic SAR (Stop and Reverse) calculation.
-    Uses a NumPy state machine for recursive path-dependency.
+    Internal NumPy state machine for recursive PSAR calculation.
     """
-    # 1. Parse Parameters
-    try:
-        step = float(options.get('step', 0.02))
-        max_step = float(options.get('max_step', 0.2))
-    except (ValueError, TypeError):
-        step, max_step = 0.02, 0.2
-
-    # 2. Determine Price Precision
-    try:
-        sample_price = str(df['close'].iloc[0])
-        precision = len(sample_price.split('.')[1])+1 if '.' in sample_price else 2
-    except (IndexError, AttributeError):
-        precision = 5
-
-    # 3. Path-Dependent Calculation (NumPy Accelerated)
-    highs = df['high'].values
-    lows = df['low'].values
-    n = len(df)
-    
+    n = len(highs)
     psar = np.zeros(n)
-    bull = True # Initial trend direction
+    bull = True 
     af = step
     ep = highs[0]
-    psar[0] = lows[0] # Initial SAR
+    psar[0] = lows[0]
 
-    # State machine loop
     for i in range(1, n):
         prev_psar = psar[i-1]
         
         if bull:
             psar[i] = prev_psar + af * (ep - prev_psar)
-            # SAR cannot be higher than the lows of the previous two periods
             psar[i] = min(psar[i], lows[i-1], lows[max(0, i-2)])
             
-            # Check for reversal
             if lows[i] < psar[i]:
                 bull = False
-                psar[i] = ep # SAR reverses to the previous Extreme Point
+                psar[i] = ep
                 ep = lows[i]
                 af = step
             else:
@@ -96,10 +73,8 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
                     af = min(af + step, max_step)
         else:
             psar[i] = prev_psar + af * (ep - prev_psar)
-            # SAR cannot be lower than the highs of the previous two periods
             psar[i] = max(psar[i], highs[i-1], highs[max(0, i-2)])
             
-            # Check for reversal
             if highs[i] > psar[i]:
                 bull = True
                 psar[i] = ep
@@ -109,11 +84,51 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
                 if lows[i] < ep:
                     ep = lows[i]
                     af = min(af + step, max_step)
+    return psar
 
-    # 4. Final Formatting and Rounding
-    # Preserving the original index for O(1) merging in parallel.py
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
+    """
+    High-performance Polars-native calculation for PSAR.
+    Uses map_batches to execute the recursive state machine in a single pass.
+    """
+    try:
+        step = float(options.get('step', 0.02))
+        max_step = float(options.get('max_step', 0.2))
+    except (ValueError, TypeError):
+        step, max_step = 0.02, 0.2
+
+    # We use pl.struct to pass multiple columns (high/low) to the NumPy backend
+    return pl.struct(["high", "low"]).map_batches(
+        lambda s: _psar_backend(
+            s.struct.field("high").to_numpy(),
+            s.struct.field("low").to_numpy(),
+            step, 
+            max_step
+        )
+    ).round(5).alias(indicator_str)
+
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    Legacy fallback for Pandas-only environments.
+    """
+    try:
+        step = float(options.get('step', 0.02))
+        max_step = float(options.get('max_step', 0.2))
+    except (ValueError, TypeError):
+        step, max_step = 0.02, 0.2
+
+    try:
+        sample_price = str(df['close'].iloc[0])
+        precision = len(sample_price.split('.')[1])+1 if '.' in sample_price else 2
+    except (IndexError, AttributeError):
+        precision = 5
+
+    highs = df['high'].values
+    lows = df['low'].values
+    psar_values = _psar_backend(highs, lows, step, max_step)
+
     res = pd.DataFrame({
-        'psar': psar
+        'psar': psar_values
     }, index=df.index)
     
     return res.round(precision)

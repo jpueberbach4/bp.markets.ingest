@@ -1,3 +1,4 @@
+import polars as pl
 import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
@@ -15,22 +16,21 @@ def description() -> str:
         "overbought conditions and values below 30 indicating oversold conditions."
     )
 
-def meta()->Dict:
+def meta() -> Dict:
     """
-    Any other metadata to pass via API
+    Metadata for the dual-engine orchestrator.
     """
     return {
         "author": "Google Gemini",
-        "version": 1.0,
+        "version": 1.1,
         "panel": 1,
-        "verified": 1
+        "verified": 1,
+        "polars": 1  # Flag to trigger high-speed Polars execution
     }
-    
+
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for the Ultimate Oscillator.
-    UO uses three periods (p1, p2, p3). We use 3x the longest period
-    to ensure the rolling sums and the weighted average are stable.
     """
     try:
         p1 = int(options.get('p1', 7))
@@ -39,10 +39,7 @@ def warmup_count(options: Dict[str, Any]) -> int:
     except (ValueError, TypeError):
         p1, p2, p3 = 7, 14, 28
 
-    # Determine the longest lookback
     max_period = max(p1, p2, p3)
-
-    # 3x the longest period for statistical and engine-wide consistency
     return max_period * 3
 
 def position_args(args: List[str]) -> Dict[str, Any]:
@@ -56,12 +53,10 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "p3": args[2] if len(args) > 2 else "28"
     }
 
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     """
-    High-performance vectorized Ultimate Oscillator (UO).
-    UO = 100 * [(4 * Avg7) + (2 * Avg14) + Avg28] / (4 + 2 + 1)
+    High-performance Polars-native calculation for Ultimate Oscillator.
     """
-    # 1. Parse Parameters
     try:
         p1 = int(options.get('p1', 7))
         p2 = int(options.get('p2', 14))
@@ -69,7 +64,40 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     except (ValueError, TypeError):
         p1, p2, p3 = 7, 14, 28
 
-    # 2. Determine Price Precision
+    # 1. Vectorized Pre-calculations (BP and TR)
+    prev_close = pl.col("close").shift(1)
+    
+    # Buying Pressure: close - min(low, prev_close)
+    min_low_pc = pl.min_horizontal([pl.col("low"), prev_close])
+    bp = pl.col("close") - min_low_pc
+    
+    # True Range: max(high, prev_close) - min(low, prev_close)
+    max_high_pc = pl.max_horizontal([pl.col("high"), prev_close])
+    tr = max_high_pc - min_low_pc
+    
+    # 2. Vectorized Rolling Averages (BP_sum / TR_sum)
+    # Division by zero/null is handled later by filling
+    avg1 = bp.rolling_sum(window_size=p1) / tr.rolling_sum(window_size=p1)
+    avg2 = bp.rolling_sum(window_size=p2) / tr.rolling_sum(window_size=p2)
+    avg3 = bp.rolling_sum(window_size=p3) / tr.rolling_sum(window_size=p3)
+
+    # 3. Ultimate Oscillator Formula
+    uo = 100 * ((4 * avg1) + (2 * avg2) + avg3) / (4 + 2 + 1)
+
+    # 4. Final Formatting
+    return uo.fill_nan(50).fill_null(50).round(2).alias(indicator_str)
+
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    Legacy fallback for Pandas-only environments.
+    """
+    try:
+        p1 = int(options.get('p1', 7))
+        p2 = int(options.get('p2', 14))
+        p3 = int(options.get('p3', 28))
+    except (ValueError, TypeError):
+        p1, p2, p3 = 7, 14, 28
+
     try:
         sample_val = df['close'].iloc[0]
         sample_price = f"{sample_val:.10f}".rstrip('0')
@@ -78,38 +106,24 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     except (IndexError, AttributeError, ValueError):
         precision = 2
 
-    # 3. Vectorized Pre-calculations
-    # Buying Pressure (BP) and True Range (TR) calculation
     prev_close = df['close'].shift(1)
-    
-    # bp = close - min(low, prev_close)
     min_low_pc = np.minimum(df['low'].values, prev_close.values)
     bp = df['close'] - min_low_pc
-    
-    # tr = max(high, prev_close) - min(low, prev_close)
     max_high_pc = np.maximum(df['high'].values, prev_close.values)
     tr = max_high_pc - min_low_pc
-    
-    # Handle division by zero for flat price action
     tr_series = pd.Series(tr, index=df.index).replace(0, np.nan)
 
-    # 4. Vectorized Rolling Averages
     def get_avg(period):
-        # Average = Sum(BP, n) / Sum(TR, n)
         return bp.rolling(window=period).sum() / tr_series.rolling(window=period).sum()
 
     avg1 = get_avg(p1)
     avg2 = get_avg(p2)
     avg3 = get_avg(p3)
 
-    # 5. Ultimate Oscillator Formula
     uo = 100 * ((4 * avg1) + (2 * avg2) + avg3) / (4 + 2 + 1)
 
-    # 6. Final Formatting and Rounding
-    # Preserve original index for O(1) merging in parallel.py
     res = pd.DataFrame({
         'uo': uo.round(precision)
     }, index=df.index)
     
-    # Drop rows where the longest window hasn't filled (warm-up period)
     return res.dropna(subset=['uo'])

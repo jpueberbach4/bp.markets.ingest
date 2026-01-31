@@ -1,3 +1,4 @@
+import polars as pl
 import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
@@ -15,31 +16,26 @@ def description() -> str:
         "early warnings of trend exhaustion through its rapid 'cycle' movement."
     )
 
-def meta()->Dict:
+def meta() -> Dict:
     """
-    Any other metadata to pass via API
+    Metadata for the dual-engine orchestrator.
     """
     return {
         "author": "Google Gemini",
-        "version": 1.0,
+        "version": 1.1,
         "panel": 1,
-        "verified": 1
+        "verified": 1,
+        "polars": 1  # Flag to trigger high-speed Polars execution
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for the Schaff Trend Cycle.
-    STC is highly sensitive as it involves MACD EMAs, two rolling 
-    stochastic windows, and final EMA smoothing.
-    We use 3x the slow MACD period to ensure all layers converge.
     """
     try:
         slow = int(options.get('slow', 50))
     except (ValueError, TypeError):
         slow = 50
-
-    # 3x the longest recursive component (slow MACD) provides
-    # the necessary runway for the double-stochastic to stabilize.
     return slow * 3
 
 def position_args(args: List[str]) -> Dict[str, Any]:
@@ -53,12 +49,11 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "slow": args[2] if len(args) > 2 else "50"
     }
 
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     """
-    High-performance vectorized Schaff Trend Cycle (STC).
-    Formula: EMA smoothed double-stochastic of MACD.
+    High-performance Polars-native calculation for STC.
+    Replicates the double-stochastic MACD smoothing logic.
     """
-    # 1. Parse Parameters
     try:
         cycle = int(options.get('cycle', 10))
         fast = int(options.get('fast', 23))
@@ -66,13 +61,54 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     except (ValueError, TypeError):
         cycle, fast, slow = 10, 23, 50
 
-    # 2. Vectorized Calculation Logic
+    smooth_span = max(1, int(cycle / 2))
+
     # A. MACD Line
+    ema_fast = pl.col("close").ewm_mean(span=fast, adjust=False)
+    ema_slow = pl.col("close").ewm_mean(span=slow, adjust=False)
+    macd = ema_fast - ema_slow
+
+    # Helper for Stochastic calculation in Polars
+    def polars_stoch(expr, window):
+        low_min = expr.rolling_min(window_size=window)
+        high_max = expr.rolling_max(window_size=window)
+        return (100 * (expr - low_min) / (high_max - low_min)).fill_nan(0).fill_null(0)
+
+    # B. First Smoothing
+    stoch_1 = polars_stoch(macd, cycle)
+    smooth_1 = stoch_1.ewm_mean(span=smooth_span, adjust=False)
+
+    # C. Second Smoothing
+    stoch_2 = polars_stoch(smooth_1, cycle)
+    stc = stoch_2.ewm_mean(span=smooth_span, adjust=False)
+
+    # D. Directional Slope
+    direction = (
+        pl.when(stc > stc.shift(1))
+        .then(pl.lit(1))
+        .otherwise(pl.lit(-1))
+    )
+
+    return [
+        stc.round(2).alias(f"{indicator_str}__stc"),
+        direction.alias(f"{indicator_str}__direction")
+    ]
+
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    Legacy fallback for Pandas-only environments.
+    """
+    try:
+        cycle = int(options.get('cycle', 10))
+        fast = int(options.get('fast', 23))
+        slow = int(options.get('slow', 50))
+    except (ValueError, TypeError):
+        cycle, fast, slow = 10, 23, 50
+
     ema_fast = df['close'].ewm(span=fast, adjust=False).mean()
     ema_slow = df['close'].ewm(span=slow, adjust=False).mean()
     macd = ema_fast - ema_slow
 
-    # Helper for Stochastic calculation
     def get_stoch(series, window):
         low_min = series.rolling(window=window).min()
         high_max = series.rolling(window=window).max()
@@ -81,24 +117,18 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
 
     smooth_span = max(1, int(cycle / 2))
     
-    # B. First Smoothing (Stochastic of MACD)
     stoch_1 = get_stoch(macd, cycle).fillna(0)
     smooth_1 = stoch_1.ewm(span=smooth_span, adjust=False).mean()
 
-    # C. Second Smoothing (Stochastic of first smooth)
     stoch_2 = get_stoch(smooth_1, cycle).fillna(0)
     stc = stoch_2.ewm(span=smooth_span, adjust=False).mean()
 
-    # 3. Final Formatting and Rounding
-    # Directional slope (1 for up, -1 for down)
     direction = np.where(stc > stc.shift(1), 1, -1)
 
-    # Preserving the original index for O(1) merging in parallel.py
     res = pd.DataFrame({
         'stc': stc.round(2),
         'direction': direction
     }, index=df.index)
     
-    # Drop warm-up rows (MACD slow period + double cycle)
     warmup = slow + (cycle * 2)
     return res.iloc[warmup:]

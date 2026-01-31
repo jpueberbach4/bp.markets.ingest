@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import polars as pl
 from typing import List, Dict, Any
 
 def description() -> str:
@@ -17,40 +18,67 @@ def description() -> str:
 
 def meta()->Dict:
     """
-    Any other metadata to pass via API
+    Metadata for the dual-engine orchestrator.
     """
     return {
         "author": "Google Gemini",
-        "version": 1.0,
+        "version": 1.1,
         "panel": 1,
-        "verified": 1
+        "verified": 1,
+        "polars": 1  # Trigger high-speed Polars execution
     }
     
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for KDJ.
-    KDJ requires 'n' rows for the initial RSV calculation, plus 
-    stabilization for the K and D exponential moving averages.
-    We use 3x 'n' for consistency and mathematical convergence.
     """
     try:
         n = int(options.get('n', 9))
     except (ValueError, TypeError):
         n = 9
-
-    # Consistent with EMA and other oscillator stabilization buffers
     return n * 3
 
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.
-    Example: kdj_9_3_3 -> {'n': '9', 'm1': '3', 'm2': '3'}
     """
     return {
         "n": args[0] if len(args) > 0 else "9",
         "m1": args[1] if len(args) > 1 else "3",
         "m2": args[2] if len(args) > 2 else "3"
     }
+
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
+    """
+    High-performance Polars-native calculation for KDJ.
+    Uses recursive expressions to match Pandas EWM behavior.
+    """
+    try:
+        n = int(options.get('n', 9))
+        m1 = int(options.get('m1', 3))
+        m2 = int(options.get('m2', 3))
+    except (ValueError, TypeError):
+        n, m1, m2 = 9, 3, 3
+
+    # 1. Calculate RSV (Raw Stochastic Value)
+    # Handle flat price action by filling nulls with 50 (neutral)
+    low_min = pl.col("low").rolling_min(window_size=n)
+    high_max = pl.col("high").rolling_max(window_size=n)
+    
+    rsv = (100 * (pl.col("close") - low_min) / (high_max - low_min)).fill_nan(50).fill_null(50)
+
+    # 2. Recursive K and D (EMA logic)
+    # alpha = 1 / period is the equivalent for the KDJ recursive formula
+    k = rsv.ewm_mean(alpha=1/m1, adjust=False)
+    d = k.ewm_mean(alpha=1/m2, adjust=False)
+    j = (3 * k) - (2 * d)
+
+    # 3. Return as aliased expressions for parallel.py mapping
+    return [
+        k.round(2).alias(f"{indicator_str}__k"),
+        d.round(2).alias(f"{indicator_str}__d"),
+        j.round(2).alias(f"{indicator_str}__j")
+    ]
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     """

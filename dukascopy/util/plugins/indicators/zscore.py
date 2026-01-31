@@ -1,3 +1,4 @@
+import polars as pl
 import pandas as pd
 import numpy as np
 from typing import List, Dict, Any
@@ -15,29 +16,27 @@ def description() -> str:
         "market conditions that may lead to a price correction."
     )
 
-def meta()->Dict:
+def meta() -> Dict:
     """
-    Any other metadata to pass via API
+    Metadata for the dual-engine orchestrator.
     """
     return {
         "author": "Google Gemini",
-        "version": 1.0,
+        "version": 1.1,
         "panel": 1,
-        "verified": 1
+        "verified": 1,
+        "polars": 1  # Flag to trigger high-speed Polars execution
     }
-    
+
 def warmup_count(options: Dict[str, Any]) -> int:
     """
     Calculates the required warmup rows for the Z-Score.
-    Requires 'period' rows to calculate the rolling mean and standard deviation.
-    We use 3x period for statistical stability and engine consistency.
+    Requires 'period' rows for rolling mean and standard deviation.
     """
     try:
         period = int(options.get('period', 20))
     except (ValueError, TypeError):
         period = 20
-
-    # Consistent with other rolling-window statistical buffers
     return period * 3
 
 def position_args(args: List[str]) -> Dict[str, Any]:
@@ -49,47 +48,61 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "period": args[0] if len(args) > 0 else "20"
     }
 
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     """
-    High-performance vectorized Z-Score (Standard Score).
-    Formula: Z = (Price - Mean) / StdDev
+    High-performance Polars-native calculation for Z-Score.
     """
-    # 1. Parse Parameters
     try:
         period = int(options.get('period', 20))
     except (ValueError, TypeError):
         period = 20
 
-    # 2. Determine Price Precision
-    # Z-Score is a statistical ratio, usually 3 decimals are sufficient
+    # 1. Rolling Stats
+    mean = pl.col("close").rolling_mean(window_size=period)
+    std_dev = pl.col("close").rolling_std(window_size=period)
+
+    # 2. Z-Score Formula: (Price - Mean) / StdDev
+    # Polars handles division by zero by producing null/nan, filled for stability
+    z_score = (pl.col("close") - mean) / std_dev
+    
+    # 3. Directional Slope (1 for up, -1 for down)
+    direction = (
+        pl.when(z_score > z_score.shift(1))
+        .then(pl.lit(1))
+        .otherwise(pl.lit(-1))
+    )
+
+    return [
+        z_score.fill_nan(0).fill_null(0).round(3).alias(f"{indicator_str}__z_score"),
+        direction.alias(f"{indicator_str}__direction")
+    ]
+
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    Legacy fallback for Pandas-only environments.
+    """
+    try:
+        period = int(options.get('period', 20))
+    except (ValueError, TypeError):
+        period = 20
+
     try:
         sample_val = df['close'].iloc[0]
         sample_price = f"{sample_val:.10f}".rstrip('0')
         precision = len(sample_price.split('.')[1])+1 if '.' in sample_price else 3
-        # For Z-score, we clamp between 2 and 4 to maintain readability
         precision = min(max(precision, 2), 4) 
     except (IndexError, AttributeError, ValueError):
         precision = 3
 
-    # 3. Vectorized Calculation Logic
-    # Calculate rolling mean and standard deviation
     mean = df['close'].rolling(window=period).mean()
     std_dev = df['close'].rolling(window=period).std()
     
-    # Calculate Z-Score
-    # Handle division by zero for flat markets (std_dev == 0)
     z_score = (df['close'] - mean) / std_dev.replace(0, np.nan)
-
-    # 4. Directional Slope
-    # 1 for increasing score, -1 for decreasing
     direction = np.where(z_score > z_score.shift(1), 1, -1)
 
-    # 5. Final Formatting and Rounding
-    # Preserving the original index for O(1) merging in parallel.py
     res = pd.DataFrame({
         'z_score': z_score.round(precision),
         'direction': direction
     }, index=df.index)
     
-    # Drop rows where the window hasn't filled (warm-up period)
     return res.dropna(subset=['z_score'])
