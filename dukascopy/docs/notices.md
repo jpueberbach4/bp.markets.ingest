@@ -23,6 +23,7 @@ Should be non-breaking. Also, when developing indicators in an own repo, see bot
 
 Original main branch: 7,796 ms (7.8 seconds)
 Beta/0.6.7 branch:   622 ms (0.62 seconds)
+Context: 1 mln rows x 55 indicators
 
 **Status: slower endpoint**
 
