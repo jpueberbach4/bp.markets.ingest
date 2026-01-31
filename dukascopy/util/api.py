@@ -202,11 +202,6 @@ def get_data(
         # Enrich the returned result with the requested indicators (parallelized)
         chunk_df = parallel_indicators(chunk_df, indicators, indicator_registry, disable_recursive_mapping)
 
-    else:
-        # When no indicators are queries, set to empty dics
-        # TODO: this needs to get removed. Needs to move to HTTP API
-        chunk_df['indicators'] = [{} for _ in range(len(chunk_df))]
-
     # Drop warmup rows
     if not chunk_df.empty and warmup_rows:
         # No need to search for after_ms and until_ms (O(N)). This was replaced with a
