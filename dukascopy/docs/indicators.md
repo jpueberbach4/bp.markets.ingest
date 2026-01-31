@@ -201,3 +201,7 @@ ls -l config.users/plugins/indicators
 ```
 
 This solves any version control issues or at least make it easier.
+
+One last piece of advice. When using this for feature engineering. Use custom indicators to build your features. You can then just use the get_data internal API to get the dataframe with your computed indicators and push that directly, together with all the other indicators, into a model. This is a better way-performance-wise-than building a custom set of "feature classes". 
+
+I am currently converting my feature-classes to indicators-polars where possible.
