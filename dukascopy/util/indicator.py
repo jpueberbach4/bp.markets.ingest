@@ -163,7 +163,7 @@ class IndicatorRegistry:
             None
         """
         # Get file metadata for potential hot-reload checks
-        file_stat = path.stat()
+        file_stat = path.resolve().stat()
 
         # Dynamically import the plugin module
         module = self._import_plugin(name, resolve_path(path))
@@ -221,7 +221,7 @@ class IndicatorRegistry:
                 continue
 
             # Get file metadata for comparison
-            file_stat = file_path.stat()
+            file_stat = file_path.resolve().stat()
             cached = self.registry.get(name)
 
             # Determine if reload is necessary (new or changed file)
