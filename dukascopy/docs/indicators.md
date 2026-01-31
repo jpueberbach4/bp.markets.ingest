@@ -181,3 +181,21 @@ def calculate(df: pd.DataFrame, options: Dict) -> pd.DataFrame:
 ```
 
 Its generally good practice to profile your code after your first working implementation. Especially if you use your custom indicator for later feature-extraction for ML.
+
+## 6. One more thing, your custom indicators in an external path?
+
+Solve this by creating a config.users/plugins directory and then "symbolic link" your indicators path in there. 
+
+eg
+
+```sh
+mkdir -p config.user/plugins
+# delete the existing default one, be careful if you have something in there
+rm -rf config.user/plugins/indicators
+# now link your external path
+ln -s /path/to/my/private/repo/indicators config.user/plugins/indicators
+# your custom indicators are now linked to an path outside of the project
+# config.user is excluded in .gitignore so you can put in there what you want.
+```
+
+This solves any version control issues or at least make it easier.
