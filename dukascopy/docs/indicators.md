@@ -150,3 +150,9 @@ Performance: NON-UDF implementations should be in Polars expressions. Polars may
 Generic: implement both the `calculate` and `calculate_polars` methods. Implement in pandas, convert to polars using Gemini.
 
 For inter-data/indicator querying within indicators, consult [this documentation](interdata.md).
+
+## 5. Debugging
+
+You can just print(df) from your Pandas based indicator and have that print showup in your console where you started the webservice with `./service.sh start`-if testing via the web-interface. If using the direct get_data approach, then i probably don't need to say anything else. You know.
+
+For profiling, performance bottleneck finding in your indicators, use cProfile. At the start of your indicator enable the cProfile profiler and just before the end of the function, disable the profiler and print its stats. 
