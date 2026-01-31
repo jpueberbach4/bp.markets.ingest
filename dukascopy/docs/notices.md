@@ -28,6 +28,8 @@ Beta/0.6.7 branch:   622 ms (0.62 seconds)
 Context: 1 mln rows x 55 indicators
 API: get_data [internal API](external.md)
 
+The price-only API is completely ridiculous: 13 million records per second.
+
 **Status: slower endpoint**
 
 The endpoint appears to be rate-limited, which is likely a consequence of the recent outages on the Jetta endpoint. As a result, a full sync from scratch may require some patience.
