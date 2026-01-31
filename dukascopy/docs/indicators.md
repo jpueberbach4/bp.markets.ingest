@@ -196,6 +196,8 @@ rm -rf config.user/plugins/indicators
 ln -s /path/to/my/private/repo/indicators config.user/plugins/indicators
 # your custom indicators are now linked to an path outside of the project
 # config.user is excluded in .gitignore so you can put in there what you want.
+ls -l config.users/plugins/indicators
+# It should show an arrow pointing to your private repo: indicators -> /path/to/my/private/repo/indicators
 ```
 
 This solves any version control issues or at least make it easier.
