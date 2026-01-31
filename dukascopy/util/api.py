@@ -191,7 +191,7 @@ def get_data(
     # Retrieve the data slice from cache
     chunk_df = cache.get_chunk(symbol, timeframe, after_idx, until_idx)
 
-    if len(indicators)>0:
+    if indicators:
         # Hot reload support (only for custom user indicators)
         indicator_registry = cache.indicators.refresh(indicators)
 
@@ -207,17 +207,12 @@ def get_data(
         # TODO: this needs to get removed. Needs to move to HTTP API
         chunk_df['indicators'] = [{} for _ in range(len(chunk_df))]
 
-    # Drop the rows before after_ms, end-limit and offset need to be done by caller
-    #chunk_df = chunk_df[(chunk_df['time_ms'] >= after_ms) & (chunk_df['time_ms'] < until_ms)].copy()
-    if not chunk_df.empty:
-        times = chunk_df['time_ms'].to_numpy() # Zero-copy view if possible
-        
-        # Binary search for the slice bounds (O(log N)) instead of scanning (O(N))
-        start_iloc = np.searchsorted(times, after_ms, side='left')
-        end_iloc = np.searchsorted(times, until_ms, side='left')
-        
-        # Use positional slicing (Fastest possible operation)
-        chunk_df = chunk_df.iloc[start_iloc:end_iloc]
+    # Drop warmup rows
+    if not chunk_df.empty and warmup_rows:
+        # No need to search for after_ms and until_ms (O(N)). This was replaced with a
+        # binary search (O(log N)) and ultimately reduced to an O(1) direct slice,
+        # yielding a significant performance improvement.
+        chunk_df = chunk_df[warmup_rows:]
 
     # Apply the sort
     chunk_df = chunk_df.reset_index().sort_values(by='time_ms', ascending=(order == 'asc'))
@@ -230,7 +225,7 @@ def get_data(
 
     # Drop the messy index column. Merging is happening on time_ms and optionally on symbol and tf
     chunk_df.drop(columns=['index'], errors='ignore', inplace=True)
-    
+
     return chunk_df
 
     
