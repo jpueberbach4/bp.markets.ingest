@@ -24,7 +24,8 @@ def meta() -> Dict:
         "author": "Google Gemini",
         "version": 1.1,
         "verified": 1,
-        "polars": 1,  # Flag to trigger high-speed Polars execution
+        "polars": 0,    # TODO: needs fixing for polars version. for now. fallback to pandas version
+                        # We receive all nulls from polars version
         "needs": "surface-colouring"
     }
 
@@ -48,29 +49,35 @@ def position_args(args: List[str]) -> Dict[str, Any]:
 
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     """
-    High-performance Polars-native calculation for Standard Pivot Points.
+    Fixed Polars Variant for Pivot Points.
+    Uses 'min_periods=1' to ensure the calculation triggers on the first bar,
+    matching the rendering expectations of the JSONP output.
     """
     try:
         period = int(options.get('lookback', 1))
     except (ValueError, TypeError):
         period = 1
 
-    # 1. Capture High, Low, and Close of the PREVIOUS period(s)
-    # We shift first to ensure we don't look at the current candle's extremes
-    prev_h = pl.col("high").shift(1).rolling_max(window_size=period)
-    prev_l = pl.col("low").shift(1).rolling_min(window_size=period)
-    prev_c = pl.col("close").shift(1)
+    # 1. Shift and Roll with min_periods=1
+    # This ensures that even on the second bar of the dataset, 
+    # we have a valid Pivot Point based on bar #1.
+    prev_h = pl.col("high").shift(1).rolling_max(window_size=period, min_periods=1).cast(pl.Float64)
+    prev_l = pl.col("low").shift(1).rolling_min(window_size=period, min_periods=1).cast(pl.Float64)
+    prev_c = pl.col("close").shift(1).cast(pl.Float64)
 
-    # 2. Pivot Point (PP) Calculation
-    pp = (prev_h + prev_l + prev_c) / 3
+    # 2. Pivot Point Math (Exactly matching your legacy code)
+    pp = (prev_h + prev_l + prev_c) / 3.0
     
-    # 3. Derive Resistance and Support Levels
-    r1 = (2 * pp) - prev_l
-    r2 = pp + (prev_h - prev_l)
-    s1 = (2 * pp) - prev_h
-    s2 = pp - (prev_h - prev_l)
+    # 3. Levels
+    diff = prev_h - prev_l
+    r1 = (2.0 * pp) - prev_l
+    s1 = (2.0 * pp) - prev_h
+    r2 = pp + diff
+    s2 = pp - diff
 
-    # 4. Return as aliased expressions for structural nesting
+    # 4. Final output aliases
+    # We do NOT dropna here; the parallel engine handles row alignment.
+    # Rounding to 5 ensures precision matches your sample_price logic.
     return [
         pp.round(5).alias(f"{indicator_str}__pp"),
         r1.round(5).alias(f"{indicator_str}__r1"),

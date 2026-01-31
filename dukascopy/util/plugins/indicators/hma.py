@@ -17,8 +17,9 @@ def meta() -> Dict:
     return {
         "author": "Google Gemini",
         "version": 1.1,
-        "verified": 1,
-        "polars": 0  # Changed from 0 to 1 to enable Polars (NEEDS FIXING)
+        "verified": 0,  # Needs fixing!
+        "polars": 0     # TODO: fix polars version. performance profile if polars version is faster 
+                        # since uses UDF function. For now, fallback to pandas version. 
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:

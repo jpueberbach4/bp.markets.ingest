@@ -24,7 +24,7 @@ def meta() -> Dict:
         "author": "Google Gemini",
         "version": 1.1,
         "verified": 1,
-        "polars": 1  # Flag to trigger high-speed Polars execution
+        "polars": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -45,43 +45,55 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "period": args[0] if len(args) > 0 else "50"
     }
 
+
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     """
-    High-performance Polars-native calculation using rolling regression.
+    Pure Polars Native Linear Regression Channels.
+    No UDFs, no Python loops, 1:1 parity with Pandas math.
     """
     try:
         period = int(options.get('period', 50))
     except (ValueError, TypeError):
         period = 50
 
-    # 1. Rolling Linear Regression to get Median Line
-    # We use a rolling window to solve y = mx + c for the last point
-    # Polars optimized rolling_map handles the segment-based polyfit logic efficiently
-    mid = pl.col("close").rolling_map(
-        lambda s: np.polyfit(np.arange(len(s)), s.to_numpy(), 1).dot([len(s) - 1, 1]),
-        window_size=period
-    )
+    # 1. Setup OLS Constants
+    n = period
+    sum_x = n * (n - 1) / 2
+    sum_x2 = (n - 1) * n * (2 * n - 1) / 6
+    divisor = n * sum_x2 - sum_x**2
 
-    # 2. Maximum Deviation (Width)
-    # To find max absolute deviation, we compute the full line within the window
-    # and find the max(abs(price - line))
-    def get_max_dev(s):
-        y = s.to_numpy()
-        x = np.arange(len(y))
-        slope, intercept = np.polyfit(x, y, 1)
-        line = slope * x + intercept
-        return np.max(np.abs(y - line))
+    # 2. Vectorized OLS Slope and Intercept
+    y = pl.col("close")
+    # We use a moving index to keep the x-axis as [0, 1, ... n-1] for every window
+    idx = pl.int_range(0, pl.len(), eager=False)
+    
+    sum_y = y.rolling_sum(window_size=n)
+    sum_xy = (idx * y).rolling_sum(window_size=n) - (idx - n + 1) * sum_y
 
-    width = pl.col("close").rolling_map(get_max_dev, window_size=period)
+    slope = (n * sum_xy - sum_x * sum_y) / divisor
+    intercept = (sum_y - slope * sum_x) / n
+    
+    # Mid Line (Endpoint of the regression line)
+    lin_mid = slope * (n - 1) + intercept
 
-    # 3. Channel Construction
-    upper = mid + width
-    lower = mid - width
+    # 3. Native Maximum Absolute Deviation (Width)
+    # We calculate the residuals for every point in the window simultaneously.
+    # We iterate 0 to n-1 to find the max distance: |y_i - (slope * i + intercept)|
+    residuals = []
+    for i in range(n):
+        # We look back 'i' steps from the current 'mid' calculation
+        # The x-coordinate for a point 'i' steps back is (n - 1 - i)
+        x_i = (n - 1) - i
+        dist = (y.shift(i) - (slope * x_i + intercept)).abs()
+        residuals.append(dist)
+
+    # The Width is the maximum deviation found in that window
+    width = pl.max_horizontal(residuals)
 
     return [
-        upper.round(5).alias(f"{indicator_str}__lin_upper"),
-        mid.round(5).alias(f"{indicator_str}__lin_mid"),
-        lower.round(5).alias(f"{indicator_str}__lin_lower")
+        (lin_mid + width).round(5).alias(f"{indicator_str}__lin_upper"),
+        lin_mid.round(5).alias(f"{indicator_str}__lin_mid"),
+        (lin_mid - width).round(5).alias(f"{indicator_str}__lin_lower")
     ]
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:

@@ -203,6 +203,7 @@ class IndicatorEngine:
                 with the original input data.
         """
 
+        print(df)
         # If the input DataFrame is empty, there is nothing to compute
         if df.empty:
             return df
@@ -400,10 +401,17 @@ class IndicatorEngine:
             if c not in df_orig.columns
         ]
 
+        # Determine numeric indicator columns (we would like to not round on strings ;)
+        numeric_indicator_cols = [
+            c for c in indicator_cols 
+            if combined_pl.schema[c].is_numeric()
+        ]
+
         # Round indicator values for numerical stability
-        combined_pl = combined_pl.with_columns(
-            [pl.col(c).round(6) for c in indicator_cols]
-        )
+        if numeric_indicator_cols:
+            combined_pl = combined_pl.with_columns(
+                [pl.col(c).round(6) for c in numeric_indicator_cols]
+            )
 
         # Convert Polars DataFrame back to Pandas
         return combined_pl.to_pandas(

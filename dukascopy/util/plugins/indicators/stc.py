@@ -25,7 +25,7 @@ def meta() -> Dict:
         "version": 1.1,
         "panel": 1,
         "verified": 1,
-        "polars": 1  # Flag to trigger high-speed Polars execution
+        "polars": 0  # TODO: polars works but is slower than pandas variant. hence enable pandas.
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:

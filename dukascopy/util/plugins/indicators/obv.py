@@ -24,7 +24,7 @@ def meta() -> Dict:
         "version": 1.1,
         "panel": 1,
         "verified": 1,
-        "polars": 1  # Flag to trigger high-speed Polars execution
+        "polars": 0     # TODO: needs fixing for polars. fallback to pandas version.
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -42,17 +42,28 @@ def position_args(args: List[str]) -> Dict[str, Any]:
 
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     """
-    High-performance Polars-native calculation for OBV.
+    Polars-native OBV designed for Float64 volume data.
+    Explicitly aligns types to prevent Float64/Int64 reference panics.
     """
-    # 1. Determine direction: 1 for up, -1 for down, 0 for flat
-    # We use .diff() and sign() to handle direction in one vectorized pass
-    direction = (pl.col("close").diff()).sign().fill_null(0)
+    
+    # 1. Get the direction: 1.0, -1.0, or 0.0
+    # We cast to Float64 immediately
+    direction = (
+        pl.col("close")
+        .diff()
+        .sign()
+        .fill_null(0.0)
+        .cast(pl.Float64)
+    )
 
-    # 2. Cumulative sum of (direction * volume)
-    # OBV is inherently path-dependent; cum_sum is the optimized Rust path.
-    obv = (direction * pl.col("volume")).cum_sum()
+    # 2. Multiplication with volume
+    # We cast volume to Float64 to match direction
+    # Then cast the result to Float64 to ensure the cum_sum starts with the right ref
+    obv_flow = (direction * pl.col("volume").cast(pl.Float64)).cast(pl.Float64)
 
-    # 3. Final Formatting
+    # 3. Cumulative sum
+    obv = obv_flow.cum_sum()
+
     return obv.round(2).alias(indicator_str)
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
