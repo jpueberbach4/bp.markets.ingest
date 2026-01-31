@@ -470,7 +470,9 @@ class IndicatorEngine:
             ).to_pandas()
 
         # Remove duplicate columns and round values
-        matrix = matrix.loc[:, ~matrix.columns.duplicated()].round(6)
+        matrix = matrix.loc[:, ~matrix.columns.duplicated()]
+        numeric_cols = matrix.select_dtypes(include=[np.number]).columns
+        matrix[numeric_cols] = matrix[numeric_cols].round(6)
 
         # Convert each row into a nested dictionary
         records = matrix.to_dict(orient='records')
