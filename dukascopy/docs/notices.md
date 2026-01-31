@@ -8,9 +8,16 @@ Feeds are back online. No further actions required.
 
 I’ve reached the theoretical performance limits of my hardware for the internal API training calls. Processing 1 million rows with 500, different period, SMA (eg ..,sma_2500) indicators now completes in under 2 seconds, ~280 million calculations/second. I’m currently cleaning up the code and testing the update. It took a full day of profiling and tuning to get to this point.
 
-I am still not fully 100 percent yet. Expecting to finish this off tomorrow (i need to convert indicators here and there and check them. Some got screwed. eg Hurst). The code has been tested: it seems to work properly. So in its core, the performance solution seems to be OK.
+Beta/0.6.7 was updated with the performance fixes. Documentation indicators.md and external.md got updated as well to reflect the new hybrid-indicator situation. I am still testing it. It seems oke but needs some heavy duty load testing. Tomorrow.
 
-I am working on a set of feature construction classes. Think of candle geometry-single AND multi-candle patterns (engulfing, crows, shooting stars, gravestones, doji's etc), bond correlations, zigzag detection, longterm resistance/support levels, staircasing/3-5 zigzag detection and so on. This is a BIG work. Probably I will release it-eventually-since it is "just" feature construction. Not building the model itself. Currently having "severe" math issues which have pushed me back to the drawing board a couple of times already. There should be a "golden feature set" somewhere... turning over every rock to find it.
+Want to try out the beta?
+
+```sh
+git fetch -p
+git checkout beta/0.6.7
+```
+
+Should be non-breaking. Also, when developing indicators in an own repo, see bottom of that indicators.md file in beta/0.6.7 branch.
 
 **Status: slower endpoint**
 
