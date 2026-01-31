@@ -8,22 +8,7 @@ Feeds are back online. No further actions required.
 
 I’ve reached the theoretical performance limits of my hardware for the internal API training calls. Processing 1 million rows with 500, different period, SMA (eg ..,sma_2500) indicators now completes in under 2 seconds, ~280 million calculations/second. I’m currently cleaning up the code and testing the update. It took a full day of profiling and tuning to get to this point.
 
-**Less codechanges**
-
-Performance example, EUR-USD 1m data, random 2025 data, 5 indicators.
-
-```sh
-100 records, time-passed: 30.578309088014066 ms (this is with one-time plugin load)  + 5 indicators
-1.000 records, time-passed: 28.57433701865375 ms + 5 indicators
-10.000 records, time-passed: 37.17033995781094 ms + 5 indicators
-100.000 records, time-passed: 129.57307707984 ms + 5 indicators
-```
-
-Sub-lineair scaling. To compare: For 100,000 rows, TimescaleDB will take 500ms to 2 seconds to return the data and calculate indicators. This does it in 0.12 seconds.
-
-~~I will put the last critical fix in tomorrow-make the internal API usable from external code.~~ Its available in main. See [here](external.md).
-
-Now i go rest again. I have the flu. But a promise is a promise. Delivered.
+I am still not fully 100 percent yet. Expecting to finish this off tomorrow (i need to convert indicators here and there and check them. Some got screwed. eg Hurst). The code has been tested: it seems to work properly. So in its core, the performance solution seems to be OK.
 
 **Status: slower endpoint**
 

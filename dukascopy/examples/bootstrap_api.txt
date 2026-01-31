@@ -204,4 +204,6 @@ Cleaning up.
 
 This is a whopping 233 MILLION calculations per second, on a laptop. I am satisfied now.
 
-How? Python? We just python just as an lightweight orchestration layer on top of highly efficient c libraries. For each task i selected the most performing solution and orchestrated around it with Python. Profiling helps greatly to find bottlenecks and tune for these bottlenecks accordingly. Its a tedious job but being persistent always pays off.
+How? Python? We use Python as an lightweight orchestration layer on top of highly efficient c libraries. For each task i selected the most performing c-library and orchestrated around it with Python. 
+Profiling helps greatly to find bottlenecks and tune for these bottlenecks accordingly. 
+Its a tedious job but being persistent always pays off.
