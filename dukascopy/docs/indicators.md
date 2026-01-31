@@ -213,3 +213,5 @@ Last example: i have features A,B,C implemented as indicators(features). I train
 eg If Indicator A requires B, and B requires A, the system will enter an infinite recursion until the stack overflows.
 
 There is currently no protection for this, but also that is coming in future versions. This way you eliminate any feature-replication between training and inference.
+
+PS: do not use `_` (underscore) in indicator file-names. Use a dot or a dash. Group them logically with a prefix. I will add a searchbox for the indicators to the web-interface soon.
