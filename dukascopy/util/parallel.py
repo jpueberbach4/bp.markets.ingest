@@ -5,6 +5,7 @@
  File:        parallel.py
  Author:      JP Ueberbach
  Created:     2026-01-12
+ Update:      2026-01-31 (Polars-Pandas hybrid)
 
  Description:
      High-performance engine for parallel computation of technical indicators
@@ -28,6 +29,9 @@
 
      The primary entry point is the `parallel_indicators` function, which
      delegates execution to the `IndicatorEngine` class.
+
+     The polars-pandas hybrid enables users to first develop in the faster-to-
+     iterate pandas-way and then when done, convert to high-performance polars.
 
  Requirements:
      - Python 3.8+
