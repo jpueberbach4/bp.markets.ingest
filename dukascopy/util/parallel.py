@@ -202,8 +202,6 @@ class IndicatorEngine:
                 DataFrame containing computed indicator results merged
                 with the original input data.
         """
-
-        print(df)
         # If the input DataFrame is empty, there is nothing to compute
         if df.empty:
             return df
