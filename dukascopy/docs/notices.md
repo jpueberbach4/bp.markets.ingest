@@ -15,6 +15,8 @@ Want to try out the beta?
 ```sh
 git fetch -p
 git checkout beta/0.6.7
+# to install polars dependency:
+pip install -r requirements.txt
 ```
 
 Should be non-breaking. Also, when developing indicators in an own repo, see bottom of that indicators.md file in beta/0.6.7 branch.
