@@ -207,3 +207,5 @@ One last piece of advice. When using this for feature engineering. Use custom in
 I am currently converting my feature-classes to indicators-polars where possible.
 
 eg Write features once → Use everywhere (API, web, ML, backtesting)
+
+Last example: i have features A,B,C implemented as indicators(features). I trained my model by querying get_data with indicators A,B,C(features). Now, i have an indicator which uses the model and needs A,B,C features. I do in that indicator a get_data_auto(df,[A,B,C]) and then call the model with that dataframe and get it's confidence and signals. This is high performant and works. I tested. Be careful for recursive patterns though. Unlimited loops. There is currently no protection for this, but also that is coming in future versions.
