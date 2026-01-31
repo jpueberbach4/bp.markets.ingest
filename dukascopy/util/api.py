@@ -214,8 +214,11 @@ def get_data(
         # yielding a significant performance improvement.
         chunk_df = chunk_df[warmup_rows:]
 
-    # Apply the sort
-    chunk_df = chunk_df.reset_index().sort_values(by='time_ms', ascending=(order == 'asc'))
+    # Apply the sort (only need to sort if user queried desc. everything is already asc)
+    # Note: assuming indicators do not CHANGE the order. User can specify option to force ordering
+    force_ordering = options.get('force_ordering', False)
+    if order == "desc" or force_ordering:
+        chunk_df = chunk_df.reset_index().sort_values(by='time_ms', ascending=(order == "asc"))
 
     # Reset the index to have nice 0...N indices
     chunk_df = chunk_df.reset_index(drop=True)
