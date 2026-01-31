@@ -12,7 +12,7 @@ Extending our technical analysis engine with custom indicators is straightforwar
 
 ## 1. The Plugin Architecture
 
-**Note:** The plugin engine now supports hybrid-execution of both pandas-based and polars-based indicators. General advice is when you build indicators that do not rely on UDF (User-Defined-Functions), use the Polars way (use Gemini to support you) for the highest possible performance. IF heavily dependent on UDF or for quick-iteration: use the pandas way. NON-UDF versions: generally you would want to implement them both and test which one gives the best performance. 
+**Note:** The plugin engine now supports hybrid-execution of both pandas-based and polars-based indicators. General advice is when you build indicators that do not rely on UDF (User-Defined-Functions), use the Polars way (use Gemini to support you) for the highest possible performance. IF heavily dependent on UDF or for quick-iteration: use the pandas way. NON-UDF versions: generally you would want to implement them both and test which one gives the best performance. Eg use a million+ rows for performance tests.
 
 Every plugin must be a valid Python file (e.g., `my_indicator.py`) containing the following core functions:
 
