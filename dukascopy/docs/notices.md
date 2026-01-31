@@ -30,7 +30,7 @@ API: get_data [internal API](external.md)
 
 The price-only API is completely ridiculous: 13 million records per second.
 
-Note: the beta gets one more update tomorrow. While most indicators are now polars, some are still pandas eg because they rely on UDF's. on recursive get_data calls too many threads get spawned. Will limit this to only spawn threads for the number of pandas indicators in the query. Currently it looks at cpu_count, which is not oke considering python threads are running in the same core. Threading causes overhead in both allocation and context switching. This will get fixed.
+Note: the beta gets one more update tomorrow. A custom threadpool to solve recursive threadpool creation on recursive getdata calls. 
 
 **Status: slower endpoint**
 
@@ -63,6 +63,7 @@ Ofcourse there is the problem of overfitting. But... Let's see how far we get.
 The system will get heavily tested as a feature engineering factory. Lets see how it holds up. 
 
 It is possible or even likely that the above will spawn another round of updates. Efficiency updates etc. Will try to limit it to feature branches.
+
 
 
 
