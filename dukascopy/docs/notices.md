@@ -21,6 +21,9 @@ Should be non-breaking. Also, when developing indicators in an own repo, see bot
 
 **Note:** This is a 12.5x performance gain. Just checked the main branch vs the beta branch.
 
+Original main branch: 7,796 ms (7.8 seconds)
+Beta/0.6.7 branch:   622 ms (0.62 seconds)
+
 **Status: slower endpoint**
 
 The endpoint appears to be rate-limited, which is likely a consequence of the recent outages on the Jetta endpoint. As a result, a full sync from scratch may require some patience.
