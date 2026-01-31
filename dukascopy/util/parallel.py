@@ -162,10 +162,8 @@ class IndicatorEngine:
         # If max_workers is not provided, fall back to CPU count
         self.max_workers = max_workers or os.cpu_count()
 
-        # Thread pool used ONLY for Pandas-based indicators
-        self.executor = concurrent.futures.ThreadPoolExecutor(
-            max_workers=self.max_workers
-        )
+        # Thread pool will go here if we have pandas indicators
+        self.executor = None
 
     def compute(
         self,
@@ -266,6 +264,12 @@ class IndicatorEngine:
                     polars_expressions.append(expr)
 
             else:
+                # If not self.executor, set it up
+                if not self.executor:
+                    self.executor = concurrent.futures.ThreadPoolExecutor(
+                        max_workers=self.max_workers
+                    )
+
                 # Pandas indicators are executed asynchronously in threads
                 pandas_tasks.append(
                     self.executor.submit(
