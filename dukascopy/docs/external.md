@@ -230,4 +230,10 @@ importances = pd.Series(clf.feature_importances_, index=X_train.columns)
 print("\n=== TOP 10 INDICATORS FOR BOTTOMS ===")
 print(importances.sort_values(ascending=False).head(10))
 
+
 ```
+
+note: the above is a very simplified example. my real trainer has nearly everything i could think of. including candle geometry and linking to the dxy and bonds, both usbond as well as bund/gilt. i will think about it to release it. releasing it wont cause damage since the classes are used to SUPPORT training. not the actual model application. i think i will do it when its done. or a slightly stripped version may get published. this part is not done yet... i will be working on it for at least another two weeks to make it "fully capable".
+
+how far are you? basic are in. i am having severe issues on the math for shs, ishs and staircase detection. 3-5 zigzag detection. but its a matter of time before these things are tackled.
+
