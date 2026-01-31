@@ -4,22 +4,27 @@
 
 Feeds are back online. No further actions required.
 
-**Less codechanges**
+**New performance update coming**
 
-Performance example, EUR-USD 1m data, random 2025 data, 5 indicators.
+I’ve reached the theoretical performance limits of my hardware for the internal API training calls. Processing 1 million rows with 500, different period, SMA (eg ..,sma_2500) indicators now completes in under 2 seconds, ~280 million calculations/second. I’m currently cleaning up the code and testing the update. It took a full day of profiling and tuning to get to this point.
+
+Beta/0.6.7 was updated with the performance fixes. Documentation indicators.md and external.md got updated as well to reflect the new hybrid-indicator situation. I am still testing it. It seems oke but needs some heavy duty load testing. Tomorrow.
+
+Want to try out the beta?
 
 ```sh
-100 records, time-passed: 30.578309088014066 ms (this is with one-time plugin load)  + 5 indicators
-1.000 records, time-passed: 28.57433701865375 ms + 5 indicators
-10.000 records, time-passed: 37.17033995781094 ms + 5 indicators
-100.000 records, time-passed: 129.57307707984 ms + 5 indicators
+git fetch -p
+git checkout beta/0.6.7
 ```
 
-Sub-lineair scaling. To compare: For 100,000 rows, TimescaleDB will take 500ms to 2 seconds to return the data and calculate indicators. This does it in 0.12 seconds.
+Should be non-breaking. Also, when developing indicators in an own repo, see bottom of that indicators.md file in beta/0.6.7 branch.
 
-~~I will put the last critical fix in tomorrow-make the internal API usable from external code.~~ Its available in main. See [here](external.md).
+**Note:** This is a 12.5x performance gain. Just checked the main branch vs the beta branch.
 
-Now i go rest again. I have the flu. But a promise is a promise. Delivered.
+Original main branch: 7,796 ms (7.8 seconds)
+Beta/0.6.7 branch:   622 ms (0.62 seconds)
+Context: 1 mln rows x 55 indicators
+API: get_data [internal API](external.md)
 
 **Status: slower endpoint**
 
