@@ -179,3 +179,5 @@ def calculate(df: pd.DataFrame, options: Dict) -> pd.DataFrame:
 
     return df
 ```
+
+Its generally good practice to profile your code after your first working implementation. Especially if you use your custom indicator for later feature-extraction for ML.
