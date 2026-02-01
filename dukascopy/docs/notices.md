@@ -45,7 +45,11 @@ indicators: ATR, ADX, MACD, BBANDS, EMA, 50 LONG-RANGE SMA (55 total)
 * Average CPU load: 38% Throughout
 * Memory Pressure: 1.2GB Throughout
 
-Conclusion: with options.return_polars to True we max-out at 50% of the CPU. 88 percent goes to collect. Polars math. This is it. 
+Conclusion: with options.return_polars to True we max-out at 50% of the CPU. 88 percent goes to collect. Polars math. ~~This is it.~~ One more performance update was pushed out for very-wide indicator sets. Eg 2000 indicators. 
+
+I need to squeeze every last drop out of it to get to that insanely fast backtesting/ML-feature engineering base logic. 
+
+I think I have pushed pushed Polars to its architectural limit for feature engineering. But still checking by applying crazy setups. eg 10000 indicators.
 
 **Status: slower endpoint**
 
