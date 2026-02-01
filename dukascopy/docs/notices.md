@@ -43,6 +43,8 @@ Profiling shows that about 90 percent of time is now in the high-performance Pol
 
 [Performance doc](performance.md)
 
+What this project proves is that Memory Mapped IO is actually a superior technological choice for timeseries data. The project doesnt even have the correct binary format (yet). Yet, it is already pushing way beyond the 13 million rows/second-actually doing around 18 million on my laptop-for the price-only API, using Python. With the correct binary format and storage-type-which is reserved for the "next-gen"-this pushes easily in the 30-60 million/sec range.
+
 **Status: bottom sniper**
 
 I am currently developing an H4 bottom-sniper model using a 10-20 feature machine-learning setup.
