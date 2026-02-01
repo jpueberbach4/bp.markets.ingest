@@ -285,9 +285,13 @@ class MarketDataCache:
             return idx
 
         return None
-    
-    def to_arrow_table(self, symbol, tf, from_idx, to_idx) -> pa.Table:
-        """Get data as Apache Arrow Table."""
-        df = self.get_chunk(symbol, tf, from_idx, to_idx, return_polars=True)
-        return df.to_arrow()
+
+    def to_arrow_table(self, symbol, tf, from_idx, to_idx):
+        view = self.mmaps[f"{symbol}_{tf}"]['data'][from_idx:to_idx]
+        ts_arr = pa.array(view['ts'])
+        ohlcv_raw = view['ohlcv']
+        arrays = [ts_arr] + [pa.array(ohlcv_raw[:, i]) for i in range(5)]
+        names = ['ts', 'open', 'high', 'low', 'close', 'volume']
+        return pa.Table.from_arrays(arrays, names=names)
+
 
