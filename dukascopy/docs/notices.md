@@ -51,6 +51,8 @@ I need to squeeze every last drop out of it to get to that insanely fast backtes
 
 I think I have pushed pushed Polars to its architectural limit for feature engineering. But still checking by applying crazy setups. eg 10000 indicators.
 
+**Note:** 10.000 is a no-go. It maxes out and OOP-kills. 100,000 x 3500 indicators with 60000 warmup rows is the limit what my hardware (memory) can take.
+
 **Status: slower endpoint**
 
 The endpoint appears to be rate-limited, which is likely a consequence of the recent outages on the Jetta endpoint. As a result, a full sync from scratch may require some patience.
