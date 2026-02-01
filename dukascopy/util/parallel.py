@@ -386,17 +386,11 @@ class IndicatorEngine:
         Returns:
             pl.DataFrame: DataFrame with rounded indicator columns.
         """
-        # Optimization: Use selectors instead of schema iteration
-        numeric_cols = df.select(cs.numeric()).columns
-        
-        # Filter to ensure we only round indicator columns, not original data
-        numeric_indicator_cols = [c for c in numeric_cols if c in indicator_cols]
+        target_selector = cs.numeric() & cs.by_name(indicator_cols)
 
-        if numeric_indicator_cols:
-            return df.with_columns(
-                [pl.col(c).round(POLARS_ROUNDING) for c in numeric_indicator_cols]
-            )
-        return df
+        return df.with_columns(
+            target_selector.round(POLARS_ROUNDING)
+        )
 
     def _assemble_flat(
             self,
