@@ -53,6 +53,7 @@ import pandas as pd
 import numpy as np
 import os
 import concurrent.futures
+import polars.selectors as cs
 from typing import List, Dict, Any, Optional, Union
 
 # Polars is required for the high-performance execution path.
@@ -271,8 +272,10 @@ class IndicatorEngine:
                 )
 
         # Attach all collected Polars expressions to the graph.
-        if polars_expressions:
-            main_pl = main_pl.with_columns(polars_expressions)
+        batch_size = 100
+        for i in range(0, len(polars_expressions), batch_size):
+            batch = polars_expressions[i : i + batch_size]
+            main_pl = main_pl.with_columns(batch)
 
         # Execute the Polars graph exactly once.
         collected_pl = main_pl.collect()
@@ -390,11 +393,11 @@ class IndicatorEngine:
             if c not in df_orig.columns
         ]
 
-        # Only round numeric indicator columns.
-        numeric_cols = [
-            c for c in indicator_cols
-            if combined_pl.schema[c].is_numeric()
-        ]
+        # Another performance update, before we used a list comprehension with is_numeric
+        # Profiling showed that with 2000 indicators, 11 seconds went into that list comprehension
+        # By using the polars selectors, moving to rust, we eliminate the bottleneck, once again. 
+        # What's next?
+        numeric_cols = combined_pl.select(cs.numeric()).columns
 
         if numeric_cols:
             combined_pl = combined_pl.with_columns(
