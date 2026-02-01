@@ -4,9 +4,7 @@
 
 Feeds are back online. No further actions required.
 
-**New performance update coming**
-
-~~I’ve reached the theoretical performance limits of my hardware for the internal API training calls.~~ With the latest updates, more speed was achieved while creating more headroom. Processing 1 million rows with 500, different period, SMA (eg ..,sma_2500) indicators now completes in under 2 seconds, ~280 million calculations/second. I’m currently cleaning up the code and testing the update. It took a full day of profiling and tuning to get to this point.
+**Performance update coming**
 
 Beta/0.6.7 was updated with the performance fixes. Documentation indicators.md and external.md got updated as well to reflect the new hybrid-indicator situation. I am still testing it. It seems oke but needs some heavy duty load testing. Tomorrow.
 
@@ -28,40 +26,11 @@ Beta/0.6.7 branch:   622 ms (0.62 seconds)
 Context: 1 mln rows x 55 indicators
 API: get_data [internal API](external.md)
 
-The price-only API is completely ridiculous: 13 million records per second.
+The price-only API is completely ridiculous: >13 million records per second.
 
-Load-test has been performed:
+Load-test came-out fine. Tested with 1 billion rows. Repeated calls. No troubles there. Maximum parameters are about 160000 rows (60k warmup) with 3500 indicators. Very wide column query. Beyond that, my memory wont allow and i get OOP's.
 
-**1 Billion 1m records EUR-USD**
-
-indicators: ATR, ADX, MACD, BBANDS, EMA, 50 LONG-RANGE SMA (55 total)
-
-* Records: 1 billion
-* Chunk-size: 1 million
-* Data-points: 55 billion
-* Cycles: 1000
-* Total get_data time: 564.5311447270215s (9.4 minutes)
-* Average get_data time: 0.565096243565601s
-* Average CPU load: 38% Throughout
-* Memory Pressure: 1.2GB Throughout
-
-Conclusion: with options.return_polars to True we max-out at 50% of the CPU. 88 percent goes to collect. Polars math. ~~This is it.~~ One more performance update was pushed out for very-wide indicator sets. Eg 2000 indicators. 
-
-I need to squeeze every last drop out of it to get to that insanely fast backtesting/ML-feature engineering base logic. 
-
-I think I have pushed pushed Polars to its architectural limit for feature engineering. But still checking by applying crazy setups. eg 10000 indicators.
-
-**Note:** 10.000 is a no-go. It maxes out and OOP-kills. 100,000 x 3500 indicators with 60000 warmup rows is the limit what my hardware (memory) can take.
-
-This is ~18 Billion data points per second on a 3.5Ghz processor. 5.14 calculations per CPU clock cycle. This is proof that we work with SIMD (Single Instruction Multiple Data).
-
-**Status: slower endpoint**
-
-The endpoint appears to be rate-limited, which is likely a consequence of the recent outages on the Jetta endpoint. As a result, a full sync from scratch may require some patience.
-
-If you are already in sync, you’re in luck. If not, be prepared for a slower process—sometimes you may need to restart ./rebuild-full.sh a few times before it completes successfully.
-
-This software is still in active development, and at this stage high-speed data feeds are not a requirement (at least for my use case). Once the system is stable, I’ll reach out to Dukascopy to explore options for paid or higher-throughput feeds.
+This branch does ~18 Billion data points per second on a 3.5Ghz processor. 5.14 calculations per CPU clock cycle. This is proof that we work with SIMD (Single Instruction Multiple Data). We have hit the architectural limit of this setup. No more gains possible. Profiling shows that about 90 percent of time is now in the high-performance Polars rust-engine.
 
 **Status: bottom sniper**
 
@@ -80,12 +49,6 @@ The feature set includes, but is not limited to:
 
 The main challenges at the moment are technical, as most of the work involves translating discretionary chart “reading” into precise mathematical representations. What is visually intuitive for a human trader is significantly harder to encode in pure math.
 
-
-Ofcourse there is the problem of overfitting. But... Let's see how far we get.
-
-The system will get heavily tested as a feature engineering factory. Lets see how it holds up. 
-
-It is possible or even likely that the above will spawn another round of updates. Efficiency updates etc. Will try to limit it to feature branches.
 
 
 
