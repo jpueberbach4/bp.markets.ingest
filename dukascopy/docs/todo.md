@@ -43,6 +43,11 @@ Note: strike-through=wont do
   - [X] Cross-timeframe queries
   - [x] Make internal API queryable from external code (bootstrapping)
 
+[ ] TCP Layer
+  - [ ] Apache Arrow Flight? (research)
+
+Note: the HTTP API is nice but it has a major serialization tax
+
 Example Indicator:
   - [x] ML integration example
   - [ ] EUR-USD vs Bond Pearson correlation example
