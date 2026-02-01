@@ -322,6 +322,46 @@ class IndicatorEngine:
 
         return ind_opts
 
+    def _process_pandas_results(
+        self,
+        tasks: List,
+        df_orig: pd.DataFrame
+    ) -> List[pl.DataFrame]:
+        """
+        Helper to collect Pandas results, convert to Polars, and align row counts.
+
+        Iterates through completed futures, converts the results to Polars DataFrames,
+        and ensures they are padded with nulls if they are shorter than the original
+        DataFrame (handling warmup periods).
+
+        Args:
+            tasks (List): List of futures from the ThreadPoolExecutor.
+            df_orig (pd.DataFrame): Original dataframe for height reference.
+
+        Returns:
+            List[pl.DataFrame]: List of aligned Polars DataFrames.
+        """
+        aligned_results = []
+        for future in concurrent.futures.as_completed(tasks):
+            res_df = future.result()
+
+            if res_df is not None:
+                p_res = pl.from_pandas(res_df)
+
+                # Pandas indicators may return fewer rows due to warmup.
+                # We left-pad with nulls so row alignment matches input.
+                if p_res.height < len(df_orig):
+                    pad_len = len(df_orig) - p_res.height
+                    pad = pl.DataFrame(
+                        {c: [None] * pad_len for c in p_res.columns},
+                        schema=p_res.schema
+                    )
+                    p_res = pl.concat([pad, p_res])
+
+                aligned_results.append(p_res)
+                
+        return aligned_results
+
     def _assemble_flat(
             self,
             df_orig: pd.DataFrame,
@@ -365,24 +405,8 @@ class IndicatorEngine:
         # Start with the Polars results (already aligned to input rows).
         indicator_frames = [main_pl]
 
-        # Collect Pandas results as each thread completes.
-        for future in concurrent.futures.as_completed(tasks):
-            res_df = future.result()
-
-            if res_df is not None:
-                p_res = pl.from_pandas(res_df)
-
-                # Pandas indicators may return fewer rows due to warmup.
-                # We left-pad with nulls so row alignment matches input.
-                if p_res.height < len(df_orig):
-                    pad_len = len(df_orig) - p_res.height
-                    pad = pl.DataFrame(
-                        {c: [None] * pad_len for c in p_res.columns},
-                        schema=p_res.schema
-                    )
-                    p_res = pl.concat([pad, p_res])
-
-                indicator_frames.append(p_res)
+        # Collect and align Pandas results
+        indicator_frames.extend(self._process_pandas_results(tasks, df_orig))
 
         # Merge all indicator outputs horizontally.
         combined_pl = pl.concat(indicator_frames, how="horizontal").rechunk()
@@ -454,24 +478,7 @@ class IndicatorEngine:
             object holding all computed indicator values.
         """
         # Collect Pandas results and align them to the original row count
-        aligned_pandas_results = []
-        
-        for f in concurrent.futures.as_completed(tasks):
-            res_df = f.result()
-            if res_df is not None:
-                p_res = pl.from_pandas(res_df)
-
-                # Pandas indicators may return fewer rows due to warmup.
-                # We left-pad with nulls so row alignment matches input.
-                if p_res.height < len(df_orig):
-                    pad_len = len(df_orig) - p_res.height
-                    pad = pl.DataFrame(
-                        {c: [None] * pad_len for c in p_res.columns},
-                        schema=p_res.schema
-                    )
-                    p_res = pl.concat([pad, p_res])
-                
-                aligned_pandas_results.append(p_res)
+        aligned_pandas_results = self._process_pandas_results(tasks, df_orig)
 
         # Merge aligned Pandas outputs into the Polars result.
         if aligned_pandas_results:
@@ -530,7 +537,6 @@ class IndicatorEngine:
             return result_pl
 
         return result_pl.to_pandas()
-
 
 def parallel_indicators(
     df,
