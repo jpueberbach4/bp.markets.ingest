@@ -26,9 +26,7 @@ Beta/0.6.7 branch:   622 ms (0.62 seconds)
 Context: 1 mln rows x 55 indicators
 API: get_data [internal API](external.md)
 
-The price-only API is completely ridiculous: >13 million records per second.
-
-Load-test came-out fine. Tested with 1 billion rows. Repeated calls. No troubles there. Maximum parameters are about 160000 rows (60k warmup) with 3500 indicators. Very wide column query. Beyond that, my memory wont allow and i get OOP's.
+Load-test came-out fine. Tested with 1 billion rows. Repeated calls. No troubles there. Maximum parameters are about 160000 rows (60k warmup) with 3500 indicators. Very wide column query. Beyond that, my memory wont allow and i get OOM's.
 
 Profiling shows that about 90 percent of time is now in the high-performance Polars rust-engine.
 
@@ -43,7 +41,7 @@ Profiling shows that about 90 percent of time is now in the high-performance Pol
 
 [Performance doc](performance.md)
 
-What this project proves is that Memory Mapped IO is actually a superior technological choice for ordered append-only timeseries data. The project doesnt even have the correct binary format (yet). Yet, it is already pushing way beyond the 13 million rows/second-actually doing around 18 million on my laptop-for the price-only API, using Python. With the correct binary format and storage-type-which is reserved for the "next-gen"-this pushes easily in the 30-60 million/sec range.
+What this project demonstrates is that memory-mapped I/O is a highly effective architectural choice for ordered, append-only time-series data. Even without a purpose-built binary format, the system already exceeds 13 million rows per second—and reaches ~18 million rows per second on my laptop—for the price-only API, all from Python. With a proper binary format and storage layout (planned for the “next-gen” version), throughput in the 30–60 million rows per second range should be achievable.
 
 **Status: bottom sniper**
 
