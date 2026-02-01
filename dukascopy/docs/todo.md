@@ -18,7 +18,7 @@ DAG Execution:
   - [x] ~~Directed Acyclic Graph for indicators~~
   - [x] ~~Virtual indicators~~
   - [x] ~~Dependency resolution~~
-  - [ ] Real parallel execution
+  - [x] Real parallel execution (via polars)
 
 Note: strike-through of above is because get_data is powerful enough to handle dependencies
 
@@ -47,9 +47,13 @@ Example Indicator:
   - [x] ML integration example
   - [ ] EUR-USD vs Bond Pearson correlation example
 
+Protection
+  - [ ] Circular indicator dependency protection, AST inspection?
+  - [ ] Custom threadpool to optimize recursive get_data calls which use pandas indicators
+
 Testing:
   - [ ] Unit tests (80%+ coverage)
-  - [ ] Load tests
+  - [x] Load tests
   - [ ] New performance benchmarks
 
 Cleanup:
