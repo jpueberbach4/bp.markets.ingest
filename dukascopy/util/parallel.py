@@ -359,10 +359,12 @@ class IndicatorEngine:
                 # We left-pad with nulls so row alignment matches input.
                 if p_res.height < len(df_orig):
                     pad_len = len(df_orig) - p_res.height
-                    pad = pl.DataFrame(
-                        {c: [None] * pad_len for c in p_res.columns},
-                        schema=p_res.schema
-                    )
+
+                    # Optimization: Use pl.repeat for zero-copy null generation
+                    pad = pl.select([
+                        pl.repeat(None, pad_len, dtype=dtype).alias(name)
+                        for name, dtype in p_res.schema.items()
+                    ])
                     p_res = pl.concat([pad, p_res])
 
                 aligned_results.append(p_res)
@@ -551,7 +553,7 @@ class IndicatorEngine:
         if return_polars:
             return result_pl
 
-        return result_pl.to_pandas()
+        return result_pl.to_pandas(use_threads=True)
 
 
 def parallel_indicators(
