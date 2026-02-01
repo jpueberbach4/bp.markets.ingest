@@ -30,7 +30,7 @@ The price-only API is completely ridiculous: >13 million records per second.
 
 Load-test came-out fine. Tested with 1 billion rows. Repeated calls. No troubles there. Maximum parameters are about 160000 rows (60k warmup) with 3500 indicators. Very wide column query. Beyond that, my memory wont allow and i get OOP's.
 
-This branch does ~18 Billion data points per second on a 3.5Ghz processor. 5.14 calculations per CPU clock cycle. This is proof that we work with SIMD (Single Instruction Multiple Data). We have hit the architectural limit of this setup. No more gains possible. Profiling shows that about 90 percent of time is now in the high-performance Polars rust-engine.
+Profiling shows that about 90 percent of time is now in the high-performance Polars rust-engine.
 
 ```sh
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
