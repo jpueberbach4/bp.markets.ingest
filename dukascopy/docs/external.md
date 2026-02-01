@@ -124,7 +124,9 @@ print(df.head())
 | `limit` | `int` | Maximum rows to return (default: 1000). |
 | `order` | `str` | Order of the returned data-slice (default: asc). Other value: desc |
 | `indicators` | `List[str]` | List of indicator strings to calculate (e.g., `["sma_20", "bbands_20_2"]`). |
-| `options` | `Dict` | Dictionary of additional options and modifiers (e.g., `{"modifiers": ["skiplast"]}`). |
+| `options` | `Dict` | Dictionary of additional options and modifiers (e.g., `{"modifiers": ["skiplast"],"return_polars": False}`). |
+
+**Note:** return_polars to True returns a Polars dataframe from get_data. Prevents casting between polars and pandas dataframes here and there. Speeds up the solution another 20-30%. Use only if your downstream consumers can handle polars dataframes.
 
 ## 5. Requirements
 
