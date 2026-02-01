@@ -60,6 +60,7 @@ License:
 import numpy as np
 import pandas as pd
 import polars as pl
+import pyarrow as pa
 import os
 import sys
 import mmap
@@ -284,4 +285,9 @@ class MarketDataCache:
             return idx
 
         return None
+    
+    def to_arrow_table(self, symbol, tf, from_idx, to_idx) -> pa.Table:
+        """Get data as Apache Arrow Table."""
+        df = self.get_chunk(symbol, tf, from_idx, to_idx, return_polars=True)
+        return df.to_arrow()
 
