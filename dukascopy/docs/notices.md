@@ -6,7 +6,7 @@ Feeds are back online. No further actions required.
 
 **Performance update coming**
 
-Beta/0.6.7 was updated with the performance fixes. Documentation indicators.md and external.md got updated as well to reflect the new hybrid-indicator situation. I am still testing it. It seems oke but needs some heavy duty load testing. Tomorrow.
+Beta/0.6.7 was updated with the performance fixes. Documentation indicators.md and external.md got updated as well to reflect the new hybrid-indicator situation. I am still testing it.
 
 Want to try out the beta?
 
