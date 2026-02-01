@@ -64,6 +64,9 @@ except ImportError:
     raise ImportError("Polars is required. Run 'pip install polars'")
 
 
+# TODO: configuration based?
+POLARS_ROUNDING = 6
+
 class IndicatorWorker:
     """
     Stateless helper responsible for executing Pandas-based indicators.
@@ -359,8 +362,37 @@ class IndicatorEngine:
                     p_res = pl.concat([pad, p_res])
 
                 aligned_results.append(p_res)
-                
         return aligned_results
+
+    def _round_numeric_indicators(
+        self,
+        df: pl.DataFrame,
+        indicator_cols: List[str]
+    ) -> pl.DataFrame:
+        """
+        Round numeric indicator columns to 6 decimal places.
+
+        This optimizes performance by using Polars selectors and ensures
+        that only indicator columns (not original market data) are modified.
+
+        Args:
+            df (pl.DataFrame): DataFrame containing indicators.
+            indicator_cols (List[str]): List of column names identified as indicators.
+
+        Returns:
+            pl.DataFrame: DataFrame with rounded indicator columns.
+        """
+        # Optimization: Use selectors instead of schema iteration
+        numeric_cols = df.select(cs.numeric()).columns
+        
+        # Filter to ensure we only round indicator columns, not original data
+        numeric_indicator_cols = [c for c in numeric_cols if c in indicator_cols]
+
+        if numeric_indicator_cols:
+            return df.with_columns(
+                [pl.col(c).round(POLARS_ROUNDING) for c in numeric_indicator_cols]
+            )
+        return df
 
     def _assemble_flat(
             self,
@@ -417,16 +449,8 @@ class IndicatorEngine:
             if c not in df_orig.columns
         ]
 
-        # Another performance update, before we used a list comprehension with is_numeric
-        # Profiling showed that with 2000 indicators, 11 seconds went into that list comprehension
-        # By using the polars selectors, moving to rust, we eliminate the bottleneck, once again. 
-        # What's next?
-        numeric_cols = combined_pl.select(cs.numeric()).columns
-
-        if numeric_cols:
-            combined_pl = combined_pl.with_columns(
-                [pl.col(c).round(6) for c in numeric_cols]
-            )
+        # Apply rounding to numeric indicator columns
+        combined_pl = self._round_numeric_indicators(combined_pl, indicator_cols)
 
         if return_polars:
             return combined_pl
@@ -493,15 +517,8 @@ class IndicatorEngine:
             if c not in df_orig.columns
         ]
 
-        # Optimization: Use selectors instead of schema iteration
-        numeric_cols = main_pl.select(cs.numeric()).columns
-        # Filter to ensure we only round indicator columns, not original data
-        numeric_indicator_cols = [c for c in numeric_cols if c in indicator_cols]
-
-        if numeric_indicator_cols:
-            main_pl = main_pl.with_columns(
-                [pl.col(c).round(6) for c in numeric_indicator_cols]
-            )
+        # Apply rounding to numeric indicator columns
+        main_pl = self._round_numeric_indicators(main_pl, indicator_cols)
 
         groups = {}
         standalone = []
@@ -537,6 +554,7 @@ class IndicatorEngine:
             return result_pl
 
         return result_pl.to_pandas()
+
 
 def parallel_indicators(
     df,
