@@ -257,6 +257,15 @@ class IndicatorEngine:
 
             # Pandas-based indicators: execute concurrently.
             else:
+
+                calc_func_df = plugin_entry.get(
+                    'calculate',
+                    None
+                )
+                # If user specified a polars:0 or left-out but did not supply for the function, raise Exception
+                if not calc_func_df:
+                    raise ValueError(f"{ind_str} has polars:0 without a calculate function")
+                
                 # Initialize the thread pool lazily.
                 if not self.executor:
                     self.executor = concurrent.futures.ThreadPoolExecutor(
@@ -272,7 +281,7 @@ class IndicatorEngine:
                     self.executor.submit(
                         IndicatorWorker.execute_pandas_task,
                         df_slice=df_for_pandas,
-                        p_func=plugin_entry.get('calculate'),
+                        p_func=calc_func_df,
                         full_name=ind_str,
                         p_opts=ind_opts
                     )
