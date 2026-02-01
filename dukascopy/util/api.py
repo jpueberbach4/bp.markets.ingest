@@ -31,8 +31,9 @@
 """
 import numpy as np
 import pandas as pd
+import polars as pl
 
-from typing import Dict,List
+from typing import Dict,List, Union
 from util.cache import MarketDataCache
 from util.parallel import parallel_indicators
 
@@ -45,6 +46,8 @@ def get_data_auto(
     indicators: List[str] = []
 ) -> pd.DataFrame:
     """Automatically retrieve OHLCV data and indicators based on an existing DataFrame.
+
+    Note: get_data_auto only supports pandas dataframes
 
     This is a convenience wrapper around `get_data` that infers the symbol,
     timeframe, and time range directly from an existing OHLCV DataFrame.
@@ -105,7 +108,7 @@ def get_data(
     order: str = "asc",
     indicators: List[str] = [],
     options: Dict = {}
-) -> pd.DataFrame:
+) -> Union[pd.DataFrame,pl.DataFrame]:
     """Retrieve OHLCV data for a symbol and timeframe, optionally applying indicators.
 
     This function fetches a contiguous slice of cached OHLCV data for a given symbol
@@ -148,6 +151,9 @@ def get_data(
     if order not in ["asc", "desc"]:
         raise ValueError("order must be 'asc' or 'desc'")
 
+    # Output mode, polars or pandas (default)
+    return_polars_dataframe = options.get('return_polars_dataframe', False)
+
     # Extract modifiers, eg skiplast
     modifiers = options.get('modifiers', [])
 
@@ -189,7 +195,7 @@ def get_data(
         until_idx -= 1
 
     # Retrieve the data slice from cache
-    chunk_df = cache.get_chunk(symbol, timeframe, after_idx, until_idx)
+    chunk_df = cache.get_chunk(symbol, timeframe, after_idx, until_idx, return_polars_dataframe)
 
     if indicators:
         # Hot reload support (only for custom user indicators)
@@ -200,29 +206,41 @@ def get_data(
         disable_recursive_mapping = options.get('disable_recursive_mapping', True)
 
         # Enrich the returned result with the requested indicators (parallelized)
-        chunk_df = parallel_indicators(chunk_df, indicators, indicator_registry, disable_recursive_mapping)
+        chunk_df = parallel_indicators(
+            chunk_df, 
+            indicators, 
+            indicator_registry, 
+            disable_recursive_mapping, 
+            return_polars_dataframe
+        )
 
     # Drop warmup rows
-    if not chunk_df.empty and warmup_rows:
-        # No need to search for after_ms and until_ms (O(N)). This was replaced with a
-        # binary search (O(log N)) and ultimately reduced to an O(1) direct slice,
-        # yielding a significant performance improvement.
-        chunk_df = chunk_df[warmup_rows:]
+    is_pl = isinstance(chunk_df, pl.DataFrame)
+    is_empty = chunk_df.is_empty() if is_pl else chunk_df.empty
 
-    # Apply the sort (only need to sort if user queried desc. everything is already asc)
-    # Note: assuming indicators do not CHANGE the order. User can specify option to force ordering
+    if not is_empty and warmup_rows:
+        chunk_df = chunk_df.slice(warmup_rows) if is_pl else chunk_df[warmup_rows:]
+
+    # Apply the sort
     force_ordering = options.get('force_ordering', False)
     if order == "desc" or force_ordering:
-        chunk_df = chunk_df.reset_index().sort_values(by='time_ms', ascending=(order == "asc"))
+        if is_pl:
+            chunk_df = chunk_df.sort("time_ms", descending=(order == "desc"))
+        else:
+            chunk_df = chunk_df.reset_index().sort_values(by='time_ms', ascending=(order == "asc"))
 
-    # Reset the index to have nice 0...N indices
-    chunk_df = chunk_df.reset_index(drop=True)
+    # Reset/Limit/Drop (Pandas path only, Polars uses native methods)
+    if is_pl:
+        print("polars")
+        chunk_df = chunk_df.head(limit)
+    else:
+        chunk_df = chunk_df.reset_index(drop=True)
+        chunk_df = chunk_df.iloc[:limit]
+        chunk_df.drop(columns=['index'], errors='ignore', inplace=True)
 
-    # Apply the limit - for multiselect via API, this is handled in API
-    chunk_df = chunk_df.iloc[:limit]
-
-    # Drop the messy index column. Merging is happening on time_ms and optionally on symbol and tf
-    chunk_df.drop(columns=['index'], errors='ignore', inplace=True)
+    # Final return logic
+    if return_polars_dataframe and not is_pl:
+        return pl.from_pandas(chunk_df)
 
     return chunk_df
 

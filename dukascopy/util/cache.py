@@ -59,6 +59,7 @@ License:
 """
 import numpy as np
 import pandas as pd
+import polars as pl
 import os
 import sys
 import mmap
@@ -194,52 +195,37 @@ class MarketDataCache:
         }
 
 
-    def get_chunk(self, symbol, tf, from_idx, to_idx):
-        """Retrieve a slice of cached OHLCV data as a Pandas DataFrame.
-
-        This method extracts a contiguous range of records from the in-memory,
-        memory-mapped cache for the specified symbol and timeframe. The returned
-        DataFrame is normalized into columnar OHLCV form and includes derived
-        time fields suitable for downstream sorting and formatting.
-
-        Args:
-            symbol (str): Trading symbol identifier (e.g., "EURUSD").
-            tf (str): Timeframe identifier (e.g., "1m", "5m").
-            from_idx (int): Starting index (inclusive) into the cached dataset.
-            to_idx (int): Ending index (exclusive) into the cached dataset.
-
-        Returns:
-            pandas.DataFrame: A DataFrame containing OHLCV data for the requested
-            index range. If the cache view does not exist, an empty DataFrame is
-            returned.
-        """
-        # Construct the cache view name from symbol and timeframe
+    def get_chunk(self, symbol, tf, from_idx, to_idx, return_polars=False):
         view_name = f"{symbol}_{tf}"
-
-        # Retrieve the cached dataset for this view
         cached = self.mmaps.get(view_name)
 
-        # Return an empty DataFrame if the view is not present in cache
         if not cached:
-            return pd.DataFrame()
+            return pl.DataFrame() if return_polars else pd.DataFrame()
 
-        # Slice the structured array to the requested index range
+        # Slice the structured array (NumPy view)
         subset = cached['data'][from_idx:to_idx]
 
-        # Build a normalized DataFrame from the cached OHLCV structure
-        df = pd.DataFrame({
+        # Pre-extract arrays to avoid repeated indexing
+        data_points = subset['ohlcv']
+
+        # Construction Dictionary
+        data_dict = {
             'symbol': symbol,
             'timeframe': tf,
             'time_ms': subset['ts'],
-            'open':   subset['ohlcv'][:, 0],
-            'high':   subset['ohlcv'][:, 1],
-            'low':    subset['ohlcv'][:, 2],
-            'close':  subset['ohlcv'][:, 3],
-            'volume': subset['ohlcv'][:, 4],
-        })
+            'open':   data_points[:, 0],
+            'high':   data_points[:, 1],
+            'low':    data_points[:, 2],
+            'close':  data_points[:, 3],
+            'volume': data_points[:, 4],
+        }
 
-        # Return the dataframe
-        return df
+        if return_polars:
+            # Polars zero-copy construction from NumPy
+            return pl.from_dict(data_dict)
+        
+        # Pandas construction (Slow path)
+        return pd.DataFrame(data_dict)
 
     def get_record_count(self, symbol, tf):
         """Return the number of timestamped records available in a cached view.

@@ -50,7 +50,7 @@ import numpy as np
 import os
 import concurrent.futures
 import gc
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 
 # Polars is required for fast, columnar, lazy execution
 # We fail immediately if it is not installed so the error is obvious
@@ -166,133 +166,96 @@ class IndicatorEngine:
         self.executor = None
 
     def compute(
-        self,
-        df: pd.DataFrame,
-        indicators: List[str],
-        plugins: Dict[str, Any],
-        disable_recursive_mapping: bool = False
-    ) -> pd.DataFrame:
-        """
-        Compute a collection of indicators using hybrid parallel execution.
+            self,
+            df: Union[pd.DataFrame, pl.DataFrame],
+            indicators: List[str],
+            plugins: Dict[str, Any],
+            disable_recursive_mapping: bool = False,
+            return_polars_dataframe: bool = False,
+        ) -> Union[pd.DataFrame, pl.DataFrame]:
+            """
+            Compute a collection of indicators using hybrid parallel execution.
+            """
+            # Detection of input type
+            is_polars = isinstance(df, pl.DataFrame)
 
-        This method coordinates:
-        - Parsing indicator definitions
-        - Dispatching calculations to either Polars or Pandas
-        - Executing all Polars expressions in a single lazy plan
-        - Collecting and merging Pandas results from worker threads
-        - Assembling final output in either flat or nested form
+            # If the input DataFrame is empty, there is nothing to compute
+            if (is_polars and df.is_empty()) or (not is_polars and df.empty):
+                return df
 
-        Args:
-            df (pd.DataFrame):
-                Input DataFrame containing price data or other features.
-            indicators (List[str]):
-                List of indicator identifiers, including parameters
-                (e.g., ["rsi_14", "ema_20"]).
-            plugins (Dict[str, Any]):
-                Registry mapping indicator names to plugin definitions.
-                Each plugin defines how the indicator is calculated.
-            disable_recursive_mapping (bool, optional):
-                If True, returns a flat DataFrame with one column per indicator.
-                If False, nests indicator results into per-row dictionaries.
+            # Only Pandas needs an explicit copy to prevent mutation of the caller's data.
+            # Polars handles this via its internal architecture.
+            if not is_polars:
+                df = df.copy()
 
-        Returns:
-            pd.DataFrame:
-                DataFrame containing computed indicator results merged
-                with the original input data.
-        """
-        # If the input DataFrame is empty, there is nothing to compute
-        if df.empty:
-            return df
-
-        # Always work on a copy so we never mutate user data
-        df = df.copy()
-
-        # Convert 'close' column to numeric if present
-        # This prevents string or object dtype issues later
-        if 'close' in df.columns:
-            df['close'] = pd.to_numeric(df['close'], errors='coerce')
-
-        # Convert Pandas DataFrame to a Polars LazyFrame
-        # LazyFrames build an execution plan instead of running immediately
-        main_pl = pl.from_pandas(df, rechunk=False).lazy()
-
-        # List of futures for Pandas-based indicators
-        pandas_tasks = []
-
-        # List of Polars expressions to apply in one batch
-        polars_expressions = []
-
-        # Loop through every requested indicator
-        for ind_str in indicators:
-
-            # The indicator name is everything before the first underscore
-            # Example: "rsi_14" -> "rsi"
-            name = ind_str.split('_')[0]
-
-            # If the indicator is not registered, skip it silently
-            if name not in plugins:
-                continue
-
-            # Retrieve plugin configuration
-            plugin_entry = plugins[name]
-
-            # Parse indicator parameters from the string
-            ind_opts = self._resolve_options(ind_str, plugin_entry)
-
-            # Retrieve optional metadata function
-            meta_func = plugin_entry.get('meta')
-
-            # Execute metadata function if it exists
-            plugin_meta = meta_func() if callable(meta_func) else {}
-
-            # Decide execution engine based on plugin metadata
-            if plugin_meta.get('polars', 0):
-
-                # Prefer Polars-native calculation if available
-                calc_func_pl = plugin_entry.get(
-                    'calculate_polars',
-                    plugin_entry.get('calculate')
-                )
-
-                # Generate Polars expression(s)
-                expr = calc_func_pl(ind_str, ind_opts)
-
-                # Some indicators return multiple expressions
-                if isinstance(expr, list):
-                    polars_expressions.extend(expr)
+            # Convert 'close' column to numeric if present
+            if 'close' in df.columns:
+                if is_polars:
+                    # Polars-native casting (Vectorized)
+                    df = df.with_columns(pl.col("close").cast(pl.Float64, strict=False))
                 else:
-                    polars_expressions.append(expr)
+                    # Pandas-native casting
+                    df['close'] = pd.to_numeric(df['close'], errors='coerce')
 
+            # Convert Input to a Polars LazyFrame
+            if is_polars:
+                main_pl = df.lazy()
+                df_for_pandas = None 
             else:
-                # If not self.executor, set it up
-                if not self.executor:
-                    self.executor = concurrent.futures.ThreadPoolExecutor(
-                        max_workers=self.max_workers
+                main_pl = pl.from_pandas(df, rechunk=False).lazy()
+                df_for_pandas = df
+
+            pandas_tasks = []
+            polars_expressions = []
+
+            for ind_str in indicators:
+                name = ind_str.split('_')[0]
+                if name not in plugins:
+                    continue
+
+                plugin_entry = plugins[name]
+                ind_opts = self._resolve_options(ind_str, plugin_entry)
+                meta_func = plugin_entry.get('meta')
+                plugin_meta = meta_func() if callable(meta_func) else {}
+
+                if plugin_meta.get('polars', 0):
+                    calc_func_pl = plugin_entry.get('calculate_polars', plugin_entry.get('calculate'))
+                    expr = calc_func_pl(ind_str, ind_opts)
+                    if isinstance(expr, list):
+                        polars_expressions.extend(expr)
+                    else:
+                        polars_expressions.append(expr)
+
+                else:
+                    if not self.executor:
+                        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers)
+
+                    # Delayed Pandas conversion: Only run if a legacy indicator is requested
+                    if df_for_pandas is None:
+                        df_for_pandas = df.to_pandas()
+
+                    pandas_tasks.append(
+                        self.executor.submit(
+                            IndicatorWorker.execute_pandas_task,
+                            df_slice=df_for_pandas,
+                            p_func=plugin_entry.get('calculate'),
+                            full_name=ind_str,
+                            p_opts=ind_opts
+                        )
                     )
 
-                # Pandas indicators are executed asynchronously in threads
-                pandas_tasks.append(
-                    self.executor.submit(
-                        IndicatorWorker.execute_pandas_task,
-                        df_slice=df,
-                        p_func=plugin_entry.get('calculate'),
-                        full_name=ind_str,
-                        p_opts=ind_opts
-                    )
-                )
+            # Apply Polars expressions
+            if polars_expressions:
+                main_pl = main_pl.with_columns(polars_expressions)
 
-        # Apply all Polars expressions in one lazy execution plan
-        if polars_expressions:
-            main_pl = main_pl.with_columns(polars_expressions)
+            # Execute plan
+            collected_pl = main_pl.collect()
 
-        # Execute the Polars plan and materialize results
-        collected_pl = main_pl.collect()
-
-        # Decide how results should be assembled
-        if disable_recursive_mapping:
-            return self._assemble_flat(df, collected_pl, pandas_tasks)
-        else:
-            return self._assemble_nested(df, collected_pl, pandas_tasks)
+            # Final assembly
+            if disable_recursive_mapping:
+                return self._assemble_flat(df, collected_pl, pandas_tasks, return_polars_dataframe)
+            else:
+                return self._assemble_nested(df, collected_pl, pandas_tasks, return_polars_dataframe)
 
     def _resolve_options(self, ind_str: str, plugin_entry: Dict) -> Dict:
         """
@@ -347,8 +310,9 @@ class IndicatorEngine:
         self,
         df_orig: pd.DataFrame,
         main_pl: pl.DataFrame,
-        tasks: List
-    ) -> pd.DataFrame:
+        tasks: List,
+        return_polars_dataframe: bool = False
+    ) -> Union[pd.DataFrame, pl.DataFrame]:
         """
         Assemble indicator outputs into a flat DataFrame.
 
@@ -366,7 +330,10 @@ class IndicatorEngine:
 
         Returns:
             pd.DataFrame:
-                Flat DataFrame containing original data and indicator columns.
+                Flat Pandas DataFrame containing original data and indicator columns.
+            pl.DataFrame:
+                Flat Polars DataFrame containing original data and indicator columns.
+
         """
 
         # Start with Polars results
@@ -415,6 +382,10 @@ class IndicatorEngine:
                 [pl.col(c).round(6) for c in numeric_indicator_cols]
             )
 
+        # Return polars dataframe if option is set
+        if return_polars_dataframe:
+            return combined_pl
+        
         # Convert Polars DataFrame back to Pandas
         return combined_pl.to_pandas(
             use_threads=True,
@@ -425,8 +396,9 @@ class IndicatorEngine:
         self,
         df_orig: pd.DataFrame,
         main_pl: pl.DataFrame,
-        tasks: List
-    ) -> pd.DataFrame:
+        tasks: List,
+        return_polars_dataframe: bool = False
+    ) -> Union[pd.DataFrame, pl.DataFrame]:
         """
         Assemble indicator outputs into nested dictionaries per row.
 
@@ -448,65 +420,70 @@ class IndicatorEngine:
             pd.DataFrame:
                 Original DataFrame with an added 'indicators' column
                 containing nested indicator dictionaries.
+            pl.DataFrame:
+                Original Polars DataFrame with an added 'indicators' column
+                containing nested indicator dictionaries.
         """
 
         # Collect completed Pandas indicator results
-        pandas_results = [
-            f.result()
-            for f in concurrent.futures.as_completed(tasks)
-            if f.result() is not None
-        ]
-
-        # Merge Pandas and Polars indicator outputs
+        pandas_results = [f.result() for f in concurrent.futures.as_completed(tasks) if f.result() is not None]
+        
         if pandas_results:
-            matrix = pd.concat(pandas_results, axis=1)
-            polars_pd = main_pl.select(
-                pl.all().exclude(df_orig.columns)
-            ).to_pandas()
-            matrix = pd.concat([matrix, polars_pd], axis=1)
-        else:
-            matrix = main_pl.select(
-                pl.all().exclude(df_orig.columns)
-            ).to_pandas()
+            # Vectorized merge of all indicator columns
+            indicator_pl = pl.from_pandas(pd.concat(pandas_results, axis=1))
+            # Horizontal concat is very fast in Polars (zero-copy if possible)
+            main_pl = pl.concat([main_pl, indicator_pl], how="horizontal")
 
-        # Remove duplicate columns and round values
-        matrix = matrix.loc[:, ~matrix.columns.duplicated()]
-        numeric_cols = matrix.select_dtypes(include=[np.number]).columns
-        matrix[numeric_cols] = matrix[numeric_cols].round(6)
+        # Exclude original OHLCV columns to isolate indicator columns
+        indicator_cols = [c for c in main_pl.columns if c not in df_orig.columns]
+        
+        # Round all numeric indicators in one shot
+        main_pl = main_pl.with_columns(
+            pl.col(indicator_cols).map_batches(lambda s: s.round(6))
+        )
 
-        # Convert each row into a nested dictionary
-        records = matrix.to_dict(orient='records')
-        nested_list = []
+        # Create the Nested Structure
+        groups = {}
+        standalone = []
+        for col in indicator_cols:
+            if "__" in col:
+                grp, sub = col.split("__", 1)
+                groups.setdefault(grp, []).append(col)
+            else:
+                standalone.append(col)
 
-        for rec in records:
-            row_dict = {}
+        # Build the 'indicators' struct column
+        struct_exprs = []
+        
+        # Add standalone indicators
+        for col in standalone:
+            struct_exprs.append(pl.col(col))
+            
+        # Add grouped sub-structs (nested dictionaries)
+        for grp, cols in groups.items():
+            # This creates row_dict[grp] = {sub1: v1, sub2: v2}
+            struct_exprs.append(
+                pl.struct([pl.col(c).alias(c.split("__", 1)[1]) for c in cols]).alias(grp)
+            )
 
-            for k, v in rec.items():
-                # Skip NaN values entirely
-                if pd.isna(v):
-                    continue
+        # Final assembly
+        result_pl = main_pl.with_columns(
+            pl.struct(struct_exprs).alias("indicators")
+        ).select([*df_orig.columns, "indicators"])
 
-                # Group multi-output indicators
-                if "__" in k:
-                    grp, sub = k.split("__", 1)
-                    if grp not in row_dict:
-                        row_dict[grp] = {}
-                    row_dict[grp][sub] = v
-                else:
-                    row_dict[k] = v
-
-            nested_list.append(row_dict)
-
-        # Attach nested indicators to original DataFrame
-        df_orig['indicators'] = nested_list
-        return df_orig
+        if return_polars_dataframe:
+            return result_pl
+        
+        # Only convert to Pandas at the very last microsecond if requested
+        return result_pl.to_pandas()
 
 
 def parallel_indicators(
     df,
     indicators,
     plugins,
-    disable_recursive_mapping=False
+    disable_recursive_mapping:bool=False,
+    return_polars_dataframe:bool= False
 ):
     """
     Backward-compatible convenience wrapper for IndicatorEngine.
@@ -537,5 +514,6 @@ def parallel_indicators(
         df,
         indicators,
         plugins,
-        disable_recursive_mapping
+        disable_recursive_mapping,
+        return_polars_dataframe
     )
