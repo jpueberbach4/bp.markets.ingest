@@ -18,6 +18,8 @@ We have reached the theoretical performance limits of the hardware for high-freq
 | 7 | 100,000 | 1379.97 ms | 3508 |
 | **8** | **100,000** | **1263.04 ms** | **3508** |
 
+
+**Note** Not accounting for the 60k warmup rows.
 ---
 
 ### 🧠 Peak Instruction Throughput: ~18 Billion Ops/sec (including memory ops, rounding, and Polars internals)
