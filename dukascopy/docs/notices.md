@@ -43,7 +43,7 @@ Profiling shows that about 90 percent of time is now in the high-performance Pol
 
 What this project demonstrates is that memory-mapped I/O is a highly effective architectural choice for ordered, append-only time-series data. Even with a unoptimized binary format, the system already exceeds 13 million rows per second—and reaches ~18 million rows per second on my laptop—for the price-only API, all from Python. With a proper binary format and storage layout (planned for the “next-gen” version), throughput in the 30–60 million rows per second range should be achievable.
 
-There will be a "bonus feature" soon. I have played with it. It works as a "toy-side-project" but needs to get generalized.
+There will be a "bonus feature" soon. I have played with it. It works as a "toy-side-project" but needs to get generalized. Lets see how fast we can map these files over the network.
 
 **Status: bottom sniper**
 
