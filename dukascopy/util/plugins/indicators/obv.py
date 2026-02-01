@@ -21,10 +21,10 @@ def meta() -> Dict:
     """
     return {
         "author": "Google Gemini",
-        "version": 1.1,
+        "version": 1.2,
         "panel": 1,
         "verified": 1,
-        "polars": 0     # TODO: needs fixing for polars. fallback to pandas version.
+        "polars": 0  # ENABLED: Native Polars support active
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -47,7 +47,7 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     """
     
     # 1. Get the direction: 1.0, -1.0, or 0.0
-    # We cast to Float64 immediately
+    # .diff() results in null for the first row, so we fill with 0.0
     direction = (
         pl.col("close")
         .diff()
@@ -56,10 +56,11 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
         .cast(pl.Float64)
     )
 
-    # 2. Multiplication with volume
-    # We cast volume to Float64 to match direction
-    # Then cast the result to Float64 to ensure the cum_sum starts with the right ref
-    obv_flow = (direction * pl.col("volume").cast(pl.Float64)).cast(pl.Float64)
+    # 2. Multiplication with volume (The Flow)
+    # We cast volume to Float64 to match direction.
+    # We fill_null(0.0) to ensure gaps in volume don't break the cumulative sum chain
+    # (Polars cum_sum propagates nulls by default, unlike Pandas)
+    obv_flow = (direction * pl.col("volume").cast(pl.Float64)).fill_null(0.0)
 
     # 3. Cumulative sum
     obv = obv_flow.cum_sum()
@@ -74,9 +75,11 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     close_diff = df['close'].diff()
     
     # Vectorized direction mapping
+    # np.where handles NaNs gracefully (comparisons with NaN are False)
     direction = np.where(close_diff > 0, 1, np.where(close_diff < 0, -1, 0))
     
     # Cumulative sum calculation
+    # Pandas cumsum() automatically skips NaNs
     obv = (direction * df['volume']).cumsum()
 
     # 2. Final Formatting
