@@ -53,6 +53,8 @@ I think I have pushed pushed Polars to its architectural limit for feature engin
 
 **Note:** 10.000 is a no-go. It maxes out and OOP-kills. 100,000 x 3500 indicators with 60000 warmup rows is the limit what my hardware (memory) can take.
 
+This is ~18 Billion data points per second on a 3.5Ghz processor. 5.14 calculations per CPU clock cycle. This is proof that we work with SIMD (Single Instruction Multiple Data).
+
 **Status: slower endpoint**
 
 The endpoint appears to be rate-limited, which is likely a consequence of the recent outages on the Jetta endpoint. As a result, a full sync from scratch may require some patience.
