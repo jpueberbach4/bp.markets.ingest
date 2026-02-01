@@ -218,7 +218,7 @@ class IndicatorEngine:
         polars_expressions = []  # Lazy Polars expressions
 
         # Iterate over each requested indicator identifier.
-        for ind_str in indicators:
+        for C in indicators:
             # Extract the base indicator name (before parameters).
             name = ind_str.split('_')[0]
 
@@ -239,8 +239,12 @@ class IndicatorEngine:
             if plugin_meta.get('polars', 0):
                 calc_func_pl = plugin_entry.get(
                     'calculate_polars',
-                    plugin_entry.get('calculate')
+                    None
                 )
+
+                # If user specified a polars:1 but did not supply for the function, raise Exception
+                if not calc_func_pl:
+                    raise ValueError(f"{ind_str} has polars:1 without a calculate_polars function")
 
                 # No computation happens here — expressions are just appended.
                 expr = calc_func_pl(ind_str, ind_opts)
