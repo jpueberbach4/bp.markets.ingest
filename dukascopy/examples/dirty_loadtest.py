@@ -95,6 +95,9 @@ timestamp_str = "2022-11-17+19:00:00"
 dt = datetime.strptime(timestamp_str, "%Y-%m-%d+%H:%M:%S")
 after_ms = int(dt.replace(tzinfo=timezone.utc).timestamp() * 1000)
 
+# limits
+limit = 1_000_000
+num_indicators = 50
 
 # Set some default indicators
 indicators = ['adx_14', 'atr_14', 'ema_20', 'bbands_20_2.0', 'macd_12_26_9','hma_9','obv','pivot_10']
