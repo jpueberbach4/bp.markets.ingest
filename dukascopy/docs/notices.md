@@ -45,7 +45,7 @@ indicators: ATR, ADX, MACD, BBANDS, EMA, 50 LONG-RANGE SMA (55 total)
 * Average CPU load: 38% Throughout
 * Memory Pressure: 1.2GB Throughout
 
-Conclusion: there is headroom. Needs another performance optimization in the future. I will introduce an optional flag to disable converting from and to pandas and return a polars frame instead. This will drop it by another 50 percent (likely-profiling shows). Most ML-libs support polars frames. Pandas will remain the default though. 
+Conclusion: with options.return_polars to True we max-out at 50% of the CPU. 88 percent goes to collect. Polars math. This is it. 
 
 **Status: slower endpoint**
 
