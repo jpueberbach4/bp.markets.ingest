@@ -30,6 +30,21 @@ API: get_data [internal API](external.md)
 
 The price-only API is completely ridiculous: 13 million records per second.
 
+Load-test has been performed:
+
+**1 Billion 1m records EUR-USD**
+
+indicators: ATR, ADX, MACD, BBANDS, EMA, 50 LONG-RANGE SMA (55 total)
+
+* Records: 1 billion
+* Chunk-size: 1 million
+* Data-points: 55 billion
+* Cycles: 1000
+* Total get_data time: 564.5311447270215s (9.4 minutes)
+* Average get_data time: 0.565096243565601s
+* Average CPU load: 38% Throughout
+* Memory Pressure: 1.2GB Throughout
+
 **Status: slower endpoint**
 
 The endpoint appears to be rate-limited, which is likely a consequence of the recent outages on the Jetta endpoint. As a result, a full sync from scratch may require some patience.
