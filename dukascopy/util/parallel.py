@@ -218,7 +218,7 @@ class IndicatorEngine:
         polars_expressions = []  # Lazy Polars expressions
 
         # Iterate over each requested indicator identifier.
-        for C in indicators:
+        for ind_str in indicators:
             # Extract the base indicator name (before parameters).
             name = ind_str.split('_')[0]
 
