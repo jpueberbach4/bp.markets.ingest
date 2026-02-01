@@ -453,16 +453,31 @@ class IndicatorEngine:
             contains the original market data and a nested ``indicators``
             object holding all computed indicator values.
         """
-        # Collect all completed Pandas results.
-        pandas_results = [
-            f.result()
-            for f in concurrent.futures.as_completed(tasks)
-            if f.result() is not None
-        ]
+        # Collect Pandas results and align them to the original row count
+        aligned_pandas_results = []
+        
+        for f in concurrent.futures.as_completed(tasks):
+            res_df = f.result()
+            if res_df is not None:
+                p_res = pl.from_pandas(res_df)
 
-        # Merge Pandas outputs into the Polars result.
-        if pandas_results:
-            indicator_pl = pl.from_pandas(pd.concat(pandas_results, axis=1))
+                # Pandas indicators may return fewer rows due to warmup.
+                # We left-pad with nulls so row alignment matches input.
+                if p_res.height < len(df_orig):
+                    pad_len = len(df_orig) - p_res.height
+                    pad = pl.DataFrame(
+                        {c: [None] * pad_len for c in p_res.columns},
+                        schema=p_res.schema
+                    )
+                    p_res = pl.concat([pad, p_res])
+                
+                aligned_pandas_results.append(p_res)
+
+        # Merge aligned Pandas outputs into the Polars result.
+        if aligned_pandas_results:
+            # Concat all pandas results horizontally first
+            indicator_pl = pl.concat(aligned_pandas_results, how="horizontal")
+            # Then merge with the main Polars frame
             main_pl = pl.concat([main_pl, indicator_pl], how="horizontal")
 
         # Identify indicator columns.
@@ -471,12 +486,14 @@ class IndicatorEngine:
             if c not in df_orig.columns
         ]
 
-        # Round numeric indicator values. User selectors for max-perfornance. Stay in rust.
-        numeric_cols = combined_pl.select(cs.numeric()).columns
+        # Optimization: Use selectors instead of schema iteration
+        numeric_cols = main_pl.select(cs.numeric()).columns
+        # Filter to ensure we only round indicator columns, not original data
+        numeric_indicator_cols = [c for c in numeric_cols if c in indicator_cols]
 
-        if numeric_cols:
-            combined_pl = combined_pl.with_columns(
-                [pl.col(c).round(6) for c in numeric_cols]
+        if numeric_indicator_cols:
+            main_pl = main_pl.with_columns(
+                [pl.col(c).round(6) for c in numeric_indicator_cols]
             )
 
         groups = {}
