@@ -152,7 +152,7 @@ def get_data(
         raise ValueError("order must be 'asc' or 'desc'")
 
     # Output mode, polars or pandas (default)
-    return_polars_dataframe = options.get('return_polars_dataframe', False)
+    return_polars = options.get('return_polars', False)
 
     # Extract modifiers, eg skiplast
     modifiers = options.get('modifiers', [])
@@ -195,7 +195,7 @@ def get_data(
         until_idx -= 1
 
     # Retrieve the data slice from cache
-    chunk_df = cache.get_chunk(symbol, timeframe, after_idx, until_idx, return_polars_dataframe)
+    chunk_df = cache.get_chunk(symbol, timeframe, after_idx, until_idx, return_polars)
 
     if indicators:
         # Hot reload support (only for custom user indicators)
@@ -211,7 +211,7 @@ def get_data(
             indicators, 
             indicator_registry, 
             disable_recursive_mapping, 
-            return_polars_dataframe
+            return_polars
         )
 
     # Drop warmup rows
@@ -238,7 +238,7 @@ def get_data(
         chunk_df.drop(columns=['index'], errors='ignore', inplace=True)
 
     # Final return logic
-    if return_polars_dataframe and not is_pl:
+    if return_polars and not is_pl:
         return pl.from_pandas(chunk_df)
 
     return chunk_df

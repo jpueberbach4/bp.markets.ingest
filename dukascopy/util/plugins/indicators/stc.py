@@ -1,6 +1,6 @@
-import polars as pl
 import pandas as pd
 import numpy as np
+import polars as pl
 from typing import List, Dict, Any
 
 def description() -> str:
@@ -22,10 +22,10 @@ def meta() -> Dict:
     """
     return {
         "author": "Google Gemini",
-        "version": 1.1,
+        "version": 1.2,
         "panel": 1,
         "verified": 1,
-        "polars": 0  # TODO: polars works but is slower than pandas variant. hence enable pandas.
+        "polars": 0     # TODO: pandas version is faster, however, newer polars version fixes it. 
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -52,7 +52,7 @@ def position_args(args: List[str]) -> Dict[str, Any]:
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     """
     High-performance Polars-native calculation for STC.
-    Replicates the double-stochastic MACD smoothing logic.
+    Uses lazy evaluation to chain the 4-stage windowing process efficiently.
     """
     try:
         cycle = int(options.get('cycle', 10))
@@ -63,30 +63,37 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
 
     smooth_span = max(1, int(cycle / 2))
 
-    # A. MACD Line
-    ema_fast = pl.col("close").ewm_mean(span=fast, adjust=False)
-    ema_slow = pl.col("close").ewm_mean(span=slow, adjust=False)
+    # 1. Ensure strictly Float64 input
+    close = pl.col("close").cast(pl.Float64)
+
+    # 2. MACD Calculation
+    ema_fast = close.ewm_mean(span=fast, adjust=False)
+    ema_slow = close.ewm_mean(span=slow, adjust=False)
     macd = ema_fast - ema_slow
 
-    # Helper for Stochastic calculation in Polars
-    def polars_stoch(expr, window):
-        low_min = expr.rolling_min(window_size=window)
-        high_max = expr.rolling_max(window_size=window)
-        return (100 * (expr - low_min) / (high_max - low_min)).fill_nan(0).fill_null(0)
+    # Helper: Polars Stochastic Calculation
+    # Handles division by zero (when high == low) via fill_nan(0)
+    def _polars_stoch(series_expr, window):
+        low_min = series_expr.rolling_min(window_size=window)
+        high_max = series_expr.rolling_max(window_size=window)
+        
+        # Note: 0/0 creates NaN, which fill_nan catches.
+        return (100.0 * (series_expr - low_min) / (high_max - low_min)).fill_nan(0.0).fill_null(0.0)
 
-    # B. First Smoothing
-    stoch_1 = polars_stoch(macd, cycle)
+    # 3. First Smoothing Cycle (Stoch -> EMA)
+    stoch_1 = _polars_stoch(macd, cycle)
     smooth_1 = stoch_1.ewm_mean(span=smooth_span, adjust=False)
 
-    # C. Second Smoothing
-    stoch_2 = polars_stoch(smooth_1, cycle)
+    # 4. Second Smoothing Cycle (Stoch -> EMA)
+    stoch_2 = _polars_stoch(smooth_1, cycle)
     stc = stoch_2.ewm_mean(span=smooth_span, adjust=False)
 
-    # D. Directional Slope
+    # 5. Directional Slope
+    # Matches Pandas logic: 1 if rising, -1 otherwise (including flat/falling)
     direction = (
         pl.when(stc > stc.shift(1))
-        .then(pl.lit(1))
-        .otherwise(pl.lit(-1))
+        .then(pl.lit(1.0))
+        .otherwise(pl.lit(-1.0))
     )
 
     return [
@@ -112,6 +119,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     def get_stoch(series, window):
         low_min = series.rolling(window=window).min()
         high_max = series.rolling(window=window).max()
+        # Avoid DivisionByZero warning in Pandas by replacing 0 denom with NaN
         denom = (high_max - low_min).replace(0, np.nan)
         return 100 * (series - low_min) / denom
 

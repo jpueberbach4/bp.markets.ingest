@@ -146,7 +146,7 @@ class IndicatorEngine:
         indicators: List[str],
         plugins: Dict[str, Any],
         disable_recursive_mapping: bool = False,
-        return_polars_dataframe: bool = False,
+        return_polars: bool = False,
     ) -> Union[pd.DataFrame, pl.DataFrame]:
         """
         Compute multiple indicators using hybrid parallel execution.
@@ -156,7 +156,7 @@ class IndicatorEngine:
             indicators (List[str]): Indicator identifiers (e.g. "rsi_14").
             plugins (Dict[str, Any]): Loaded indicator plugins.
             disable_recursive_mapping (bool): If True, return flat output.
-            return_polars_dataframe (bool): If True, return Polars DataFrame.
+            return_polars (bool): If True, return Polars DataFrame.
 
         Returns:
             Union[pd.DataFrame, pl.DataFrame]: DataFrame with indicator results.
@@ -178,17 +178,24 @@ class IndicatorEngine:
         if not is_polars:
             df = df.copy()
 
-        # Many indicators assume "close" is numeric.
+        # Many indicators assume "ohlcv" is numeric.
         # We coerce here once to avoid repeated conversions downstream.
-        if 'close' in df.columns:
-            if is_polars:
-                # strict=False prevents hard failures on bad data
-                df = df.with_columns(
-                    pl.col("close").cast(pl.Float64, strict=False)
-                )
-            else:
-                # Non-numeric values become NaN
-                df['close'] = pd.to_numeric(df['close'], errors='coerce')
+        if is_polars:
+            # strict=False prevents hard failures on bad data
+            df = df.with_columns(
+                pl.col("open").cast(pl.Float64, strict=False),
+                pl.col("high").cast(pl.Float64, strict=False),
+                pl.col("low").cast(pl.Float64, strict=False),
+                pl.col("close").cast(pl.Float64, strict=False),
+                pl.col("volume").cast(pl.Float64, strict=False)
+            )
+        else:
+            # Non-numeric values become NaN
+            df['open'] = pd.to_numeric(df['open'], errors='coerce')
+            df['high'] = pd.to_numeric(df['high'], errors='coerce')
+            df['low'] = pd.to_numeric(df['low'], errors='coerce')
+            df['close'] = pd.to_numeric(df['close'], errors='coerce')
+            df['volume'] = pd.to_numeric(df['volume'], errors='coerce')
 
         # Build the Polars execution graph.
         #
@@ -273,11 +280,11 @@ class IndicatorEngine:
         # Assemble final output according to the requested format.
         if disable_recursive_mapping:
             return self._assemble_flat(
-                df, collected_pl, pandas_tasks, return_polars_dataframe
+                df, collected_pl, pandas_tasks, return_polars
             )
         else:
             return self._assemble_nested(
-                df, collected_pl, pandas_tasks, return_polars_dataframe
+                df, collected_pl, pandas_tasks, return_polars
             )
 
     def _resolve_options(self, ind_str: str, plugin_entry: Dict) -> Dict:
@@ -317,7 +324,7 @@ class IndicatorEngine:
             df_orig: pd.DataFrame,
             main_pl: pl.DataFrame,
             tasks: List,
-            return_polars_dataframe: bool = False
+            return_polars: bool = False
      ) -> Union[pd.DataFrame, pl.DataFrame]:
         """
         Assemble all indicator outputs into a flat DataFrame.
@@ -344,7 +351,7 @@ class IndicatorEngine:
                 Polars-native indicator results.
             tasks (List): List of Future objects representing running or
                 completed Pandas-based indicator computations.
-            return_polars_dataframe (bool): If True, return a Polars DataFrame
+            return_polars (bool): If True, return a Polars DataFrame
                 instead of converting the result back to Pandas.
 
         Returns:
@@ -394,7 +401,7 @@ class IndicatorEngine:
                 [pl.col(c).round(6) for c in numeric_cols]
             )
 
-        if return_polars_dataframe:
+        if return_polars:
             return combined_pl
 
         # Convert back to Pandas only at the very end.
@@ -408,7 +415,7 @@ class IndicatorEngine:
         df_orig: pd.DataFrame,
         main_pl: pl.DataFrame,
         tasks: List,
-        return_polars_dataframe: bool = False
+        return_polars: bool = False
     ) -> Union[pd.DataFrame, pl.DataFrame]:
         """
         Assemble indicator outputs into a nested per-row structure.
@@ -435,7 +442,7 @@ class IndicatorEngine:
                 Polars-native indicator results.
             tasks (List): List of Future objects representing completed or
                 pending Pandas-based indicator computations.
-            return_polars_dataframe (bool): If True, return a Polars DataFrame
+            return_polars (bool): If True, return a Polars DataFrame
                 instead of converting the result to Pandas.
 
         Returns:
@@ -502,7 +509,7 @@ class IndicatorEngine:
             pl.struct(struct_exprs).alias("indicators")
         ).select([*df_orig.columns, "indicators"])
 
-        if return_polars_dataframe:
+        if return_polars:
             return result_pl
 
         return result_pl.to_pandas()
@@ -513,7 +520,7 @@ def parallel_indicators(
     indicators,
     plugins,
     disable_recursive_mapping: bool = False,
-    return_polars_dataframe: bool = False
+    return_polars: bool = False
 ):
     """
     Backward-compatible wrapper around IndicatorEngine.
@@ -523,7 +530,7 @@ def parallel_indicators(
         indicators (List[str]): Indicator identifiers.
         plugins (Dict[str, Any]): Loaded plugins.
         disable_recursive_mapping (bool): Return flat output if True.
-        return_polars_dataframe (bool): Return Polars DataFrame if True.
+        return_polars (bool): Return Polars DataFrame if True.
 
     Returns:
         Union[pd.DataFrame, pl.DataFrame]: Indicator results.
@@ -535,5 +542,5 @@ def parallel_indicators(
         indicators,
         plugins,
         disable_recursive_mapping,
-        return_polars_dataframe
+        return_polars
     )

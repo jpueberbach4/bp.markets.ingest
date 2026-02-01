@@ -24,7 +24,7 @@ def meta() -> Dict:
         "version": 1.2,
         "panel": 1,
         "verified": 1,
-        "polars": 0  # ENABLED: Native Polars support active
+        "polars": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
