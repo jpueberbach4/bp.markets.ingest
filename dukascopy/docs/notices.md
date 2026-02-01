@@ -32,6 +32,15 @@ Load-test came-out fine. Tested with 1 billion rows. Repeated calls. No troubles
 
 This branch does ~18 Billion data points per second on a 3.5Ghz processor. 5.14 calculations per CPU clock cycle. This is proof that we work with SIMD (Single Instruction Multiple Data). We have hit the architectural limit of this setup. No more gains possible. Profiling shows that about 90 percent of time is now in the high-performance Polars rust-engine.
 
+```sh
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        9    0.083    0.009   >14.406<    1.601 ../util/api.py:102(get_data)
+        9    0.028    0.003   13.534    1.504 ../util/parallel.py:521(parallel_indicators)
+        9    0.063    0.007   13.506    1.501 ../util/parallel.py:144(compute)
+       54    0.000    0.000   12.795    0.237 ../site-packages/polars/lazyframe/frame.py:1821(collect)
+       54   12.793    0.237   >12.793<    0.237 {method 'collect' of 'builtins.PyLazyFrame' objects}
+```
+
 **Status: bottom sniper**
 
 I am currently developing an H4 bottom-sniper model using a 10-20 feature machine-learning setup.
