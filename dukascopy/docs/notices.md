@@ -6,7 +6,7 @@ Feeds are back online. No further actions required.
 
 **New performance update coming**
 
-I’ve reached the theoretical performance limits of my hardware for the internal API training calls. Processing 1 million rows with 500, different period, SMA (eg ..,sma_2500) indicators now completes in under 2 seconds, ~280 million calculations/second. I’m currently cleaning up the code and testing the update. It took a full day of profiling and tuning to get to this point.
+~~I’ve reached the theoretical performance limits of my hardware for the internal API training calls.~~ With the latest updates, more speed was achieved while creating more headroom. Processing 1 million rows with 500, different period, SMA (eg ..,sma_2500) indicators now completes in under 2 seconds, ~280 million calculations/second. I’m currently cleaning up the code and testing the update. It took a full day of profiling and tuning to get to this point.
 
 Beta/0.6.7 was updated with the performance fixes. Documentation indicators.md and external.md got updated as well to reflect the new hybrid-indicator situation. I am still testing it. It seems oke but needs some heavy duty load testing. Tomorrow.
 
