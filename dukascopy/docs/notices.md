@@ -6,7 +6,7 @@ Feeds are back online. No further actions required.
 
 **New performance update coming**
 
-I’ve reached the theoretical performance limits of my hardware for the internal API training calls. Processing 1 million rows with 500, different period, SMA (eg ..,sma_2500) indicators now completes in under 2 seconds, ~280 million calculations/second. I’m currently cleaning up the code and testing the update. It took a full day of profiling and tuning to get to this point.
+~~I’ve reached the theoretical performance limits of my hardware for the internal API training calls.~~ With the latest updates, more speed was achieved while creating more headroom. Processing 1 million rows with 500, different period, SMA (eg ..,sma_2500) indicators now completes in under 2 seconds, ~280 million calculations/second. I’m currently cleaning up the code and testing the update. It took a full day of profiling and tuning to get to this point.
 
 Beta/0.6.7 was updated with the performance fixes. Documentation indicators.md and external.md got updated as well to reflect the new hybrid-indicator situation. I am still testing it. It seems oke but needs some heavy duty load testing. Tomorrow.
 
@@ -29,6 +29,23 @@ Context: 1 mln rows x 55 indicators
 API: get_data [internal API](external.md)
 
 The price-only API is completely ridiculous: 13 million records per second.
+
+Load-test has been performed:
+
+**1 Billion 1m records EUR-USD**
+
+indicators: ATR, ADX, MACD, BBANDS, EMA, 50 LONG-RANGE SMA (55 total)
+
+* Records: 1 billion
+* Chunk-size: 1 million
+* Data-points: 55 billion
+* Cycles: 1000
+* Total get_data time: 564.5311447270215s (9.4 minutes)
+* Average get_data time: 0.565096243565601s
+* Average CPU load: 38% Throughout
+* Memory Pressure: 1.2GB Throughout
+
+Conclusion: there is headroom. Needs another performance optimization in the future. I will introduce an optional flag to disable converting from and to pandas and return a polars frame instead. This will drop it by another 50 percent (likely-profiling shows). Most ML-libs support polars frames. Pandas will remain the default though. 
 
 **Status: slower endpoint**
 
@@ -61,5 +78,7 @@ Ofcourse there is the problem of overfitting. But... Let's see how far we get.
 The system will get heavily tested as a feature engineering factory. Lets see how it holds up. 
 
 It is possible or even likely that the above will spawn another round of updates. Efficiency updates etc. Will try to limit it to feature branches.
+
+
 
 

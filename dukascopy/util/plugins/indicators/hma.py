@@ -18,7 +18,7 @@ def meta() -> Dict:
         "author": "Google Gemini",
         "version": 1.1,
         "verified": 0,  # Needs fixing!
-        "polars": 0     # TODO: fix polars version. performance profile if polars version is faster 
+        "polars": 1     # TODO: fix polars version. performance profile if polars version is faster 
                         # since uses UDF function. For now, fallback to pandas version. 
     }
 
@@ -33,20 +33,46 @@ def position_args(args: List[str]) -> Dict[str, Any]:
     return {"period": args[0] if len(args) > 0 else "9"}
 
 def _polars_wma(column: Union[str, pl.Expr], n: int) -> pl.Expr:
-    # Ensure we are working with an Expression
-    if isinstance(column, str):
-        col_expr = pl.col(column)
-    else:
-        col_expr = column
-        
-    weights = list(range(1, n + 1))
-    sum_weights = sum(weights)
+    """
+    Calculates Weighted Moving Average (WMA) using Vectorized Double-Cumsum.
     
-    # Use rolling_map with a closure to handle weights
-    return col_expr.rolling_map(
-        lambda s: (s * weights).sum() / sum_weights,
-        window_size=n
-    )
+    Algorithm:
+        Target WMA (Step-Up weights n, n-1, ... 1) can be derived from two cumulative sums.
+        Formula: Numerator = (n+1)*S1_t - S1_{t-n} - (S2_t - S2_{t-n})
+        Where:
+            S1 = Cumulative Sum of Price
+            S2 = Cumulative Sum of S1
+            
+    Performance:
+        Removes the O(N*W) complexity of rolling_map.
+        Executes in pure Rust/SIMD.
+    """
+    # Normalize input to Expression
+    col = pl.col(column) if isinstance(column, str) else column
+    
+    # 1. Prepare Cumulative Sums
+    # fill_null(0) is required to allow the math to start from index 0
+    # The result for the warmup period will be junk, but masked later by null propagation
+    s1 = col.fill_null(0).cum_sum()
+    s2 = s1.cum_sum()
+    
+    # 2. Calculate Window Terms
+    # s1_shifted represents S1_{t-n}
+    s1_shift = s1.shift(n).fill_null(0)
+    s2_shift = s2.shift(n).fill_null(0)
+    
+    # 3. Vectorized WMA Formula
+    # Derivation: (n+1) * FlatSum - StepDownSum = StepUpSum
+    numerator = (n + 1) * s1 - s1_shift - (s2 - s2_shift)
+    denominator = n * (n + 1) // 2
+    
+    # 4. Mask warmup period
+    # The shift operation naturally creates nulls at the start, but fill_null(0) 
+    # hid them. We re-apply nulls to the first n-1 elements to be safe.
+    wma = numerator / denominator
+    
+    # Helper to enforce nulls on the warmup period (first n-1 rows)
+    return wma.shift(- (n - 1)).shift(n - 1)
 
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     try:
@@ -54,18 +80,19 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     except (ValueError, TypeError):
         period = 14
 
-    half_p = period // 2
+    half_p = int(period / 2)
     sqrt_p = int(np.sqrt(period))
 
-    # Calculate WMA components
-    # 2 * WMA(n/2) - WMA(n)
+    # Calculate WMA components using the vectorized helper
     wma_half = _polars_wma("close", half_p)
     wma_full = _polars_wma("close", period)
     
-    diff_expr = (wma_half * 2) - wma_full
+    # Raw Hull Moving Average
+    # Formula: 2 * WMA(n/2) - WMA(n)
+    raw_hma = (wma_half * 2) - wma_full
     
-    # Final HMA smoothing
-    return _polars_wma(diff_expr, sqrt_p).alias(indicator_str)
+    # Final Smoothing: WMA(sqrt(n))
+    return _polars_wma(raw_hma, sqrt_p).alias(indicator_str)
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     """

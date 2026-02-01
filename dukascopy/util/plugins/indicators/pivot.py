@@ -22,10 +22,9 @@ def meta() -> Dict:
     """
     return {
         "author": "Google Gemini",
-        "version": 1.1,
+        "version": 1.2,
         "verified": 1,
-        "polars": 0,    # TODO: needs fixing for polars version. for now. fallback to pandas version
-                        # We receive all nulls from polars version
+        "polars": 1,        # ENABLED: Fixed type casting issue
         "needs": "surface-colouring"
     }
 
@@ -50,34 +49,42 @@ def position_args(args: List[str]) -> Dict[str, Any]:
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     """
     Fixed Polars Variant for Pivot Points.
-    Uses 'min_periods=1' to ensure the calculation triggers on the first bar,
-    matching the rendering expectations of the JSONP output.
     """
     try:
         period = int(options.get('lookback', 1))
     except (ValueError, TypeError):
         period = 1
 
-    # 1. Shift and Roll with min_periods=1
-    # This ensures that even on the second bar of the dataset, 
-    # we have a valid Pivot Point based on bar #1.
-    prev_h = pl.col("high").shift(1).rolling_max(window_size=period, min_periods=1).cast(pl.Float64)
-    prev_l = pl.col("low").shift(1).rolling_min(window_size=period, min_periods=1).cast(pl.Float64)
-    prev_c = pl.col("close").shift(1).cast(pl.Float64)
+    # 1. Prepare Inputs with Strict Casting
+    # We must cast to Float64 BEFORE shifting/rolling to avoid nulls on non-numeric columns
+    high = pl.col("high").cast(pl.Float64)
+    low = pl.col("low").cast(pl.Float64)
+    close = pl.col("close").cast(pl.Float64)
 
-    # 2. Pivot Point Math (Exactly matching your legacy code)
+    # 2. Efficient Calculation
+    if period == 1:
+        # Fast path: Standard Pivot Points just use the previous bar
+        prev_h = high.shift(1)
+        prev_l = low.shift(1)
+    else:
+        # Generalized path: Rolling High/Low over N periods
+        # We shift first because Pivot Points use the *prior* window to forecast the current day
+        prev_h = high.shift(1).rolling_max(window_size=period, min_periods=1)
+        prev_l = low.shift(1).rolling_min(window_size=period, min_periods=1)
+    
+    prev_c = close.shift(1)
+
+    # 3. Pivot Point Math
     pp = (prev_h + prev_l + prev_c) / 3.0
     
-    # 3. Levels
+    # 4. Levels
     diff = prev_h - prev_l
     r1 = (2.0 * pp) - prev_l
     s1 = (2.0 * pp) - prev_h
     r2 = pp + diff
     s2 = pp - diff
 
-    # 4. Final output aliases
-    # We do NOT dropna here; the parallel engine handles row alignment.
-    # Rounding to 5 ensures precision matches your sample_price logic.
+    # 5. Final Output
     return [
         pp.round(5).alias(f"{indicator_str}__pp"),
         r1.round(5).alias(f"{indicator_str}__r1"),
