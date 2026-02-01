@@ -471,14 +471,11 @@ class IndicatorEngine:
             if c not in df_orig.columns
         ]
 
-        # Round numeric indicator values.
-        numeric_cols = [
-            c for c in indicator_cols
-            if main_pl.schema[c].is_numeric()
-        ]
+        # Round numeric indicator values. User selectors for max-perfornance. Stay in rust.
+        numeric_cols = combined_pl.select(cs.numeric()).columns
 
         if numeric_cols:
-            main_pl = main_pl.with_columns(
+            combined_pl = combined_pl.with_columns(
                 [pl.col(c).round(6) for c in numeric_cols]
             )
 
