@@ -41,11 +41,7 @@ Profiling shows that about 90 percent of time is now in the high-performance Pol
        54   12.793    0.237   >12.793<    0.237 {method 'collect' of 'builtins.PyLazyFrame' objects}
 ```
 
-AI calculated this:
-
-```sh
-For a high-performance Simple Moving Average (SMA), even with the $O(1)$ sliding window optimization, the CPU must perform several discrete steps for every single one of those 350 million points:Fetch the new price from memory.Subtract the price that just left the window.Add the new price to the running sum.Divide by the period (or multiply by the reciprocal).Round the result (you have .round(6) in your code).Store the result back into the new column's memory buffer.That is roughly 6–8 CPU operations per data point.$$\mathbf{277.7 \text{ Million points/sec}} \times \mathbf{65 \text{ (avg ops to calculate/round/store)}} \approx \mathbf{18 \text{ Billion Ops/sec}}$$
-```
+[Performance doc](performance.md)
 
 **Status: bottom sniper**
 
