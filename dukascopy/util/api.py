@@ -231,7 +231,6 @@ def get_data(
 
     # Reset/Limit/Drop (Pandas path only, Polars uses native methods)
     if is_pl:
-        print("polars")
         chunk_df = chunk_df.head(limit)
     else:
         chunk_df = chunk_df.reset_index(drop=True)
