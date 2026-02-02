@@ -47,6 +47,8 @@ There will be a "bonus feature" soon. I have played with it. It works as a "toy-
 
 **Note:** The "bonus features" will be another major step forward. I am trying to decouple the datalayer from the planned backtester (and current trainers) and replace the in-memory get_data link with a very high-performance gRPC link. So backtesting/training can run from a different machine (or set of machines) while utilizing a central data-server (or data cluster). There will be changes to the ETL layer as well to make it more "kubernetes-friendly" while keeping the desired performance levels. The optimal achievement? Zero-copy IO throughout the complete stack.
 
+PS: since the weekend has been full of coding, playfull-coding and optimization I will take two days off-essentially moving my weekend. Wednesday back at it.
+
 **Status: bottom sniper**
 
 I am currently developing an H4 bottom-sniper model using a 10-20 feature machine-learning setup.
