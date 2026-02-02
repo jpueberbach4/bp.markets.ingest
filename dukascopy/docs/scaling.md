@@ -1,5 +1,9 @@
 # Horizontal Scaling Strategy: A Developer's Guide 
 
+This is subject to change. For best performance localized SSD PV's are needed. Current architecture is not optimal yet-but this will change by splitting up the ETL components and handling ingestion in a slightly different way. There will be a mirror-downloader which then can distribute over the nodes so they can build/update their own local dataset as soon as new data arrives. MMap is most efficient when local disks are available.
+
+**SUBJECT TO CHANGE. NOT YET OPTIMAL**
+
 ## 1. Overview
 This documentation provides a strategic framework for scaling the platform. While the software is currently in an MVP state, its architectural characteristics—specifically its single-threaded, high-performance event loop—offer precise opportunities for horizontal scaling within a Kubernetes environment.
 
