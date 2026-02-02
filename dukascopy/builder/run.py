@@ -249,9 +249,18 @@ def main():
         if not options['keep_temp']:
             # this is data/temp/builder/csv/uuid/temp
             # we need remove uuid directory
-            import shutil
-            print("Final cleanup of directory "+str(Path(options['output_dir']).parent))
-            shutil.rmtree(Path(options['output_dir']).parent)
+            adjust_dir = Path(f"{options['output_dir']}").parent / "adjust"
+            locks_dir = Path(f"{options['output_dir']}").parent / "locks"
+            if options['partition']:
+                if adjust_dir.exists():
+                    import shutil
+                    print(f"Final cleanup of directory {adjust_dir}")
+                    shutil.rmtree(adjust_dir)
+                    shutil.rmtree(locks_dir)                     
+            else:
+                import shutil
+                print("Final cleanup of directory "+str(Path(options['output_dir']).parent))
+                shutil.rmtree(Path(options['output_dir']).parent)
             
 
         # Report total runtime

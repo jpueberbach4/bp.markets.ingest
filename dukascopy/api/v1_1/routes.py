@@ -7,70 +7,58 @@ File:        routes.py
 Author:      JP Ueberbach
 Created:     2026-01-12
 Updated:     2026-01-15
+             2026-01-23
 
-FastAPI router implementing a versioned OHLCV and indicator execution API.
+FastAPI router implementing a versioned OHLCV query and indicator execution API.
 
 This module defines the public HTTP interface for querying OHLCV
 (Open, High, Low, Close, Volume) time-series market data and applying
 derived technical indicators using a path-based, slash-delimited query
 DSL. All endpoints are exposed under the "/ohlcv/{version}" namespace.
 
-The API is designed for high-throughput, low-latency market data access
-and supports CSV-backed datasets, memory-mapped binary sources, and
-parallel indicator execution for CPU-bound workloads.
+The router translates encoded request URIs into structured query options,
+discovers available datasets and indicators, executes data retrieval,
+applies indicator logic, and serializes results into the requested
+output format.
 
 Key Features:
-    - Path-based DSL for expressing OHLCV queries and indicator selection.
-    - Filesystem-backed discovery of symbols and supported timeframes.
-    - Dynamic indicator plugin registry with runtime introspection.
-    - Parallelized indicator execution using multiprocessing.
-    - DuckDB-powered query execution over CSV and binary data sources.
-    - Optional MT4-compatible output formatting.
-    - Multiple output formats: JSON, JSONP, and CSV.
-    - Wall-clock execution timing included in response metadata.
+    - Path-based DSL for expressing OHLCV queries and indicator selection
+    - Filesystem-backed discovery of symbols and supported timeframes
+    - Integration with a dynamic indicator plugin registry
+    - Pagination, ordering, temporal filtering, and MT4 compatibility
+    - Multiple output formats: JSON, JSONP, and CSV
+    - Wall-clock execution timing included in response metadata
 
 Request Processing Pipeline:
-    1. Parse the path-based DSL into structured query options.
-    2. Validate pagination, ordering, output mode, and platform constraints.
-    3. Discover symbol/timeframe selections from filesystem-backed datasets.
-    4. Register memory-mapped views for binary OHLCV sources (when enabled).
-    5. Execute DuckDB queries against CSV or binary-backed OHLCV data.
-    6. Apply indicator plugins in parallel to the result set.
-    7. Apply temporal filtering, row limits, and column normalization.
-    8. Serialize results into the requested output format.
+    1. Parse the path-based DSL into structured query options
+    2. Validate pagination, ordering, output mode, and platform constraints
+    3. Discover symbol/timeframe selections from filesystem-backed datasets
+    4. Retrieve OHLCV data via the configured data access layer
+    5. Apply indicator plugins to the result set
+    6. Apply temporal filtering, row limits, and column normalization
+    7. Serialize results into the requested output format
 
 Indicator System:
-    - Indicator plugins are dynamically loaded at application startup.
-    - Each plugin exposes a callable compatible with the parallel
-      execution engine.
-    - Optional plugin metadata (defaults, warmup, description, meta)
-      is introspected and exposed via discovery endpoints.
-    - Indicator execution is isolated per worker to avoid GIL and
-      pickling constraints.
+    - Indicator plugins are dynamically loaded at application startup
+    - Plugin metadata (defaults, warmup, description, meta) is exposed
+      via discovery endpoints
+    - Indicator execution is coordinated through the shared cache layer
 
-Special Endpoints:
-    - `/list/indicators/{request_uri}`:
-        Returns metadata for all registered indicator plugins.
-    - `/list/symbols/{request_uri}`:
-        Lists available symbols and their supported timeframes.
-    - `/quack`:
-        Provides a deliberately inefficient DuckDB-themed demo endpoint.
+Public Endpoints:
+    - GET /ohlcv/{version}/{request_uri}:
+        Execute OHLCV queries and indicator calculations
+    - GET /ohlcv/{version}/list/indicators/{request_uri}:
+        Enumerate available indicator plugins and metadata
+    - GET /ohlcv/{version}/list/symbols/{request_uri}:
+        List available symbols and supported timeframes
 
 Usage:
-    - This module is registered as part of the FastAPI router configuration.
-    - It is not intended to be executed as a standalone script.
-
-Primary Endpoints:
-    - get_ohlcv(): Resolve and execute path-based OHLCV queries.
-    - list_indicators(): Enumerate available indicator plugins.
-    - get_ohlcv_list(): Discover available symbols and timeframes.
-    - quack(): Demonstration endpoint.
+    - This module is registered as part of the FastAPI router configuration
+    - It is not intended to be executed as a standalone script
 
 Requirements:
     - Python 3.8+
     - FastAPI
-    - DuckDB
-    - NumPy
     - Pandas
     - orjson
 
@@ -82,6 +70,7 @@ License:
 import time
 import orjson
 import re
+import pandas as pd
 
 from fastapi import APIRouter, Query
 from fastapi.responses import PlainTextResponse, JSONResponse
@@ -90,13 +79,12 @@ from pathlib import Path
 from functools import lru_cache
 from fastapi import Depends
 
-from api.state11 import cache
+from util.cache import MarketDataCache
 from api.config.app_config import load_app_config
-from api.v1_1.helper import parse_uri, discover_options, generate_output, execute, discover_all, _get_ms
-
-from api.v1_1.plugin import indicator_registry, get_indicator_plugins, refresh_indicators
+from api.v1_1.helper import parse_uri, discover_options, generate_output, _get_ms
 from api.v1_1.version import API_VERSION
-from api.v1_1.parallel import parallel_indicators
+
+from util.api import get_data
 
 @lru_cache
 def get_config():
@@ -116,6 +104,8 @@ async def list_indicators(
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
     callback: Optional[str] = "__bp_callback",
     id: Optional[str] = None, 
+    symbol: Optional[str] = None, 
+    timeframe: Optional[str] = None, 
     config=Depends(get_config),
 ):
     """
@@ -157,11 +147,18 @@ async def list_indicators(
     if id: options['id'] = id
 
     try:
-        # Hot reload support (only for custom user indicators)
-        local_indicator_registry = refresh_indicators(options, indicator_registry, "config.user/plugins/indicators")
+        # Setup cache
+        cache = MarketDataCache()
 
         # Retrieve metadata for all registered indicators
-        data = get_indicator_plugins(local_indicator_registry)
+        data = cache.indicators.get_metadata_registry()
+
+        # Resolve template strings
+        if symbol or timeframe:
+            for indicator_name in data:
+                for default_name in data[indicator_name]['defaults']:
+                    val = data[indicator_name]['defaults'][default_name]
+                    data[indicator_name]['defaults'][default_name] = val.format(**locals())
 
         # Record wall-clock execution time
         options["wall"] = time.time() - time_start
@@ -208,7 +205,7 @@ async def list_indicators(
         # Return JSONP error response if requested
         if options.get("output_type") == "JSONP":
             return PlainTextResponse(
-                content=f"{callback}({orjson.dumps(error_payload)});",
+                content=f"{callback}({orjson.dumps(error_payload).decode('utf-8')});",
                 media_type="text/javascript",
             )
 
@@ -253,10 +250,15 @@ async def get_ohlcv_list(
     """
     # Parse the path-based request URI into structured query options
     options = parse_uri(request_uri)
+    # If an id was passed on the URL, return it in response
+    if id: options['id'] = id
 
     try:
+        # Setup cache
+        cache = MarketDataCache()
+
         # Discover available OHLCV data sources from the filesystem
-        available_data = discover_all(options)
+        available_data = cache.registry.get_available_datasets()
 
         # Group timeframes by symbol name
         symbols = {}
@@ -282,6 +284,7 @@ async def get_ohlcv_list(
         if options.get("output_type") == "JSON" or options.get("output_type") is None:
             return {
                 "status": "ok",
+                "options": options,
                 "result": symbols,
             }
 
@@ -289,6 +292,7 @@ async def get_ohlcv_list(
         if options.get("output_type") == "JSONP":
             payload = {
                 "status": "ok",
+                "options": options,
                 "result": symbols,
             }
             json_data = orjson.dumps(payload).decode("utf-8")
@@ -307,7 +311,7 @@ async def get_ohlcv_list(
         error_payload = {"status": "failure", "exception": f"{e}","options": options}
         if options.get("output_type") == "JSONP":
             return PlainTextResponse(
-                content=f"{callback}({orjson.dumps(error_payload)});",
+                content=f"{callback}({orjson.dumps(error_payload).decode('utf-8')});",
                 media_type="text/javascript",
             )
 
@@ -389,33 +393,53 @@ async def get_ohlcv(
         if options.get("mt4") and options.get("output_type") != "CSV":
             raise Exception("MT4 flag requires output/CSV")
 
+        # Get default settings
+        after_ms = _get_ms(options.get('after', '1970-01-01 00:00:00'))
+        until_ms = _get_ms(options.get('until', '3000-01-01 00:00:00'))
+        limit = options.get('limit', 1000)
+        order = options.get('order', 'desc')
 
-        # In binary mode, we register MMap views            
-        cache.register_views_from_options(options)
-
-        # Execute data-engine
-        df = execute(options)
-
-        # Support for CSV output mode (do not build recursive output)
-        disable_recursive_mapping = False
-        if options.get("output_type") == "CSV":
-            disable_recursive_mapping = True
-        elif options.get("subformat") == 3:
+        # Output option CSV and subformat 3 require disabled recursive_mapping
+        disable_recursive_mapping= False
+        if options.get("output_type") == "CSV" or options.get("subformat") == 3:
             disable_recursive_mapping = True
 
-        # Hot reload support (only for custom user indicators)
-        local_indicator_registry = refresh_indicators(options, indicator_registry, "config.user/plugins/indicators")
+        # Dataframe array
+        select_df = []
 
-        # Enrich the returned result with the requested indicators (parallelized)
-        enriched_df = parallel_indicators(df, options, local_indicator_registry, disable_recursive_mapping)
+        for item in options['select_data']:
 
-        if options.get('after'):
-            # Filter to keep only rows >= requested start time
-            enriched_df = enriched_df[enriched_df['sort_key'] >= _get_ms(options['after'])]
+            # Retrieve the arguments from resolved select_data
+            symbol, timeframe, _, modifiers, indicators = item
+            
+            # Call the new internal get_data functionality
+            temp_df = get_data(
+                symbol, timeframe, 
+                after_ms, until_ms, 
+                limit, order, indicators, 
+                {
+                    "modifiers": modifiers,                                 # eg skiplast
+                    "disable_recursive_mapping": disable_recursive_mapping  # disables recursive mapping to dicts
+                }
+            )
 
-        if options.get('until'):
-            # Until is exclusive
-            enriched_df = enriched_df[enriched_df['sort_key'] < _get_ms(options['until'])]
+            # Append dataframe for multiselect
+            select_df.append(temp_df)
+
+        # Join the dataframe array
+        enriched_df = pd.concat(select_df, ignore_index=True, copy=False)
+
+        # Default, we sort on time_ms (thats what it is for)
+        sort_columns = ['time_ms']
+
+        # In case of multi-selects, we need to sort by time_ms, symbol and timeframe
+        if len(options['select_data'])>1: sort_columns = ['time_ms','symbol','timeframe']
+        
+        # Apply the final sorting
+        if order == "asc":
+            enriched_df.sort_values(by=sort_columns, ascending=True, inplace=True)
+        else:
+            enriched_df.sort_values(by=sort_columns, ascending=False, inplace=True)            
 
         if options.get('limit'):
             # Limit rows
@@ -445,7 +469,7 @@ async def get_ohlcv(
 
         if options.get("output_type") == "JSONP":
             return PlainTextResponse(
-                content=f"{callback}({orjson.dumps(error_payload)});",
+                content=f"{callback}({orjson.dumps(error_payload).decode('utf-8')});",
                 media_type="text/javascript",
             )
 

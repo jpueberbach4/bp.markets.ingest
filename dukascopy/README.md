@@ -1,8 +1,6 @@
 ## Table of Contents
 
-- [Notice](#notice)
 - [What Is This Tool Used For?](#what-is-this-tool-used-for)
-- [Target audience](#target-audience)
 - [Server Kindness](#server-kindness)
 - [Key Design Principles](docs/architecture.md#key-design-principles)
 - [Quick Start](#quick-start)
@@ -10,21 +8,17 @@
   - Directory Permissions
   - First Run & Incremental Mode
   - Automatic Updates (cron)
-- [Symbols Configuration](#symbols-configuration)
+- [Initial Configuration](#symbols-configuration)
   - Adding New Symbols
-- [Pipeline Configuration](docs/configuration.md#pipeline-configuration-v03-and-above)
+- [Advanded Configuration](docs/configuration.md#pipeline-configuration-v03-and-above)
   - Overriding timeframes, etc
 - [Output schema](docs/architecture.md#output-schema)
   - Details on generated files
 - [Quick Check](#quick-check)
-- [Parquet converter](docs/tools.md#parquetcsv-export-v04-and-above)
+- [Converter and Panama](docs/tools.md#parquetcsv-export-v04-and-above)
   - Details on CSV->Parquet conversion
 - [HTTP API service](docs/http.md)
   - Details on HTTP API
-- [Performance Benchmarks](docs/benchmarks.md#performance-benchmarks)
-  - Cold Run (Full History)
-  - Incremental Daily Update
-  - TMPFS Pro Tip
 - [Fail-Fast](docs/architecture.md#fail-fast)
 - [Directory Structure](docs/architecture.md#directory-structure)
 - [Troubleshooting](docs/troubleshooting.md)
@@ -38,18 +32,6 @@
 - [Terms of use](#terms-of-use)
 - [License](#license)
 
-
-## Notice
-
-- [General notices, latest updates, caveats, etc](docs/notices.md) **2026-01-09 update**
-- [Limitations](docs/limitations.md)
-
-Don't forget to check the [Tools](docs/tools.md) section. It will ease things even more.
-
-**From Portfolio Project to Platform**
-
-What started as a personal project (private use-case) to tackle the intricate problem of temporal alignment in financial data has evolved into a robust, crash-resilient OHLCV resampling system. It now handles global trading sessions, multiple DST transitions, and aligns with real-world platforms like Metatrader.
-
 ---
 
 ## What Is This Tool Used For?
@@ -60,9 +42,17 @@ The system incrementally updates market data, resampling completed 1-minute cand
 \
 Data can be queried or constructed directly from a WSL2 terminal or via an HTTP API service. Designed by a trader, for traders, BP-Markets focuses on performance, accuracy, and workflow efficiency. Future releases will introduce high-performance backtesting capabilities that fully eliminate lookahead bias. \
 \
+The tool features a customizable, advanced (hybrid) indicator engine and uses an internal API to query data across assets and timeframes, including access to indicator values from other instruments. Indicators can be expressed as Polars-expressions or implemented on Pandas dataframes directly. \
+\
 Any modern laptop having NVMe will do. Storage requirements are about 1 GB per configured symbol. \
 \
-The code-base is small and heavily documented.
+The code-base is small and heavily documented. This is a high-performance system. One of the project's goals is to "checkout" how far performance can be pushed with a developer-friendly language like Python. Every part of the system is regularly profiled to identify performance bottlenecks. \
+\
+Note: This is not a click-and-go or “magical” project. It’s intended for data preparation to support downstream analysis, such as machine learning. You can use it to test and design indicators or to extract inter-asset features for ML workflows—that’s how I use it. While indicator-integrated data can be extracted, that is not the primary purpose of this project. You will need to know Python if you want to use this project efficiently. \
+\
+I will be adding (more) examples for integration with other Python projects, Excel, Jupyter notebooks and Ensemble-learning (ML) while I am developing this project. This project is not even close to "finished". There is still a lot of work to do. \
+\
+One more thing: there has been a discussion to take the project private and continue advanced features in a private setting. Some users may have read this a little while ago. This is off-the-table. Development will continue to be public.
 
 Example 20 year chart of EUR-USD:
 
@@ -168,7 +158,7 @@ crontab -e
 Add the following line, adjust path accordingly-run once every 15m:
 
 ```sh
-*/15 * * * * sleep 5 && cd /home/repos/bp.markets.ingest/dukascopy && ./run.sh
+*/15 * * * * sleep $(( (RANDOM \% 27) + 5 )) && cd /home/jpueberb/repos2/bp.markets.ingest/dukascopy && ./run.sh
 ```
 
 In order to get the highest possible performance, I recommend to toggle ALL the `fmode` fields in `config.user.yaml` to `binary`. This is considered as "a custom change". When you make custom changes, you cannot use `./setup-dukascopy.sh` anymore since this script will restore the settings back to "text"-this will change in the future now CSV mode is deprecated.
@@ -238,7 +228,7 @@ It will show you your localized data.
 
 ## Final word
 
-Thank you for using this toolkit. The goal of the project is simple: provide a fast and fully transparent pipeline for high-quality historical market data. **This architecture prioritizes speed and simplicity via CSV output over the analytical performance of enterprise binary formats.** If you have ideas, find issues, or want to contribute, feel free to open a GitHub issue or pull request.
+Thank you for using this toolkit. The goal of the project is simple: provide a fast and fully transparent pipeline for high-quality historical market data. **This architecture prioritizes speed through binary formats.** If you have ideas, find issues, or want to contribute, feel free to open a GitHub issue or pull request.
 
 A more advanced, tick-ready successor—planned as a C++ DuckDB extension—is under development and will be announced when ready.
 
@@ -294,8 +284,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Dukascopy Ready](https://img.shields.io/badge/Dukascopy-Ready-006400?style=flat&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgMThjLTQuNDEgMC04LTMuNTktOC04czMuNTktOCA4LTggOCAzLjU5IDggOC0zLjU5IDgtOCA4eiIvPjxwYXRoIGQ9Ik0xNi4yIDkuNEwxMiAxMmw0LjIgMi42bC0yLjYgNC4ybC0yLjYtMi42LTQuMiAyLjZ2LTIuNi00LjJ6Ii8+PC9zdmc+)
-
-[![Stars](https://img.shields.io/github/stars/jpueberbach4/bp.markets.ingest?style=social)](https://github.com/jpueberbach4/bp.markets.ingest)
 
 
 

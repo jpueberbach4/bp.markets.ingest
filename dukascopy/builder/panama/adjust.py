@@ -432,6 +432,7 @@ def fork_panama(
                 after_str,
                 until_str,
                 modifiers,
+                indicators,
                 options,
             )
 
@@ -483,6 +484,7 @@ def fork_panama(
             after_str,
             until_str,
             modifiers,
+            indicators,
             new_options,
         )
 

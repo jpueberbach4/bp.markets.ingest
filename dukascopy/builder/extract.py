@@ -256,8 +256,12 @@ def fork_extract(task: Tuple[str, str, str, str, str, str, Dict[str, Any]]) -> b
     bool
         Result of extract_symbol.
     """
-    from panama.adjust import fork_panama
-    task = fork_panama(task)
+    try:
 
+        from panama.adjust import fork_panama
+        task = fork_panama(task)
+        return extract_symbol(task)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
 
-    return extract_symbol(task)

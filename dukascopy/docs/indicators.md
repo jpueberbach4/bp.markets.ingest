@@ -12,6 +12,8 @@ Extending our technical analysis engine with custom indicators is straightforwar
 
 ## 1. The Plugin Architecture
 
+**Note:** The plugin engine now supports hybrid-execution of both pandas-based and polars-based indicators. General advice is when you build indicators that do not rely on UDF (User-Defined-Functions), use the Polars way (use Gemini to support you) for the highest possible performance. IF heavily dependent on UDF or for quick-iteration: use the pandas way. NON-UDF versions: generally you would want to implement them both and test which one gives the best performance. Eg use a million+ rows for performance tests.
+
 Every plugin must be a valid Python file (e.g., `my_indicator.py`) containing the following core functions:
 
 ### `description() -> str`
@@ -34,8 +36,14 @@ This maps URL-style positional arguments into a clean dictionary.
 ### `calculate(df: pd.DataFrame, options: Dict) -> pd.DataFrame`
 The heart of the plugin. It receives a Pandas DataFrame with OHLCV data and must return a DataFrame of the same length containing the calculated values.
 
+make sure to set `polars:0` in the meta section OR leave it out.
 
+**OR/AND**
 
+### `calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr|List[pl.expr]`
+The high-performance heart of the plugin for the Polars engine. Unlike the Pandas version, this does not receive a DataFrame; instead, it returns one or more Polars Expressions (pl.Expr) that are injected into the engine's lazy execution graph. This allows the IndicatorEngine to optimize the entire calculation across all requested indicators in a single pass.
+
+make sure to set `polars:1` in the meta section.
 
 ---
 
@@ -78,6 +86,26 @@ def calculate(df: pd.DataFrame, options: Dict) -> pd.DataFrame:
         'lower': mid - (std * std_mult)
     }, index=df.index)
 
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
+    """This is for speed. Lazy execution"""
+    try:
+        period = int(options.get('period', 20))
+        std_dev = float(options.get('std', 2.0))
+    except (ValueError, TypeError):
+        period, std_dev = 20, 2.0
+
+    mid = pl.col("close").rolling_mean(window_size=period)
+    std = pl.col("close").rolling_std(window_size=period)
+
+    upper = mid + (std * std_dev)
+    lower = mid - (std * std_dev)
+
+    return [
+        upper.alias(f"{indicator_str}__upper"),
+        mid.alias(f"{indicator_str}__mid"),
+        lower.alias(f"{indicator_str}__lower")
+    ]
+
 ```
 
 **Note:** When you are building an oscillator or panel-indicator, specify `panel:1` in the meta section.
@@ -116,3 +144,74 @@ Vectorization: Always use pandas or numpy vectorized functions. Avoid for loops 
 Precision: Use the first row of data to determine the asset's precision and round your outputs accordingly to keep the API responses clean.
 
 Stability: If your indicator uses division, always use .replace(0, np.nan) on the denominator to avoid Inf errors.
+
+Performance: NON-UDF implementations should be in Polars expressions. Polars may be slower when using UDF.
+
+Generic: implement both the `calculate` and `calculate_polars` methods. Implement in pandas, convert to polars using Gemini.
+
+For inter-data/indicator querying within indicators, consult [this documentation](interdata.md).
+
+## 5. Debugging
+
+You can just print(df) from your Pandas based indicator and have that print showup in your console where you started the webservice with `./service.sh start`-if testing via the web-interface. If using the direct get_data approach, then i probably don't need to say anything else. You know.
+
+For profiling, performance bottleneck finding in your indicators, use cProfile. At the start of your indicator enable the cProfile profiler and just before the end of the function, disable the profiler and print its stats. 
+
+eg
+
+```python
+
+def calculate(df: pd.DataFrame, options: Dict) -> pd.DataFrame:
+    import cProfile
+    import pstats
+    import io
+    pr = cProfile.Profile()
+    pr.enable()
+
+    ## YOUR HEAVY CODE GOES HERE ##
+
+    pr.disable()
+    s = io.StringIO()
+    sortby = 'cumulative'   # Can also use 'tottime' to see self-time
+    ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+    ps.print_stats(30)      # Show top 30 most time-consuming calls
+    print(s.getvalue())     # See console
+
+    return df
+```
+
+Its generally good practice to profile your code after your first working implementation. Especially if you use your custom indicator for later feature-extraction for ML.
+
+## 6. One more thing, your custom indicators in an external path?
+
+Solve this by creating a config.users/plugins directory and then "symbolic link" your indicators path in there. 
+
+eg
+
+```sh
+mkdir -p config.user/plugins
+# delete the existing default one, be careful if you have something in there
+rm -rf config.user/plugins/indicators
+# now link your external path
+ln -s /path/to/my/private/repo/indicators config.user/plugins/indicators
+# your custom indicators are now linked to an path outside of the project
+# config.user is excluded in .gitignore so you can put in there what you want.
+ls -l config.users/plugins/indicators
+# It should show an arrow pointing to your private repo: indicators -> /path/to/my/private/repo/indicators
+```
+
+This solves any version control issues or at least make it easier.
+
+One last piece of advice. When using this for feature engineering. Use custom indicators to build your features. You can then just use the get_data internal API to get the dataframe with your computed indicators and push that directly, together with all the other indicators, into a model. This is a better way-performance-wise-than building a custom set of "feature classes". 
+
+I am currently converting my feature-classes to indicators-polars where possible.
+
+eg Write features once → Use everywhere (API, web, ML, backtesting)
+
+Last example: i have features A,B,C implemented as indicators(features). I trained my model by querying get_data with indicators A,B,C(features). Now, i have an indicator which uses the model and needs A,B,C features. I do in that indicator a get_data_auto(df,[A,B,C]) and then call the model with that dataframe and get it's confidence and signals. This is high performant and works. I tested. Be careful for recursive patterns though. Unlimited loops. 
+
+eg If Indicator A requires B, and B requires A, the system will enter an infinite recursion until the stack overflows.
+
+There is currently no protection for this, but also that is coming in future versions. This way you eliminate any feature-replication between training and inference. One solution could be AST inspection to detect circular dependencies. But this is for later. 
+
+PS: do not use `_` (underscore) in indicator file-names. Use a dot or a dash. Group them logically with a prefix. I will add a searchbox for the indicators to the web-interface soon.

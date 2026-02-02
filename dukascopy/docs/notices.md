@@ -1,59 +1,72 @@
-<u>MT4 is decoded.</u>
-
-What's next?
-
-- Replay/Market simulation
-- Write-up
 
 
-## **Notice:** Interface (bug-)fixes - 2025-01-19
+**Status: feeds have returned to operational**
 
-**Note:** I updated the index.html **twice** today. Now its oke. I think. I hope. Update view works too. These are important changes in case developing custom indicators. When you press update view, you want to see the new indicators output immediately, without a shifting chart or any other "weird stuff". All that has been fixed. My JS skills are improving.
+Feeds are back online. No further actions required.
 
-Copy over the new `config/dukascopy/http-docs/index.html` to your `config.user/dukascopy/http-docs/index.html`.W
+**Performance update coming**
 
-## **Notice: Endpoint issues - 503** - 2025-01-18
+Beta/0.6.7 was updated with the performance fixes. Documentation indicators.md and external.md got updated as well to reflect the new hybrid-indicator situation. I am still testing it.
 
-What's up?
+Want to try out the beta?
 
-A "Error from Cloudfront".  Because of the inconsistent behavior my best guess is technical issues.
+```sh
+git fetch -p
+git checkout beta/0.6.7
+# to install polars dependency:
+pip install -r requirements.txt
+```
 
-**Update:** Issues have been resolved.
+Should be non-breaking. Also, when developing indicators in an own repo, see bottom of that indicators.md file in beta/0.6.7 branch.
 
-Monday is MLK (Martin Luther King Jr) day, being a major market holiday.
+**Note:** This is a 12.5x performance gain. Just checked the main branch vs the beta branch.
 
-## Notice: hot-reload of CUSTOM indicators is now done - 2025-01-18
+Original main branch: 7,796 ms (7.8 seconds)
+Beta/0.6.7 branch:   622 ms (0.62 seconds)
+Context: 1 mln rows x 55 indicators
+API: get_data [internal API](external.md)
 
-Hot-reload of custom indicators has now been implemented. No more webservice restarts needed if you ADD/CHANGE an indicator. Goal of these changes is to support "rapid prototyping", ease the developer experience. 
+Load-test came-out fine. Tested with 1 billion rows. Repeated calls. No troubles there. Maximum parameters are about 160000 rows (60k warmup) with 3500 indicators. Very wide column query. Beyond that, my memory wont allow and i get OOM's.
 
-**Important:** Do not use `_`-underscore-in indicator file-names. If you need to seperate, use a `-`-dash- or a `.`-dot.
+Profiling shows that about 90 percent of time is now in the high-performance Polars rust-engine.
 
-**Update:** The chart-web-UI has been updated to reload indicators on "Update view". So if you add/modify an indicator, press "Update view" to reload its settings/newly added indicators. `index.html` has changed once more, copy over the file manually to `config.user`. Note that it only works for CUSTOM indicators. The system ones will not be refreshed without a webservice restart. You shouldnt change them anyways.
+```sh
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        9    0.083    0.009   >14.406<    1.601 ../util/api.py:102(get_data)
+        9    0.028    0.003   13.534    1.504 ../util/parallel.py:521(parallel_indicators)
+        9    0.063    0.007   13.506    1.501 ../util/parallel.py:144(compute)
+       54    0.000    0.000   12.795    0.237 ../site-packages/polars/lazyframe/frame.py:1821(collect)
+       54   12.793    0.237   >12.793<    0.237 {method 'collect' of 'builtins.PyLazyFrame' objects}
+```
 
-**Note:** Sometimes with "dragging" the chart, it flips a bit. Use pagedown/pageup/end keys. Still needs some polishing. But is of later concern. I am not so great at frontend development. It's not so "strict" as backend. The asynchronous stuff with JSONP. Brrr. 
+[Performance doc](performance.md)
 
-## Notice: been playing around with custom indicators - 2025-01-18
+What this project demonstrates is that memory-mapped I/O is a highly effective architectural choice for ordered, append-only time-series data. Even with a unoptimized binary format, the system already exceeds 13 million rows per second—and reaches ~18 million rows per second on my laptop—for the price-only API, all from Python. With a proper binary format and storage layout (planned for the “next-gen” version), throughput in the 30–60 million rows per second range should be achievable.
 
-You can really write neat stuff using custom indicators. Positive divergence (bullish) example-with doji detection.
+There will be a "bonus feature" soon. I have played with it. It works as a "toy-side-project" but needs to get generalized. Lets see how fast we can map these files over the network.
 
-![Example](../images/reversal.png)
-![Example4](../images/reversal4.png)
+**Note:** The "bonus features" will be another major step forward. I am trying to decouple the datalayer from the planned backtester (and current trainers) and replace the in-memory get_data link with a very high-performance gRPC link. So backtesting/training can run from a different machine (or set of machines) while utilizing a central data-server (or data cluster). There will be changes to the ETL layer as well to make it more "kubernetes-friendly" while keeping the desired performance levels. The optimal achievement? Zero-copy IO throughout the complete stack.
 
-Honestly, its not flawless yet. But for a first attempt? Pretty good.
+PS: since the weekend has been full of coding, playfull-coding and optimization I will take two days off-essentially moving my weekend. Wednesday back at it.
 
-![Example5](../images/reversal5.png)
-![Example6](../images/reversal6.png)
+**Status: bottom sniper**
 
-This is 100 percent without lookahead bias. 
+I am currently developing an H4 bottom-sniper model using a 10-20 feature machine-learning setup.
 
-Python for custom indicators? Pure gold.
+The feature set includes, but is not limited to:
 
-## Notice: support for cache-only rebuilds - 2025-01-17
+- Distance to a major D1 support zone, with confirmed historical buyer activity
+- Higher-timeframe downtrend exhaustion (e.g. stair-stepping structure, flush-out candles)
+- Volatility expansion 
+- Distance to H4 liquidity, implemented in a manner similar to the support-distance feature
+- Candle body size and wick structure
+- Volume
+- Price patterns
+- Additional signals
 
-If the download endpoint is unavailable but you have a cache folder and want to modify timeframes and rebuild using those new timeframes, this is now supported. Before running any rebuild scripts, set `orchestrator.disable_downloads` to 1 in `config.user.yaml`.
+The main challenges at the moment are technical, as most of the work involves translating discretionary chart “reading” into precise mathematical representations. What is visually intuitive for a human trader is significantly harder to encode in pure math.
 
-Important is that your cache folder doesnt have any gaps. If you use an originally constructed cache-folder made by this application, this shouldnt be an existing issue. 
 
-## Notice: buffered interface is now supported - 2025-01-17
 
-I have updated the interface to not keep everything in memory when browsing history-this smooths the UX. It keeps a record of maximum 5000 bars. This is optimized for a laptop 1680x1050. If you have a "wider-screen" you might wanna set the bufferLimit higher in `config.user/dukascopy/http-docs/index.html` (you might need to copy over the new file). Just CTRL+F 5000 and change it to a value that matches your setup.
+
+

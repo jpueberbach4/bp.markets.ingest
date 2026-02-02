@@ -4,6 +4,12 @@ uvloop  >= 0.22.1
 httptools >= 0.6.4
 fastapi >= 0.124.4
 
+# PyArrow (for future gRPC zero copy comm) - Users may install already, this is coming soon. I need it.
+pyarrow >= 17.0.0
+
+# Polars (for merging dataframes)
+polars >= 1.8.2
+
 # Zoneinfo (Backport for Python 3.8)
 backports.zoneinfo; python_version < "3.9"
 

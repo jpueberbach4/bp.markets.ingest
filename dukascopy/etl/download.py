@@ -40,7 +40,7 @@ class DownloadEngine:
     merging of Dukascopy JSON delta candle data.
     """
 
-    last_request_time = time.monotonic()
+    last_request_time = 0
 
     def __init__(self, config: DownloadConfig):
         """
@@ -108,7 +108,8 @@ class DownloadEngine:
                 sleep_needed = max(0, min_interval - elapsed)
 
                 if sleep_needed > 0:
-                    time.sleep(sleep_needed)
+                    #ime.sleep(sleep_needed)
+                    pass
 
                 # Perform HTTP request
                 response = self.session.get(
