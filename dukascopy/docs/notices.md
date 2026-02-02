@@ -45,7 +45,7 @@ What this project demonstrates is that memory-mapped I/O is a highly effective a
 
 There will be a "bonus feature" soon. I have played with it. It works as a "toy-side-project" but needs to get generalized. Lets see how fast we can map these files over the network.
 
-**Note:** The "bonus features" will be another major step forward. I am trying to decouple the datalayer from the planned backtester (and current trainers) and replace the in-memory get_data link with a very high-performance gRPC link. So backtesting/training can run from a different machine (or set of machines) while utilizing a central data-server (or data cluster). There will be changes to the ETL layer as well to make it more "kubernetes"-friendly while keeping the desired performance levels.
+**Note:** The "bonus features" will be another major step forward. I am trying to decouple the datalayer from the planned backtester (and current trainers) and replace the in-memory get_data link with a very high-performance gRPC link. So backtesting/training can run from a different machine (or set of machines) while utilizing a central data-server (or data cluster). There will be changes to the ETL layer as well to make it more "kubernetes"-friendly while keeping the desired performance levels. The optimal achievement? Zero-copy IO throughout the complete stack.
 
 **Status: bottom sniper**
 
