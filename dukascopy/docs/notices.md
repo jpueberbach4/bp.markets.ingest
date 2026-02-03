@@ -27,6 +27,12 @@ I tried the most crazy configurations you can think of and profiled them all. I 
 
 Have a great day.
 
+Current Laptop: ~4.7 GB/s (Impressive).
+
+Ryzen 9 9950X: ~14 GB/s (AVX-512 is the game changer, testing with this setup soon).
+
+Threadripper: ~25 GB/s (Unlocks "Wide" datasets with 10k+ columns).
+
 **Next**
 
 Splitting up ETL to make more modular-more kubernetes friendly, retaking performance there-and adding a high-speed comm-layer. Back at it on wednesday/thursday.
