@@ -97,7 +97,7 @@ after_ms = int(dt.replace(tzinfo=timezone.utc).timestamp() * 1000)
 
 # limits
 limit = 1_000_000
-num_indicators = 50
+num_indicators = 500
 
 # Set some default indicators
 indicators = ['adx_14', 'atr_14', 'ema_20', 'bbands_20_2.0', 'macd_12_26_9','hma_9','obv','pivot_10']
