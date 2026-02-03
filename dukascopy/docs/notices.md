@@ -1,6 +1,6 @@
 **19 new indicators**
 
-19 new indicators were added. Verified by 3 LLM's. These were "quick-wins".
+19 new indicators were added. These were "quick-wins".
 
 - **Fast Indicators**: Most use pure Polars vectorization
 - **Recursive Indicators**: McGinley, Kalman, SuperTrend use Python loops
