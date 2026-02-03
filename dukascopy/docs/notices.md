@@ -11,7 +11,7 @@ Performance fixes have been applied. Update entails:
 
 Profiling showed that >90 percent of time is now going to Polars high-perf rust engine.
 
-Price only API pushes about 18.5 million records per second. After warmup. On a laptop with NVMe.
+Price only API pushes about 18.5 million, 64-bytes, 1m records per second. After warmup. On a laptop with NVMe.
 
 PS: there is a dirty_loadtest.py in examples if you want to confirm. Adjust bootstrap paths and symbol before run.
 
