@@ -18,10 +18,14 @@ class TestIndicatorRegistry(unittest.TestCase):
 
     def test_get_maximum_warmup_rows(self):
         """Test calculation logic using a manually populated registry."""
-        mock_sma = MagicMock()
-        mock_sma.__globals__ = {"warmup_count": lambda opts: 20}
+        mock_warmup_func = lambda opts: 20
         
-        self.mgr.registry = {'sma': {'calculate': mock_sma}}
+        self.mgr.registry = {
+            'sma': {
+                'warmup_count': mock_warmup_func,
+                'position_args': lambda params: {'period': int(params[0]) if params else 20}
+            }
+        }
         
         warmup = self.mgr.get_maximum_warmup_rows(["sma_20"])
         self.assertEqual(warmup, 20)
