@@ -39,7 +39,7 @@ Managing **15+ years of historical data** across 42 symbols requires a rigorous 
 
 ---
 
-## 4. Roadmap: Distributed & Decoupled Architecture (v0.7.0)
+## 4. Roadmap: Distributed & Decoupled Architecture (v0.6.8)
 The next evolution of the platform focuses on **Horizontal Scalability** and **Resilience**.
 
 * **FLIGHT/DOWNLOAD Decoupling:** Separating the ingestion layer from the processing engine. Modularity.
