@@ -1,3 +1,13 @@
+**19 new indicators**
+
+19 new indicators were added. Verified by 3 LLM's. These were "quick-wins".
+
+- **Fast Indicators**: Most use pure Polars vectorization
+- **Recursive Indicators**: McGinley, Kalman, SuperTrend use Python loops
+- **Heavy Indicators**: Volume/Market Profile use O(n²) histograms
+
+I will have another quality pass on them soon.
+
 **Performance fixes**
 
 Performance fixes have been applied. Update entails:

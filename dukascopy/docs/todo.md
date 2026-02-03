@@ -11,6 +11,9 @@
 
 Note: we are setup now to integrate the extensions below (weekend work).
 
+Quality:
+  - [ ] Extra quality pass on indicator kaufman-er and up (sort by modified desc)
+
 Early warning:
   - [ ] Warning/Reporting system for datasource outages
 
