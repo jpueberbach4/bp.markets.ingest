@@ -9,6 +9,8 @@ Performance fixes have been applied. Update entails:
 - Performance +8-10x on 1 million with 55 indicators. Mix of high perf hybrids.
 - Cleaning up here and there.
 
+Profiling showed that >90 percent of time is now going to Polars high-perf rust engine.
+
 **Next**
 
 Few days of rest/other things, then splitting up ETL to make more modular-more kubernetes friendly, retaking performance there-and adding a high-speed comm-layer. Back at it on wednesday/thursday.
