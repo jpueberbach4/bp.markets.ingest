@@ -44,7 +44,7 @@ The next evolution of the platform focuses on **Horizontal Scalability** and **R
 
 * **FLIGHT/DOWNLOAD Decoupling:** Separating the ingestion layer from the processing engine. Modularity.
 * **Kubernetes-Ready ETL:** Transitioning from a single-machine tool to a containerized, distributed infrastructure for larger-scale workloads.
-* **High-Speed Communication Layer:** Implementing an IPC (Inter-Process Communication) layer for real-time data streaming between ingestion nodes and ML inference engines.
+* **High-Speed Communication Layer:** Implementing an IPC (Inter-Process Communication) layer for data streaming between ingestion nodes and ML inference engines.
 
 ---
 
