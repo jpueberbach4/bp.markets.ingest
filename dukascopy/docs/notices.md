@@ -5,8 +5,8 @@ Performance fixes have been applied. Update entails:
 - Hybrid Polars/Pandas indicator engine
 - Native Polars dataframe support from get_data API
 - All system indicators have been converted
-- Performance +12.5x on 1 million with 55 indicators. Polars only indicators.
-- Performance +8-10x on 1 million with 55 indicators. Mix of high perf hybrids.
+- Performance +12.5x on 1 million with 55 indicators. Polars only indicators. With return_polars=True ~520ms.
+- Performance +8-10x on 1 million with 55 indicators. Mix of high perf hybrids. Without return_polars=True ~730ms.
 - Cleaning up here and there.
 
 Profiling showed that >90 percent of time is now going to Polars high-perf rust engine.
