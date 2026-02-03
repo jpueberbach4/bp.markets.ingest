@@ -1,10 +1,17 @@
 **Performance fixes**
 
-Performance fixes have been applied.
+Performance fixes have been applied. Update entails:
+
+- Hybrid Polars/Pandas indicator engine
+- Native Polars dataframe support from get_data API
+- All system indicators have been converted
+- Performance +12.5x on 1 million with 55 indicators. Polars only indicators.
+- Performance +8-10x on 1 million with 55 indicators. Mix of high perf hybrids.
+- Cleaning up here and there.
 
 **Next**
 
-Few days of rest/other things, then splitting up ETL to make more modular and adding a high-speed comm-layer. Back at it on wednesday/thursday.
+Few days of rest/other things, then splitting up ETL to make more modular-more kubernetes friendly, retaking performance there-and adding a high-speed comm-layer. Back at it on wednesday/thursday.
 
 **Status: feeds have returned to operational**
 
