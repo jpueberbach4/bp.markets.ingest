@@ -7,7 +7,7 @@ def description() -> str:
     return "Volume Profile identifies the Point of Control (POC) and Value Area (VAH/VAL) based on volume distribution at specific price levels."
 
 def meta() -> Dict:
-    return {"author": "Google Gemini", "version": 1.1, "panel": 0, "verified": 1, "polars": 1}
+    return {"author": "Google Gemini", "version": 1.1, "panel": 0, "verified": 1, "polars": 0}
 
 def warmup_count(options: Dict[str, Any]) -> int:
     return int(options.get('period', 100))
