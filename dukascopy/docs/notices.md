@@ -11,6 +11,8 @@ Performance fixes have been applied. Update entails:
 
 Profiling showed that >90 percent of time is now going to Polars high-perf rust engine.
 
+Price only API pushes about 18.5 million records per second. After warmup. On a laptop with NVMe.
+
 **Next**
 
 Few days of rest/other things, then splitting up ETL to make more modular-more kubernetes friendly, retaking performance there-and adding a high-speed comm-layer. Back at it on wednesday/thursday.
