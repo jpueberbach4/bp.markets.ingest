@@ -13,6 +13,8 @@ Profiling showed that >90 percent of time is now going to Polars high-perf rust 
 
 Price only API pushes about 18.5 million records per second. After warmup. On a laptop with NVMe.
 
+PS: there is a dirty_loadtest.py in examples if you want to confirm. Adjust bootstrap paths and symbol before run.
+
 **Note**: important one. Performance measured while using the internal, [bootstrapped](external.md), get_data API.
 
 **Next**
