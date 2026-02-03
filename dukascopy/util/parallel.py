@@ -66,6 +66,7 @@ except ImportError:
 
 # TODO: configuration based?
 POLARS_ROUNDING = 6
+POLARS_ROUNDING_DISABLED = True
 
 class IndicatorWorker:
     """
@@ -291,9 +292,10 @@ class IndicatorEngine:
         batch_size = 100
         for i in range(0, len(polars_expressions), batch_size):
             batch = polars_expressions[i : i + batch_size]
-            main_pl = main_pl.with_columns(batch)
+            # Collect immediately and return back to lazy
+            main_pl = main_pl.with_columns(batch).collect().lazy()
 
-        # Execute the Polars graph exactly once.
+        # Final result is already materialized, but cast back to lazy in loop
         collected_pl = main_pl.collect()
 
         # Assemble final output according to the requested format.
@@ -397,6 +399,11 @@ class IndicatorEngine:
         Returns:
             pl.DataFrame: DataFrame with rounded indicator columns.
         """
+        # Option to leave the rounding up to the caller (we preservt the fp precision)
+        if POLARS_ROUNDING_DISABLED:
+            return df
+        
+        # This can become slow on wide columns
         target_selector = cs.numeric() & cs.by_name(indicator_cols)
 
         return df.with_columns(
