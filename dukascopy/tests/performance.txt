@@ -105,3 +105,5 @@ Conclusion? There's a sweet spot around 1M rows × 500 columns where the system 
 It makes sense to optimize for optimal row and column counts. Test what gives highest throughput.
 
 For most users anything will work but if you are indicator/feature-heavy, this is the advice.
+
+PS ofcourse this is related to what indicators you use. Its not the best test.
