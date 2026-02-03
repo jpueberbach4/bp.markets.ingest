@@ -13,6 +13,8 @@ Profiling showed that >90 percent of time is now going to Polars high-perf rust 
 
 Price only API pushes about 18.5 million records per second. After warmup. On a laptop with NVMe.
 
+**Note**: important one. Performance measured while using the internal, [bootstrapped](external.md), get_data API.
+
 **Next**
 
 Few days of rest/other things, then splitting up ETL to make more modular-more kubernetes friendly, retaking performance there-and adding a high-speed comm-layer. Back at it on wednesday/thursday.
