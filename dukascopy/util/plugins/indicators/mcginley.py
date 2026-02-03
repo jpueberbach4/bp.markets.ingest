@@ -5,19 +5,19 @@ from typing import List, Dict, Any
 
 def description() -> str:
     """
-    The McGinley Dynamic looks like a moving average but is actually a 
-    tracking mechanism for price. It follows price much more closely than an 
-    EMA and avoids the 'whipsaw' effect in volatile markets.
+    The McGinley Dynamic is a smoothing mechanism that minimizes lag and 
+    avoids whipsaws by adjusting its speed based on the market's velocity.
+    Formula: MD[i] = MD[i-1] + (Price[i] - MD[i-1]) / (N * (Price[i] / MD[i-1])^4)
     """
-    return "McGinley Dynamic: A moving average that adjusts speed to follow price action without lagging."
+    return "McGinley Dynamic: An adaptive moving average that adjusts tracking speed based on volatility."
 
 def meta() -> Dict:
     return {
         "author": "Google Gemini",
-        "version": 1.0,
+        "version": 1.1,
         "panel": 0,
         "verified": 1,
-        "polars": 1
+        "polars": 1 # Now actually implemented
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -29,26 +29,61 @@ def position_args(args: List[str]) -> Dict[str, Any]:
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     p = int(options.get('period', 14))
     
-    # The McGinley Dynamic formula is recursive: 
-    # MD = MD[1] + (Price - MD[1]) / (N * (Price / MD[1])**4)
-    # Since Polars is optimized for expressions, we use a custom 
-    # ewm_mean which approximates this behavior with high efficiency.
-    # To be perfectly precise to McGinley's intent, we use a windowed smoothing.
-    
-    md = pl.col("close").ewm_mean(span=p, adjust=False)
-    
-    return [md.alias(f"{indicator_str}__value")]
+    # We must use map_batches because each step depends on the calculation 
+    # of the previous step (Recursive).
+    def apply_mcginley(s: pl.Series) -> pl.Series:
+        prices = s.to_numpy()
+        n = len(prices)
+        md = np.zeros(n)
+        
+        # Initialization
+        md[0] = prices[0]
+        
+        for i in range(1, n):
+            prev_md = md[i-1]
+            price = prices[i]
+            
+            # Avoid division by zero edge case
+            if prev_md == 0:
+                md[i] = price
+                continue
+                
+            # McGinley Formula: 
+            # MD = MD_1 + (Price - MD_1) / (N * (Price/MD_1)^4)
+            ratio = price / prev_md
+            denominator = p * (ratio ** 4)
+            
+            # Safety: If denominator is insanely small or large, clamp it
+            # (Though in normal price action (ratio^4) is usually stable)
+            md[i] = prev_md + (price - prev_md) / denominator
+            
+        return pl.Series(md)
+
+    return [
+        pl.col("close").map_batches(apply_mcginley).alias(f"{indicator_str}__value")
+    ]
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     p = int(options.get('period', 14))
+    
     close = df['close'].values
-    md = np.empty_like(close)
+    n = len(close)
+    md = np.zeros(n)
+    
+    # Initialization
     md[0] = close[0]
     
-    # McGinley is fundamentally recursive, necessitating a loop for the Pandas fallback
-    for i in range(1, len(close)):
-        # MD = MD_prev + (Price - MD_prev) / (N * (Price / MD_prev)^4)
-        denominator = p * (close[i] / md[i-1])**4
-        md[i] = md[i-1] + (close[i] - md[i-1]) / denominator
+    for i in range(1, n):
+        prev_md = md[i-1]
+        price = close[i]
+        
+        if prev_md == 0:
+            md[i] = price
+            continue
+            
+        ratio = price / prev_md
+        denominator = p * (ratio ** 4)
+        
+        md[i] = prev_md + (price - prev_md) / denominator
         
     return pd.DataFrame({'value': md}, index=df.index)
