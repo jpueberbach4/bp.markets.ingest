@@ -16,15 +16,17 @@ def meta() -> Dict:
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
-    # We need Period (ATR) + Period (Lookback)
-    # Usually they are the same value 'p'
-    return int(options.get('period', 10)) * 2
+    p = int(options.get('period', 10))
+    q = int(options.get('lookback', p))
+    # We need enough data for the ATR (p) AND the subsequent Max/Min lookback (q)
+    return p + q
 
 def position_args(args: List[str]) -> Dict[str, Any]:
+    p = args[0] if len(args) > 0 else "10"
     return {
-        "period": args[0] if len(args) > 0 else "10", 
+        "period": p, 
         "multiplier": args[1] if len(args) > 1 else "1.0",
-        "lookback": args[2] if len(args) > 2 else None # Optional distinct lookback
+        "lookback": args[2] if len(args) > 2 else p # Default to same as period
     }
 
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
