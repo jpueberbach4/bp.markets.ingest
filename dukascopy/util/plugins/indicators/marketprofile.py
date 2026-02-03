@@ -4,13 +4,13 @@ import polars as pl
 from typing import List, Dict, Any
 
 def description() -> str:
-    return "Market Profile (TPO) identifies the Time Price Opportunity POC and Value Area based on time distribution."
+    return "Rolling Market Profile (TPO): Calculates Time-based POC and Value Area over a moving window."
 
 def meta() -> Dict:
-    return {"author": "Google Gemini", "version": 1.0, "panel": 0, "verified": 1, "polars": 0}
+    return {"author": "Google Gemini", "version": 2.0, "panel": 0, "verified": 1, "polars": 0}
 
 def warmup_count(options: Dict[str, Any]) -> int:
-    return int(options.get('period', 240)) # Usually used for a full session
+    return int(options.get('period', 240))
 
 def position_args(args: List[str]) -> Dict[str, Any]:
     return {"period": args[0] if len(args) > 0 else "240", "ticks": args[1] if len(args) > 1 else "1.0"}
@@ -19,22 +19,51 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     p = int(options.get('period', 240))
     tick_size = float(options.get('ticks', 1.0))
     
-    # TPO logic: Count occurrences of price in bins
-    data = df.tail(p)
-    bins = np.arange(data['low'].min(), data['high'].max() + tick_size, tick_size)
+    n = len(df)
+    poc_arr = np.full(n, np.nan)
+    vah_arr = np.full(n, np.nan)
+    val_arr = np.full(n, np.nan)
     
-    # Histogram of 'time spent' at level (frequency of close in bins)
-    tpo_hist, bin_edges = np.histogram(data['close'], bins=bins)
+    close = df['close'].values
+    lows = df['low'].values
+    highs = df['high'].values
     
-    tpo_poc = bin_edges[np.argmax(tpo_hist)]
-    
-    # Value Area TPO (70% of time)
-    sorted_tpo = np.sort(tpo_hist)[::-1]
-    cutoff = sorted_tpo[int(len(sorted_tpo) * 0.7)] if len(sorted_tpo) > 0 else 0
-    va_tpo_prices = bin_edges[:-1][tpo_hist >= cutoff]
-    
+    for i in range(p, n):
+        w_close = close[i-p:i]
+        
+        min_p = np.min(lows[i-p:i])
+        max_p = np.max(highs[i-p:i])
+        
+        bins = np.arange(min_p, max_p + tick_size, tick_size)
+        if len(bins) < 2: continue
+        
+        # TPO = Histogram of CLOSE (frequency of time spent)
+        hist, bin_edges = np.histogram(w_close, bins=bins)
+        
+        # POC
+        poc_idx = np.argmax(hist)
+        poc_arr[i] = bin_edges[poc_idx]
+        
+        # Value Area
+        total_tpo = np.sum(hist)
+        target_tpo = total_tpo * 0.70
+        
+        sorted_indices = np.argsort(hist)[::-1]
+        current_tpo = 0
+        va_prices = []
+        
+        for idx in sorted_indices:
+            current_tpo += hist[idx]
+            va_prices.append(bin_edges[idx])
+            if current_tpo >= target_tpo:
+                break
+                
+        if va_prices:
+            vah_arr[i] = np.max(va_prices)
+            val_arr[i] = np.min(va_prices)
+
     return pd.DataFrame({
-        'tpo_poc': tpo_poc,
-        'tpo_vah': va_tpo_prices.max() if len(va_tpo_prices) > 0 else np.nan,
-        'tpo_val': va_tpo_prices.min() if len(va_tpo_prices) > 0 else np.nan
-    }, index=df.index).ffill()
+        'tpo_poc': poc_arr,
+        'tpo_vah': vah_arr,
+        'tpo_val': val_arr
+    }, index=df.index)
