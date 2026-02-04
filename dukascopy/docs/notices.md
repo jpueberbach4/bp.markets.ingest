@@ -33,6 +33,8 @@ Ryzen 9 9950X: ~14 GB/s (AVX-512 is the game changer, testing with this setup so
 
 Threadripper: ~25 GB/s (Unlocks "Wide" datasets with 10k+ columns).
 
+CPU is maximally saturated at 80 percent. Higher is not possible since the FPU units are fully allocated. I have 16 threads but "only" 8 FPU's. 2 threads share one FPU. So when one thread is using a FPU for 100 percent, the other thread is in wait state, idle. This gives the "illusion" we are not maxing out the cores. There is a term for this SMT-wait. 
+
 **Next**
 
 Splitting up ETL to make more modular-more kubernetes friendly, retaking performance there-and adding a high-speed comm-layer. Back at it on wednesday/thursday.
@@ -42,5 +44,6 @@ Splitting up ETL to make more modular-more kubernetes friendly, retaking perform
 Feeds are back online. No further actions required.
 
 Update: I’ve been in contact with Dukascopy, and they’ve confirmed that the technical hiccups were on their side—they’ve since been fixed. Carry on was the message i read from it.
+
 
 
