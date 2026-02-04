@@ -208,10 +208,34 @@ I am currently converting my feature-classes to indicators-polars where possible
 
 eg Write features once → Use everywhere (API, web, ML, backtesting)
 
-Last example: i have features A,B,C implemented as indicators(features). I trained my model by querying get_data with indicators A,B,C(features). Now, i have an indicator which uses the model and needs A,B,C features. I do in that indicator a get_data_auto(df,[A,B,C]) and then call the model with that dataframe and get it's confidence and signals. This is high performant and works. I tested. Be careful for recursive patterns though. Unlimited loops. 
+Last example: i have features A,B,C implemented as indicators(features). I trained my model by querying get_data with indicators A,B,C(features). Now, i have an indicator which uses the model and needs A,B,C features. I do in that indicator a get_data_auto(df,[A,B,C]) and then call the model with that dataframe and get it's confidence and signals. This is high performant and works. I tested.  This way you eliminate any feature-replication between training and inference. 
+
+Be careful for recursive patterns though. Unlimited loops. 
 
 eg If Indicator A requires B, and B requires A, the system will enter an infinite recursion until the stack overflows.
 
-There is currently no protection for this, but also that is coming in future versions. This way you eliminate any feature-replication between training and inference. One solution could be AST inspection to detect circular dependencies. But this is for later. 
+**Update**:
+
+Since there is currently no "run-time" protection for recursion loops caused by custom indicators, i have added a unit-test which does the checking for recursion loops. This is a V1 version of the recursion guard, a V2 is coming. The V1 version does not yet take the indicator options into account. Eg first loop you call test-sma_20 and second recursive call you call test-sma_50... this is currently caught as an unlimited loop call when calling with same timeframe and symbol. 
+
+How to test your indicators? Simple. Just run `./run-tests.sh` regularly when developing complex recursive indicators.
+
+Eg this is covered now: 
+
+```python
+# this indicator name = test-sma, we call it with EUR-USD/1m
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    High-performance vectorized Simple Moving Average (SMA).
+    """
+    # This will error after the second recursive call 1m->5m->5m->error
+    df = get_data(timeframe="5m", symbol="EUR-USD", after_ms=0, until_ms=132896743634786, limit=1000, indicators=['test-sma'])
+
+    # This will error after first call 1m->1m->error
+    df = get_data_auto(df, indicators=['test-sma'])
+
+    ...
+
+```
 
 PS: do not use `_` (underscore) in indicator file-names. Use a dot or a dash. Group them logically with a prefix. I will add a searchbox for the indicators to the web-interface soon.

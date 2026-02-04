@@ -1,3 +1,29 @@
+**Good practice advice when you are building your own indicators**
+
+Since there is currently no "run-time" protection for recursion loops caused by custom indicators, i have added a unit-test which does the checking for recursivity loops. This is a V1 version of the recursion guard, a V2 is coming. The V1 version does not yet take the indicator options into account. Eg first loop you call test-sma_20 and second recursive call you call test-sma_50... this is currently caught as an unlimited loop call when calling with same timeframe and symbol. 
+
+How to test your indicators? Simple. Just run `./run-tests.sh` regularly when developing complex recursive indicators.
+
+Eg this is covered now: 
+
+```python
+# this indicator name = test-sma, we call it with EUR-USD/1m
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    High-performance vectorized Simple Moving Average (SMA).
+    """
+    # This will error after the second recursive call 1m->5m->5m->error
+    df = get_data(timeframe="5m", symbol="EUR-USD", after_ms=0, until_ms=132896743634786, limit=1000, indicators=['test-sma'])
+
+    # This will error after first call 1m->1m->error
+    df = get_data_auto(df, indicators=['test-sma'])
+
+    ...
+
+```
+
+Hope this helps a bit to keep your indicator/feature stack and the engine a bit safe.
+
 **19 new indicators**
 
 19 new indicators were added. These were "quick-wins".
