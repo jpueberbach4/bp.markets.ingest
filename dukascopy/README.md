@@ -49,6 +49,8 @@ git pull
 git submodule update --init --recursive
 ```
 
+docs are [here](https://github.com/jpueberbach4/bp-markets.ingest-docs).
+
 ## What Is This Tool Used For?
 
 >BP-Markets is a high-performance, local-first data bridge built for indie traders. Unlike cloud-based solutions, it is optimized for zero-latency local execution, allowing your trading terminal and data API to run side by side without resource contention. \
