@@ -26,6 +26,7 @@ Quality:
 
 Modularity:
   - [ ] Split up ETL and have a central "feeder" engine that can distribute in near-realtime
+  - [ ] Move resample to Polars
 
 Early warning:
   - [ ] Warning/Reporting system for datasource outages
