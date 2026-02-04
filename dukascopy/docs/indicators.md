@@ -229,13 +229,16 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     High-performance vectorized Simple Moving Average (SMA).
     """
     # This will error after the second recursive call 1m->5m->5m->error
-    df = get_data(timeframe="5m", symbol="EUR-USD", after_ms=0, until_ms=132896743634786, limit=1000, indicators=['test-sma'])
+    df = get_data( \
+        timeframe="5m", symbol="EUR-USD", \
+        after_ms=0, until_ms=132896743634786, limit=1000, \
+        indicators=['test-sma'] \
+    )
 
     # This will error after first call 1m->1m->error
     df = get_data_auto(df, indicators=['test-sma'])
 
     ...
-
 ```
 
 PS: do not use `_` (underscore) in indicator file-names. Use a dot or a dash. Group them logically with a prefix. I will add a searchbox for the indicators to the web-interface soon.
