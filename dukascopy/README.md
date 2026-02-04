@@ -36,7 +36,18 @@
 
 ## Notice: documentation has moved to a submodule
 
+In order to keep the code clean from doc commits-big changes are coming-i decided to move the documentation out.
 
+```sh
+git clone --recursive https://github.com/jpueberbach4/bp-markets.ingest.git
+```
+
+When you already have a copy and want the docs:
+
+```sh
+git pull
+git submodule update --init --recursive
+```
 
 ## What Is This Tool Used For?
 
