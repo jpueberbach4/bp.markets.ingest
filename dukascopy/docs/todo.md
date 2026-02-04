@@ -13,6 +13,7 @@ Note: we are setup now to integrate the extensions below (weekend work).
 
 Quality:
   - [ ] Extra quality pass on indicator kaufman-er and up (sort by modified desc)
+  - [ ] More unit-tests NOW
 
 Modularity:
   - [ ] Split up ETL and have a central "feeder" engine that can distribute in near-realtime
@@ -50,7 +51,7 @@ Note: strike-through=wont do
   - [x] Make internal API queryable from external code (bootstrapping)
 
 [ ] TCP Layer
-  - [ ] Apache Arrow Flight? (research)
+  - [ ] Apache Arrow Flight (research done ✔️)
 
 Note: the HTTP API is nice but it has a major serialization tax
 
@@ -75,4 +76,6 @@ Cleanup:
   - [ ] Final bug fix sweep
 
 Rest
-  - [x] Take a day off (today)
+  - [x] Take a day off
+  - [ ] Take a second day off
+  - [ ] Take a third day off
