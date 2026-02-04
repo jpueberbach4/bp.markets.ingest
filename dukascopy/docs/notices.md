@@ -1,3 +1,26 @@
+**TA-lib tested indicators**
+
+In order to ensure quality I have tested some indicators against TA-lib, implemented through a unit-test. Users having Python ta-lib installed will be able to run the test. When TA-lib is not installed the unit-test will skip.
+
+These have been checked and are-now-compliant to TA-lib:
+
+- ADX
+- AROON
+- ATR
+- BBANDS
+- CCI
+- CMO
+- EMA
+- MACD
+- MFI
+- OBV
+- ROC
+- RSI
+- SMA
+- STDDEV
+
+I will dig the TA-lib deeper in order to see if we can compare more. Eg if there are more goodies in there.
+
 **Good practice advice when you are building your own indicators**
 
 Since there is currently no "run-time" protection for recursion loops caused by custom indicators, i have added a unit-test which does the checking for recursivity loops. This is a V1 version of the recursion guard, a V2 is coming. The V1 version does not yet take the indicator options into account. Eg first loop you call test-sma_20 and second recursive call you call test-sma_50... this is currently caught as an unlimited loop call when calling with same timeframe and symbol. 
