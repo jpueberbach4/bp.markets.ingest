@@ -14,6 +14,9 @@ Note: we are setup now to integrate the extensions below (weekend work).
 Quality:
   - [ ] Extra quality pass on indicator kaufman-er and up (sort by modified desc)
 
+Modularity:
+  - [ ] Split up ETL and have a central "feeder" engine that can distribute in near-realtime
+
 Early warning:
   - [ ] Warning/Reporting system for datasource outages
 
