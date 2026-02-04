@@ -19,8 +19,10 @@ Priorization:
 Note: we are setup now to integrate the extensions below (weekend work).
 
 Quality:
+  - [ ] Degradation and change of execution mode on memory-pressure
   - [ ] Extra quality pass on indicator kaufman-er and up (sort by modified desc)
-  - [ ] More unit-tests NOW
+  - [ ] Automated validation of the system indicators using TA-lib where possible
+  - [ ] More unit-tests NOW - in progress
 
 Modularity:
   - [ ] Split up ETL and have a central "feeder" engine that can distribute in near-realtime
