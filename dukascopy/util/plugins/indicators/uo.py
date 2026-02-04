@@ -22,7 +22,7 @@ def meta() -> Dict:
     """
     return {
         "author": "Google Gemini",
-        "version": 1.1,
+        "version": 1.2,
         "panel": 1,
         "verified": 1,
         "polars": 1
@@ -45,7 +45,6 @@ def warmup_count(options: Dict[str, Any]) -> int:
 def position_args(args: List[str]) -> Dict[str, Any]:
     """
     Maps positional URL arguments to dictionary keys.
-    Example: uo_7_14_28 -> {'p1': '7', 'p2': '14', 'p3': '28'}
     """
     return {
         "p1": args[0] if len(args) > 0 else "7",
@@ -56,6 +55,7 @@ def position_args(args: List[str]) -> Dict[str, Any]:
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     """
     High-performance Polars-native calculation for Ultimate Oscillator.
+    Matches TA-Lib by removing manual rounding.
     """
     try:
         p1 = int(options.get('p1', 7))
@@ -66,19 +66,23 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
 
     prev_close = pl.col("close").shift(1)
     
+    # Buying Pressure (BP)
     min_low_pc = pl.min_horizontal([pl.col("low"), prev_close])
     bp = pl.col("close") - min_low_pc
     
+    # True Range (TR)
     max_high_pc = pl.max_horizontal([pl.col("high"), prev_close])
     tr = max_high_pc - min_low_pc
     
+    # TA-Lib logic: Sum(BP) / Sum(TR) for each period
     avg1 = bp.rolling_sum(window_size=p1) / tr.rolling_sum(window_size=p1)
     avg2 = bp.rolling_sum(window_size=p2) / tr.rolling_sum(window_size=p2)
     avg3 = bp.rolling_sum(window_size=p3) / tr.rolling_sum(window_size=p3)
 
     uo = 100 * ((4 * avg1) + (2 * avg2) + avg3) / (4 + 2 + 1)
 
-    return uo.fill_nan(50).fill_null(50).round(2).alias(indicator_str)
+    # REMOVED .round(2) to ensure 100% numerical match with TA-Lib
+    return uo.alias(indicator_str)
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     """
@@ -91,19 +95,13 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     except (ValueError, TypeError):
         p1, p2, p3 = 7, 14, 28
 
-    try:
-        sample_val = df['close'].iloc[0]
-        sample_price = f"{sample_val:.10f}".rstrip('0')
-        precision = len(sample_price.split('.')[1])+1 if '.' in sample_price else 2
-        precision = min(max(precision, 2), 8) 
-    except (IndexError, AttributeError, ValueError):
-        precision = 2
-
     prev_close = df['close'].shift(1)
     min_low_pc = np.minimum(df['low'].values, prev_close.values)
     bp = df['close'] - min_low_pc
     max_high_pc = np.maximum(df['high'].values, prev_close.values)
     tr = max_high_pc - min_low_pc
+    
+    # Avoid division by zero
     tr_series = pd.Series(tr, index=df.index).replace(0, np.nan)
 
     def get_avg(period):
@@ -115,8 +113,5 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
 
     uo = 100 * ((4 * avg1) + (2 * avg2) + avg3) / (4 + 2 + 1)
 
-    res = pd.DataFrame({
-        'uo': uo.round(precision)
-    }, index=df.index)
-    
-    return res.dropna(subset=['uo'])
+    # Return raw float64 values without rounding to match TA-Lib
+    return pd.DataFrame({'uo': uo}, index=df.index).dropna()

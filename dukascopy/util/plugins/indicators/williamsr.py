@@ -63,7 +63,7 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     range_diff = hh - ll
     williams_r = ((hh - pl.col("close")) / range_diff) * -100
 
-    return williams_r.fill_nan(-50).fill_null(-50).round(2).alias(indicator_str)
+    return williams_r.fill_nan(-50).fill_null(-50).alias(indicator_str)
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     """
@@ -88,7 +88,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     williams_r = ((hh - df['close']) / range_diff) * -100
 
     res = pd.DataFrame({
-        'williams_r': williams_r.round(precision)
+        'williams_r': williams_r
     }, index=df.index)
     
     return res.dropna(subset=['williams_r'])
