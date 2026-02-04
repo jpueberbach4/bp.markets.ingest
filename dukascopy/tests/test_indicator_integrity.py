@@ -98,7 +98,7 @@ class TestIndicatorIntegrity(unittest.TestCase):
                     spec.loader.exec_module(plugin)
                     
                     df = pd.DataFrame({
-                        "time_ms": [1000], "close": [1.0],
+                        "time_ms": [1000], "open": [0.8], "high": [2.0], "low":[0.4], "close": [1.0], "volume":[20.0],
                         "symbol": ["EUR-USD"], "timeframe": ["1m"]
                     })
                     
