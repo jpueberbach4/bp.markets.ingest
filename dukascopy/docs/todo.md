@@ -68,6 +68,13 @@ Testing:
   - [x] Load tests
   - [ ] New performance benchmarks
 
+Observability
+  - [ ] Monitoring Health/Throughput/ROE
+  - [ ] Normalized logging messages
+  - [ ] "Additional stuff"
+
+Note: better monitoring/normalized logging IS a requirement for K8S envs.
+
 Cleanup:
   - [ ] Builder cleanup
   - [ ] Remove CSV data layer
