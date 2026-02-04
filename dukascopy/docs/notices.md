@@ -7,21 +7,32 @@ These have been checked and are-now-compliant to TA-lib:
 - ADX
 - AROON
 - ATR
+- ATRP
 - BBANDS
 - CCI
+- CHAIKIN
 - CMO
 - EMA
+- EOM
 - MACD
+- MIDPOINT
 - MFI
 - OBV
+- PSAR
 - ROC
 - RSI
 - SMA
+- STOCHASTIC
 - STDDEV
+- UO
+- WILLIAMSR
+
 
 I will dig the TA-lib deeper in order to see if we can compare more. Eg if there are more goodies in there. Probably. TA-lib has 150 indicators. So expect the test to get expanded.
 
 **Note:** It can be "a bit difficult" (under WSL2) to install ta-lib for Python. https://pypi.org/project/TA-Lib/
+
+**Note:** For now I will leave it at this. Friday we continue.
 
 **Good practice advice when you are building your own indicators**
 
