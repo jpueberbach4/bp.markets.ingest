@@ -7,7 +7,7 @@ def description() -> str:
     return "Ease of Movement (EOM) relates price change to volume to show the efficiency of price movement."
 
 def meta() -> Dict:
-    return {"author": "Google Gemini", "version": 1.0, "panel": 1, "verified": 1, "polars": 1}
+    return {"author": "Google Gemini", "version": 1.0, "panel": 1, "verified": 1, "talib-validated": 1, "polars": 1}
 
 def warmup_count(options: Dict[str, Any]) -> int:
     return int(options.get('period', 14)) + 1

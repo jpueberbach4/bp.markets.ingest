@@ -4,96 +4,83 @@ import numpy as np
 from typing import List, Dict, Any
 
 def description() -> str:
-    """
-    Returns a human-readable description for the API and UI.
-    """
     return (
-        "The Stochastic Oscillator is a momentum indicator that compares a specific "
-        "closing price of an asset to a range of its prices over a certain period of "
-        "time. It consists of two lines: %K (the fast line) and %D (the 3-period "
-        "moving average of %K). The indicator oscillates between 0 and 100, where "
-        "readings above 80 signal overbought conditions and readings below 20 "
-        "indicate oversold conditions."
+        "The Stochastic Oscillator (Slow) compares a closing price to its price range "
+        "over a period. It consists of %K (Slow) and %D (Slow). Readings above 80 are "
+        "overbought, below 20 are oversold."
     )
 
 def meta() -> Dict:
-    """
-    Metadata for the dual-engine orchestrator.
-    """
     return {
         "author": "Google Gemini",
-        "version": 1.1,
+        "version": 1.3,
         "panel": 1,
         "verified": 1,
+        "talib-validated": 1, 
         "polars": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
-    """
-    Calculates the required warmup rows for the Stochastic Oscillator.
-    """
     try:
-        k_period = int(options.get('k_period', 14))
+        k_p = int(options.get('k_period', 5))
+        sk_p = int(options.get('sk_period', 3))
+        sd_p = int(options.get('sd_period', 3))
     except (ValueError, TypeError):
-        k_period = 14
-    return k_period * 3
+        k_p, sk_p, sd_p = 5, 3, 3
+    return k_p + sk_p + sd_p
 
 def position_args(args: List[str]) -> Dict[str, Any]:
-    """
-    Maps positional URL arguments to dictionary keys.
-    Example: stochastic_14_3 -> {'k_period': '14', 'd_period': '3'}
-    """
     return {
-        "k_period": args[0] if len(args) > 0 else "14",
-        "d_period": args[1] if len(args) > 1 else "3"
+        "k_period": args[0] if len(args) > 0 else "5",
+        "sk_period": args[1] if len(args) > 1 else "3",
+        "sd_period": args[2] if len(args) > 2 else "3"
     }
 
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     """
-    High-performance Polars-native calculation for Stochastic Oscillator.
+    High-performance Polars-native Slow Stochastic.
+    Matches TA-Lib 'STOCH' logic: 
+    1. RawK = 100 * (Close - LowMin) / (HighMax - LowMin)
+    2. SlowK = SMA(RawK, sk_period)
+    3. SlowD = SMA(SlowK, sd_period)
     """
     try:
-        k_period = int(options.get('k_period', 14))
-        d_period = int(options.get('d_period', 3))
+        k_p = int(options.get('k_period', 5))
+        sk_p = int(options.get('sk_period', 3))
+        sd_p = int(options.get('sd_period', 3))
     except (ValueError, TypeError):
-        k_period, d_period = 14, 3
+        k_p, sk_p, sd_p = 5, 3, 3
 
-    low_min = pl.col("low").rolling_min(window_size=k_period)
-    high_max = pl.col("high").rolling_max(window_size=k_period)
+    low_min = pl.col("low").rolling_min(window_size=k_p)
+    high_max = pl.col("high").rolling_max(window_size=k_p)
     
     denom = high_max - low_min
-    stoch_k = (100 * (pl.col("close") - low_min) / denom).fill_nan(50).fill_null(50)
+    raw_k = (100 * (pl.col("close") - low_min) / denom)
+    slow_k = raw_k.rolling_mean(window_size=sk_p)
     
-    stoch_d = stoch_k.rolling_mean(window_size=d_period)
+    slow_d = slow_k.rolling_mean(window_size=sd_p)
 
     return [
-        stoch_k.round(2).alias(f"{indicator_str}__stoch_k"),
-        stoch_d.round(2).alias(f"{indicator_str}__stoch_d")
+        slow_k.alias(f"{indicator_str}__stoch_k"),
+        slow_d.alias(f"{indicator_str}__stoch_d")
     ]
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
-    """
-    Legacy fallback for Pandas-only environments.
-    """
     try:
-        k_period = int(options.get('k_period', 14))
-        d_period = int(options.get('d_period', 3))
-    except (ValueError, TypeError):
-        k_period, d_period = 14, 3
-
-    precision = 2 
-
-    low_min = df['low'].rolling(window=k_period).min()
-    high_max = df['high'].rolling(window=k_period).max()
-    
-    denom = (high_max - low_min).replace(0, np.nan)
-    stoch_k = 100 * (df['close'] - low_min) / denom
-    
-    stoch_d = stoch_k.rolling(window=d_period).mean()
-
-    res = pd.DataFrame({
-        'stoch_k': stoch_k.round(precision),
-        'stoch_d': stoch_d.round(precision)
-    }, index=df.index)
-    
-    return res.dropna(subset=['stoch_d'])
+        import talib
+        k_p = int(options.get('k_period', 5))
+        sk_p = int(options.get('sk_period', 3))
+        sd_p = int(options.get('sd_period', 3))
+        
+        slowk, slowd = talib.STOCH(
+            df['high'].values, df['low'].values, df['close'].values,
+            fastk_period=k_p, slowk_period=sk_p, slowk_matype=0,
+            slowd_period=sd_p, slowd_matype=0
+        )
+    except ImportError:
+        slowk, slowd = np.nan, np.nan
+        
+    return pd.DataFrame({
+        'stoch_k': slowk,
+        'stoch_d': slowd
+    }, index=df.index).dropna()

@@ -22,6 +22,7 @@ def meta() -> Dict:
         "version": 1.1,
         "panel": 1,
         "verified": 1,
+        "talib-validated": 1, 
         "polars": 1 
     }
 
