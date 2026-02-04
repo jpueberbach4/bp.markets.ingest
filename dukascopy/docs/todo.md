@@ -47,6 +47,7 @@ DuckDB:
 
 Panama:
   - [ ] Panama prevents text-strip, invent solution for binary
+  - [ ] I tested an indicator for Panama backadjustment and it works?
 
 Drawing/Visualization:
   - [x] Split JS to libs (chart.js, drawing.js, ui.js)
