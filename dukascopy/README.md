@@ -49,6 +49,12 @@ git pull
 git submodule update --init --recursive
 ```
 
+If you want to update both your repo and your docs
+
+```sh
+git pull --recurse-submodules
+```
+
 docs are [here](https://github.com/jpueberbach4/bp-markets.ingest-docs).
 
 ## What Is This Tool Used For?
