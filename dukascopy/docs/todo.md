@@ -1,5 +1,12 @@
 ## Short term todo list
 
+Priorization:
+
+- Stabilization - Seeing if we can prevent OOM's and instead degrade in a "nicer way"
+- Quality - Another full comparison pass on the indicators. LLM's can tell me they are fine but i want to SEE.
+- Coverage - Unit-testing > 80-90%
+- Then split up - I have a testeable base then. K8S-readiness changes are not "minor changes".
+
 [x] Initial refactor/preparation stage:
   - [x] Abstracting indicator registry
   - [x] Implementation get_data method (internal API)
@@ -86,3 +93,5 @@ Rest
   - [x] Take a day off
   - [ ] Take a second day off
   - [ ] Take a third day off
+
+I know Istio too. Seeing if it's beneficial to build adapters (but this is medium term).
