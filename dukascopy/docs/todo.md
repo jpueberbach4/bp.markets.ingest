@@ -3,7 +3,7 @@
 Priorization:
 
 - Stabilization - Seeing if we can prevent OOM's and instead degrade in a "nicer way"
-- Quality - Another full comparison pass on the indicators. LLM's can tell me they are fine but i want to SEE.
+- Quality - Another full comparison pass on the indicators. LLM's can tell me they are fine but i want to SEE (TA-lib?).
 - Coverage - Unit-testing > 80-90% + "Unhappy paths"
 - Then split up - I have a testeable base then. K8S-readiness changes are not "minor changes".
 
