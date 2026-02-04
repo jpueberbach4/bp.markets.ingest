@@ -60,7 +60,7 @@ Example Indicator:
   - [ ] EUR-USD vs Bond Pearson correlation example
 
 Protection
-  - [ ] Circular indicator dependency protection, AST inspection?
+  - [x] Circular indicator dependency protection (V1 present as a unit-test, V2 options checking todo)
   - [ ] Custom threadpool to optimize recursive get_data calls which use pandas indicators
 
 Testing:
