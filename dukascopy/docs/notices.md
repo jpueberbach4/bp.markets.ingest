@@ -103,7 +103,7 @@ CPU is maximally saturated at 80 percent. Higher is not possible since the FPU u
 
 **Next**
 
-Splitting up ETL to make more modular-more kubernetes friendly, retaking performance there-and adding a high-speed comm-layer. Back at it on wednesday/thursday.
+Hardening, quality. Then. Splitting up ETL to make more modular-more kubernetes friendly, retaking performance there-and adding a high-speed comm-layer.
 
 **Status: feeds have returned to operational**
 
