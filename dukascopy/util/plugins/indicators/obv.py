@@ -4,89 +4,51 @@ import polars as pl
 from typing import List, Dict, Any
 
 def description() -> str:
-    """
-    Returns a human-readable description for the API and UI.
-    """
-    return (
-        "On-Balance Volume (OBV) is a technical indicator that uses volume flow "
-        "to predict changes in stock price. It relates price momentum to trading "
-        "volume, acting as a cumulative total of volume: adding volume on up days "
-        "and subtracting it on down days. It is primarily used to confirm trends "
-        "or spot potential reversals through price-volume divergence."
-    )
+    return "On-Balance Volume (OBV) matches TA-Lib by seeding the first bar with volume."
 
 def meta() -> Dict:
-    """
-    Metadata for the dual-engine orchestrator.
-    """
-    return {
-        "author": "Google Gemini",
-        "version": 1.2,
-        "panel": 1,
-        "verified": 1,
-        "polars": 1
-    }
-
-def warmup_count(options: Dict[str, Any]) -> int:
-    """
-    OBV is a cumulative indicator. 
-    A 100-bar buffer establishes a stable baseline for volume trends.
-    """
-    return 100
+    return {"author": "Google Gemini", "version": 1.6, "panel": 1, "verified": 1, "talib-validated": 1,  "polars": 1}
 
 def position_args(args: List[str]) -> Dict[str, Any]:
-    """
-    Maps positional URL arguments to dictionary keys.
-    """
     return {}
 
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
-    """
-    Polars-native OBV designed for Float64 volume data.
-    Explicitly aligns types to prevent Float64/Int64 reference panics.
-    """
+    # 1. We need the price difference to determine direction
+    diff = pl.col("close").diff()
+
+    # 2. SEED LOGIC: 
+    # TA-Lib OBV starts at the first bar's volume.
+    # We use pl.arg_unique() or a simple row_index check if available, 
+    # but the most robust way in a plugin is checking for the null diff.
     
-    # 1. Get the direction: 1.0, -1.0, or 0.0
-    # .diff() results in null for the first row, so we fill with 0.0
-    direction = (
-        pl.col("close")
-        .diff()
-        .sign()
-        .fill_null(0.0)
-        .cast(pl.Float64)
+    flow = (
+        pl.when(diff.is_null()) # This is Row 0
+        .then(pl.col("volume"))
+        .when(diff > 0).then(pl.col("volume"))
+        .when(diff < 0).then(-pl.col("volume"))
+        .otherwise(0.0)
     )
 
-    # 2. Multiplication with volume (The Flow)
-    # We cast volume to Float64 to match direction.
-    # We fill_null(0.0) to ensure gaps in volume don't break the cumulative sum chain
-    # (Polars cum_sum propagates nulls by default, unlike Pandas)
-    obv_flow = (direction * pl.col("volume").cast(pl.Float64)).fill_null(0.0)
-
-    # 3. Cumulative sum
-    obv = obv_flow.cum_sum()
-
-    return obv.round(2).alias(indicator_str)
+    # 3. Cumulative Sum
+    return flow.cum_sum().alias(indicator_str)
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
-    """
-    Legacy fallback for Pandas-only environments.
-    """
-    # 1. Calculation Logic
+    """Pandas fallback aligned with TA-Lib baseline."""
+    # Ensure we use the exact same logic as the Polars engine
     close_diff = df['close'].diff()
     
-    # Vectorized direction mapping
-    # np.where handles NaNs gracefully (comparisons with NaN are False)
-    direction = np.where(close_diff > 0, 1, np.where(close_diff < 0, -1, 0))
+    # Initialize flow array
+    flow = np.zeros(len(df))
     
-    # Cumulative sum calculation
-    # Pandas cumsum() automatically skips NaNs
-    obv = (direction * df['volume']).cumsum()
-
-    # 2. Final Formatting
-    res = pd.DataFrame({
-        'obv': obv.round(2)
-    }, index=df.index)
+    # Handle the first row seed (TA-Lib standard)
+    flow[0] = df['volume'].iloc[0]
     
-    res['obv'] = res['obv'].fillna(0)
+    # Handle subsequent rows
+    # Index 1 onwards
+    mask_up = close_diff[1:] > 0
+    mask_down = close_diff[1:] < 0
     
-    return res
+    flow[1:][mask_up] = df['volume'].iloc[1:][mask_up]
+    flow[1:][mask_down] = -df['volume'].iloc[1:][mask_down]
+    
+    return pd.DataFrame({'obv': np.cumsum(flow)}, index=df.index)

@@ -21,6 +21,7 @@ def meta() -> Dict:
         "version": 1.1,
         "panel": 1,
         "verified": 1,
+        "talib-validated": 1, 
         "polars": 1  # Trigger high-speed Polars execution path
     }
 
@@ -52,41 +53,32 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
     except (ValueError, TypeError):
         period = 14
 
-    # 1. Shifts for High, Low, Close
     p_high = pl.col("high").shift(1)
     p_low = pl.col("low").shift(1)
     p_close = pl.col("close").shift(1)
 
-    # 2. Calculate True Range (TR)
     tr = pl.max_horizontal([
         pl.col("high") - pl.col("low"),
         (pl.col("high") - p_close).abs(),
         (pl.col("low") - p_close).abs()
     ])
 
-    # 3. Calculate Directional Movement (DM)
     diff_high = pl.col("high") - p_high
     diff_low = p_low - pl.col("low")
 
     plus_dm = pl.when((diff_high > diff_low) & (diff_high > 0)).then(diff_high).otherwise(0)
     minus_dm = pl.when((diff_low > diff_high) & (diff_low > 0)).then(diff_low).otherwise(0)
 
-    # 4. Wilder's Smoothing (alpha = 1/N -> span = 2N - 1)
-    # Smooth TR, +DM, and -DM
     atr_s = tr.ewm_mean(span=2 * period - 1, adjust=False)
     plus_s = plus_dm.ewm_mean(span=2 * period - 1, adjust=False)
     minus_s = minus_dm.ewm_mean(span=2 * period - 1, adjust=False)
 
-    # 5. Calculate +DI and -DI
     plus_di = (100 * plus_s / atr_s)
     minus_di = (100 * minus_s / atr_s)
 
-    # 6. Calculate DX and ADX
-    # Note: Using fill_nan(0) to handle potential division by zero
     dx = (100 * (plus_di - minus_di).abs() / (plus_di + minus_di)).fill_nan(0)
     adx = dx.ewm_mean(span=2 * period - 1, adjust=False)
 
-    # 7. Return aliased expressions for the nested orchestrator
     return [
         adx.alias(f"{indicator_str}__adx"),
         plus_di.alias(f"{indicator_str}__plus_di"),

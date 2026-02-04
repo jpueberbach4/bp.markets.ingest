@@ -25,6 +25,7 @@ def meta() -> Dict:
         "version": 1.1,
         "panel": 1,
         "verified": 1,
+        "talib-validated": 1, 
         "polars": 1  # Flag to trigger high-speed Polars execution
     }
 
@@ -77,7 +78,7 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
 
     # 5. Final Formatting
     # Replicating the fillna(50) logic for stable outputs on flat data
-    return mfi.fill_nan(50).fill_null(50).round(2).alias(indicator_str)
+    return mfi.fill_nan(50).fill_null(50).alias(indicator_str)
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     """
@@ -106,7 +107,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     mfi = mfi.ffill().fillna(50) 
 
     res = pd.DataFrame({
-        'mfi': mfi.round(precision)
+        'mfi': mfi
     }, index=df.index)
     
     return res.dropna(subset=['mfi'])

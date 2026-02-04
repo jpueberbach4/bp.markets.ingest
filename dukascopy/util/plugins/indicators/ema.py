@@ -24,6 +24,7 @@ def meta() -> Dict:
         "author": "Google Gemini",
         "version": 1.1,
         "verified": 1,
+        "talib-validated":1, 
         "polars": 1  
     }
 

@@ -23,6 +23,7 @@ def meta() -> Dict:
         "version": 1.1,
         "panel": 1,
         "verified": 1,
+        "talib-validated": 1, 
         "polars": 1  # Trigger high-speed Polars execution path
     }
 
@@ -53,13 +54,8 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
     except (ValueError, TypeError):
         period = 25
 
-    # Window size includes the current bar
     window = period + 1
 
-    # Calculation: ((period - days_since_extreme) / period) * 100
-    # In Polars, we find the index of the max/min in the rolling window.
-    # We use arg_max/arg_min within a rolling context.
-    
     aroon_up = (
         pl.col("high")
         .rolling_map(lambda s: s.arg_max(), window_size=window) / period * 100
@@ -86,7 +82,6 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
 
     window = period + 1
     
-    # Standard Pandas rolling apply (slow)
     aroon_up_days = df['high'].rolling(window=window).apply(lambda x: x.argmax(), raw=True)
     aroon_down_days = df['low'].rolling(window=window).apply(lambda x: x.argmin(), raw=True)
 

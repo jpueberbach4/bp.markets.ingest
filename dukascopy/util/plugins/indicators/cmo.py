@@ -8,86 +8,73 @@ def description() -> str:
     Returns a human-readable description for the API and UI.
     """
     return (
-        "Chande Momentum Oscillator (CMO) is a technical momentum indicator that "
-        "measures the difference between the sum of all recent gains and the sum "
-        "of all recent losses, then divides the result by the sum of all price "
-        "movement over the period. Unlike RSI, it uses unfiltered data in its "
-        "numerator, making it more sensitive to extreme price movements."
+        "Chande Momentum Oscillator (CMO) measures the difference between recent "
+        "gains and losses. This implementation matches the TA-Lib C-standard by "
+        "using Wilder's Smoothing (EMA-based) rather than simple rolling sums."
     )
 
 def meta() -> Dict:
-    """
-    Metadata for the dual-engine orchestrator.
-    """
     return {
         "author": "Google Gemini",
-        "version": 1.1,
+        "version": 1.2,
         "panel": 1,
         "verified": 1,
-        "polars": 1  # Trigger high-speed Polars execution path
+        "talib-validated": 1, 
+        "polars": 1
     }
 
-def warmup_count(options: Dict[str, Any]) -> int:
-    """
-    Calculates the required warmup rows for CMO.
-    """
-    try:
-        period = int(options.get('period', 9))
-    except (ValueError, TypeError):
-        period = 9
-    return period * 3
-
 def position_args(args: List[str]) -> Dict[str, Any]:
-    """
-    Maps positional URL arguments to dictionary keys.
-    """
     return {
-        "period": args[0] if len(args) > 0 else "9"
+        "period": args[0] if len(args) > 0 else "14"
     }
 
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     """
-    High-performance Polars-native calculation for CMO.
+    Polars implementation aligned with TA-Lib C-math.
+    Uses EWM (Wilder's Smoothing) to match TA-Lib's CMO.
     """
     try:
-        period = int(options.get('period', 14))
+        p = int(options.get('period', 14))
     except (ValueError, TypeError):
-        period = 14
+        p = 14
 
-    # 1. Calculate Price Change
+    # 1. Price Change
     diff = pl.col("close").diff()
 
-    # 2. Identify Gains and Losses
-    gain = pl.when(diff > 0).then(diff).otherwise(0)
-    loss = pl.when(diff < 0).then(diff.abs()).otherwise(0)
+    # 2. Separate Gains and Losses
+    gain = pl.when(diff > 0).then(diff).otherwise(0.0)
+    loss = pl.when(diff < 0).then(diff.abs()).otherwise(0.0)
 
-    # 3. Calculate Rolling Sums
-    sum_g = gain.rolling_sum(window_size=period)
-    sum_l = loss.rolling_sum(window_size=period)
+    # 3. TA-Lib CMO uses Wilder's Smoothing (EMA with alpha = 1/p)
+    # In Polars ewm_mean, alpha = 1/period corresponds to span = 2*p - 1
+    # We must set adjust=False to match the recursive nature of the C implementation
+    sm_g = gain.ewm_mean(span=2 * p - 1, adjust=False)
+    sm_l = loss.ewm_mean(span=2 * p - 1, adjust=False)
 
-    # 4. CMO Formula: 100 * (SumG - SumL) / (SumG + SumL)
-    # fill_nan handles division by zero for stagnant price movement
-    cmo = (100 * (sum_g - sum_l) / (sum_g + sum_l)).fill_nan(None)
+    # 4. Formula: 100 * (SumG - SumL) / (SumG + SumL)
+    # Using the means is mathematically equivalent to using the sums in this ratio
+    cmo = (100 * (sm_g - sm_l) / (sm_g + sm_l))
 
     return cmo.alias(indicator_str)
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     """
-    Legacy Pandas fallback.
+    Pandas fallback aligned with TA-Lib.
     """
     try:
-        period = int(options.get('period', 14))
+        p = int(options.get('period', 14))
     except (ValueError, TypeError):
-        period = 14
+        p = 14
 
     delta = df['close'].diff()
-    gains = delta.where(delta > 0, 0)
-    losses = delta.where(delta < 0, 0).abs()
+    gains = delta.where(delta > 0, 0.0)
+    losses = delta.where(delta < 0, 0.0).abs()
     
-    sum_gains = gains.rolling(window=period).sum()
-    sum_losses = losses.rolling(window=period).sum()
+    # Wilder's Smoothing in Pandas
+    # alpha = 1/p is achieved with com = p - 1
+    avg_g = gains.ewm(com=p - 1, adjust=False).mean()
+    avg_l = losses.ewm(com=p - 1, adjust=False).mean()
     
-    total_movement = sum_gains + sum_losses
-    cmo_values = 100 * ((sum_gains - sum_losses) / total_movement.replace(0, np.nan))
+    cmo_values = 100 * ((avg_g - avg_l) / (avg_g + avg_l))
     
-    return pd.DataFrame({'cmo': cmo_values}, index=df.index).dropna()
+    return pd.DataFrame({'cmo': cmo_values}, index=df.index)

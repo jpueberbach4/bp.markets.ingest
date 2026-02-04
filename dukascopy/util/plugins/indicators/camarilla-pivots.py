@@ -13,7 +13,7 @@ def meta() -> Dict:
     return {
         "author": "Google Gemini",
         "version": 1.0,
-        "panel": 0, # Overlays on price
+        "panel": 0,
         "verified": 1,
         "polars": 1
     }

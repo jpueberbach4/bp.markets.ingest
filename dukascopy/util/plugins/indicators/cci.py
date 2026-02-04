@@ -22,7 +22,8 @@ def meta() -> Dict:
         "version": 1.1,
         "panel": 1,
         "verified": 1,
-        "polars": 1  # Trigger high-speed Polars execution path
+        "talib-validated": 1, 
+        "polars": 1 
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -52,24 +53,18 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
     except (ValueError, TypeError):
         period = 20
 
-    # 1. Calculate Typical Price (TP)
     tp = (pl.col("high") + pl.col("low") + pl.col("close")) / 3
 
-    # 2. Calculate SMA of Typical Price
     tp_sma = tp.rolling_mean(window_size=period)
 
-    # 3. Calculate Mean Absolute Deviation (MAD)
-    # We use rolling_map with a vectorized internal expression to stay in Rust
     mad = tp.rolling_map(
         lambda s: (s - s.mean()).abs().mean(), 
         window_size=period
     )
 
-    # 4. Calculate CCI and Direction
     cci = (tp - tp_sma) / (0.015 * mad)
     direction = pl.when(cci > cci.shift(1)).then(100).otherwise(-100)
 
-    # Return aliased expressions for the nested orchestrator
     return [
         cci.alias(f"{indicator_str}__cci"),
         direction.alias(f"{indicator_str}__direction")
@@ -87,7 +82,6 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     tp = (df['high'] + df['low'] + df['close']) / 3
     tp_sma = tp.rolling(window=period).mean()
     
-    # Slow Python-based MAD
     def get_mad(x):
         return np.abs(x - x.mean()).mean()
     mad = tp.rolling(window=period).apply(get_mad, raw=True)
