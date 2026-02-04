@@ -21,7 +21,7 @@ These have been checked and are-now-compliant to TA-lib:
 
 I will dig the TA-lib deeper in order to see if we can compare more. Eg if there are more goodies in there. Probably. TA-lib has 150 indicators. So expect the test to get expanded.
 
-**Note:** It can be "a bit difficult" to install ta-lib for Python. https://pypi.org/project/TA-Lib/
+**Note:** It can be "a bit difficult" (under WSL2) to install ta-lib for Python. https://pypi.org/project/TA-Lib/
 
 **Good practice advice when you are building your own indicators**
 
