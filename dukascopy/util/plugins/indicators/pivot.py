@@ -24,7 +24,7 @@ def meta() -> Dict:
         "author": "Google Gemini",
         "version": 1.2,
         "verified": 1,
-        "polars": 1,        # ENABLED: Fixed type casting issue
+        "polars": 1,
         "needs": "surface-colouring"
     }
 
@@ -55,36 +55,27 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
     except (ValueError, TypeError):
         period = 1
 
-    # 1. Prepare Inputs with Strict Casting
-    # We must cast to Float64 BEFORE shifting/rolling to avoid nulls on non-numeric columns
     high = pl.col("high").cast(pl.Float64)
     low = pl.col("low").cast(pl.Float64)
     close = pl.col("close").cast(pl.Float64)
 
-    # 2. Efficient Calculation
     if period == 1:
-        # Fast path: Standard Pivot Points just use the previous bar
         prev_h = high.shift(1)
         prev_l = low.shift(1)
     else:
-        # Generalized path: Rolling High/Low over N periods
-        # We shift first because Pivot Points use the *prior* window to forecast the current day
         prev_h = high.shift(1).rolling_max(window_size=period, min_periods=1)
         prev_l = low.shift(1).rolling_min(window_size=period, min_periods=1)
     
     prev_c = close.shift(1)
 
-    # 3. Pivot Point Math
     pp = (prev_h + prev_l + prev_c) / 3.0
     
-    # 4. Levels
     diff = prev_h - prev_l
     r1 = (2.0 * pp) - prev_l
     s1 = (2.0 * pp) - prev_h
     r2 = pp + diff
     s2 = pp - diff
 
-    # 5. Final Output
     return [
         pp.round(5).alias(f"{indicator_str}__pp"),
         r1.round(5).alias(f"{indicator_str}__r1"),

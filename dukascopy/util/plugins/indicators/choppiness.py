@@ -18,7 +18,6 @@ def position_args(args: List[str]) -> Dict[str, Any]:
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     p = int(options.get('period', 14))
     
-    # Scale: 100 * LOG10( SUM(ATR, n) / (MaxHigh - MinLow) ) / LOG10(n)
     tr = (pl.col("high") - pl.col("low")).rolling_sum(window_size=p)
     max_h = pl.col("high").rolling_max(window_size=p)
     min_l = pl.col("low").rolling_min(window_size=p)

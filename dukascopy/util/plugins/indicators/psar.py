@@ -97,7 +97,6 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     except (ValueError, TypeError):
         step, max_step = 0.02, 0.2
 
-    # We use pl.struct to pass multiple columns (high/low) to the NumPy backend
     return pl.struct(["high", "low"]).map_batches(
         lambda s: _psar_backend(
             s.struct.field("high").to_numpy(),

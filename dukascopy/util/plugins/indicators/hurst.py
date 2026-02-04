@@ -22,7 +22,7 @@ def meta() -> Dict:
         "version": 1.2,
         "panel": 1,
         "verified": 1,
-        "polars": 1  # Set to 1 to enable Polars path
+        "polars": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -64,11 +64,8 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
         poly = np.polyfit(np.log(lags), np.log(tau), 1)
         return float(poly[0] * 2.0)
 
-    # Calculate Rolling Hurst Exponent
     hurst = pl.col("close").rolling_map(hurst_logic, window_size=period)
 
-    # FIX: Use numeric codes to avoid float conversion errors in the engine
-    # 1.0 = Trending, -1.0 = Mean-Reverting, 0.0 = Random
     regime = (
         pl.when(hurst > 0.55).then(1.0)
         .when(hurst < 0.45).then(-1.0)
@@ -100,7 +97,6 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
 
     hurst = df['close'].rolling(window=period).apply(get_hurst_exponent, raw=True)
     
-    # FIX: Use float choices for Pandas/NumPy selection
     conditions = [(hurst > 0.55), (hurst < 0.45)]
     choices = [1.0, -1.0] 
     regime = np.select(conditions, choices, default=0.0)

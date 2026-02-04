@@ -22,7 +22,7 @@ def meta() -> Dict:
         "version": 1.1,
         "panel": 1,
         "verified": 1,
-        "polars": 1  # Trigger high-speed Polars execution path
+        "polars": 1 
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -53,16 +53,11 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
     except (ValueError, TypeError):
         period = 13
 
-    # 1. Calculate the baseline EMA
-    # Polars ewm_mean is GIL-free and optimized in Rust
     ema = pl.col("close").ewm_mean(span=period, adjust=False)
 
-    # 2. Calculate Power components
     bull_power = pl.col("high") - ema
     bear_power = pl.col("low") - ema
 
-    # 3. Return aliased expressions for the nested orchestrator
-    # Using __ prefix to trigger dictionary grouping in parallel.py
     return [
         bull_power.alias(f"{indicator_str}__bull_power"),
         bear_power.alias(f"{indicator_str}__bear_power")

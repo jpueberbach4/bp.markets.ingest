@@ -25,7 +25,7 @@ def meta() -> Dict:
         "version": 1.1,
         "panel": 1,
         "verified": 1,
-        "polars": 1  # Flag to trigger high-speed Polars execution
+        "polars": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -64,27 +64,20 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     except (ValueError, TypeError):
         p1, p2, p3 = 7, 14, 28
 
-    # 1. Vectorized Pre-calculations (BP and TR)
     prev_close = pl.col("close").shift(1)
     
-    # Buying Pressure: close - min(low, prev_close)
     min_low_pc = pl.min_horizontal([pl.col("low"), prev_close])
     bp = pl.col("close") - min_low_pc
     
-    # True Range: max(high, prev_close) - min(low, prev_close)
     max_high_pc = pl.max_horizontal([pl.col("high"), prev_close])
     tr = max_high_pc - min_low_pc
     
-    # 2. Vectorized Rolling Averages (BP_sum / TR_sum)
-    # Division by zero/null is handled later by filling
     avg1 = bp.rolling_sum(window_size=p1) / tr.rolling_sum(window_size=p1)
     avg2 = bp.rolling_sum(window_size=p2) / tr.rolling_sum(window_size=p2)
     avg3 = bp.rolling_sum(window_size=p3) / tr.rolling_sum(window_size=p3)
 
-    # 3. Ultimate Oscillator Formula
     uo = 100 * ((4 * avg1) + (2 * avg2) + avg3) / (4 + 2 + 1)
 
-    # 4. Final Formatting
     return uo.fill_nan(50).fill_null(50).round(2).alias(indicator_str)
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:

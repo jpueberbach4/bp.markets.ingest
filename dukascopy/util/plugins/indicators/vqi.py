@@ -17,7 +17,6 @@ def position_args(args: List[str]) -> Dict[str, Any]:
 
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     p = int(options.get('period', 10))
-    # VQI calculation logic
     tr = (pl.col("high") - pl.col("low")).abs()
     vqi = ((pl.col("close") - pl.col("close").shift(1)) / tr).abs().rolling_mean(window_size=p)
     return [vqi.alias(f"{indicator_str}__value")]

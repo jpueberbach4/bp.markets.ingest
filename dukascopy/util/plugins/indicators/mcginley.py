@@ -29,32 +29,24 @@ def position_args(args: List[str]) -> Dict[str, Any]:
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     p = int(options.get('period', 14))
     
-    # We must use map_batches because each step depends on the calculation 
-    # of the previous step (Recursive).
     def apply_mcginley(s: pl.Series) -> pl.Series:
         prices = s.to_numpy()
         n = len(prices)
         md = np.zeros(n)
         
-        # Initialization
         md[0] = prices[0]
         
         for i in range(1, n):
             prev_md = md[i-1]
             price = prices[i]
             
-            # Avoid division by zero edge case
             if prev_md == 0:
                 md[i] = price
                 continue
                 
-            # McGinley Formula: 
-            # MD = MD_1 + (Price - MD_1) / (N * (Price/MD_1)^4)
             ratio = price / prev_md
             denominator = p * (ratio ** 4)
             
-            # Safety: If denominator is insanely small or large, clamp it
-            # (Though in normal price action (ratio^4) is usually stable)
             md[i] = prev_md + (price - prev_md) / denominator
             
         return pl.Series(md)
@@ -70,7 +62,6 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     n = len(close)
     md = np.zeros(n)
     
-    # Initialization
     md[0] = close[0]
     
     for i in range(1, n):

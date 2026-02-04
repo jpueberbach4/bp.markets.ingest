@@ -56,15 +56,12 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
     except (ValueError, TypeError):
         period = 50
 
-    # 1. Setup OLS Constants
     n = period
     sum_x = n * (n - 1) / 2
     sum_x2 = (n - 1) * n * (2 * n - 1) / 6
     divisor = n * sum_x2 - sum_x**2
 
-    # 2. Vectorized OLS Slope and Intercept
     y = pl.col("close")
-    # We use a moving index to keep the x-axis as [0, 1, ... n-1] for every window
     idx = pl.int_range(0, pl.len(), eager=False)
     
     sum_y = y.rolling_sum(window_size=n)
@@ -73,21 +70,14 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
     slope = (n * sum_xy - sum_x * sum_y) / divisor
     intercept = (sum_y - slope * sum_x) / n
     
-    # Mid Line (Endpoint of the regression line)
     lin_mid = slope * (n - 1) + intercept
 
-    # 3. Native Maximum Absolute Deviation (Width)
-    # We calculate the residuals for every point in the window simultaneously.
-    # We iterate 0 to n-1 to find the max distance: |y_i - (slope * i + intercept)|
     residuals = []
     for i in range(n):
-        # We look back 'i' steps from the current 'mid' calculation
-        # The x-coordinate for a point 'i' steps back is (n - 1 - i)
         x_i = (n - 1) - i
         dist = (y.shift(i) - (slope * x_i + intercept)).abs()
         residuals.append(dist)
 
-    # The Width is the maximum deviation found in that window
     width = pl.max_horizontal(residuals)
 
     return [

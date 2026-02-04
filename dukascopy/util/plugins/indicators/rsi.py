@@ -26,7 +26,7 @@ def meta() -> Dict:
         "panel": 1,
         "verified": 1,
         "talib-validated":1, 
-        "polars": 1  # Enabled for high-speed execution
+        "polars": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -57,20 +57,14 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     except (ValueError, TypeError):
         period = 14
 
-    # 1. Calculate price differences
     diff = pl.col("close").diff()
 
-    # 2. Separate gains and losses
     gain = pl.when(diff > 0).then(diff).otherwise(0)
     loss = pl.when(diff < 0).then(-diff).otherwise(0)
 
-    # 3. Apply Wilder's Smoothing (EWM with alpha = 1/period)
-    # In Polars ewm_mean: span = (2 / alpha) - 1. 
-    # For Wilder's alpha (1/N), span = 2N - 1
     avg_gain = gain.ewm_mean(span=2 * period - 1, adjust=False)
     avg_loss = loss.ewm_mean(span=2 * period - 1, adjust=False)
 
-    # 4. Calculate RSI
     rs = avg_gain / avg_loss
     rsi = 100 - (100 / (1 + rs))
 

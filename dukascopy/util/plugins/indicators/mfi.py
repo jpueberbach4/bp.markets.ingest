@@ -56,28 +56,20 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     except (ValueError, TypeError):
         period = 14
 
-    # 1. Typical Price and Raw Money Flow
     tp = (pl.col("high") + pl.col("low") + pl.col("close")) / 3
     rmf = tp * pl.col("volume")
 
-    # 2. Determine Positive and Negative Money Flow
-    # Compare current Typical Price to previous Typical Price
     tp_diff = tp.diff()
     
     pos_mf = pl.when(tp_diff > 0).then(rmf).otherwise(0)
     neg_mf = pl.when(tp_diff < 0).then(rmf).otherwise(0)
 
-    # 3. Rolling Sums and Money Flow Ratio
     mfr_pos = pos_mf.rolling_sum(window_size=period)
     mfr_neg = neg_mf.rolling_sum(window_size=period)
 
-    # 4. MFI Formula: 100 - (100 / (1 + (pos/neg)))
-    # Handling division by zero via null conversion
     mf_ratio = mfr_pos / mfr_neg
     mfi = 100 - (100 / (1 + mf_ratio))
 
-    # 5. Final Formatting
-    # Replicating the fillna(50) logic for stable outputs on flat data
     return mfi.fill_nan(50).fill_null(50).alias(indicator_str)
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:

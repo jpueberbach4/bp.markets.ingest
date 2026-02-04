@@ -19,13 +19,9 @@ def position_args(args: List[str]) -> Dict[str, Any]:
 
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     p = int(options.get('period', 20))
-    # Donchian High and Low
     hh = pl.col("high").rolling_max(window_size=p)
     ll = pl.col("low").rolling_min(window_size=p)
-    
-    # Calculation: (High - Low) / Center
     width = (hh - ll) / ((hh + ll) / 2)
-    
     return [width.alias(f"{indicator_str}__width")]
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:

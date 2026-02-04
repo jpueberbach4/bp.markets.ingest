@@ -22,7 +22,7 @@ def meta() -> Dict:
         "author": "Google Gemini",
         "version": 1.1,
         "verified": 1,
-        "polars": 1,  # Trigger high-speed Polars execution path
+        "polars": 1,
         "needs": "surface-colour"
     }
 
@@ -54,16 +54,11 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
     except (ValueError, TypeError):
         period = 20
 
-    # 1. Define the rolling extremes
-    # Polars uses highly optimized Rust kernels for rolling_max/min
     upper = pl.col("high").rolling_max(window_size=period)
     lower = pl.col("low").rolling_min(window_size=period)
 
-    # 2. Derive the Midline
     mid = (upper + lower) / 2
 
-    # 3. Return as a list of aliased expressions for the nested orchestrator
-    # Using the __ prefix to trigger the dictionary grouping in parallel.py
     return [
         upper.alias(f"{indicator_str}__upper"),
         mid.alias(f"{indicator_str}__mid"),

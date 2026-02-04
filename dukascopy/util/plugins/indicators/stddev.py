@@ -13,7 +13,6 @@ def position_args(args: List[str]) -> Dict[str, Any]:
 
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     p = int(options.get('period', 20))
-    # MANDATORY: ddof=0 for population std dev match with TA-Lib; .round() removed for 100% match
     return pl.col("close").rolling_std(window_size=p, ddof=0).alias(indicator_str)
 
 def calculate(df: Any, options: Dict[str, Any]) -> Any:

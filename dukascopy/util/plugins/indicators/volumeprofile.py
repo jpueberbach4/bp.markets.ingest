@@ -22,45 +22,33 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     p = int(options.get('period', 100))
     tick_size = float(options.get('ticks', 0.5))
     
-    # Pre-allocate output arrays for performance
     n = len(df)
     poc_arr = np.full(n, np.nan)
     vah_arr = np.full(n, np.nan)
     val_arr = np.full(n, np.nan)
     
-    # Convert columns to numpy for speed (avoiding Pandas overhead in loop)
     close = df['close'].values
     volume = df['volume'].values
     lows = df['low'].values
     highs = df['high'].values
     
-    # We must loop because 'histogram' requires 4 separate arrays per window
-    # Optimized: only calculate if enough data exists
     for i in range(p, n):
-        # Slicing numpy arrays is faster than slicing DataFrame
         w_close = close[i-p:i]
         w_vol = volume[i-p:i]
-        
-        # Determine dynamic bin range for this window
         min_p = np.min(lows[i-p:i])
         max_p = np.max(highs[i-p:i])
         
-        # Create bins
         bins = np.arange(min_p, max_p + tick_size, tick_size)
         if len(bins) < 2: continue # Not enough price variation
             
-        # Compute Weighted Histogram
         hist, bin_edges = np.histogram(w_close, bins=bins, weights=w_vol)
         
-        # 1. POC
         poc_idx = np.argmax(hist)
         poc_arr[i] = bin_edges[poc_idx]
         
-        # 2. Value Area
         total_vol = np.sum(hist)
         target_vol = total_vol * 0.70
         
-        # Sort indices by volume (descending) to accumulate densest areas first
         sorted_indices = np.argsort(hist)[::-1]
         
         current_vol = 0

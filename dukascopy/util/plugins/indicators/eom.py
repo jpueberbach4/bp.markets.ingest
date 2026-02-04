@@ -17,16 +17,10 @@ def position_args(args: List[str]) -> Dict[str, Any]:
 
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     p = int(options.get('period', 14))
-    
-    # Distance moved by the midpoint
     mid = (pl.col("high") + pl.col("low")) / 2
     distance = mid - mid.shift(1)
-    
-    # Box Ratio: (Volume / Scaling) / Range
-    # Scaling by 1M to keep numbers manageable
     box_ratio = (pl.col("volume") / 1000000) / (pl.col("high") - pl.col("low"))
     eom = distance / box_ratio
-    
     return [eom.rolling_mean(window_size=p).alias(f"{indicator_str}__value")]
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:

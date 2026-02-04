@@ -37,14 +37,11 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
         bins = np.arange(min_p, max_p + tick_size, tick_size)
         if len(bins) < 2: continue
         
-        # TPO = Histogram of CLOSE (frequency of time spent)
         hist, bin_edges = np.histogram(w_close, bins=bins)
         
-        # POC
         poc_idx = np.argmax(hist)
         poc_arr[i] = bin_edges[poc_idx]
         
-        # Value Area
         total_tpo = np.sum(hist)
         target_tpo = total_tpo * 0.70
         

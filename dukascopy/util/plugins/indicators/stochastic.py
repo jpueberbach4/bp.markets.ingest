@@ -25,7 +25,7 @@ def meta() -> Dict:
         "version": 1.1,
         "panel": 1,
         "verified": 1,
-        "polars": 1  # Flag to trigger high-speed Polars execution
+        "polars": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -58,19 +58,14 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
     except (ValueError, TypeError):
         k_period, d_period = 14, 3
 
-    # 1. Rolling Low and High over the k_period
     low_min = pl.col("low").rolling_min(window_size=k_period)
     high_max = pl.col("high").rolling_max(window_size=k_period)
     
-    # 2. Calculate %K (Fast Line)
-    # Handle division by zero for flat price action by filling nulls/NaNs with 50 (neutral)
     denom = high_max - low_min
     stoch_k = (100 * (pl.col("close") - low_min) / denom).fill_nan(50).fill_null(50)
     
-    # 3. Calculate %D (Slow Line - SMA of %K)
     stoch_d = stoch_k.rolling_mean(window_size=d_period)
 
-    # 4. Return as aliased expressions for structural nesting
     return [
         stoch_k.round(2).alias(f"{indicator_str}__stoch_k"),
         stoch_d.round(2).alias(f"{indicator_str}__stoch_d")

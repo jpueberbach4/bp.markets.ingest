@@ -18,7 +18,6 @@ def meta() -> Dict:
 def warmup_count(options: Dict[str, Any]) -> int:
     p = int(options.get('period', 10))
     q = int(options.get('lookback', p))
-    # We need enough data for the ATR (p) AND the subsequent Max/Min lookback (q)
     return p + q
 
 def position_args(args: List[str]) -> Dict[str, Any]:
@@ -32,27 +31,18 @@ def position_args(args: List[str]) -> Dict[str, Any]:
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     p = int(options.get('period', 10))
     m = float(options.get('multiplier', 1.0))
-    # Default lookback to same as ATR period if not specified
     q = int(options.get('lookback', p))
     
-    # 1. True Range Calculation
-    # We use max_horizontal for efficiency in Polars
     tr = pl.max_horizontal([
         (pl.col("high") - pl.col("low")), 
         (pl.col("high") - pl.col("close").shift(1)).abs(),
         (pl.col("low") - pl.col("close").shift(1)).abs()
     ])
     atr = tr.rolling_mean(window_size=p)
-    
-    # 2. Calculate Raw Stops (The "First Step" in Chande's formula)
-    # Long Stop Base = High_i - (ATR_i * Multiplier)
-    # Short Stop Base = Low_i + (ATR_i * Multiplier)
+
     raw_long_stop = pl.col("high") - (atr * m)
     raw_short_stop = pl.col("low") + (atr * m)
-    
-    # 3. Apply the Lookback (The "Second Step")
-    # Stop Long = Highest of Raw Long Stops over Q periods
-    # Stop Short = Lowest of Raw Short Stops over Q periods
+
     stop_long = raw_long_stop.rolling_max(window_size=q)
     stop_short = raw_short_stop.rolling_min(window_size=q)
     
@@ -66,8 +56,6 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     m = float(options.get('multiplier', 1.0))
     q = int(options.get('lookback', p))
     
-    # 1. ATR
-    # Standard True Range
     tr = pd.concat([
         df['high'] - df['low'], 
         (df['high'] - df['close'].shift(1)).abs(), 
@@ -76,11 +64,9 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     
     atr = tr.rolling(p).mean()
     
-    # 2. Raw Stops
     raw_long = df['high'] - (atr * m)
     raw_short = df['low'] + (atr * m)
     
-    # 3. Lookback Max/Min
     stop_long = raw_long.rolling(q).max()
     stop_short = raw_short.rolling(q).min()
     

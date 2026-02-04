@@ -21,7 +21,7 @@ def meta() -> Dict:
         "author": "Google Gemini",
         "version": 1.1,
         "verified": 1,
-        "polars": 1,  # Trigger high-speed Polars execution path
+        "polars": 1,
         "needs": "extension"
     }
 
@@ -46,34 +46,42 @@ def position_args(args: List[str]) -> Dict[str, Any]:
 
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     """
-    High-performance Polars-native calculation for Fibonacci levels.
+    High-performance Polars-native calculation for Fibonacci levels and extensions.
     """
     try:
         period = int(options.get('period', 100))
     except (ValueError, TypeError):
         period = 100
 
-    # 1. Calculate Rolling Extremes
-    # Polars uses highly optimized Rust kernels for rolling_max and rolling_min
     hh = pl.col("high").rolling_max(window_size=period)
     ll = pl.col("low").rolling_min(window_size=period)
     diff = hh - ll
 
-    # 2. Define Fibonacci Levels
-    # We return a list of aliased expressions for the nested orchestrator
     return [
+        # --- Standard Retracements ---
         hh.alias(f"{indicator_str}__fib_0"),
         (hh - (0.236 * diff)).alias(f"{indicator_str}__fib_236"),
         (hh - (0.382 * diff)).alias(f"{indicator_str}__fib_382"),
         (hh - (0.500 * diff)).alias(f"{indicator_str}__fib_50"),
         (hh - (0.618 * diff)).alias(f"{indicator_str}__fib_618"),
         (hh - (0.786 * diff)).alias(f"{indicator_str}__fib_786"),
-        ll.alias(f"{indicator_str}__fib_100")
+        ll.alias(f"{indicator_str}__fib_100"),
+
+        # --- Fibonacci Extensions (Price Targets) ---
+        # Projects targets above the current range
+        (hh + (0.272 * diff)).alias(f"{indicator_str}__ext_1272"),
+        (hh + (0.618 * diff)).alias(f"{indicator_str}__ext_1618"),
+        (hh + (1.618 * diff)).alias(f"{indicator_str}__ext_2618"),
+        
+        # Projects targets below the current range (for shorts)
+        (ll - (0.272 * diff)).alias(f"{indicator_str}__ext_neg_1272"),
+        (ll - (0.618 * diff)).alias(f"{indicator_str}__ext_neg_1618")
     ]
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     """
     Legacy Pandas fallback.
+    Updated to include Fibonacci Extensions for price targets.
     """
     try:
         period = int(options.get('period', 100))
@@ -84,12 +92,24 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     ll = df['low'].rolling(window=period).min()
     diff = hh - ll
 
+    # Standard Retracements + Extensions
     return pd.DataFrame({
+        # --- Standard Retracements ---
         'fib_0': hh,
         'fib_236': hh - (0.236 * diff),
         'fib_382': hh - (0.382 * diff),
         'fib_50': hh - (0.5 * diff),
         'fib_618': hh - (0.618 * diff),
         'fib_786': hh - (0.786 * diff),
-        'fib_100': ll
+        'fib_100': ll,
+        
+        # --- Fibonacci Extensions (Price Targets) ---
+        # Upward projections (Targets for Longs)
+        'ext_1272': hh + (0.272 * diff),
+        'ext_1618': hh + (0.618 * diff),
+        'ext_2618': hh + (1.618 * diff),
+        
+        # Downward projections (Targets for Shorts)
+        'ext_neg_1272': ll - (0.272 * diff),
+        'ext_neg_1618': ll - (0.618 * diff)
     }, index=df.index).dropna()

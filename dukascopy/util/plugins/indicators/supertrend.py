@@ -30,56 +30,43 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
         
         n = len(close)
         
-        # 1. ATR Calculation (NumPy optimized)
         prev_close = np.roll(close, 1)
         prev_close[0] = close[0]
         
         tr = np.maximum(high - low, np.maximum(np.abs(high - prev_close), np.abs(low - prev_close)))
         tr[0] = high[0] - low[0]
         
-        # Simple Rolling Mean for ATR
-        # (We use a pandas rolling trick inside the batch for speed, or a simple convolution)
-        # Using convolution for pure numpy speed:
         if n >= p:
             kernel = np.ones(p) / p
             atr = np.convolve(tr, kernel, mode='same')
-            # Correct the lag introduced by 'same' mode convolution for causal filtering
-            # Actually, standard convolution 'valid' is safer, but let's stick to the Pandas-like filling
-            # For simplicity and safety inside this batch function, pandas rolling is robust:
             atr = pd.Series(tr).rolling(p).mean().fillna(0).values
         else:
             atr = np.zeros(n)
 
-        # 2. Basic Bands
         hl2 = (high + low) / 2
         basic_upper = hl2 + (m * atr)
         basic_lower = hl2 - (m * atr)
         
-        # 3. Recursive Final Bands
         final_upper = np.zeros(n)
         final_lower = np.zeros(n)
         supertrend = np.zeros(n)
         trend = 1 # 1 = Up, -1 = Down
         
-        # Initialize
         final_upper[0] = basic_upper[0]
         final_lower[0] = basic_lower[0]
         supertrend[0] = final_lower[0]
         
         for i in range(1, n):
-            # Final Upper Logic
             if basic_upper[i] < final_upper[i-1] or close[i-1] > final_upper[i-1]:
                 final_upper[i] = basic_upper[i]
             else:
                 final_upper[i] = final_upper[i-1]
                 
-            # Final Lower Logic
             if basic_lower[i] > final_lower[i-1] or close[i-1] < final_lower[i-1]:
                 final_lower[i] = basic_lower[i]
             else:
                 final_lower[i] = final_lower[i-1]
                 
-            # Trend Switch Logic
             if trend == 1:
                 supertrend[i] = final_lower[i]
                 if close[i] < final_lower[i]:
@@ -93,7 +80,6 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
                     
         return pl.Series(supertrend)
 
-    # We pass a struct to map_batches, which arrives as a Struct-type Series
     return [
         pl.struct(["high", "low", "close"])
         .map_batches(apply_supertrend)

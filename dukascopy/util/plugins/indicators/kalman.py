@@ -12,7 +12,7 @@ def meta() -> Dict:
         "version": 1.1,
         "panel": 0,
         "verified": 1,
-        "polars": 1 # Upgraded to 1
+        "polars": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -41,16 +41,13 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
         P[0] = 1.0
         
         for k in range(1, size):
-            # Time update
             p_minus = P[k-1] + q_val
-            # Measurement update
             k_gain = p_minus / (p_minus + r_val)
             xhat[k] = xhat[k-1] + k_gain * (values[k] - xhat[k-1])
             P[k] = (1 - k_gain) * p_minus
             
         return pl.Series(xhat)
 
-    # Use map_batches to run the recursive logic on the series
     return [
         pl.col("close").map_batches(apply_kalman).alias(f"{indicator_str}__kalman")
     ]

@@ -25,7 +25,7 @@ def meta()->Dict:
         "version": 1.1,
         "panel": 1,
         "verified": 1,
-        "polars": 1  # Trigger high-speed Polars execution
+        "polars": 1
     }
     
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -60,20 +60,15 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
     except (ValueError, TypeError):
         n, m1, m2 = 9, 3, 3
 
-    # 1. Calculate RSV (Raw Stochastic Value)
-    # Handle flat price action by filling nulls with 50 (neutral)
     low_min = pl.col("low").rolling_min(window_size=n)
     high_max = pl.col("high").rolling_max(window_size=n)
     
     rsv = (100 * (pl.col("close") - low_min) / (high_max - low_min)).fill_nan(50).fill_null(50)
 
-    # 2. Recursive K and D (EMA logic)
-    # alpha = 1 / period is the equivalent for the KDJ recursive formula
     k = rsv.ewm_mean(alpha=1/m1, adjust=False)
     d = k.ewm_mean(alpha=1/m2, adjust=False)
     j = (3 * k) - (2 * d)
 
-    # 3. Return as aliased expressions for parallel.py mapping
     return [
         k.round(2).alias(f"{indicator_str}__k"),
         d.round(2).alias(f"{indicator_str}__d"),
@@ -85,7 +80,6 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     High-performance vectorized KDJ calculation.
     K = EMA(RSV, m1), D = EMA(K, m2), J = 3K - 2D
     """
-    # 1. Parse Parameters
     try:
         n = int(options.get('n', 9))      # Lookback period
         m1 = int(options.get('m1', 3))    # K slowing
@@ -93,33 +87,23 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     except (ValueError, TypeError):
         n, m1, m2 = 9, 3, 3
 
-    # 2. Determine Precision
     precision = 2 # Standard for oscillators
 
-    # 3. Calculate RSV (Raw Stochastic Value)
     low_min = df['low'].rolling(window=n).min()
     high_max = df['high'].rolling(window=n).max()
     
-    # Handle division by zero for flat price action
     rsv = 100 * ((df['close'] - low_min) / (high_max - low_min).replace(0, np.nan))
     rsv = rsv.fillna(50) # Seed flat areas with neutral 50
 
-    # 4. Vectorized K and D Calculation
-    # The recursive KDJ formula is an EMA with alpha = 1/period
-    # com = period - 1 is the equivalent Pandas 'com' parameter
     k = rsv.ewm(com=m1-1, adjust=False).mean()
     d = k.ewm(com=m2-1, adjust=False).mean()
     
-    # 5. Calculate J Line
     j = (3 * k) - (2 * d)
 
-    # 6. Final Formatting and Rounding
-    # Preserving original index for O(1) merging in parallel.py
     res = pd.DataFrame({
         'k': k.round(precision),
         'd': d.round(precision),
         'j': j.round(precision)
     }, index=df.index)
     
-    # Drop rows where the initial lookback hasn't filled
     return res.dropna(subset=['k'])

@@ -38,21 +38,14 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     except (ValueError, TypeError):
         p = 14
 
-    # 1. Price Change
     diff = pl.col("close").diff()
 
-    # 2. Separate Gains and Losses
     gain = pl.when(diff > 0).then(diff).otherwise(0.0)
     loss = pl.when(diff < 0).then(diff.abs()).otherwise(0.0)
 
-    # 3. TA-Lib CMO uses Wilder's Smoothing (EMA with alpha = 1/p)
-    # In Polars ewm_mean, alpha = 1/period corresponds to span = 2*p - 1
-    # We must set adjust=False to match the recursive nature of the C implementation
     sm_g = gain.ewm_mean(span=2 * p - 1, adjust=False)
     sm_l = loss.ewm_mean(span=2 * p - 1, adjust=False)
 
-    # 4. Formula: 100 * (SumG - SumL) / (SumG + SumL)
-    # Using the means is mathematically equivalent to using the sums in this ratio
     cmo = (100 * (sm_g - sm_l) / (sm_g + sm_l))
 
     return cmo.alias(indicator_str)
@@ -70,8 +63,6 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     gains = delta.where(delta > 0, 0.0)
     losses = delta.where(delta < 0, 0.0).abs()
     
-    # Wilder's Smoothing in Pandas
-    # alpha = 1/p is achieved with com = p - 1
     avg_g = gains.ewm(com=p - 1, adjust=False).mean()
     avg_l = losses.ewm(com=p - 1, adjust=False).mean()
     

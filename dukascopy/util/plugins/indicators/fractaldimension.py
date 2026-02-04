@@ -22,7 +22,7 @@ def meta() -> Dict:
         "version": 1.2,
         "panel": 1,
         "verified": 1,
-        "polars": 1     # Now fixed and enabled for high-speed execution
+        "polars": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -46,10 +46,8 @@ def get_sevcik_dimension(y: np.ndarray) -> float:
     y_min, y_max = np.min(y), np.max(y)
     if y_max == y_min: return 1.0
     
-    # Normalize price to [0, 1]
     y_norm = (y - y_min) / (y_max - y_min)
     
-    # Euclidean distance of normalized path inside a unit square
     dist = np.sum(np.sqrt(np.diff(y_norm)**2 + (1.0 / (n - 1))**2))
     
     return 1.0 + (np.log(dist) + np.log(2)) / np.log(2 * (n - 1))
@@ -64,21 +62,17 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
     except (ValueError, TypeError):
         period = 30
 
-    # 1. Dimension Calculation (using map_batches/rolling_map for the recursive math)
-    # We cast to Float64 immediately to prevent type panics
     fractal_dim = pl.col("close").cast(pl.Float64).rolling_map(
         lambda s: get_sevcik_dimension(s.to_numpy()), 
         window_size=period
     )
 
-    # 2. Market State Classification (Native Polars)
     market_state = (
         pl.when(fractal_dim < 1.3).then(pl.lit("Trending"))
         .when(fractal_dim > 1.6).then(pl.lit("Turbulent/Noise"))
         .otherwise(pl.lit("Transition"))
     )
 
-    # 3. Return expressions. We round the numeric one here to satisfy the engine
     return [
         fractal_dim.round(4).alias(f"{indicator_str}__fractal_dim"),
         market_state.alias(f"{indicator_str}__market_state")
@@ -93,7 +87,6 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     except (ValueError, TypeError):
         period = 30
 
-    # raw=True ensures we pass a high-speed NumPy array to the worker
     fractal_dim = df['close'].rolling(window=period).apply(get_sevcik_dimension, raw=True)
 
     conditions = [ (fractal_dim < 1.3), (fractal_dim > 1.6) ]

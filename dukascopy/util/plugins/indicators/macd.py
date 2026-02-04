@@ -30,18 +30,14 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
     slow = int(options.get('slow', 26))
     sig = int(options.get('signal', 9))
 
-    # Base EMAs using native seeding logic
     ema_fast = _ema_talib_logic(pl.col("close"), fast)
     ema_slow = _ema_talib_logic(pl.col("close"), slow)
     macd_line = ema_fast - ema_slow
     
-    # Apply standard TA-Lib lookback masking
     macd_masked = pl.when(pl.col("close").cum_count() < slow).then(None).otherwise(macd_line)
 
-    # Signal Line EMA with seeding
     signal_line = _ema_talib_logic(macd_masked, sig)
     
-    # Final output masking for 100% parity
     total_lookback = (slow - 1) + (sig - 1)
     final_signal = pl.when(pl.col("close").cum_count() <= total_lookback).then(None).otherwise(signal_line)
     
@@ -54,7 +50,6 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     """Pure NumPy/Pandas fallback (No TA-Lib import)."""
     f, s, sig = int(options.get('fast', 12)), int(options.get('slow', 26)), int(options.get('signal', 9))
-    # Standard EMA without library dependency
     ema_f = df['close'].ewm(span=f, adjust=False).mean()
     ema_s = df['close'].ewm(span=s, adjust=False).mean()
     macd = ema_f - ema_s

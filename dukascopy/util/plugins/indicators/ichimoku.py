@@ -21,7 +21,7 @@ def meta() -> Dict:
         "author": "Google Gemini",
         "version": 1.1,
         "verified": 1,
-        "polars": 1,  # Trigger high-speed Polars execution path
+        "polars": 1,
         "needs": "surface-colouring"
     }
 
@@ -60,25 +60,19 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
     except (ValueError, TypeError):
         tenkan_p, kijun_p, senkou_p, displace = 9, 26, 52, 26
 
-    # 1. Tenkan-sen (9-period high + 9-period low) / 2
     tenkan = (pl.col("high").rolling_max(window_size=tenkan_p) + 
               pl.col("low").rolling_min(window_size=tenkan_p)) / 2
 
-    # 2. Kijun-sen (26-period high + 26-period low) / 2
     kijun = (pl.col("high").rolling_max(window_size=kijun_p) + 
              pl.col("low").rolling_min(window_size=kijun_p)) / 2
 
-    # 3. Senkou Span A (Leading Span A): (Tenkan + Kijun) / 2, shifted forward
     span_a = ((tenkan + kijun) / 2).shift(displace)
 
-    # 4. Senkou Span B (Leading Span B): (52-period high + 52-period low) / 2, shifted forward
     span_b = ((pl.col("high").rolling_max(window_size=senkou_p) + 
                pl.col("low").rolling_min(window_size=senkou_p)) / 2).shift(displace)
 
-    # 5. Chikou Span (Lagging Span): Close shifted back
     chikou = pl.col("close").shift(-displace)
 
-    # Return as aliased expressions for the nested orchestrator
     return [
         tenkan.alias(f"{indicator_str}__tenkan"),
         kijun.alias(f"{indicator_str}__kijun"),
