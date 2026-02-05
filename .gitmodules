@@ -1,4 +1,4 @@
 [submodule "dukascopy/docs"]
 	path = dukascopy/docs
 	url = https://github.com/jpueberbach4/bp-markets.ingest-docs.git
-	ignore = all
+	ignore = none
