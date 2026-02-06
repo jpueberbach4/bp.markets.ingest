@@ -529,6 +529,8 @@ Example image printing H4 RSI onto H4 chart (should be equal):
 
 ![example-m15-4h](../images/example-mixed-tf-h4-h4-equality.png)
 
+**Note:** This requires a bit of tuning. Skiplast handling in a smart way. Will add it soon to make it battle-tested for current candle.
+
 ## More fully working examples are coming
 
 - Pearson correlation
