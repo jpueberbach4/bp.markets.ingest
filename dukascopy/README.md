@@ -148,6 +148,8 @@ chmod u+rwx ./data ./cache
 
 I had set it to 0.5 but that made the software near-to-unusable, so i changed it back to 3. Because not everyone reads the [troubleshooting](docs/troubleshooting.md) section.
 
+After running `./setup-dukascopy.sh` you can edit the `config.user.yaml`, you will find the setting there.
+
 ---
 
 Configure your symbols as shown in the next section of this readme.
