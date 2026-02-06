@@ -132,6 +132,18 @@ Install with:
 ./setup-dukascopy.sh
 ```
 
+--- 
+
+### Important
+
+Initial Syncing Performance When performing your first initial sync (especially for 40+ symbols), the default download.rate_limit_rps of 3.0 is a safe middle ground.
+
+For High-Core Systems (16+): You can safely increase this to 4.0 or 5.0 in config.user.yaml to speed up the ingestion of your first 320,000+ files.
+
+Avoid 0.5: Setting this too low makes the software appear to hang and can turn a 2-hour sync into a multi-day process.
+
+Generic Advice: Keep total requests (RPS × Cores) below 60/s to avoid IP flags.
+
 **Permissions**
 
 These scripts read from and write to both the data directory and the cache directory. If your system uses strict permission settings, ensure that the ./data and ./cache directory are created in advance.
@@ -141,15 +153,6 @@ mkdir -p ./data ./cache
 chown -R $USER:$USER ./data ./cache
 chmod u+rwx ./data ./cache
 ```
-
---- 
-
-**Initial syncing. Important!**. When you just downloaded the repository and are doing your first initial sync, you might want to set the `download.rate_limit_rps` a bit higher. Generic advice is to stay below the 60 requests per second. `rate_limit_rps` is per core. So if you have 16 cores, set it to 4, or if you are a bit bold or in a hurry, set it to 5 or 6. But please keep it reasonable.
-
-I had set it to 0.5 but that made the software near-to-unusable, so i changed it back to 3. Because not everyone reads the [troubleshooting](docs/troubleshooting.md) section.
-
-After running `./setup-dukascopy.sh` you can edit the `config.user.yaml`, you will find the setting there.
-
 ---
 
 Configure your symbols as shown in the next section of this readme.
