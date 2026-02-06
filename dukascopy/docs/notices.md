@@ -1,4 +1,10 @@
 
+**Inspection day**
+
+Today was an inspection day. Seeing where we "failed" by doing integration tests and seeing if everything works as intended. I found some stuff that needs some additional changes. Eg to support the live-edge a bit better on recursive indicators. 
+
+But generally speaking, this starts to look really good.
+
 **TA-lib indicators**
 
 In order to ensure quality I have tested some indicators against TA-lib, implemented through a unit-test. Users having Python ta-lib installed will be able to run the test. When TA-lib is not installed the unit-test will skip.
