@@ -12,6 +12,15 @@
   - Adding New Symbols
 - [Advanded Configuration](docs/configuration.md#pipeline-configuration-v03-and-above)
   - Overriding timeframes, etc
+- [Building Custom Indicators](docs/indicators.md)
+  - Plugin Architecture
+  - Polars vs Pandas
+  - Debugging & Profiling
+  - TA-lib [generation](docs/talib-indicators.md)
+  - Various examples
+- [Integration](docs/external.md)
+  - Bootstrapping the API
+  - Various examples
 - [Output schema](docs/architecture.md#output-schema)
   - Details on generated files
 - [Quick Check](#quick-check)
