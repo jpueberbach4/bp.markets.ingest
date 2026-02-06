@@ -36,6 +36,17 @@ These have been checked and are-now-compliant to TA-lib:
 
 We were really charged too much for indicator integrated data. This was implemented in 30 minutes.
 
+**Note:** I work like this:
+- First implement a speedy beta version
+- Document it
+- QA passes
+
+Features that dont touch the core, like this one, and work almost completely out-of-the-box, are done in main directly. Features that need careful attention are going to feature-branches.
+
+Docs: directly in main.
+
+I know this is not best practice but i want to remind that this is a private repository which is just public. When I am working for enterprises, i work completely differently :)
+
 **Good practice advice when you are building your own indicators**
 
 Since there is currently no "run-time" protection for recursion loops caused by custom indicators, i have added a unit-test which does the checking for recursivity loops. This is a V1 version of the recursion guard, a V2 is coming. The V1 version does not yet take the indicator options into account. Eg first loop you call test-sma_20 and second recursive call you call test-sma_50... this is currently caught as an unlimited loop call when calling with same timeframe and symbol. 
