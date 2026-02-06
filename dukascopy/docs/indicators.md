@@ -411,6 +411,129 @@ The result of above two examples, side-by-side comparison:
 
 **Note:** The above examples are examples. Generally you should stay within Polars because of it's performance benefits. General advice is to only use recursive calls for inter-asset, inter-timeframe querying.
 
+### Plotting the H4 RSI onto a lower eg 1H timeframe - using get_data and merge_asof
+
+For example, select the 1H timeframe and view the corresponding H4 RSI without lookahead bias. When this indicator is set to the H4 timeframe, it produces the same result as applying the RSI directly on the H4 chart. You can compare. On H1 it should show "step"-alike behavior. Which is correct.
+
+```python
+# Pandas is used for tabular data manipulation (DataFrames)
+import pandas as pd
+
+# NumPy is a general-purpose numerical library (not directly used here,
+# but often required by the platform or other indicators)
+import numpy as np
+
+# Polars is another DataFrame engine (not used in this function,
+# but included for compatibility with the framework)
+import polars as pl
+
+# Typing helps document what kinds of values functions expect and return
+from typing import List, Dict, Any
+
+
+def description() -> str:
+    # This function returns a short human-readable description.
+    # It is usually shown in the UI so users know what the indicator does.
+    return (
+        "Multi-Timeframe RSI: Joins 4H RSI data onto the 1H timeframe. "
+        "Uses backward-looking merge_asof to eliminate lookahead bias."
+    )
+
+
+def meta() -> Dict:
+    # Metadata used by the platform / orchestrator.
+    # This does NOT affect calculations, only how the plugin is registered.
+    return {
+        "author": "Google Gemini",  # Author name
+        "version": 2.0,             # Plugin version
+        "panel": 1,                 # UI panel number
+        "verified": 1,              # Whether the plugin is verified
+        "polars": 0                 # Whether Polars engine is used
+    }
+
+
+def warmup_count(options: Dict[str, Any]) -> int:
+    # Get the RSI period from options.
+    # If the user does not provide one, default to 14.
+    rsi_period = int(options.get('rsi_period', 14))
+
+    # RSI needs several candles before it becomes stable.
+    # A common rule of thumb is ~3x the period.
+    return rsi_period * 3
+
+
+def position_args(args: List[str]) -> Dict[str, Any]:
+    # This function parses arguments from the indicator name.
+    # Example name: plugin-1h-4h-rsi_14
+    # The "14" would be passed in args[0].
+    return {
+        "rsi_period": args[0] if len(args) > 0 else "14"
+    }
+
+
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    # Import here to avoid loading the API unless calculation is run
+    from util.api import get_data
+
+    # Read RSI period again (same logic as before)
+    rsi_period = int(options.get('rsi_period', 14))
+
+    # Extract the trading symbol from the incoming 1H DataFrame
+    # Assumes all rows belong to the same symbol
+    symbol = df['symbol'].iloc[0]
+
+    # Fetch 4H data for the same symbol
+    df_4h = get_data(
+        symbol=symbol,             # Market symbol (e.g. BTCUSDT)
+        timeframe="4h",            # Higher timeframe (4-hour candles)
+
+        # Start earlier than needed to allow RSI warmup.
+        # time_ms is in milliseconds, so we subtract extra hours.
+        after_ms=df['time_ms'].min() - (warmup_count(options) * 3600000 * 24),
+
+        # Stop at the latest timestamp in the 1H data
+        until_ms=df['time_ms'].max(),
+
+        # Ask the API to compute RSI directly on the 4H candles
+        indicators=[f"rsi_{rsi_period}"],
+
+        # Safety limit in case the platform underestimates required bars
+        limit=len(df) + 50000
+    )
+
+    # Ensure time_ms is an unsigned integer.
+    # This is important because merge_asof requires sorted numeric keys.
+    df_4h['time_ms'] = df_4h['time_ms'].astype('uint64')
+
+    # Build the original RSI column name returned by the API
+    rsi_col_4h = f"rsi_{rsi_period}"
+
+    # Keep only the timestamp and RSI column,
+    # then rename RSI to make its timeframe explicit
+    df_4h = df_4h[['time_ms', rsi_col_4h]].rename(
+        columns={rsi_col_4h: f"rsi_4h_{rsi_period}"}
+    )
+
+    # Merge the 4H RSI into the 1H DataFrame
+    merged_df = pd.merge_asof(
+        df,          # Left DataFrame: 1H candles
+        df_4h,       # Right DataFrame: 4H RSI values
+        on='time_ms',
+
+        # "backward" means:
+        # for each 1H candle, use the most recent 4H RSI
+        # that occurred at or before that time.
+        # This prevents lookahead bias.
+        direction='backward'
+    )
+
+    # Return only the final 4H RSI column
+    # The platform will automatically align this with the 1H data
+    return merged_df[[f"rsi_4h_{rsi_period}"]]
+```
+
+Wall-time 1000 records, random timerange: 0.0229465961456299 (23ms) (same threadpool overhead. Will get better soon).
+
 ## More fully working examples are coming
 
 - Pearson correlation
