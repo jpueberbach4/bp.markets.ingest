@@ -107,6 +107,18 @@ Make sure python version is 3.8+.
 python3 --version
 ```
 
+### Important
+
+Initial Syncing Performance: When performing your first initial sync (especially for 40+ symbols), the default `download.rate_limit_rps` of `3.0` is a safe middle ground.
+
+For High-Core Systems (16+): You can safely increase this to `4.0` or `5.0` in `config.user.yaml` (you need to perform a `./setup-dukascopy.sh` first) to speed up the ingestion of your first 320,000+ files.
+
+Avoid 0.5: Setting this too low makes the software appear to hang and can turn a 2-hour sync into a multi-day process.
+
+Generic Advice: Keep total requests (RPS × Cores) below 60/s to avoid IP flags.
+
+---
+
 For this Dukascopy Data Pipeline project, the Python dependencies that need to be installed via pip are:
 
 | Package               | Version      | Purpose                                                                 |
@@ -133,16 +145,6 @@ Install with:
 ```
 
 --- 
-
-### Important
-
-Initial Syncing Performance When performing your first initial sync (especially for 40+ symbols), the default download.rate_limit_rps of 3.0 is a safe middle ground.
-
-For High-Core Systems (16+): You can safely increase this to 4.0 or 5.0 in config.user.yaml to speed up the ingestion of your first 320,000+ files.
-
-Avoid 0.5: Setting this too low makes the software appear to hang and can turn a 2-hour sync into a multi-day process.
-
-Generic Advice: Keep total requests (RPS × Cores) below 60/s to avoid IP flags.
 
 **Permissions**
 
