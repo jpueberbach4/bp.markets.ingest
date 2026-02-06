@@ -336,9 +336,9 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
 
     rs = avg_gain / avg_loss
     df['rsi'] = 100 - (100 / (1 + rs))
-    df['sma_rsi'] = df['rsi'].rolling(window=sma_period).mean()
+    df['sma'] = df['rsi'].rolling(window=sma_period).mean()
 
-    return df.dropna(subset=['sma_rsi'])
+    return df.dropna(subset=['sma_rsi']
 ```
 
 Wall-time 1000 records, random timerange: 0.00743865966796875s (7.4ms)
@@ -418,3 +418,4 @@ The result of above two examples, side-by-side comparison:
 - Higher timeframe querying
 
 A "features"-repository is also coming. Containing normalized features and variants of standard indicators. Eg it's nice to have a hammer detection but we want to have it's strength as a continuous float-range  instead of a binary 0 or 1.
+
