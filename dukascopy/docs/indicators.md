@@ -404,3 +404,11 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
 The result of above two examples, side-by-side comparison:
 
 ![examples](../images/indicators-sma-rsi-example.png)
+
+**Note:** The above examples are examples. Generally you should stay within Polars because of it's performance benefits. General advice is to only use recursive calls for inter-asset, inter-timeframe querying.
+
+## More fully working examples are coming
+
+- Pearson correlation
+- DXY linkage
+- Higher timeframe querying
