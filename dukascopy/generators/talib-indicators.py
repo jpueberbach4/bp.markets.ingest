@@ -7,17 +7,48 @@ import glob
 # Configuration
 OUTPUT_DIR = "config.user/plugins/indicators"
 EXCLUDE_INDICATORS = [
-    'acos',   # doesnt work
-    'asin',   # doesnt work
-    'adx',    # we have this one as system indicator
-    'aroon',  # we have this one as system indicator
-    'atr',    # we have this one as system indicator
-    'atrp',   # we have this one as system indicator
-    'bbands', # we have this one as system indicator
-    'cci',    # we have this one as system indicator
-    'cmo',    # we have this one as system indicator
+    'acos',     # doesnt work
+    'asin',     # doesnt work
+    'adx',      # we have this one as system indicator (pure polars)
+    'aroon',    # we have this one as system indicator (pure polars)
+    'atr',      # we have this one as system indicator (pure polars)
+    'atrp',     # we have this one as system indicator (pure polars)
+    'bbands',   # ...
+    'cci',      
+    'cmo',      
+    'chaikin',
+    'ema',
+    'eom',
+    'macd',
+    'midpoint',
+    'mfi',
+    'obv',
+    'psar',
+    'roc',
+    'rsi',
+    'sma',
+    'stoch',
+    'ultosc',
+    'willr',
               # validation pass... later
 ]
+
+
+
+- EMA
+- EOM
+- MACD
+- MIDPOINT
+- MFI
+- OBV
+- PSAR
+- ROC
+- RSI
+- SMA
+- STOCHASTIC
+- STDDEV
+- UO
+- WILLIAMSR
 
 TEMPLATE = """import pandas as pd
 import numpy as np

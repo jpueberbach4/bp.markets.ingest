@@ -32,14 +32,16 @@ These have been checked and are-now-compliant to TA-lib:
 
 **Note:** If you have Python TA-lib v0.6x installed, you can now generate all indicators for this project. `python3 generators/talib-indicators.py`. For `power users` that already have TA-lib installed, you can run it already. For users that cannot just simply `pip install TA-lib` and are getting compile errors, please have a bit of patience. Documentation on how to do this [is coming](talib-indicators.md). I did a quick validation round and it looks actually very good. Also a search-box is coming in the interface. Also the annoying refresh and reset to ADL as soon as you add anything or change timeframe will get resolved. 
 
+Auto-LLM: The signals are validated as correct (ofcourse they are, it's an industry standard lib).
+
 ![ta-lib-example](../images/talib-integration-beta.png)
 
 **Note:** I work like this:
 - First implement a speedy beta version
 - Document it
-- QA pass 1
+- QA pass 1 (most of the time LLM-ish)
 - Profiling/Performance tests
-- QA pass 2
+- QA pass 2 (manuaL)
 - Finalization
 
 Features that dont touch the core, like this one, and work almost completely out-of-the-box, are done in main directly. Features that need careful attention are going to feature-branches.
