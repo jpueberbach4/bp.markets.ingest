@@ -534,6 +534,14 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
 
 Wall-time 1000 records, random timerange: 0.0229465961456299 (23ms) (same threadpool overhead. Will get better soon).
 
+Example image printing H4 RSI onto M15 chart:
+
+![example-m15-4h](../images/example-mixed-tf-m15-h4.png)
+
+Example image printing H4 RSI onto H4 chart (should be equal):
+
+![example-m15-4h](../images/example-mixed-tf-h4-h4-equality.png)
+
 ## More fully working examples are coming
 
 - Pearson correlation
