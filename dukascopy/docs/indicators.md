@@ -416,24 +416,12 @@ The result of above two examples, side-by-side comparison:
 For example, select the 1H timeframe and view the corresponding H4 RSI without lookahead bias. When this indicator is set to the H4 timeframe, it produces the same result as applying the RSI directly on the H4 chart. You can compare. On H1 it should show "step"-alike behavior. Which is correct.
 
 ```python
-# Pandas is used for tabular data manipulation (DataFrames)
 import pandas as pd
-
-# NumPy is a general-purpose numerical library (not directly used here,
-# but often required by the platform or other indicators)
 import numpy as np
-
-# Polars is another DataFrame engine (not used in this function,
-# but included for compatibility with the framework)
-import polars as pl
-
-# Typing helps document what kinds of values functions expect and return
 from typing import List, Dict, Any
-
 
 def description() -> str:
     # This function returns a short human-readable description.
-    # It is usually shown in the UI so users know what the indicator does.
     return (
         "Multi-Timeframe RSI: Joins 4H RSI data onto the 1H timeframe. "
         "Uses backward-looking merge_asof to eliminate lookahead bias."
@@ -442,7 +430,6 @@ def description() -> str:
 
 def meta() -> Dict:
     # Metadata used by the platform / orchestrator.
-    # This does NOT affect calculations, only how the plugin is registered.
     return {
         "author": "Google Gemini",  # Author name
         "version": 2.0,             # Plugin version
