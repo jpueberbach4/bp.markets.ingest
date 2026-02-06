@@ -341,6 +341,8 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     return df.dropna(subset=['sma_rsi'])
 ```
 
+Wall-time 1000 records, random timerange: 0.00743865966796875s (7.4ms)
+
 ### Putting an SMA over the RSI - the get_data_auto variant - both with configurable periods
 
 ```python
@@ -400,6 +402,8 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
 
     return ex_df[[rsi_col, sma_col]]
 ```
+
+Wall-time 1000 records, random timerange: 0.01924872398376465 (19ms) (threadpool initialization overhead since its an pandas connector, which uses a threadpool. This will get optimized. Eg if asking for one or two indicators, no threadpool, serial execution).
 
 The result of above two examples, side-by-side comparison:
 
