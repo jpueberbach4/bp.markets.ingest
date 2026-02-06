@@ -39,7 +39,10 @@ We were really charged too much for indicator integrated data. This was implemen
 **Note:** I work like this:
 - First implement a speedy beta version
 - Document it
-- QA passes
+- QA pass 1
+- Profiling/Performance tests
+- QA pass 2
+- Finalization
 
 Features that dont touch the core, like this one, and work almost completely out-of-the-box, are done in main directly. Features that need careful attention are going to feature-branches.
 
