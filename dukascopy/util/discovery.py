@@ -29,13 +29,12 @@
 ===============================================================================
 """
 import os
-import re
 from typing import List, Set, Dict
 
 from util.dataclass import Dataset
 
 class DataDiscovery:
-    def __init__(self, config: 'BuilderConfig'): # TODO: change builderconfig
+    def __init__(self, config):
         """Initializes the builder with configuration and sets up datasets.
 
         This constructor stores the provided configuration, determines the file

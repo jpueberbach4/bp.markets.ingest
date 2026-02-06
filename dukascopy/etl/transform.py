@@ -236,7 +236,7 @@ class TransformEngine:
         except (DataValidationError, ProcessingError, TransformLogicError):
             raise
         except Exception as e:
-            raise ProcessingError(f"Vectorized transformation failed for {symbol}: {e}") from e
+            raise ProcessingError(f"Vectorized transformation failed for {self.symbol}: {e}") from e
 
 
 class TransformWorker:

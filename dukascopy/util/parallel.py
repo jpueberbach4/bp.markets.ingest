@@ -63,11 +63,6 @@ try:
 except ImportError:
     raise ImportError("Polars is required. Run 'pip install polars'")
 
-
-# TODO: configuration based?
-POLARS_ROUNDING = 6
-POLARS_ROUNDING_DISABLED = True
-
 class IndicatorWorker:
     """
     Stateless helper responsible for executing Pandas-based indicators.
@@ -381,35 +376,6 @@ class IndicatorEngine:
                 aligned_results.append(p_res)
         return aligned_results
 
-    def _round_numeric_indicators(
-        self,
-        df: pl.DataFrame,
-        indicator_cols: List[str]
-    ) -> pl.DataFrame:
-        """
-        Round numeric indicator columns to 6 decimal places.
-
-        This optimizes performance by using Polars selectors and ensures
-        that only indicator columns (not original market data) are modified.
-
-        Args:
-            df (pl.DataFrame): DataFrame containing indicators.
-            indicator_cols (List[str]): List of column names identified as indicators.
-
-        Returns:
-            pl.DataFrame: DataFrame with rounded indicator columns.
-        """
-        # Option to leave the rounding up to the caller (we preservt the fp precision)
-        if POLARS_ROUNDING_DISABLED:
-            return df
-        
-        # This can become slow on wide columns
-        target_selector = cs.numeric() & cs.by_name(indicator_cols)
-
-        return df.with_columns(
-            target_selector.round(POLARS_ROUNDING)
-        )
-
     def _assemble_flat(
             self,
             df_orig: pd.DataFrame,
@@ -432,7 +398,6 @@ class IndicatorEngine:
         the original input rows.
 
         All indicator outputs are merged horizontally into a single DataFrame.
-        Numeric indicator values are rounded for cleaner output.
 
         Args:
             df_orig (pd.DataFrame): The original input DataFrame used to compute
@@ -464,9 +429,6 @@ class IndicatorEngine:
             c for c in combined_pl.columns
             if c not in df_orig.columns
         ]
-
-        # Apply rounding to numeric indicator columns
-        combined_pl = self._round_numeric_indicators(combined_pl, indicator_cols)
 
         if return_polars:
             return combined_pl
@@ -532,9 +494,6 @@ class IndicatorEngine:
             c for c in main_pl.columns
             if c not in df_orig.columns
         ]
-
-        # Apply rounding to numeric indicator columns
-        main_pl = self._round_numeric_indicators(main_pl, indicator_cols)
 
         groups = {}
         standalone = []
