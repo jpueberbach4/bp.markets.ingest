@@ -57,7 +57,7 @@ download:
   max_retries: 3                      # Number of retries before downloader raises
   backoff_factor: 2                   # Exponential backoff factor (wait time)
   timeout: 60                         # Request timeout
-  rate_limit_rps: 2                   # Protect end-point (number of cores * rps = requests/second)
+  rate_limit_rps: 3                   # Protect end-point (number of cores * rps = requests/second)
                                       # IMPORTANT: when you are initially syncing you might want to
                                       # make this higher, but keep it reasonable!
   paths:

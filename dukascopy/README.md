@@ -141,6 +141,13 @@ mkdir -p ./data ./cache
 chown -R $USER:$USER ./data ./cache
 chmod u+rwx ./data ./cache
 ```
+
+--- 
+
+**Initial syncing. Important!**. When you just downloaded the repository and are doing your first initial sync, you might want to set the `download.rate_limit_rps` a bit higher. Generic advice is to stay below the 60 requests per second. `rate_limit_rps` is per core. So if you have 16 cores, set it to 4, or if you are a bit bold or in a hurry, set it to 5 or 6. But please keep it reasonable.
+
+I had set it to 0.5 but that made the software near-to-unusable, so i changed it back to 3. Because not everyone reads the [troubleshooting](docs/troubleshooting.md) section.
+
 ---
 
 Configure your symbols as shown in the next section of this readme.
