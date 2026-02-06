@@ -400,3 +400,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
 
     return ex_df[[rsi_col, sma_col]]
 ```
+
+The result of above two examples, side-by-side comparison:
+
+![examples](../images/indicators-sma-rsi-example.png)
