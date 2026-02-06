@@ -34,8 +34,6 @@ These have been checked and are-now-compliant to TA-lib:
 
 ![ta-lib-example](../images/talib-integration-beta.png)
 
-We were really charged too much for indicator integrated data. This was implemented in 30 minutes.
-
 **Note:** I work like this:
 - First implement a speedy beta version
 - Document it
