@@ -74,7 +74,7 @@ class TestIndicatorIntegrity(unittest.TestCase):
         return_df = pd.DataFrame({
             "time_ms": [1000], "open": [0.8], "high": [1.2], "low": [0.7], "close": [1.0],
             "symbol": [symbol], "timeframe": [timeframe]
-        })
+        }).astype({"time_ms": "uint64"})
 
         # FIX: Add the requested indicator columns so the plugin doesn't KeyError
         for ind in indicators:
@@ -107,7 +107,7 @@ class TestIndicatorIntegrity(unittest.TestCase):
                     df = pd.DataFrame({
                         "time_ms": [1000], "open": [0.8], "high": [2.0], "low":[0.4], "close": [1.0], "volume":[20.0],
                         "symbol": ["EUR-USD"], "timeframe": ["1m"]
-                    })
+                    }).astype({"time_ms": "uint64"})
                     
                     try:
                         plugin.calculate(df, plugin.position_args([]))
