@@ -243,7 +243,47 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
 
 PS: do not use `_` (underscore) in indicator file-names. Use a dot or a dash. Group them logically with a prefix. I will add a searchbox for the indicators to the web-interface soon.\
 
-## 8. Additional examples
+## 8. 📋 Common Indicator Patterns
+
+### 1. Simple Rolling Calculation
+```python
+# SMA, EMA, STDDEV, etc.
+def calculate_polars(indicator_str, options):
+    period = int(options.get('period', 20))
+    return [pl.col("close").rolling_mean(period).alias(indicator_str)]
+```
+### 2. Multi-Output Indicator
+```python
+# Bollinger Bands, MACD, etc.
+def calculate_polars(indicator_str, options):
+    return [
+        expr1.alias(f"{indicator_str}__upper"),
+        expr2.alias(f"{indicator_str}__middle"),
+        expr3.alias(f"{indicator_str}__lower")
+    ]
+```
+
+### 3. Cross-Timeframe Indicator
+
+```python
+# Requires get_data with merge_asof
+def calculate(df, options):
+    higher_tf_data = get_data(...)
+    merged = pd.merge_asof(df, higher_tf_data, ...)
+    return merged[['higher_tf_value']]
+```
+
+### 4. ML Feature Indicator
+
+```python
+# Uses pre-trained models
+def calculate(df, options):
+    features = get_data_auto(df, indicators=['feature1', 'feature2'])
+    predictions = model.predict(features)
+    return pd.DataFrame({'signal': predictions})
+```
+
+## 9. Additional examples
 
 ### Putting an SMA over the RSI - both with configurable periods
 
@@ -585,12 +625,3 @@ Example image:
 ![example](../images/example-mixed-tf-h1-h4-1d.png)
 
 **Note:** This requires a bit of tuning. Live edge-handling. I will think of something elegant to solve this. A proposed solution is already mentioned in the above.
-
-## More fully working examples are coming
-
-- Pearson correlation
-- DXY linkage
-- Higher timeframe querying
-
-A "features"-repository is also coming. Containing normalized features and variants of standard indicators. Eg it's nice to have a hammer detection but we want to have it's strength as a continuous float-range  instead of a binary 0 or 1.
-
