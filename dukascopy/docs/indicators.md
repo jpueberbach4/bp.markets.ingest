@@ -516,7 +516,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
 
         # Start earlier than needed to allow RSI warmup.
         # time_ms is in milliseconds, so we subtract extra hours.
-        after_ms=df['time_ms'].min() - (warmup_count(options) * 3600000 * 24),
+        after_ms=df['time_ms'].min() - (warmup_count(options) * 3600000 * 24), # This is just brute-force
 
         # Stop at the latest timestamp in the 1H data
         until_ms=df['time_ms'].max(),
@@ -586,7 +586,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     # Fetch 4H RSI
     df_4h = get_data(
         symbol=symbol, timeframe="4h",
-        after_ms=df['time_ms'].min() - (warmup_count(options) * 3600000* 24),
+        after_ms=df['time_ms'].min() - (warmup_count(options) * 3600000* 24), # This is just brute-force
         until_ms=df['time_ms'].max()+1,
         indicators=[rsi_col],
         limit=len(df) + 50000
@@ -595,7 +595,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     # Fetch 1D RSI
     df_1d = get_data(
         symbol=symbol, timeframe="1d",
-        after_ms=df['time_ms'].min() - (warmup_count(options) * 3600000 * 24 * 2),
+        after_ms=df['time_ms'].min() - (warmup_count(options) * 3600000 * 24 * 2), # This is just brute-force
         until_ms=df['time_ms'].max()+1,
         indicators=[rsi_col],
         limit=len(df) + 10000
