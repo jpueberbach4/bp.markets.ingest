@@ -33,23 +33,6 @@ EXCLUDE_INDICATORS = [
               # validation pass... later
 ]
 
-
-
-- EMA
-- EOM
-- MACD
-- MIDPOINT
-- MFI
-- OBV
-- PSAR
-- ROC
-- RSI
-- SMA
-- STOCHASTIC
-- STDDEV
-- UO
-- WILLIAMSR
-
 TEMPLATE = """import pandas as pd
 import numpy as np
 import polars as pl
