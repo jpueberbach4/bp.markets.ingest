@@ -30,7 +30,7 @@ These have been checked and are-now-compliant to TA-lib:
 
 **Note:** It can be "a bit difficult" (under WSL2) to install ta-lib for Python. https://pypi.org/project/TA-Lib/
 
-**Note:** If you have Python TA-lib v0.6x installed, you can now generate all indicators for this project. `python3 generators/talib-indicators.py`. For `power users` that already have TA-lib installed, you can run it already. For users that cannot just simply `pip install TA-lib` and getting compile errors, please have a bit of patience. Documentation on how to this is coming. I did a quick validation round and it looks actually very good. Also a search-box is coming in the interface. Also the annoying refresh and reset to ADL as soon as you add anything or change timeframe will get resolved. 
+**Note:** If you have Python TA-lib v0.6x installed, you can now generate all indicators for this project. `python3 generators/talib-indicators.py`. For `power users` that already have TA-lib installed, you can run it already. For users that cannot just simply `pip install TA-lib` and getting compile errors, please have a bit of patience. Documentation on how to this [is coming](talib-indicators.md). I did a quick validation round and it looks actually very good. Also a search-box is coming in the interface. Also the annoying refresh and reset to ADL as soon as you add anything or change timeframe will get resolved. 
 
 **Good practice advice when you are building your own indicators**
 
