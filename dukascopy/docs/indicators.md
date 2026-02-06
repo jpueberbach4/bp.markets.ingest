@@ -416,3 +416,5 @@ The result of above two examples, side-by-side comparison:
 - Pearson correlation
 - DXY linkage
 - Higher timeframe querying
+
+A "features"-repository is also coming. Containing normalized features and variants of standard indicators. Eg it's nice to have a hammer detection but we want to have it's strength as a continuous float-range  instead of a binary 0 or 1.
