@@ -588,7 +588,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
         symbol=symbol, timeframe="4h",
         after_ms=df['time_ms'].min() - (warmup_count(options) * 3600000* 24),
         until_ms=df['time_ms'].max()+1,
-        indicators=[rsi_col, "is_open"],
+        indicators=[rsi_col],
         limit=len(df) + 50000
     )
     
@@ -597,7 +597,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
         symbol=symbol, timeframe="1d",
         after_ms=df['time_ms'].min() - (warmup_count(options) * 3600000 * 24 * 2),
         until_ms=df['time_ms'].max()+1,
-        indicators=[rsi_col, "is_open"],
+        indicators=[rsi_col],
         limit=len(df) + 10000
     )
 
@@ -618,10 +618,10 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     return df[['rsi', f"rsi4h", f"rsi1d"]]
 ```
 
-Wall-time 1000 records, random timerange: 0.00447154045104981 (44ms) (same threadpool overhead x N. Will get better soon).
+Wall-time 1000 records, random timerange: 0.0551369190216064 (55ms) (same threadpool overhead x N. Will get better soon).
 
 Example image:
 
 ![example](../images/example-mixed-tf-h1-h4-1d.png)
 
-**Note:** This requires a bit of tuning. Live edge-handling. I will think of something elegant to solve this. A proposed solution is already mentioned in the above.
+**Note:** This requires a bit of tuning. Live edge-handling. I will think of something elegant to solve this. A proposed solution is building an `is_open` indicator that flags candles. Other solution is integrating it in the main core. Determination of is_open based on last-ingest-time. 
