@@ -529,7 +529,67 @@ Example image printing H4 RSI onto H4 chart (should be equal):
 
 ![example-m15-4h](../images/example-mixed-tf-h4-h4-equality.png)
 
-**Note:** This requires a bit of tuning. Skiplast handling in a smart way. Will add it soon to make it battle-tested for current candle. Skiplast should "trickle down" OR automated detection in the engine based on relative server-time. I will think of something elegant to solve this.
+### Plotting the RSI, H4-RSI AND 1D-RSI for a timeframe - using get_data and merge_asof
+
+```python
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    from util.api import get_data, get_data_auto
+    
+    rsi_period = int(options.get('rsi_period', 14))
+    symbol = df['symbol'].iloc[0]
+    rsi_col = f"rsi_{rsi_period}"
+    
+    # Get LOCAL RSI (Base Timeframe)
+    df = get_data_auto(df, indicators=[rsi_col])
+    df['time_ms'] = df['time_ms'].astype('uint64')
+
+    # Fetch 4H RSI
+    df_4h = get_data(
+        symbol=symbol, timeframe="4h",
+        after_ms=df['time_ms'].min() - (warmup_count(options) * 3600000* 24),
+        until_ms=df['time_ms'].max()+1,
+        indicators=[rsi_col, "is_open"],
+        limit=len(df) + 50000
+    )
+    
+    # Fetch 1D RSI
+    df_1d = get_data(
+        symbol=symbol, timeframe="1d",
+        after_ms=df['time_ms'].min() - (warmup_count(options) * 3600000 * 24 * 2),
+        until_ms=df['time_ms'].max()+1,
+        indicators=[rsi_col, "is_open"],
+        limit=len(df) + 10000
+    )
+
+    # Uint64 type setting (merge_asof needs it)
+    for frame in [df, df_4h, df_1d]:
+        frame['time_ms'] = frame['time_ms'].astype('uint64')
+
+    # Drop candles that haven't been completed by the last resample
+    # This is coming...
+    df_4h = df_4h[df_4h['is_open'] != 1] if 'is_open' in df_4h.columns else df_4h
+    df_1d = df_1d[df_1d['is_open'] != 1] if 'is_open' in df_1d.columns else df_1d
+
+    df = df[['time_ms', rsi_col]].rename(columns={rsi_col: f"rsi"})
+    # Merge 4H Data
+    df_4h = df_4h[['time_ms', rsi_col]].rename(columns={rsi_col: f"rsi4h"})
+    df = pd.merge_asof(df, df_4h, on='time_ms', direction='backward')
+
+    # Merge 1D Data
+    df_1d = df_1d[['time_ms', rsi_col]].rename(columns={rsi_col: f"rsi1d"})
+    df = pd.merge_asof(df, df_1d, on='time_ms', direction='backward')
+
+    # Return the three columns for the shared panel
+    return df[['rsi', f"rsi4h", f"rsi1d"]]
+```
+
+Wall-time 1000 records, random timerange: 0.00447154045104981 (44ms) (same threadpool overhead x N. Will get better soon).
+
+Example image:
+
+![example](../images/example-mixed-tf-h1-h4-1d.png)
+
+**Note:** This requires a bit of tuning. Live edge-handling. I will think of something elegant to solve this. A proposed solution is already mentioned in the above.
 
 ## More fully working examples are coming
 
