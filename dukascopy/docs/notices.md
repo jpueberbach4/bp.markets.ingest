@@ -36,23 +36,9 @@ Auto-LLM: The signals are validated as correct (ofcourse they are, it's an indus
 
 **Note**: some are (not yet) working. I had issues with the ht_period etc before. The ones that dont work (just a few) are known to me and will get fixed. Lastly Sunday all will work. There are now about 140 indicators in the system. Note that the indicators will get converted to pure polars eventually but this is a tedious job and the current talib-approach gives already good results. Especially the candle-pattern detections are a very nice add-on-i am writing these myself too (need them normalized). 
 
-Because the talib-indicators are generated in the config.user directory you may decide to keep all talib-ones, even when they are converted to polars-direct. 
+Because the talib-indicators are generated in the config.user directory you may decide to keep all talib-ones, even when they are converted to polars-direct. From time-to-time I will perform conversions. Another bulk-conversion is planned for Sunday.
 
 ![ta-lib-example](../images/talib-integration-beta.png)
-
-**Note:** I work like this:
-- First implement a speedy beta version
-- Document it
-- QA pass 1 (most of the time LLM-ish)
-- Profiling/Performance tests
-- QA pass 2 (manuaL)
-- Finalization
-
-Features that dont touch the core, like this one, and work almost completely out-of-the-box, are done in main directly. Features that need careful attention are going to feature-branches.
-
-Docs: directly in main.
-
-I know this is not best practice but i want to remind that this is a private repository which is just public. When I am working for enterprises, i work completely differently :)
 
 **Good practice advice when you are building your own indicators**
 
