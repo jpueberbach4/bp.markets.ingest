@@ -214,7 +214,7 @@ Be careful for recursive patterns though. Unlimited loops.
 
 eg If Indicator A requires B, and B requires A, the system will enter an infinite recursion until the stack overflows.
 
-**Update**:
+## 7. Testing your recursive indicators for unlimited loops (stack overflow protection)
 
 Since there is currently no "run-time" protection for recursion loops caused by custom indicators, i have added a unit-test which does the checking for recursion loops. This is a V1 version of the recursion guard, a V2 is coming. The V1 version does not yet take the indicator options into account. Eg first loop you call test-sma_20 and second recursive call you call test-sma_50... this is currently caught as an unlimited loop call when calling with same timeframe and symbol. 
 
@@ -241,4 +241,102 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     ...
 ```
 
-PS: do not use `_` (underscore) in indicator file-names. Use a dot or a dash. Group them logically with a prefix. I will add a searchbox for the indicators to the web-interface soon.
+PS: do not use `_` (underscore) in indicator file-names. Use a dot or a dash. Group them logically with a prefix. I will add a searchbox for the indicators to the web-interface soon.\
+
+## 8. Additional examples
+
+### Putting an SMA over the RSI - both with configurable periods
+
+```python
+import pandas as pd
+import numpy as np
+import polars as pl
+from typing import List, Dict, Any
+
+def description() -> str:
+    """
+    Returns a human-readable description for the API and UI.
+    """
+    return (
+        "RSI with SMA Overlay: Returns both the 14-period RSI and its 9-period "
+        "Simple Moving Average. Ideal for identifying momentum divergences."
+    )
+
+def meta() -> Dict:
+    """
+    Metadata for the dual-engine orchestrator.
+    """
+    return {
+        "author": "Google Gemini",
+        "version": 1.6,
+        "panel": 1,
+        "verified": 1,
+        "talib-validated": 0, 
+        "polars": 1 
+    }
+
+def warmup_count(options: Dict[str, Any]) -> int:
+    """
+    Calculates the required warmup rows. 
+    RSI requires roughly 2.5x its period for convergence.
+    """
+    rsi_period = int(options.get('rsi_period', 14))
+    sma_period = int(options.get('sma_period', 9))
+    return (rsi_period * 3) + sma_period
+
+def position_args(args: List[str]) -> Dict[str, Any]:
+    """
+    Maps positional URL arguments. 
+    Format: /plugin-rsi_sma/14/9
+    """
+    return {
+        "rsi_period": args[0] if len(args) > 0 else "14",
+        "sma_period": args[1] if len(args) > 1 else "9"
+    }
+
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
+    """
+    High-performance Polars-native calculation for the CUDA execution path.
+    Returns both RSI and SMA columns.
+    """
+    rsi_period = int(options.get('rsi_period', 14))
+    sma_period = int(options.get('sma_period', 9))
+
+    diff = pl.col("close").diff()
+    gain = pl.when(diff > 0).then(diff).otherwise(0)
+    loss = pl.when(diff < 0).then(-diff).otherwise(0)
+
+    # Wilder's Smoothing for RSI
+    avg_gain = gain.ewm_mean(alpha=1/rsi_period, adjust=False)
+    avg_loss = loss.ewm_mean(alpha=1/rsi_period, adjust=False)
+    
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+    
+    sma_rsi = rsi.rolling_mean(window_size=sma_period)
+
+    return [
+        rsi.alias(f"{indicator_str}__rsi"),
+        sma_rsi.alias(f"{indicator_str}__sma")
+    ]
+
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    Legacy Pandas fallback for validation during environment resets.
+    """
+    rsi_period = int(options.get('rsi_period', 14))
+    sma_period = int(options.get('sma_period', 9))
+
+    delta = df['close'].diff()
+    gain = delta.where(delta > 0, 0)
+    loss = -delta.where(delta < 0, 0)
+
+    avg_gain = gain.ewm(alpha=1/rsi_period, adjust=False).mean()
+    avg_loss = loss.ewm(alpha=1/rsi_period, adjust=False).mean()
+
+    rs = avg_gain / avg_loss
+    df['rsi'] = 100 - (100 / (1 + rs))
+    df['sma_rsi'] = df['rsi'].rolling(window=sma_period).mean()
+
+    return df.dropna(subset=['sma_rsi'])
+```
