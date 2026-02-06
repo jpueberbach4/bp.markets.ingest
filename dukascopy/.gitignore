@@ -15,7 +15,6 @@ etl/tests/*
 config.user/*
 ml/*
 flight/*
-docs
 *.parquet
 *.csv
 *.pkl
