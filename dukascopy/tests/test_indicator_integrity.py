@@ -71,10 +71,17 @@ class TestIndicatorIntegrity(unittest.TestCase):
             
             CALL_STACK.pop()
         
-        return pd.DataFrame({
-            "time_ms": [1000], "close": [1.0],
+        return_df = pd.DataFrame({
+            "time_ms": [1000], "open": [0.8], "high": [1.2], "low": [0.7], "close": [1.0],
             "symbol": [symbol], "timeframe": [timeframe]
         })
+
+        # FIX: Add the requested indicator columns so the plugin doesn't KeyError
+        for ind in indicators:
+            return_df[ind] = 50.0 # dummy numeric value for the indicator
+
+        return return_df
+
 
     def test_all_plugins_for_loops(self):
         plugin_dir = "config.user/plugins/indicators"
