@@ -565,11 +565,6 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     for frame in [df, df_4h, df_1d]:
         frame['time_ms'] = frame['time_ms'].astype('uint64')
 
-    # Drop candles that haven't been completed by the last resample
-    # This is coming...
-    df_4h = df_4h[df_4h['is_open'] != 1] if 'is_open' in df_4h.columns else df_4h
-    df_1d = df_1d[df_1d['is_open'] != 1] if 'is_open' in df_1d.columns else df_1d
-
     df = df[['time_ms', rsi_col]].rename(columns={rsi_col: f"rsi"})
     # Merge 4H Data
     df_4h = df_4h[['time_ms', rsi_col]].rename(columns={rsi_col: f"rsi4h"})
