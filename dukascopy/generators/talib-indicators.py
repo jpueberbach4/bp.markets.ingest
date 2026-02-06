@@ -27,9 +27,11 @@ EXCLUDE_INDICATORS = [
     'roc',
     'rsi',
     'sma',
+    'stddev',
     'stoch',
     'ultosc',
     'willr',
+    'wma',
               # validation pass... later
 ]
 
