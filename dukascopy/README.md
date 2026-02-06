@@ -36,36 +36,7 @@
 
 ## Notice: documentation has moved to a submodule
 
-In order to keep the code clean from doc commits-big changes are coming-i decided to move the documentation out.
-
-```sh
-git clone --recursive https://github.com/jpueberbach4/bp-markets.ingest.git
-```
-
-When you already have a copy and want the docs:
-
-```sh
-git pull
-git submodule update --init --recursive
-```
-
-If you want to update both your repo and your docs
-
-```sh
-git branch --set-upstream-to=origin/main main
-git pull --recurse-submodules
-```
-
-docs are [here](https://github.com/jpueberbach4/bp-markets.ingest-docs).
-
-To update docs only, when having done the git submodule update --init --recursive
-
-```sh
-cd dukascopy/docs
-git pull origin main
-```
-
-This is not optimal. Will fix it soon.
+This has been rolled back. It corrupts my (fast) workflow.
 
 ## What Is This Tool Used For?
 
