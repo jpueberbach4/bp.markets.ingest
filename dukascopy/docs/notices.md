@@ -34,6 +34,8 @@ These have been checked and are-now-compliant to TA-lib:
 
 Auto-LLM: The signals are validated as correct (ofcourse they are, it's an industry standard lib).
 
+**Note**: some are (not yet) working. I had issues with the ht_period etc before. The ones that dont work (just a few) are known to me and will get fixed. Lastly Sunday all will work. There are now about 140 indicators in the system. Note that the indicators will get converted to pure polars eventually but this is a tedious job and the current talib-approach gives already good results. Especially the candle-pattern detections are a very nice add-on-i am writing these myself too (need them normalized).
+
 ![ta-lib-example](../images/talib-integration-beta.png)
 
 **Note:** I work like this:
