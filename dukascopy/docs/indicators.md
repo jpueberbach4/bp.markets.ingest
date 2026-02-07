@@ -772,4 +772,8 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     return plan.collect().select(["rsi", "rsi4h", "rsi1d"]).to_pandas()
 ```
 
+Tip: when optimizing for performance, always make sure you can validate the new-optimized-version against the original working version. Aka build a side-connector. Keep the original one intact until the responses match exactly.
+
+![example](../images/example-mixed-tf-h1-h4-1d-polars.png)
+
 **Note:** This requires a bit of tuning. Live edge-handling. I will think of something elegant to solve this. A proposed solution is building an `is_open` indicator that flags candles. Other solution is integrating it in the main core. Determination of is_open based on last-ingest-time. 
