@@ -628,7 +628,7 @@ Example image:
 
 ### Tuned version of the above
 
-**Note:** Yeah I won't stop optimizing. We have now a new flag in meta section: `meta.polars_input`. This way you can prevent a polars to pandas conversion inside of your plugin. Shaving off quite a huge amount of costly milliseconds (saving about 20-30ms on 60k records). For 1000 records we went from 0.0511753559112549 (51ms) to 0.0189557075500488 (19ms).
+**Note:** Yeah I won't stop optimizing. We have now a new flag in meta section: `meta.polars_input`. This way you can prevent a polars to pandas conversion inside of your plugin. Shaving off quite a huge amount of costly milliseconds (saving about 50-60ms (50-60 percent) on 60k records). For 1000 records we went from 0.0511753559112549 (51ms) to 0.0189557075500488 (19ms).
 
 ```python
 import polars as pl
