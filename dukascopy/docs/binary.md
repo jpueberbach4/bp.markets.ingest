@@ -5,11 +5,12 @@ This document provides a technical specification for the high-performance binary
 ---
 
 ## 1. Design Philosophy
-The format is optimized for **zero-copy I/O** and **cache-line alignment**. By using a fixed-width record size that matches standard x86_64 CPU architecture characteristics, the engine achieves near-hardware-limit performance for time-series aggregation.
+The format is optimized for **cache-line alignment**. By using a fixed-width record size that matches standard x86_64 CPU architecture characteristics, the engine achieves near-hardware-limit performance for time-series aggregation.
 
 * **Fixed Record Size:** Exactly 64 bytes.
 * **Alignment:** Records are aligned to 64-byte boundaries to prevent split-load penalties and ensure a single record never spans two CPU cache lines.
-* **Zero-Copy:** Designed for `mmap` (memory mapping) where the file on disk is mapped directly into the process address space.
+
+**Note:** System is not yet TRUE Zero-Copy. This is coming.
 
 ---
 
@@ -158,7 +159,7 @@ def dump_binary_file(filepath: str, num_records: int = 10):
 dump_binary_file("data/aggregate/1m/EUR-USD.bin")
 ```
 
-### Python zero-copy view example
+### Python view example
 
 ```python
 import numpy as np
@@ -181,7 +182,7 @@ def load_ohlcv_binary(filepath: str):
     f = open(path, "rb")
     
     try:
-        # 3. Create Memory Map (Zero-copy)
+        # 3. Create Memory Map
         # length=0 maps the whole file
         mm = mmap.mmap(f.fileno(), length=0, access=mmap.ACCESS_READ)
         

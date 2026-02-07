@@ -14,7 +14,7 @@ The ETL (Extract, Transform, Load) engine is natively designed for high-concurre
 * **Scaling Behavior:** Vertical scaling (allocating more CPU cores) directly improves ingestion throughput.
 
 ### 2.2 The API HTTP Service
-The API leverages zero-copy IO for high performance. It currently operates on a single-threaded, event-loop based FastAPI implementation.
+The API leverages MMapped IO for high performance. It currently operates on a single-threaded, event-loop based FastAPI implementation.
 * **Limitation:** A single instance is bound to one CPU core.
 * **Opportunity:** This deterministic behavior allows for predictable scaling "units." By deploying multiple single-threaded pods, we achieve horizontal scale without the complexity of multi-worker management within a single container.
 

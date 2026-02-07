@@ -7,9 +7,9 @@ The system is built on the principle of **Mechanical Sympathy**—designing soft
 
 * **Memory-Mapped I/O (`mmap`):** Bypasses standard file-system overhead by mapping binary datasets directly into the process address space.
 * **64-Byte Cache-Line Alignment:** Records are structured in 64-byte blocks to match x86_64 cache lines, preventing split-load penalties and maximizing L1/L2 cache efficiency.
-* **Zero-Copy Operations:** Data is read as NumPy views rather than being copied into memory, enabling throughput of **38M+ records/sec** on consumer-grade NVMe hardware using a tuned batch-size, in this case the optimal size seems to be 500K.
+of **38M+ records/sec** on consumer-grade NVMe hardware using a tuned batch-size, in this case the optimal size seems to be 500K.
 
-
+**Note:** System is not yet TRUE Zero-Copy. This is coming.
 
 ---
 

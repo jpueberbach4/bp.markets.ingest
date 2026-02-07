@@ -143,7 +143,7 @@ The engine is engineered for **Hyperparameter Optimization (HPO)** and large-sca
 ### Throughput Comparison - 1,000,000 rows
 | Query Type | Throughput | Performance Note |
 | :--- | :--- | :--- |
-| **Price-Only (Raw)** | **~13,000,000+ rows/sec** | Zero-copy memory mapped retrieval. |
+| **Price-Only (Raw)** | **~13,000,000+ rows/sec** | Memory mapped retrieval. |
 | **Heavy Load (500 Indicators)** | **~650,000 rows/sec** | **0.5 Billion datapoints processed in 1.5s**. |
 | **Light Load (5 Indicators)** | **~1,600,000 rows/sec** | Minimal overhead, purely IO bound. |
 
