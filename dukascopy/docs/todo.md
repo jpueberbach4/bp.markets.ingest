@@ -64,7 +64,8 @@ Note: strike-through=wont do
   - [X] Cross-timeframe queries
   - [x] Make internal API queryable from external code (bootstrapping)
 
-[ ] TCP Layer
+[ ] TCP/Disk Layer
+  - [ ] Columnar and io_uring
   - [ ] Apache Arrow Flight (research done ✔️)
 
 Note: the HTTP API is nice but it has a major serialization tax
