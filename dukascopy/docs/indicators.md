@@ -626,24 +626,71 @@ Example image:
 
 ![example](../images/example-mixed-tf-h1-h4-1d.png)
 
-### Tuned version of the above - Gemini was right
+### Tuned version of the above
+
+**Note:** Yeah I won't stop optimizing. We have now a new flag in meta section: `meta.polars_input`. This way you can prevent a polars to pandas conversion inside of your plugin. Shaving off quite a huge amount of costly milliseconds (saving about 20-30ms on 60k records). For 1000 records we went from 0.0511753559112549 (51ms) to 0.0189557075500488 (19ms).
 
 ```python
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
+import polars as pl
+import pandas as pd
+import numpy as np
+from typing import List, Dict, Any
+
+def description() -> str:
+    return (
+        "Triple RSI Panel: Displays Current, 4H, and 1D RSI in a single panel. "
+        "Uses data-relative 'is_open' filtering to prevent repainting on the live-edge."
+    )
+
+def meta() -> Dict:
+    return {
+        "author": "Google Gemini",
+        "version": 2.6, 
+        "panel": 1,
+        "verified": 1,
+        "polars": 0,
+        "polars_input": 1
+    }
+
+def warmup_count(options: Dict[str, Any]) -> int:
+    rsi_period = int(options.get('rsi_period', 14))
+    # 1D is 1440 mins. We need a massive 1H lead time for 1D RSI convergence.
+    return (rsi_period * 3) * 24
+
+def position_args(args: List[str]) -> Dict[str, Any]:
+    return {
+        "rsi_period": args[0] if len(args) > 0 else "14"
+    }
+
+def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     from util.api import get_data
     from concurrent.futures import ThreadPoolExecutor
     import polars as pl
-    
+
+    profiling_enabled = True    # If you want to see how profiling works, enable to True
+
+    if profiling_enabled:
+        import cProfile
+        import pstats
+        import io
+        pr = cProfile.Profile()
+        pr.enable()
+
     rsi_period = int(options.get('rsi_period', 14))
     rsi_col = f"rsi_{rsi_period}"
     
+    # OPTIMIZATION: Move to Lazy early to allow for plan optimization
     # We keep 'close' to calculate RSI locally, and cast time_ms for joins
-    ldf = pl.from_pandas(df).with_columns([
+    ldf = df.with_columns([
         pl.col("time_ms").cast(pl.UInt64),
         pl.col("close").cast(pl.Float64)
     ])
 
-    symbol = ldf["symbol"][0]
+    # Faster scalar extraction using .item()
+    symbol = ldf["symbol"].item(0)
+    time_min = ldf["time_ms"].min()
+    time_max = ldf["time_ms"].max()
+    
     api_opts = {**options, "return_polars": True}
     warmup_ms = warmup_count(options) * 3600000 * 24
 
@@ -663,34 +710,45 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     def fetch_htf(tf, multiplier, alias):
         return get_data(
             symbol=symbol, timeframe=tf,
-            after_ms=ldf["time_ms"].min() - (warmup_ms * multiplier),
-            until_ms=ldf["time_ms"].max() + 1,
+            after_ms=time_min - (warmup_ms * multiplier),
+            until_ms=time_max + 1,
             indicators=[rsi_col], limit=len(df) + 50000, options=api_opts
         ).select([
             pl.col("time_ms").cast(pl.UInt64),
             pl.col(rsi_col).alias(alias)
-        ]).sort("time_ms")
+        ]).sort("time_ms").lazy() # Return as LazyFrame
 
     with ThreadPoolExecutor(max_workers=2) as executor:
         f_4h = executor.submit(fetch_htf, "4h", 1, "rsi4h")
         f_1d = executor.submit(fetch_htf, "1d", 2, "rsi1d")
         
-        # Apply Local RSI Calculation (Lazy-like execution in eager mode)
-        ldf = ldf.with_columns(get_rsi_expr("close").alias("rsi"))
+        # Apply Local RSI Calculation
+        lazy_base = ldf.lazy().with_columns(get_rsi_expr("close").alias("rsi"))
         
-        # Wait for HTF data
-        ldf_4h = f_4h.result()
-        ldf_1d = f_1d.result()
+        # Wait for HTF LazyFrames
+        lazy_4h = f_4h.result()
+        lazy_1d = f_1d.result()
 
-    # Join HTF Data onto Local Base
-    result = ldf.join_asof(
-        ldf_4h, on="time_ms", strategy="backward"
-    ).join_asof(
-        ldf_1d, on="time_ms", strategy="backward"
+    # Join HTF Data onto Local Base using Lazy API
+    # Polars will optimize this into a single execution plan
+    result_ldf = (
+        lazy_base.join_asof(lazy_4h, on="time_ms", strategy="backward")
+        .join_asof(lazy_1d, on="time_ms", strategy="backward")
+        .select(["rsi", "rsi4h", "rsi1d"])
+        .collect() # Materialize exactly once at the end
     )
+    
+    if profiling_enabled:
+        pr.disable()
+        s = io.StringIO()
+        sortby = 'cumulative'   # Can also use 'tottime' to see self-time
+        ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+        ps.print_stats(30)      # Show top 30 most time-consuming calls
+        print(s.getvalue())     # See console
 
-    # Convert to pandas dataframe (this is the pandas calculate)
-    return result.select(["rsi", "rsi4h", "rsi1d"]).to_pandas()
+    # Return polars df
+    return result_ldf
+
 ```
 
 Gain: performance increase (profiling really helps, and knowing the code, ofcourse) - 60k 5m records
@@ -698,32 +756,29 @@ Gain: performance increase (profiling really helps, and knowing the code, ofcour
 Profile:
 
 ```sh
-   3309 function calls (3277 primitive calls) in >0.026< seconds
+         571 function calls (568 primitive calls) in 0.010 seconds
 
    Ordered by: cumulative time
-   List reduced from 391 to 30 due to restriction <30>
+   List reduced from 132 to 30 due to restriction <30>
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-        1    0.000    0.000    0.018    0.018 ../polars/convert/general.py:496(from_pandas)
-        1    0.000    0.000    0.018    0.018 ../polars/_utils/construction/dataframe.py:1071(pandas_to_pydf)
-        1    0.000    0.000    0.014    0.014 ../polars/dataframe/frame.py:344(__init__)
-        1    0.000    0.000    0.014    0.014 ../polars/_utils/construction/dataframe.py:78(dict_to_pydf)
-      104    0.013    0.000    0.013    0.000 {method 'acquire' of '_thread.lock' objects}
-       25    0.000    0.000    0.012    0.000 /usr/lib/python3.8/threading.py:270(wait)
-       22    0.000    0.000    0.011    0.000 /usr/lib/python3.8/threading.py:540(wait)
-        1    0.000    0.000    0.008    0.008 /usr/lib/python3.8/multiprocessing/pool.py:359(map)
-        1    0.000    0.000    0.008    0.008 /usr/lib/python3.8/multiprocessing/pool.py:764(get)
-        1    0.000    0.000    0.008    0.008 /usr/lib/python3.8/multiprocessing/pool.py:761(wait)
-        1    0.000    0.000    0.005    0.005 /usr/lib/python3.8/multiprocessing/dummy/__init__.py:122(Pool)
-        1    0.000    0.000    0.005    0.005 /usr/lib/python3.8/multiprocessing/pool.py:924(__init__)
-        1    0.000    0.000    0.005    0.005 /usr/lib/python3.8/multiprocessing/pool.py:183(__init__)
-        4    0.000    0.000    0.004    0.001 ../polars/lazyframe/frame.py:1821(collect)
-        4    0.004    0.001    0.004    0.001 {method 'collect' of 'builtins.PyLazyFrame' objects}
-       21    0.000    0.000    0.004    0.000 /usr/lib/python3.8/threading.py:834(start)
-      4/2    0.000    0.000    0.004    0.002 {built-in method builtins.all}
+       20    0.005    0.000    0.005    0.000 {method 'acquire' of '_thread.lock' objects}
+        5    0.000    0.000    0.005    0.001 /usr/lib/python3.8/threading.py:270(wait)
+        2    0.000    0.000    0.004    0.002 ../polars/lazyframe/frame.py:1821(collect)
+        2    0.004    0.002    0.004    0.002 {method 'collect' of 'builtins.PyLazyFrame' objects}
+        2    0.000    0.000    0.004    0.002 /usr/lib/python3.8/concurrent/futures/_base.py:416(result)
+        2    0.000    0.000    0.001    0.001 /usr/lib/python3.8/concurrent/futures/thread.py:158(submit)
+        2    0.000    0.000    0.001    0.001 /usr/lib/python3.8/concurrent/futures/thread.py:193(_adjust_thread_count)
+        2    0.000    0.000    0.001    0.001 /usr/lib/python3.8/threading.py:834(start)
+        2    0.000    0.000    0.001    0.000 /usr/lib/python3.8/threading.py:540(wait)
+        1    0.000    0.000    0.001    0.001 ../polars/dataframe/frame.py:9008(with_columns)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python3.8/concurrent/futures/_base.py:643(__exit__)
+        1    0.000    0.000    0.000    0.000 /usr/lib/python3.8/concurrent/futures/thread.py:230(shutdown)
+        2    0.000    0.000    0.000    0.000 /usr/lib/python3.8/threading.py:979(join)
+        2    0.000    0.000    0.000    0.000 /usr/lib/python3.8/threading.py:1017(_wait_for_tstate_lock)
 ```
 
-**Note:** Internally still conversion happens. I am looking into this if i can eliminate that somehow as much as possible. Or make it more efficient.
+This is to show:
 
 - What profiling brings you
 - I used Gemini to advice by giving it the stacktrace and the original pandas code (the calculate function) and by telling it about the "secret flag" return_polars.

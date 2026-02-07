@@ -1,4 +1,12 @@
 
+**Another performance update**
+
+This one hits your indicators. You can now optionally accept a polars Dataframe inside of your plugin. You need to set `meta.polars_input` to 1. The calling function then passes in a polars dataframe. You can then either return a pandas dataframe or a polars dataframe. Generic advice is to prevent conversions as much as possible. So polars input has the preference. 
+
+Gain? For 1000 records on a complex recursive indicator: 51ms to 19ms. 60000 records from 100ms to 37ms. See the [indicators](indicators.md) doc.
+
+So my statement that it couldnt be pushed further was wrong-at least for "calculate"-indicators.
+
 **Inspection day**
 
 Today was an inspection day. Seeing where we "failed" by doing integration tests and seeing if everything works as intended. I found some stuff that needs some additional changes. Eg to support the live-edge a bit better on recursive indicators. 
