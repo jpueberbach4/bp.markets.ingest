@@ -712,5 +712,11 @@ Profile:
 
 New wall time: 44ms (down from 100ms) (not bad for 60k records, 3 recursives)
 
+**Note:** This is an example. Ofcourse this could be tuned further by eliminating one get_data call, the ldf_local, and calculating the base-rsi directly using Polars. This is for demonstration purposes:
+
+- What profiling brings you
+- I used Gemini to advice by giving it the stacktrace and the original pandas code (the calculate function) and by telling it about the "secret flag" return_polars.
+- Always tune for performance, it increases throughput, decreases direct and indirect cost by lowering walkthrough-times (more pleasant too).
+
 
 **Note:** This requires a bit of tuning. Live edge-handling. I will think of something elegant to solve this. A proposed solution is building an `is_open` indicator that flags candles. Other solution is integrating it in the main core. Determination of is_open based on last-ingest-time. 
