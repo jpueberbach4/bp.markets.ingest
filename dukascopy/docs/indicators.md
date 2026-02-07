@@ -776,6 +776,8 @@ Tip: when optimizing for performance, always make sure you can validate the new-
 
 Just to give a theoretical indication: the tuning increased throughput from about 600k records/sec-when warmed up- to about 1.4 million records/sec. It's worth it.
 
+And remember: this is ONLY a Ryzen 7/32GB/NVMe. Nothing fancy. I have ordered a new system. Can't wait to see.
+
 ![example](../images/example-mixed-tf-h1-h4-1d-polars.png)
 
 **Note:** This requires a bit of tuning. Live edge-handling. I will think of something elegant to solve this. A proposed solution is building an `is_open` indicator that flags candles. Other solution is integrating it in the main core. Determination of is_open based on last-ingest-time. 
