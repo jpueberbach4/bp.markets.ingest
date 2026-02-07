@@ -718,5 +718,58 @@ New wall time: 44ms (down from 100ms) (not bad for 60k records, 3 recursives)
 - I used Gemini to advice by giving it the stacktrace and the original pandas code (the calculate function) and by telling it about the "secret flag" return_polars.
 - Always tune for performance, it increases throughput, decreases direct and indirect cost by lowering walkthrough-times (more pleasant too).
 
+### This is what Gemini suggested, it goes even further (didnt try it)
+
+```python
+from concurrent.futures import ThreadPoolExecutor
+import polars as pl
+
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    """
+    Optimized Multi-Timeframe Pattern.
+    Fetches Local, 4H, and 1D RSI in parallel using Polars.
+    """
+    from util.api import get_data
+    
+    rsi_period = int(options.get('rsi_period', 14))
+    rsi_col = f"rsi_{rsi_period}"
+    api_opts = {**options, "return_polars": True}
+    
+    # 1. Immediate conversion to Polars to act as the skeleton
+    ldf_base = pl.from_pandas(df).select([
+        pl.col("time_ms").cast(pl.UInt64),
+        pl.col("symbol")
+    ])
+    
+    symbol = ldf_base["symbol"][0]
+    warmup_ms = warmup_count(options) * 3600000 * 24
+
+    # 2. Parallel Fetching Logic
+    def fetch_and_prep(tf, buffer_mult, alias, limit):
+        data = get_data(
+            symbol=symbol, timeframe=tf,
+            after_ms=ldf_base["time_ms"].min() - (warmup_ms * buffer_mult),
+            until_ms=ldf_base["time_ms"].max() + 1,
+            limit=limit, indicators=[rsi_col], options=api_opts
+        )
+        return data.select([
+            pl.col("time_ms").cast(pl.UInt64),
+            pl.col(rsi_col).alias(alias)
+        ]).sort("time_ms").lazy()
+
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        # Fetch local, 4H (+1 day buffer), and 1D (+2 day buffer)
+        f_local = executor.submit(fetch_and_prep, options.get("timeframe", "1m"), 0, "rsi", len(ldf_base) + 100)
+        f_4h = executor.submit(fetch_and_prep, "4h", 1, "rsi4h", len(df) + 50000)
+        f_1d = executor.submit(fetch_and_prep, "1d", 2, "rsi1d", len(df) + 10000)
+
+        # Assemble the Lazy Plan
+        plan = ldf_base.lazy().join(f_local.result(), on="time_ms", how="left") \
+            .join_asof(f_4h.result(), on="time_ms", strategy="backward") \
+            .join_asof(f_1d.result(), on="time_ms", strategy="backward")
+
+    # 3. Final Execution
+    return plan.collect().select(["rsi", "rsi4h", "rsi1d"]).to_pandas()
+```
 
 **Note:** This requires a bit of tuning. Live edge-handling. I will think of something elegant to solve this. A proposed solution is building an `is_open` indicator that flags candles. Other solution is integrating it in the main core. Determination of is_open based on last-ingest-time. 
