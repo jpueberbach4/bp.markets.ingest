@@ -257,8 +257,11 @@ class MarketDataCache:
                 pl.lit(tf).alias("timeframe")
             ])
 
-            # Return Polars DataFrame
-            return plf
+            # Return Polars DataFrame (check later - unit test compliance)
+            return plf.select([
+                "symbol", "timeframe", "time_ms", 
+                "open", "high", "low", "close", "volume"
+            ])
 
         # Slow path: construct a Pandas DataFrame
         pdf = pd.DataFrame(subset['ohlcv'], columns=columns)
@@ -268,8 +271,8 @@ class MarketDataCache:
         pdf['symbol'] = symbol
         pdf['timeframe'] = tf
 
-        # Return Pandas DataFrame
-        return pdf
+        # Return Pandas DataFrame (check later - unit test compliance)
+        return pdf[['symbol', 'timeframe', 'time_ms', 'open', 'high', 'low', 'close', 'volume']]
 
 
     def get_record_count(self, symbol, tf):
