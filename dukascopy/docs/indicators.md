@@ -667,7 +667,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     from concurrent.futures import ThreadPoolExecutor
     import polars as pl
 
-    profiling_enabled = True    # If you want to see how profiling works, enable to True
+    profiling_enabled = False    # If you want to see how profiling works, enable to True
 
     if profiling_enabled:
         import cProfile
