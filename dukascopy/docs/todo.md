@@ -19,6 +19,7 @@ Priorization:
 Note: we are setup now to integrate the extensions below (weekend work).
 
 Quality:
+  - [ ] Eliminate the Polars->Pandas conversion in HTTP-api
   - [ ] Log somewhere when last resampling occured. We need it for open-candle information.
   - [ ] Open candle marking in input-dataframe to provide for simple dropping of open candle in ind.
   - [ ] Degradation and change of execution mode on memory-pressure
