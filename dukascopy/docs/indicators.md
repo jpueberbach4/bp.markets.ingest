@@ -626,157 +626,110 @@ Example image:
 
 ![example](../images/example-mixed-tf-h1-h4-1d.png)
 
-### Tuned version of the above
+### Tuned version of the above - Gemini was right
 
 ```python
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     from util.api import get_data
+    from concurrent.futures import ThreadPoolExecutor
     import polars as pl
     
     rsi_period = int(options.get('rsi_period', 14))
     rsi_col = f"rsi_{rsi_period}"
     
-    # Keep the input as the skeleton to ensure row-count parity
-    ldf_base = pl.from_pandas(df).select([
+    # We keep 'close' to calculate RSI locally, and cast time_ms for joins
+    ldf = pl.from_pandas(df).with_columns([
         pl.col("time_ms").cast(pl.UInt64),
-        pl.col("symbol")
+        pl.col("close").cast(pl.Float64)
     ])
-    
-    symbol = ldf_base["symbol"][0]
-    current_timeframe = df["timeframe"][0]
 
+    symbol = ldf["symbol"][0]
     api_opts = {**options, "return_polars": True}
     warmup_ms = warmup_count(options) * 3600000 * 24
 
-    # Get Local RSI (Fetch and Join to base to mimic get_data_auto)
-    ldf_local = get_data(
-        symbol=symbol, timeframe=current_timeframe,
-        after_ms=ldf_base["time_ms"].min(),
-        until_ms=ldf_base["time_ms"].max() + 1,
-        limit=len(ldf_base) + 100, # Ensure this is large enough!
-        indicators=[rsi_col], options=api_opts
-    ).select([
-        pl.col("time_ms").cast(pl.UInt64),
-        pl.col(rsi_col).alias("rsi")
-    ]).sort("time_ms")
+    # This runs in-memory on the existing data, saving ~15ms of I/O
+    def get_rsi_expr(col_name="close"):
+        delta = pl.col(col_name).diff()
+        up = delta.clip(lower_bound=0)
+        down = delta.clip(upper_bound=0).abs()
+        alpha = 1 / rsi_period
+        return 100 - (100 / (1 + (
+            up.ewm_mean(alpha=alpha, adjust=False, min_periods=rsi_period) /
+            down.ewm_mean(alpha=alpha, adjust=False, min_periods=rsi_period)
+        )))
 
-    # Fetch 4H RSI (Matches original after_ms logic)
-    ldf_4h = get_data(
-        symbol=symbol, timeframe="4h",
-        after_ms=ldf_base["time_ms"].min() - warmup_ms, # * 1
-        until_ms=ldf_base["time_ms"].max() + 1,
-        indicators=[rsi_col], limit=len(df) + 50000, options=api_opts
-    ).select([
-        pl.col("time_ms").cast(pl.UInt64),
-        pl.col(rsi_col).alias("rsi4h")
-    ]).sort("time_ms")
+    # Fetch HTF Data in Parallel (4H & 1D)
+    # While we define the local calculation, we fetch remote data concurrently
+    def fetch_htf(tf, multiplier, alias):
+        return get_data(
+            symbol=symbol, timeframe=tf,
+            after_ms=ldf["time_ms"].min() - (warmup_ms * multiplier),
+            until_ms=ldf["time_ms"].max() + 1,
+            indicators=[rsi_col], limit=len(df) + 50000, options=api_opts
+        ).select([
+            pl.col("time_ms").cast(pl.UInt64),
+            pl.col(rsi_col).alias(alias)
+        ]).sort("time_ms")
 
-    # Fetch 1D RSI (Matches original after_ms logic)
-    ldf_1d = get_data(
-        symbol=symbol, timeframe="1d",
-        after_ms=ldf_base["time_ms"].min() - (warmup_ms * 2), # * 2
-        until_ms=ldf_base["time_ms"].max() + 1,
-        indicators=[rsi_col], limit=len(df) + 10000, options=api_opts
-    ).select([
-        pl.col("time_ms").cast(pl.UInt64),
-        pl.col(rsi_col).alias("rsi1d")
-    ]).sort("time_ms")
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        f_4h = executor.submit(fetch_htf, "4h", 1, "rsi4h")
+        f_1d = executor.submit(fetch_htf, "1d", 2, "rsi1d")
+        
+        # Apply Local RSI Calculation (Lazy-like execution in eager mode)
+        ldf = ldf.with_columns(get_rsi_expr("close").alias("rsi"))
+        
+        # Wait for HTF data
+        ldf_4h = f_4h.result()
+        ldf_1d = f_1d.result()
 
-    # Join everything back to the ORIGINAL timestamps (ldf_base)
-    result = ldf_base.join(ldf_local, on="time_ms", how="left") \
-                     .join_asof(ldf_4h, on="time_ms", strategy="backward") \
-                     .join_asof(ldf_1d, on="time_ms", strategy="backward")
-    
+    # Join HTF Data onto Local Base
+    result = ldf.join_asof(
+        ldf_4h, on="time_ms", strategy="backward"
+    ).join_asof(
+        ldf_1d, on="time_ms", strategy="backward"
+    )
+
+    # Convert to pandas dataframe (this is the pandas calculate)
     return result.select(["rsi", "rsi4h", "rsi1d"]).to_pandas()
 ```
 
-Gain: +50% +- performance (profiling really helps, and knowing the code, ofcourse) - 60k 5m records
+Gain: performance increase (profiling really helps, and knowing the code, ofcourse) - 60k 5m records
 
 Profile:
 
 ```sh
-7499 function calls (7346 primitive calls) in >0.044 seconds<
+   3309 function calls (3277 primitive calls) in >0.026< seconds
 
    Ordered by: cumulative time
-   List reduced from 505 to 30 due to restriction <30>
+   List reduced from 391 to 30 due to restriction <30>
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-       25    0.000    0.000    0.020    0.001 ../site-packages/polars/lazyframe/frame.py:1821(collect)
-       25    0.020    0.001    0.020    0.001 {method 'collect' of 'builtins.PyLazyFrame' objects}
-     10/4    0.000    0.000    0.019    0.005 ../site-packages/polars/_utils/construction/dataframe.py:78(dict_to_pydf)
-        1    0.000    0.000    0.018    0.018 ../site-packages/polars/convert/general.py:496(from_pandas)
-        1    0.000    0.000    0.018    0.018 ../site-packages/polars/_utils/construction/dataframe.py:1071(pandas_to_pydf)
-        7    0.000    0.000    0.014    0.002 ../polars/dataframe/frame.py:344(__init__)
-        3    0.000    0.000    0.011    0.004 ../util/api.py:102(get_data)
+        1    0.000    0.000    0.018    0.018 ../polars/convert/general.py:496(from_pandas)
+        1    0.000    0.000    0.018    0.018 ../polars/_utils/construction/dataframe.py:1071(pandas_to_pydf)
+        1    0.000    0.000    0.014    0.014 ../polars/dataframe/frame.py:344(__init__)
+        1    0.000    0.000    0.014    0.014 ../polars/_utils/construction/dataframe.py:78(dict_to_pydf)
+      104    0.013    0.000    0.013    0.000 {method 'acquire' of '_thread.lock' objects}
+       25    0.000    0.000    0.012    0.000 /usr/lib/python3.8/threading.py:270(wait)
+       22    0.000    0.000    0.011    0.000 /usr/lib/python3.8/threading.py:540(wait)
+        1    0.000    0.000    0.008    0.008 /usr/lib/python3.8/multiprocessing/pool.py:359(map)
+        1    0.000    0.000    0.008    0.008 /usr/lib/python3.8/multiprocessing/pool.py:764(get)
+        1    0.000    0.000    0.008    0.008 /usr/lib/python3.8/multiprocessing/pool.py:761(wait)
+        1    0.000    0.000    0.005    0.005 /usr/lib/python3.8/multiprocessing/dummy/__init__.py:122(Pool)
+        1    0.000    0.000    0.005    0.005 /usr/lib/python3.8/multiprocessing/pool.py:924(__init__)
+        1    0.000    0.000    0.005    0.005 /usr/lib/python3.8/multiprocessing/pool.py:183(__init__)
+        4    0.000    0.000    0.004    0.001 ../polars/lazyframe/frame.py:1821(collect)
+        4    0.004    0.001    0.004    0.001 {method 'collect' of 'builtins.PyLazyFrame' objects}
+       21    0.000    0.000    0.004    0.000 /usr/lib/python3.8/threading.py:834(start)
+      4/2    0.000    0.000    0.004    0.002 {built-in method builtins.all}
 ```
 
-New wall time: 44ms (down from 100ms) (not bad for 60k records, 3 recursives)
-
-**Note:** This is an example. Ofcourse this could be tuned further by eliminating one get_data call, the ldf_local, and calculating the base-rsi directly using Polars. This is for demonstration purposes:
+**Note:** Internally still conversion happens. I am looking into this if i can eliminate that somehow as much as possible. Or make it more efficient.
 
 - What profiling brings you
 - I used Gemini to advice by giving it the stacktrace and the original pandas code (the calculate function) and by telling it about the "secret flag" return_polars.
 - Always tune for performance, it increases throughput, decreases direct and indirect cost by lowering walkthrough-times (more pleasant too).
 
-### This is what Gemini suggested, it goes even further (didnt try it)
-
-```python
-from concurrent.futures import ThreadPoolExecutor
-import polars as pl
-
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
-    """
-    Optimized Multi-Timeframe Pattern.
-    Fetches Local, 4H, and 1D RSI in parallel using Polars.
-    """
-    from util.api import get_data
-    
-    rsi_period = int(options.get('rsi_period', 14))
-    rsi_col = f"rsi_{rsi_period}"
-    api_opts = {**options, "return_polars": True}
-    
-    # 1. Immediate conversion to Polars to act as the skeleton
-    ldf_base = pl.from_pandas(df).select([
-        pl.col("time_ms").cast(pl.UInt64),
-        pl.col("symbol")
-    ])
-    
-    symbol = ldf_base["symbol"][0]
-    warmup_ms = warmup_count(options) * 3600000 * 24
-
-    # 2. Parallel Fetching Logic
-    def fetch_and_prep(tf, buffer_mult, alias, limit):
-        data = get_data(
-            symbol=symbol, timeframe=tf,
-            after_ms=ldf_base["time_ms"].min() - (warmup_ms * buffer_mult),
-            until_ms=ldf_base["time_ms"].max() + 1,
-            limit=limit, indicators=[rsi_col], options=api_opts
-        )
-        return data.select([
-            pl.col("time_ms").cast(pl.UInt64),
-            pl.col(rsi_col).alias(alias)
-        ]).sort("time_ms").lazy()
-
-    with ThreadPoolExecutor(max_workers=3) as executor:
-        # Fetch local, 4H (+1 day buffer), and 1D (+2 day buffer)
-        f_local = executor.submit(fetch_and_prep, options.get("timeframe", "1m"), 0, "rsi", len(ldf_base) + 100)
-        f_4h = executor.submit(fetch_and_prep, "4h", 1, "rsi4h", len(df) + 50000)
-        f_1d = executor.submit(fetch_and_prep, "1d", 2, "rsi1d", len(df) + 10000)
-
-        # Assemble the Lazy Plan
-        plan = ldf_base.lazy().join(f_local.result(), on="time_ms", how="left") \
-            .join_asof(f_4h.result(), on="time_ms", strategy="backward") \
-            .join_asof(f_1d.result(), on="time_ms", strategy="backward")
-
-    # 3. Final Execution
-    return plan.collect().select(["rsi", "rsi4h", "rsi1d"]).to_pandas()
-```
-
 Tip: when optimizing for performance, always make sure you can validate the new-optimized-version against the original working version. Aka build a side-connector. Keep the original one intact until the responses match exactly.
-
-Just to give a theoretical indication: the tuning increased throughput from about 600k records/sec-when warmed up- to about 1.4 million records/sec. It's worth it.
-
-And remember: this is ONLY a Ryzen 7/32GB/NVMe. Nothing fancy. I have ordered a new system. Can't wait to see.
 
 ![example](../images/example-mixed-tf-h1-h4-1d-polars.png)
 
