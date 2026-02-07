@@ -9,6 +9,8 @@ So my statement that it couldnt be pushed further was wrong-at least for "calcul
 
 Recursive calls got a lot cheaper.
 
+The HTTP-API is still on Pandas. It will be sped up too by switching it to return_polars=True. So the HTTP Wall time includes a conversion-overhead from polars to pandas.
+
 **Inspection day**
 
 Today was an inspection day. Seeing where we "failed" by doing integration tests and seeing if everything works as intended. I found some stuff that needs some additional changes. Eg to support the live-edge a bit better on recursive indicators. 
