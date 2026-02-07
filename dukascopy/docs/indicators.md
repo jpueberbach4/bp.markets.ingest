@@ -618,7 +618,9 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     return df[['rsi', f"rsi4h", f"rsi1d"]]
 ```
 
-Wall-time 1000 records, random timerange: 0.0551369190216064 (55ms) (same threadpool overhead x N. Will get better soon).
+Wall-time 1000 1h records, random timerange: 0.0551369190216064 (55ms) (same threadpool overhead x N. Will get better soon).
+
+Wall-time 60000 5m records, random timerange: 0.101244688034058 (100ms) (non-lineair)
 
 Example image:
 
