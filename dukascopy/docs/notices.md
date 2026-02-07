@@ -5,6 +5,8 @@ Today was an inspection day. Seeing where we "failed" by doing integration tests
 
 But generally speaking, this starts to look really good.
 
+There is tuning needed but i think it is pretty clear where this is going.
+
 **TA-lib indicators**
 
 In order to ensure quality I have tested some indicators against TA-lib, implemented through a unit-test. Users having Python ta-lib installed will be able to run the test. When TA-lib is not installed the unit-test will skip.

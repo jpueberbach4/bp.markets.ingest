@@ -626,4 +626,91 @@ Example image:
 
 ![example](../images/example-mixed-tf-h1-h4-1d.png)
 
+### Tuned version of the above
+
+```python
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    from util.api import get_data
+    import polars as pl
+    
+    rsi_period = int(options.get('rsi_period', 14))
+    rsi_col = f"rsi_{rsi_period}"
+    
+    # Keep the input as the skeleton to ensure row-count parity
+    ldf_base = pl.from_pandas(df).select([
+        pl.col("time_ms").cast(pl.UInt64),
+        pl.col("symbol")
+    ])
+    
+    symbol = ldf_base["symbol"][0]
+    current_timeframe = df["timeframe"][0]
+
+    api_opts = {**options, "return_polars": True}
+    warmup_ms = warmup_count(options) * 3600000 * 24
+
+    # Get Local RSI (Fetch and Join to base to mimic get_data_auto)
+    ldf_local = get_data(
+        symbol=symbol, timeframe=current_timeframe,
+        after_ms=ldf_base["time_ms"].min(),
+        until_ms=ldf_base["time_ms"].max() + 1,
+        limit=len(ldf_base) + 100, # Ensure this is large enough!
+        indicators=[rsi_col], options=api_opts
+    ).select([
+        pl.col("time_ms").cast(pl.UInt64),
+        pl.col(rsi_col).alias("rsi")
+    ]).sort("time_ms")
+
+    # Fetch 4H RSI (Matches original after_ms logic)
+    ldf_4h = get_data(
+        symbol=symbol, timeframe="4h",
+        after_ms=ldf_base["time_ms"].min() - warmup_ms, # * 1
+        until_ms=ldf_base["time_ms"].max() + 1,
+        indicators=[rsi_col], limit=len(df) + 50000, options=api_opts
+    ).select([
+        pl.col("time_ms").cast(pl.UInt64),
+        pl.col(rsi_col).alias("rsi4h")
+    ]).sort("time_ms")
+
+    # Fetch 1D RSI (Matches original after_ms logic)
+    ldf_1d = get_data(
+        symbol=symbol, timeframe="1d",
+        after_ms=ldf_base["time_ms"].min() - (warmup_ms * 2), # * 2
+        until_ms=ldf_base["time_ms"].max() + 1,
+        indicators=[rsi_col], limit=len(df) + 10000, options=api_opts
+    ).select([
+        pl.col("time_ms").cast(pl.UInt64),
+        pl.col(rsi_col).alias("rsi1d")
+    ]).sort("time_ms")
+
+    # Join everything back to the ORIGINAL timestamps (ldf_base)
+    result = ldf_base.join(ldf_local, on="time_ms", how="left") \
+                     .join_asof(ldf_4h, on="time_ms", strategy="backward") \
+                     .join_asof(ldf_1d, on="time_ms", strategy="backward")
+    
+    return result.select(["rsi", "rsi4h", "rsi1d"]).to_pandas()
+```
+
+Gain: +50% +- performance (profiling really helps, and knowing the code, ofcourse) - 60k 5m records
+
+Profile:
+
+```sh
+7499 function calls (7346 primitive calls) in >0.044 seconds<
+
+   Ordered by: cumulative time
+   List reduced from 505 to 30 due to restriction <30>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+       25    0.000    0.000    0.020    0.001 /home/jpueberb/.local/lib/python3.8/site-packages/polars/lazyframe/frame.py:1821(collect)
+       25    0.020    0.001    0.020    0.001 {method 'collect' of 'builtins.PyLazyFrame' objects}
+     10/4    0.000    0.000    0.019    0.005 /home/jpueberb/.local/lib/python3.8/site-packages/polars/_utils/construction/dataframe.py:78(dict_to_pydf)
+        1    0.000    0.000    0.018    0.018 /home/jpueberb/.local/lib/python3.8/site-packages/polars/convert/general.py:496(from_pandas)
+        1    0.000    0.000    0.018    0.018 /home/jpueberb/.local/lib/python3.8/site-packages/polars/_utils/construction/dataframe.py:1071(pandas_to_pydf)
+        7    0.000    0.000    0.014    0.002 /home/jpueberb/.local/lib/python3.8/site-packages/polars/dataframe/frame.py:344(__init__)
+        3    0.000    0.000    0.011    0.004 /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/api.py:102(get_data)
+```
+
+New wall time: 44ms (down from 100ms)
+
+
 **Note:** This requires a bit of tuning. Live edge-handling. I will think of something elegant to solve this. A proposed solution is building an `is_open` indicator that flags candles. Other solution is integrating it in the main core. Determination of is_open based on last-ingest-time. 
