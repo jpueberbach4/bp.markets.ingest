@@ -9,7 +9,9 @@ So my statement that it couldnt be pushed further was wrong-at least for "calcul
 
 Recursive calls got a lot cheaper.
 
-The HTTP-API is still on Pandas. It will be sped up too by switching it to return_polars=True. So the HTTP Wall time includes a conversion-overhead from polars to pandas.
+The HTTP-API is still on Pandas. It will be sped up too by switching it to return_polars=True. So the HTTP Wall time includes a conversion-overhead from polars to pandas. This is why it might feel that the latest performance fix actually does nothing, on the web-interface.
+
+The truth is (internal optimized get_data call), with complex indicator: 1000000 records, time-passed: 92.94088200840633 ms + 1 indicators (which subqueries both H4 and D1 frame RSI). I have added the HTTP-API fix to the todo list. This evening off. Something for tomorrow's sprint.
 
 **Inspection day**
 
