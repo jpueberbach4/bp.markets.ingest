@@ -7,6 +7,8 @@ Gain? For 1000 records on a complex recursive indicator: 51ms to 19ms. 60000 rec
 
 So my statement that it couldnt be pushed further was wrong-at least for "calculate"-indicators.
 
+Recursive calls got a lot cheaper.
+
 **Inspection day**
 
 Today was an inspection day. Seeing where we "failed" by doing integration tests and seeing if everything works as intended. I found some stuff that needs some additional changes. Eg to support the live-edge a bit better on recursive indicators. 
