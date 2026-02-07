@@ -701,16 +701,16 @@ Profile:
    List reduced from 505 to 30 due to restriction <30>
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-       25    0.000    0.000    0.020    0.001 /home/jpueberb/.local/lib/python3.8/site-packages/polars/lazyframe/frame.py:1821(collect)
+       25    0.000    0.000    0.020    0.001 ../site-packages/polars/lazyframe/frame.py:1821(collect)
        25    0.020    0.001    0.020    0.001 {method 'collect' of 'builtins.PyLazyFrame' objects}
-     10/4    0.000    0.000    0.019    0.005 /home/jpueberb/.local/lib/python3.8/site-packages/polars/_utils/construction/dataframe.py:78(dict_to_pydf)
-        1    0.000    0.000    0.018    0.018 /home/jpueberb/.local/lib/python3.8/site-packages/polars/convert/general.py:496(from_pandas)
-        1    0.000    0.000    0.018    0.018 /home/jpueberb/.local/lib/python3.8/site-packages/polars/_utils/construction/dataframe.py:1071(pandas_to_pydf)
-        7    0.000    0.000    0.014    0.002 /home/jpueberb/.local/lib/python3.8/site-packages/polars/dataframe/frame.py:344(__init__)
-        3    0.000    0.000    0.011    0.004 /home/jpueberb/repos2/bp.markets.ingest/dukascopy/util/api.py:102(get_data)
+     10/4    0.000    0.000    0.019    0.005 ../site-packages/polars/_utils/construction/dataframe.py:78(dict_to_pydf)
+        1    0.000    0.000    0.018    0.018 ../site-packages/polars/convert/general.py:496(from_pandas)
+        1    0.000    0.000    0.018    0.018 ../site-packages/polars/_utils/construction/dataframe.py:1071(pandas_to_pydf)
+        7    0.000    0.000    0.014    0.002 ../polars/dataframe/frame.py:344(__init__)
+        3    0.000    0.000    0.011    0.004 ../util/api.py:102(get_data)
 ```
 
-New wall time: 44ms (down from 100ms)
+New wall time: 44ms (down from 100ms) (not bad for 60k records, 3 recursives)
 
 
 **Note:** This requires a bit of tuning. Live edge-handling. I will think of something elegant to solve this. A proposed solution is building an `is_open` indicator that flags candles. Other solution is integrating it in the main core. Determination of is_open based on last-ingest-time. 
