@@ -197,36 +197,80 @@ class MarketDataCache:
 
 
     def get_chunk(self, symbol, tf, from_idx, to_idx, return_polars=False):
+        """
+        Retrieve a slice of OHLCV data for a given symbol and timeframe.
+
+        The data is read from a memory-mapped store and returned as either
+        a Polars DataFrame (fast path) or a Pandas DataFrame (slow path).
+
+        Args:
+            symbol (str): Trading symbol (e.g. "BTCUSDT").
+            tf (str): Timeframe identifier (e.g. "1m", "5m").
+            from_idx (int): Starting index (inclusive) of the data slice.
+            to_idx (int): Ending index (exclusive) of the data slice.
+            return_polars (bool): If True, return a Polars DataFrame.
+                If False, return a Pandas DataFrame.
+
+        Returns:
+            pl.DataFrame | pd.DataFrame:
+                A DataFrame containing OHLCV data plus metadata columns.
+                Returns an empty DataFrame if no cached data exists.
+        """
+
+        # Build the lookup key used to access the memory-mapped data
         view_name = f"{symbol}_{tf}"
+
+        # Try to fetch cached data for this symbol + timeframe
         cached = self.mmaps.get(view_name)
 
+        # If nothing is cached, return an empty DataFrame of the requested type
         if not cached:
             return pl.DataFrame() if return_polars else pd.DataFrame()
 
-        # Slice the structured array (NumPy view)
+        # Slice the underlying structured NumPy array by index range
         subset = cached['data'][from_idx:to_idx]
 
-        # Pre-extract arrays to avoid repeated indexing
+        # Extract OHLCV data (shape: N x 5)
         data_points = subset['ohlcv']
 
-        # Construction Dictionary
-        data_dict = {
-            'symbol': symbol,
-            'timeframe': tf,
-            'time_ms': subset['ts'],
-            'open':   data_points[:, 0],
-            'high':   data_points[:, 1],
-            'low':    data_points[:, 2],
-            'close':  data_points[:, 3],
-            'volume': data_points[:, 4],
-        }
+        # Column names corresponding to OHLCV values
+        columns = ['open', 'high', 'low', 'close', 'volume']
 
+        # Fast path: construct a Polars DataFrame
         if return_polars:
-            # Polars zero-copy construction from NumPy
-            return pl.from_dict(data_dict)
-        
-        # Pandas construction (Slow path)
-        return pd.DataFrame(data_dict)
+            # Raw OHLCV NumPy array
+            ohlcv_raw = subset['ohlcv']
+
+            # Ensure memory is contiguous for faster zero-copy conversion
+            ohlcv_contiguous = np.ascontiguousarray(ohlcv_raw)
+
+            # Create Polars DataFrame directly from NumPy array
+            plf = pl.from_numpy(
+                ohlcv_contiguous,
+                schema=['open', 'high', 'low', 'close', 'volume']
+            )
+
+            # Add metadata columns (timestamp, symbol, timeframe)
+            plf = plf.with_columns([
+                pl.Series("time_ms", subset['ts'], dtype=pl.UInt64),
+                pl.lit(symbol).alias("symbol"),
+                pl.lit(tf).alias("timeframe")
+            ])
+
+            # Return Polars DataFrame
+            return plf
+
+        # Slow path: construct a Pandas DataFrame
+        pdf = pd.DataFrame(subset['ohlcv'], columns=columns)
+
+        # Add metadata columns directly for minimal overhead
+        pdf['time_ms'] = subset['ts']
+        pdf['symbol'] = symbol
+        pdf['timeframe'] = tf
+
+        # Return Pandas DataFrame
+        return pdf
+
 
     def get_record_count(self, symbol, tf):
         """Return the number of timestamped records available in a cached view.
