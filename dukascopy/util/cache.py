@@ -258,10 +258,7 @@ class MarketDataCache:
             ])
 
             # Return Polars DataFrame
-            return plf.select([
-                "symbol", "timeframe", "time_ms", 
-                "open", "high", "low", "close", "volume"
-            ])
+            return plf
 
         # Slow path: construct a Pandas DataFrame
         pdf = pd.DataFrame(subset['ohlcv'], columns=columns)
@@ -272,7 +269,7 @@ class MarketDataCache:
         pdf['timeframe'] = tf
 
         # Return Pandas DataFrame
-        return pdf[['symbol', 'timeframe', 'time_ms', 'open', 'high', 'low', 'close', 'volume']]
+        return pdf
 
 
     def get_record_count(self, symbol, tf):
