@@ -196,37 +196,43 @@ class MarketDataCache:
         }
 
 
-    def get_chunk(self, symbol, tf, from_idx, to_idx, return_polars=False):
+    def get_chunk(self, symbol, tf, from_idx, to_idx, return_polars=True):
         view_name = f"{symbol}_{tf}"
         cached = self.mmaps.get(view_name)
 
         if not cached:
             return pl.DataFrame() if return_polars else pd.DataFrame()
 
-        # Slice the structured array (NumPy view)
+        # 1. Slice and immediately make contiguous in one block
+        # This is the single most important performance fix.
         subset = cached['data'][from_idx:to_idx]
-
-        # Pre-extract arrays to avoid repeated indexing
-        data_points = subset['ohlcv']
-
-        # Construction Dictionary
-        data_dict = {
-            'symbol': symbol,
-            'timeframe': tf,
-            'time_ms': subset['ts'],
-            'open':   data_points[:, 0],
-            'high':   data_points[:, 1],
-            'low':    data_points[:, 2],
-            'close':  data_points[:, 3],
-            'volume': data_points[:, 4],
-        }
+        
+        # Extract timestamps and OHLCV block
+        ts = np.ascontiguousarray(subset['ts'])
+        # Extracting the 2D block as contiguous ensures the sub-slices are C-style
+        ohlcv = np.ascontiguousarray(subset['ohlcv'])
 
         if return_polars:
-            # Polars zero-copy construction from NumPy
-            return pl.from_dict(data_dict)
-        
-        # Pandas construction (Slow path)
-        return pd.DataFrame(data_dict)
+            # 2. Use pl.Series for direct construction. 
+            # This bypasses the overhead of pl.from_dict's internal broadcasting and inference.
+            count = len(ts)
+            return pl.DataFrame([
+                pl.Series("symbol", [symbol] * count), # Pre-allocate scalar
+                pl.Series("timeframe", [tf] * count),
+                pl.Series("time_ms", ts, dtype=pl.UInt64),
+                pl.Series("open",   ohlcv[:, 0], dtype=pl.Float64),
+                pl.Series("high",   ohlcv[:, 1], dtype=pl.Float64),
+                pl.Series("low",    ohlcv[:, 2], dtype=pl.Float64),
+                pl.Series("close",  ohlcv[:, 3], dtype=pl.Float64),
+                pl.Series("volume", ohlcv[:, 4], dtype=pl.Float64),
+            ])
+
+        # Pandas path
+        return pd.DataFrame({
+            'symbol': symbol, 'timeframe': tf, 'time_ms': ts,
+            'open': ohlcv[:, 0], 'high': ohlcv[:, 1], 'low': ohlcv[:, 2],
+            'close': ohlcv[:, 3], 'volume': ohlcv[:, 4]
+        })
 
     def get_record_count(self, symbol, tf):
         """Return the number of timestamped records available in a cached view.
