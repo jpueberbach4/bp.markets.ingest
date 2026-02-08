@@ -191,6 +191,8 @@ Add the following line, adjust path accordingly-run once every 15m:
 In order to get the highest possible performance, I recommend to toggle ALL the `fmode` fields in `config.user.yaml` to `binary`. This is considered as "a custom change". When you make custom changes, you cannot use `./setup-dukascopy.sh` anymore since this script will restore the settings back to "text"-this will change in the future now CSV mode is deprecated.
 
 * For configuration of custom timeframes, sessions etc, [see here](docs/configuration.md)
+* For custom indicators etc, [see here](docs/indicators.md)
+* For querying from external Python projects, [see here](docs/external.md)
 * For more information on the binary format, [see here](docs/binary.md)
 * For more information on the HTTP API service, [see here](docs/http.md)
 * For more information on Parquet/CSV building, [see here](docs/tools.md)
@@ -209,6 +211,8 @@ cp symbols.txt symbols.user.txt
 ```
 
 Next edit symbols.user.txt to include your symbols of interest (symbols.user.txt is in .gitignore). 
+
+**Important:** If you are using this for "live-edge" as well, you should add BTC/USD to the symbols.user.txt. This symbol is the heartbeat symbol for the system. It allows you to detect open-candles at the live-edge correctly. See the [indicators.md](docs/indicators.md), mid- to bottom section on how to build indicators that discard open-candles (requirement for live-edge).
 
 ---
 
