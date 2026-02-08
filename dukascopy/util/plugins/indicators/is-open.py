@@ -128,6 +128,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
             "2m": 120000,
             "3m": 180000,
             "5m": 300000,
+            "10m": 600000,
             "15m": 900000,
             "30m": 1800000,
             "1h": 3600000,
