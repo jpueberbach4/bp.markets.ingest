@@ -97,10 +97,10 @@ if __name__ == "__main__":
     ip, port = config.listen.split(':', 1)
 
     uvicorn.run(
-        "run:app",          # Module and app instance
-        host=ip,            # 🔒 LOCAL USE ONLY - Use public IP at your own risk!
-        port=int(port),     # Default port
-        loop="uvloop",      # High-performance event loop
-        http="httptools",   # HTTP protocol parser
-        reload=True         # Auto-reload on code changes
+        "run:app",                  # Module and app instance
+        host=ip,                    # 🔒 LOCAL USE ONLY - Use public IP at your own risk!
+        port=int(port),             # Default port
+        loop="uvloop",              # High-performance event loop
+        http="httptools",           # HTTP protocol parser
+        reload=bool(config.reload)  # Auto-reload on code changes
     )
