@@ -119,11 +119,17 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         # Duration (in ms) of each supported timeframe
         tf_lengths = {
             "1m": 0,
+            "2m": 120000,
             "5m": 300000,
             "15m": 900000,
             "30m": 1800000,
             "1h": 3600000,
+            "2h": 7200000,
+            "3h": 10800000,
             "4h": 14400000,
+            "6h": 21600000,
+            "8h": 28800000,
+            "12h": 43200000,
             "1d": 86400000,
             "1W": 604800000,
         }
@@ -132,7 +138,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         mark_ms = last_ms - tf_lengths.get(tf, 0)
 
     is_open_expr = (pl.col("time_ms") >= mark_ms).cast(pl.Int8).alias("is_open")
-    
+
     if tf in ["1M", "1Y"]:
         # Monthly/Yearly candles are ALWAYS open if they are the latest period, 
         # regardless of whether it's the weekend.
