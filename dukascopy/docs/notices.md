@@ -1,9 +1,9 @@
 
 **WSL Fast-API issue - `--reload` consumes one core**
 
-This is known to me. I had a go at it but took too much time to solve quickly. Tries watchfiles, watchdog, exclusions, inclusions. Everything. The problem is that, under WSL2, the inotify is broken. So when i file changes, the notification is not being raised. FastAPI/UVLOOP with --reload detects that it is not working and instead goes in a loop mode. This causes the CPU-issue. 
+This is known to me. I had a go at it but took too much time to solve quickly. Tried watchfiles, watchdog, exclusions, inclusions. Everything. The problem is that, under WSL2, the inotify is broken. So when a file changes, the inotification is not being raised. FastAPI/UVLOOP with `--reload` detects that it is not working and instead goes in a loop mode. This causes the CPU-issue. Since the root has many files (cache, data,..).
 
-If you really find it annoying, you can disable in `api/run.py` reload=True and set it to False. It's annoying. It spins up my fans too. However, when setting to False, it wont detect indicator `additions`. When you set it to false, you will need to keep setting it to false or do some git stash/pop tricks when updating. 
+If you really find it annoying, you can disable in `api/run.py` reload=True and set it to False. It's annoying. It spins up my fans too. However, when setting to False, it wont detect indicator `additions`. When you set it to false, you will need to keep setting it to False or do some git stash/pop tricks when updating, git pull. 
 
 The issue has pretty low priority given the list, spend an hour on it already. That's too much for this problem at this moment.
 
