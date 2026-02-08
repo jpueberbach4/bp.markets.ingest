@@ -795,7 +795,7 @@ Generally the workflow is like this (my workflow):
 - Paste it to a new indicator.py file. Test it, in the webinterface, compare old to new
 - When all OK. Performance optimization. Add the profiling blocks to your code.
 - Press update view. Grab profile output from your console window.
-- Paste your code PLUS the stacktrace to Gemini and say: Identify bottlenecks based on the profiling output and optimize my code. DONT drop any functionality, profiling blocks and comments. Here is my code: paste your latest snippet WITH the profiling block-so it can see what was profiled. End with: Return FULL corrected code.
+- Paste your code PLUS the profiling output to Gemini and say: Identify bottlenecks based on the profiling output and optimize my code. DONT drop any functionality, profiling blocks and comments. Here is my code: paste your latest snippet WITH the profiling block-so it can see what was profiled. End with: Return FULL corrected code.
 - Apply the changes. Compare performance. Repeat.
 
 It is not flawless and it can be frustrating. It tells you in a very convincing way about the suggested performance optimizations while it actually slows stuff down (sometimes dramatically). It's also a bit about knowing what you are doing/interpreting its response.
