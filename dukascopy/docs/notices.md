@@ -14,18 +14,18 @@ I am in-sync and have jitter set to 1.0. It's a very sensitive rate-limit. Don't
 ```yaml
 # Below you will find the configuration for the download.py script. 
 download:
-  max_retries: 5                      # Number of retries before downloader raises
-  backoff_factor: 2                   # Exponential backoff factor (wait time)
-  timeout: 60                         # Request timeout
-  rate_limit_rps: 1.2                 # Protect end-point (number of cores * rps = requests/second)
+  max_retries: 10                     # Number of retries before downloader raises
+  backoff_factor: 1.2                 # Exponential backoff factor (wait time)
+  timeout: 10                         # Request timeout
+  rate_limit_rps: 1                   # Protect end-point (number of cores * rps = requests/second)
   mode: http2                         # DownloadWorker-type: requests or http2
-  jitter: 1.0                         # Add a random jitter up to this amount (seconds)
+  jitter: 5.0                         # Add a random jitter up to this amount (seconds)
   paths:
     historic: cache                   # Historical downloads
     live: data/temp                   # Live downloads
 ```
 
-(with these settings i can keep in-sync every minute, 40 symbols)
+(these are working settings for people that are in-sync)
 
 ## **WSL Fast-API issue - `--reload` consumes one core**
 
