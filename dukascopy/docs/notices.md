@@ -21,17 +21,26 @@ You can checkout the indicator [here](../util/plugins/indicators/is-open.py).
 
 **Note:** When you have `custom timeframes` defined, copy over the `is-open.py` indicator to your `config.user/plugins/indicators` directory and add your `custom timeframe` to this block. The user-defined indicator will overrule the system-one (yes, conflicting with the indicator.md documentation, will change that documentation soon).
 
+These are currently defined. If your custom timeframe is in there, no changes needed.
+
 ```python
         # Around +- line 120
         # Duration (in ms) of each supported timeframe
         tf_lengths = {
             "1m": 0,
+            "2m": 120000,
+            "3m": 180000,
             "5m": 300000,
+            "10m": 600000,
             "15m": 900000,
             "30m": 1800000,
             "1h": 3600000,
-            "2h": 7200000, # custom 2-hourly timeframe example
+            "2h": 7200000,
+            "3h": 10800000,
             "4h": 14400000,
+            "6h": 21600000,
+            "8h": 28800000,
+            "12h": 43200000,
             "1d": 86400000,
             "1W": 604800000,
         }
