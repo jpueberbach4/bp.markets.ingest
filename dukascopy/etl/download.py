@@ -2,211 +2,79 @@
 # -*- coding: utf-8 -*-
 """
 ===============================================================================
- File:        download.py
- Author:      JP Ueberbach
- Created:     2025-12-19
- Description: Conversion to OOP - Download Dukascopy minute-level delta JSON 
-              candle (HST) data for all symbols listed in 'symbols.txt'. Supports 
-              historical and current-day downloads with automatic folder structure 
-              management.
+File:        download.py
+Author:      JP Ueberbach
+Created:     2025-12-19
+Updated:     2026-02-08
 
- Usage:
-     python3 download.py
+Purpose:
+    Download worker responsible for orchestrating Dukascopy candle downloads
+    using a pluggable download engine (HTTP/2 or legacy requests).
 
- Requirements:
-     - Python 3.8+
-     - pandas
-     - requests
+    This module sits ABOVE the actual download engines and handles:
+        - File path resolution (live vs historical)
+        - Temporary file handling and atomic writes
+        - Engine selection via DownloadFactory
+        - Bridging async engines into synchronous execution
+        - Forward-only data merging
+        - Cleanup of obsolete live files
 
- License:
-     MIT License
+Design Notes:
+    - Does NOT perform network I/O directly
+    - Does NOT know about retry or rate limiting
+    - Delegates all HTTP behavior to engine implementations
+    - Guarantees atomic file writes using temp files + os.replace
+    - Can be safely used in multiprocessing contexts
+
+Important:
+    This module intentionally avoids:
+        - Symbol discovery
+        - Scheduling
+        - Parallel coordination (handled externally)
+        - Business logic inside the worker
+
+Typical Call Stack:
+    fork_download()
+        -> DownloadWorker.run()
+            -> DownloadEngine.fetch_data()
+            -> DownloadEngine.filter_backfilled_items()
+
+Requirements:
+    - Python 3.8+
+    - orjson
+    - numpy
+    - requests / httpx (via engine)
+    - asyncio (for HTTP/2 bridge)
+
+License:
+    MIT License
 ===============================================================================
 """
+
 import os
-import time
-import orjson
-import requests
-import numpy as np
+import asyncio
+
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import Tuple, Optional
+from typing import Tuple
 
-from config.app_config import AppConfig, DownloadConfig
-from exceptions import *
-
-class DownloadEngine:
-    """
-    Encapsulates HTTP access, rate limiting, retry logic, and continuity-safe
-    merging of Dukascopy JSON delta candle data.
-    """
-
-    last_request_time = time.monotonic()
-
-    def __init__(self, config: DownloadConfig):
-        """
-        Initialize the download engine.
-
-        Args:
-            config: Download-related configuration parameters.
-        """
-        self.config = config
-        self.session = requests.Session()
-
-    def get_url(self, symbol: str, dt: date) -> str:
-        """
-        Build the Dukascopy API URL for a given symbol and date.
-
-        Uses the live endpoint for the current UTC date and the historical
-        endpoint for all past dates.
-
-        Args:
-            symbol: Trading symbol (e.g. "EURUSD").
-            dt: Date for which data is requested.
-
-        Returns:
-            Fully-qualified Dukascopy API URL.
-        """
-        today_dt = datetime.now(timezone.utc).date()
-
-        if dt == today_dt:
-            # Live endpoint (no date path)
-            return f"https://jetta.dukascopy.com/v1/candles/minute/{symbol}/BID"
-
-        # Historical endpoint
-        return (
-            f"https://jetta.dukascopy.com/v1/candles/minute/"
-            f"{symbol}/BID/{dt.year}/{dt.month}/{dt.day}"
-        )
-
-    def fetch_data(self, url: str) -> str:
-        """
-        Fetch JSON candle data from Dukascopy with rate limiting and retries.
-
-        Applies:
-        - Requests-per-second throttling
-        - Exponential backoff on retryable errors
-        - Immediate failure on non-retryable errors
-
-        Args:
-            url: Fully-qualified request URL.
-
-        Returns:
-            Raw response body as a string.
-
-        Raises:
-            requests.exceptions.RequestException: If all retries fail.
-        """
-        for attempt in range(self.config.max_retries):
-            try:
-                # Enforce global rate limit
-                min_interval = (
-                    1.0 / self.config.rate_limit_rps
-                    if self.config.rate_limit_rps > 0
-                    else 0
-                )
-                elapsed = time.monotonic() - DownloadEngine.last_request_time
-                sleep_needed = max(0, min_interval - elapsed)
-
-                if sleep_needed > 0:
-                    time.sleep(sleep_needed)
-
-                # Perform HTTP request
-                response = self.session.get(
-                    url,
-                    headers={
-                        "Accept-Encoding": "gzip, deflate",
-                        "User-Agent": "dukascopy-downloader/1.1 (+https://github.com/jpueberbach4/bp.markets.ingest/blob/main/dukascopy/etl/download.py)",
-                    },
-                    timeout=self.config.timeout,
-                )
-                response.raise_for_status()
-
-                # Update request timestamp after success
-                DownloadEngine.last_request_time = time.monotonic()
-                return response.text
-
-            except requests.exceptions.RequestException as e:
-                status_code = getattr(e.response, "status_code", 0)
-
-                # Retry only on server errors or rate limiting
-                if (
-                    attempt < self.config.max_retries - 1
-                    and (status_code >= 500 or status_code == 429 or status_code == 503 or status_code == 400)
-                ):
-                    wait_time = self.config.backoff_factor ** attempt
-                    print(f"{url} received {status_code}. Retrying in {wait_time}s...")
-                    time.sleep(wait_time)
-                    continue
-
-                raise
-
-        return ""
-
-    def filter_backfilled_items(self, temp_path: Path, cache_path: Path) -> bool:
-        """
-        Merge newly downloaded data into an existing cache while ensuring
-        strict forward-only time continuity.
-
-        Uses vectorized NumPy operations to identify the first new candle
-        after the cached cutoff timestamp.
-
-        Args:
-            temp_path: Path to newly downloaded temporary JSON file.
-            cache_path: Path to existing cached JSON file.
-
-        Returns:
-            True if a merge occurred, False otherwise.
-        """
-        if not cache_path.exists():
-            return False
-
-        with open(temp_path, "r+b") as f_temp, open(cache_path, "rb") as f_cache:
-            data_temp = orjson.loads(f_temp.read())
-            data_cache = orjson.loads(f_cache.read())
-
-            if not data_cache["times"]:
-                return False
-
-            # Compute last cached timestamp
-            cut_off = (
-                np.cumsum(
-                    np.array(data_cache["times"], dtype=np.int64)
-                    * data_cache["shift"]
-                )
-                + data_cache["timestamp"]
-            )[-1]
-
-            # Compute timestamps for new data
-            times_temp = (
-                np.cumsum(
-                    np.array(data_temp["times"], dtype=np.int64)
-                    * data_temp["shift"]
-                )
-                + data_temp["timestamp"]
-            )
-
-            # Find first index strictly after cutoff
-            mask = times_temp > cut_off
-            indices = np.where(mask)[0]
-            idx = indices[0] if indices.size > 0 else None
-
-            if idx is not None:
-                # Append only forward-continuous data
-                for col in ["times", "opens", "highs", "lows", "closes", "volumes"]:
-                    data_cache[col].extend(data_temp[col][idx:])
-
-            # Overwrite temp file with merged result
-            f_temp.seek(0)
-            f_temp.truncate(0)
-            f_temp.write(orjson.dumps(data_cache))
-
-        return True
+from config.app_config import AppConfig
+from exceptions import ForkProcessError
+from downloaders.factory import DownloadFactory
 
 
 class DownloadWorker:
     """
-    Coordinates file path resolution, environment rollovers (live vs historical),
-    and atomic persistence of downloaded data.
+    High-level download orchestrator for a single symbol/date pair.
+
+    Responsibilities:
+        - Resolve filesystem paths
+        - Invoke the correct download engine
+        - Bridge async engines into sync execution
+        - Merge new data safely
+        - Persist results atomically
+
+    This class is intentionally boring and explicit.
     """
 
     def __init__(self, app_config: AppConfig):
@@ -214,80 +82,139 @@ class DownloadWorker:
         Initialize the download worker.
 
         Args:
-            app_config: Global application configuration.
+            app_config: Global application configuration containing
+                download settings and filesystem paths.
         """
         self.app_config = app_config
         self.config = app_config.download
-        self.engine = DownloadEngine(self.config)
+
+        # Resolve the correct engine implementation via factory.
+        # This allows switching between HTTP/2 and legacy requests
+        # without changing worker logic.
+        self.engine = DownloadFactory.get_engine(
+            self.config,
+            mode=self.config.mode,
+        )
 
     def resolve_paths(self, symbol: str, dt: date) -> Tuple[Path, Path, Path, bool]:
         """
-        Resolve target, historical, and live file paths for a symbol/date pair.
+        Resolve all filesystem paths for a symbol/date download.
+
+        This method decides whether the data is considered:
+            - Live (current UTC date)
+            - Historical (any past date)
 
         Args:
-            symbol: Trading symbol.
-            dt: Date of requested data.
+            symbol: Trading symbol (e.g. "EURUSD").
+            dt: Date of the requested candles (UTC).
 
         Returns:
             A tuple containing:
-            - Final target path
-            - Historical archive path
-            - Live staging path
-            - Boolean indicating historical mode
+                - final_target: Path where the merged file will live
+                - hist_path: Historical archive path
+                - live_path: Live staging path
+                - is_historical: True if dt is NOT today
         """
         today_dt = datetime.now(timezone.utc).date()
-        is_historical = not (dt == today_dt)
 
-        hist_path = Path(self.config.paths.historic) / dt.strftime(
-            f"%Y/%m/{symbol}_%Y%m%d.json"
-        )
-        live_path = Path(self.config.paths.live) / dt.strftime(
-            f"{symbol}_%Y%m%d.json"
+        # Historical mode = anything not equal to "today"
+        is_historical = dt != today_dt
+
+        # Historical files are organized by year/month
+        hist_path = (
+            Path(self.config.paths.historic)
+            / dt.strftime(f"%Y/%m/{symbol}_%Y%m%d.json")
         )
 
+        # Live files always live in the live directory
+        live_path = (
+            Path(self.config.paths.live)
+            / dt.strftime(f"{symbol}_%Y%m%d.json")
+        )
+
+        # Final write target depends on historical vs live mode
         final_target = hist_path if is_historical else live_path
+
         return final_target, hist_path, live_path, is_historical
 
     def run(self, symbol: str, dt: date) -> bool:
         """
-        Execute the full download and merge pipeline for a symbol and date.
+        Execute the complete download + merge pipeline for one symbol/date.
+
+        Steps (very explicit on purpose):
+            1. Resolve output paths
+            2. Build Dukascopy API URL
+            3. Fetch raw JSON using the selected engine
+            4. Write data to a temporary file
+            5. Merge forward-only candles if cache exists
+            6. Atomically replace the target file
+            7. Cleanup obsolete live files
 
         Args:
-            symbol: Trading symbol.
-            dt: Date to download.
+            symbol: Trading symbol to download.
+            dt: Date to download (UTC).
 
         Returns:
-            True if successful, False otherwise.
+            True if the operation completed successfully.
+
+        Raises:
+            Exception: Any unhandled error bubbles up intentionally.
         """
         try:
+            # Resolve filesystem paths
             target, hist_path, live_path, is_historical = self.resolve_paths(symbol, dt)
+
+            # Build the Dukascopy API URL
             url = self.engine.get_url(symbol, dt)
 
-            # Download raw JSON content
-            content = self.engine.fetch_data(url)
+            # ---------------------------------------------------------
+            # Fetch data
+            # ---------------------------------------------------------
+            # Some engines are async (HTTP/2), others are sync (requests).
+            # We bridge async engines explicitly using asyncio.run().
+            is_async_engine = hasattr(self.engine.fetch_data, "__call__") and asyncio.iscoroutinefunction(self.engine.fetch_data)
+
+            if is_async_engine:
+                content = asyncio.run(self.engine.fetch_data(url))
+            else:
+                content = self.engine.fetch_data(url)
+
+            # No content means no work
+            if not content:
+                return False
 
             # Ensure target directory exists
             target.parent.mkdir(parents=True, exist_ok=True)
+
+            # Always write to a temporary file first
             tmp_path = target.with_suffix(".tmp")
 
-            # Write downloaded content to temporary file
+            # Write raw JSON payload
             with open(tmp_path, "w", encoding="utf-8") as f:
                 f.write(content)
 
-            # Merge forward-only data if a cache exists
+            # ---------------------------------------------------------
+            # Merge with existing cache (forward-only)
+            # ---------------------------------------------------------
+            # Prefer live cache if it exists, otherwise fall back
+            # to historical cache.
             filter_source = live_path if live_path.is_file() else hist_path
             self.engine.filter_backfilled_items(tmp_path, filter_source)
 
-            # Atomically replace target file
+            # ---------------------------------------------------------
+            # Atomic replace
+            # ---------------------------------------------------------
+            # os.replace() guarantees atomicity on POSIX systems.
             os.replace(tmp_path, target)
 
-            # Cleanup live file when historical data is finalized
+            # If we just finalized historical data, remove stale live file
             if is_historical:
                 live_path.unlink(missing_ok=True)
 
             return True
 
-        except Exception as e:
+        except Exception:
+            # Let the caller decide how to handle failures.
             raise
 
 
@@ -295,17 +222,26 @@ def fork_download(args: tuple) -> bool:
     """
     Multiprocessing entry point for downloading a single symbol/date pair.
 
+    This function exists specifically so it can be passed directly to
+    multiprocessing.Pool or similar APIs.
+
     Args:
-        args: Tuple of (symbol, date, app_config).
+        args: Tuple containing:
+            - symbol: Trading symbol
+            - dt: Date to download
+            - app_config: Global application configuration
 
     Returns:
-        True if download completed successfully.
+        True if the download completed successfully.
+
+    Raises:
+        ForkProcessError: Wrapped exception for clearer multiprocessing errors.
     """
     try:
         symbol, dt, app_config = args
         worker = DownloadWorker(app_config)
         return worker.run(symbol, dt)
     except Exception as e:
-        # Raise
-        raise ForkProcessError(f"Error on download fork for {symbol}") from e
-
+        raise ForkProcessError(
+            f"Error during download fork for symbol={symbol}, date={dt}"
+        ) from e
