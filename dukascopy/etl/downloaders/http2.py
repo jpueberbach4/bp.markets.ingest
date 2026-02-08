@@ -72,7 +72,6 @@ class DownloadEngineHTTP2:
         - API URL construction
         - Global rate limiting
         - Retry and backoff behavior
-        - Continuity-safe candle merging
 
     One instance can be reused across many downloads.
     """

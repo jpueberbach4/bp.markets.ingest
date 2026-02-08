@@ -72,7 +72,6 @@ class DownloadEngineRequests:
         - URL construction
         - Global rate limiting
         - Retry and backoff behavior
-        - Continuity-safe candle merging
 
     It is functionally equivalent to the HTTP/2 engine, but slower.
     """
