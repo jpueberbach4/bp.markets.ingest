@@ -635,6 +635,8 @@ Example image:
 3. This avoids repainting
 4. This indicator is now "live-capable"
 
+You can compare the output of the indicator with the default RSI (current TF, H4 and D1). You will see how it works.
+
 ```python
 import polars as pl
 import pandas as pd
