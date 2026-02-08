@@ -800,6 +800,34 @@ Generally the workflow is like this (my workflow):
 
 It is not flawless and it can be frustrating. It tells you in a very convincing way about the suggested performance optimizations while it actually slows stuff down (sometimes dramatically). It's also a bit about knowing what you are doing/interpreting its response.
 
+Oh yes! Coloring. Sometimes you will not like the automatically generated coloring of the webinterface. Eg two lines in an indicator panel are about same color. 
+
+Openup config.user/dukascopy/http-docs/scripts/util.js. Search the following code:
+
+```js
+function getSeriesColor(col) {
+    const palette = {
+        'stoch_k': '#2962FF',    // Blue
+        'stoch_d': '#FF6D00',    // Orange
+        'signal': '#FF5252',     // Red
+        'macd': '#2962FF',       // Blue
+        'upper': '#787b86',      // Gray
+        'lower': '#787b86',      // Gray
+        'middle': '#FF9800',     // Amber
+        'rsi': '#9c27b0',        // Purple
+        'rsi_14': '#9c27b0',        // Purple
+        'hist': '#26a69a',       // Teal
+        'confidence': '#FFD600', // Orange
+        'threshold': '#00FF00',   // Lime
+        'relative-height': '#1B6E1B', //Deep Forest
+        'rsi4h': '#00FF00',         // eg this one was added
+        'rsi1d': '#FFD600',         // eg this one was added
+    };
+
+```
+
+Refresh interface after changes. Voila.
+
 ![example](../images/example-mixed-tf-h1-h4-1d-polars.png)
 
 **Note:** Live-edge handling is now handled in a pretty robust way. However, on "cabin in the woods without internet", it may fail. There will be an update for this on the `is-open indicator` in the future.  
