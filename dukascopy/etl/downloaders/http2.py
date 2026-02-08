@@ -152,16 +152,13 @@ class DownloadEngineHTTP2:
             httpx.HTTPError: If all retry attempts fail.
             ProcessingError: As a final safeguard if no exception was raised.
         """
-        last_exception = None  # Track the most recent failure
+        last_exception = None
 
         for attempt in range(self.config.max_retries):
             try:
                 # -------------------------------
                 # Global rate limiting
                 # -------------------------------
-                # We calculate how long we *must* wait based on:
-                #   - Desired requests-per-second
-                #   - Time elapsed since the last successful request
                 min_interval = (
                     1.0 / self.config.rate_limit_rps
                     if self.config.rate_limit_rps > 0
@@ -188,35 +185,42 @@ class DownloadEngineHTTP2:
                     },
                 )
 
-                # Dukascopy sometimes returns random 400s under load.
-                # We treat these as transient and retry.
-                if response.status_code == 400:
-                    wait_time = self.config.backoff_factor ** attempt
-                    await asyncio.sleep(wait_time)
-                    continue
-
-                # Any other 4xx/5xx should raise immediately
+                # Raise immediately for non-2xx responses
                 response.raise_for_status()
 
                 # Success: update global timestamp
                 DownloadEngineHTTP2.last_request_time = time.monotonic()
                 return response.text
 
-            except (httpx.HTTPError, httpx.RequestError) as e:
+            except (httpx.HTTPStatusError, httpx.RequestError) as e:
                 last_exception = e
+                
+                # Determine status code
+                status_code = 0
+                if isinstance(e, httpx.HTTPStatusError):
+                    status_code = e.response.status_code
 
-                # Retry if we still have attempts left
-                if attempt < self.config.max_retries - 1:
+                # Retry only on transient or known Dukascopy failure modes
+                should_retry = (
+                    attempt < self.config.max_retries - 1
+                    and (
+                        status_code == 0 
+                        or status_code in (400, 429, 503) 
+                        or status_code >= 500
+                    )
+                )
+
+                if should_retry:
                     wait_time = self.config.backoff_factor ** attempt
                     await asyncio.sleep(wait_time)
                     continue
 
-                # Retries exhausted: re-raise the last error
+                # Non-retryable or retries exhausted
                 raise last_exception
 
-        # Defensive fallback (should never happen)
-        raise ProcessingError(
-            f"Failed to fetch data from {url} "
-            f"after {self.config.max_retries} attempts."
-        )
+        # Final safeguard
+        if last_exception:
+            raise last_exception
+            
+        raise ProcessingError(f"Failed to fetch {url} after {self.config.max_retries} attempts.")
 
