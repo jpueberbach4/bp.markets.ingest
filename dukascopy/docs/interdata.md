@@ -28,7 +28,7 @@ def get_data(
 **Example:** suppose you want to get indicator rsi(7) and sma(20) values for the current symbol, timeframe and time-region.
 
 ```python
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+def calculate(df: Union[pl.DataFrame,pd.DataFrame], options: Dict[str, Any]) -> Union[pl.DataFrame,pd.DataFrame]:
     # Important! import get_data from within the calculate function! Not globally.
     from util.api import get_data
     # We first collect all of our metadata required to make the get_data call
@@ -72,16 +72,21 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
 OR use the convenience function get_data_auto if you only need to get indicators for the current symbol, timeframe:
 
 ```python
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+def calculate(df: Union[pl.DataFrame,pd.DataFrame], options: Dict[str, Any]) -> Union[pl.DataFrame,pd.DataFrame]:
     # Important! import get_data_auto from within the calculate function! Not globally.
     from util.api import get_data_auto
     
     # Fetch our data, automatically determine after_ms, until_ms, symbol, etc from origin df
-    ex_df = get_data_auto(df=df, indicators=['rsi_7', 'sma_20'])
+    ex_df = get_data_auto(df=df, indicators=['rsi_7', 'sma_20'], options)
 
     # We now have the two indicators in ex_df for the current origin df
 ```
 
+**Note:** By default, get_data and get_data_auto return Pandas DataFrames.
+
+To return Polars DataFrames directly (avoiding conversion and improving performance), set options['return_polars'] = True.
+
+If you want an indicator to receive a Polars DataFrame without being a Polars-native indicator (e.g., meta.polars = 1), set meta['polars_input'] = 1 in your indicator. Please consult the [indicators.md](indicators.md) for more information and examples.
 
 It’s straightforward to use after you gain some familiarity with the structure.
 

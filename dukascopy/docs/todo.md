@@ -20,7 +20,7 @@ Note: we are setup now to integrate the extensions below (weekend work).
 
 Quality:
   - [ ] Eliminate the Polars->Pandas conversion in HTTP-api
-  - [ ] Allow get_data_auto to receive a polars Dataframe (and options)
+  - [x] Allow get_data_auto to receive a polars Dataframe (and options)
   - [x] Use BTC-USD as heartbeat to detect open-candles, build indicator
   - [ ] Degradation and change of execution mode on memory-pressure
   - [x] Extra quality pass on indicator kaufman-er and up (sort by modified desc)
