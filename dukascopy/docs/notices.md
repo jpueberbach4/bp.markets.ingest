@@ -1,3 +1,6 @@
+## **HTTP-STATUS is now "transient"**
+
+I forgot to mention but this was implemented already a "few" commits back. Status-code 400 is now transient. That means when the ingestion encounters a 400 state, it will retry. This makes ingestion a bit more robust. Play with the number of retries, the backoff factor and the timeout if you are having issues syncing up. Don't overdo it on the rps setting though. Please. 
 
 ## **WSL Fast-API issue - `--reload` consumes one core**
 

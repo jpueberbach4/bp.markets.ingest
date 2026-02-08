@@ -714,7 +714,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
             after_ms=time_min - (warmup_ms * 2),
             until_ms=time_max + 1,
             indicators=[rsi_col, "is-open"],
-            limit=100000,
+            limit=len(df),
             options=api_opts
         )
 
