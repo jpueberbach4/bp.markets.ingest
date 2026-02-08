@@ -11,6 +11,25 @@ Another robustness update is coming for the "cabin in the woods but no internet"
 
 You can checkout the indicator [here](../util/plugins/indicators/status.py).
 
+**Note:** When you have `custom timeframes` defined, copy over the `status.py` indicator to your `config.user/plugins/indicators` directory and add your `custom timeframe` to this block. The user-defined indicator will overrule the system-one (yes, conflicting with the indicator.md documentation, will change that documentation soon).
+
+```python
+        # Around +- line 120
+        # Duration (in ms) of each supported timeframe
+        tf_lengths = {
+            "1m": 0,
+            "5m": 300000,
+            "15m": 900000,
+            "30m": 1800000,
+            "1h": 3600000,
+            "2h": 7200000, # custom 2-hourly timeframe example
+            "4h": 14400000,
+            "1d": 86400000,
+            "1W": 604800000,
+        }
+```
+
+
 **Another performance update**
 
 This one hits your indicators. You can now optionally accept a polars Dataframe inside of your plugin. You need to set `meta.polars_input` to 1. The calling function then passes in a polars dataframe. You can then either return a pandas dataframe or a polars dataframe. Generic advice is to prevent conversions as much as possible. So polars input has the preference. 
