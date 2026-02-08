@@ -6,7 +6,9 @@ And indicator `status` was added to the internal system indicators. You can quer
 
 This is a temporary but ROBUST solution when you can update at least `ONCE EVERY TWO HOURS`. So for live connections this works where update-time is < 2 hours. Eg your crontab setting is once-every-two-hours. You get the point.
 
-Another robustness update is coming for the "cabin in the woods but no internet"-problem. 
+Another robustness update is coming for the "cabin in the woods but no internet"-problem.
+
+You can checkout the indicator [here](../util/plugins/indicators/status.py).
 
 **Another performance update**
 
