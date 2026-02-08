@@ -196,3 +196,5 @@ As `timeframe.source` you should take the closest "parent"-timeframe. Eg for hou
 
 One more thing: please maintain a clear and consistent naming convention for custom timeframes. For example, a 2-hour timeframe should be named `2h`. If you want a 5-hour timeframe aligned to the right, name it 5h-right.
 This is important because the web interface parses the timeframe name to determine the API interval query length. It looks for `d`, `m`, `W`, or `M` in the name when the timeframe is not a default one. If a completely different naming scheme is used, the `index.html` file will need to be modified for efficiency.
+
+An extra tip: Google Gemini. Ask it: "what are secret profitable timeframes to support?" 🤫 
