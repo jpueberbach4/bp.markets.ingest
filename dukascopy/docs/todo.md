@@ -27,6 +27,7 @@ Quality:
   - [x] Automated validation of the system indicators using TA-lib where possible
   - [ ] More unit-tests NOW - in progress
   - [x] Find solution for UVLOOP WSL2 watchfiles CPU 100pct issue. Optionally, configurable.
+  - [ ] Third indicator execution path: CUDA/Rapids. I need to know this for ML. Can I gain with it?
 
 Note: UVLOOP WSL2 fix was implemented through a config.user.yaml setting.
 
