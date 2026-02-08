@@ -1,8 +1,9 @@
+
 **Fix for the open-candle problem - NEEDS BTC-USD as HEARTBEAT symbol**
 
 We have a temporary solution for the "open-candle" problem. Eg mark the open-candle in the output `is_open:1` or `is_open:0`. However, this requires you to configure the symbol `BTC-USD` and have it synced up. The `BTC-USD` symbol acts as the heartbeat of the market. 
 
-And indicator `status` was added to the internal system indicators. You can query it in your webinterface or subquery it using `get_data` by passing `status` as an indicator.
+An indicator `status` was added to the internal system indicators. You can query it in your webinterface or subquery it using `get_data` by passing `status` as an indicator.
 
 This is a temporary but ROBUST solution when you can update at least `ONCE EVERY TWO HOURS`. So for live connections this works where update-time is < 2 hours. Eg your crontab setting is once-every-two-hours. You get the point.
 
