@@ -51,8 +51,8 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
 
     # FAST PATH: 1m candles are always closed in this system
     if tf == "1m":
-        return df.select([
-            pl.lit(0).cast(pl.Int8).alias("is_open")
+        return ldf.select([
+            (pl.col("time_ms") * 0).cast(pl.Int8).alias("is-open")
         ])
 
     # Get the earliest timestamp in the input data
