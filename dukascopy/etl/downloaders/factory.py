@@ -92,8 +92,6 @@ class DownloadFactory:
         # Normalize mode to lowercase so callers don't have to care
         mode = mode.lower()
 
-        print(mode)
-
         # HTTP/2 engine:
         # - Uses a single persistent TCP connection
         # - Much faster for bulk ingestion
