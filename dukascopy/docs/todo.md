@@ -27,9 +27,11 @@ Quality:
   - [x] Automated validation of the system indicators using TA-lib where possible
   - [ ] More unit-tests NOW - in progress
   - [x] Find solution for UVLOOP WSL2 watchfiles CPU 100pct issue. Optionally, configurable.
-  - [ ] Third indicator execution path: CUDA/Rapids. I need to know this for ML. Can I gain with it? We have that PCIe issue but i need massive parallelism. Thats why its there. And ofcourse, i have a capable GPU.
+  - [ ] Third indicator execution path: CUDA/Rapids. I need to know this for ML. Can I gain with it?
 
 Note: UVLOOP WSL2 fix was implemented through a config.user.yaml setting.
+
+Note: Cuda/Rapids/GPU: The "Elegant" Fix: Use a Coalescing Buffer. Instead of immediate execution, the internal API should collect indicator requests within a tiny time window (e.g., 5-10ms) or until a batch size is met, then ship one massive Arrow table to the GPU. This maximizes the O(1) nature of the parallel execution. Could be too much for now. If too much: it moves down the feature-list.
 
 Modularity:
   - [ ] Split up ETL and have a central "feeder" engine that can distribute in near-realtime
