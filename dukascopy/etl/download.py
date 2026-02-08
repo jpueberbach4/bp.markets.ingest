@@ -55,6 +55,8 @@ import os
 import asyncio
 import orjson
 import numpy as np
+import random
+import time
 
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -241,6 +243,8 @@ class DownloadWorker:
             Exception: Any unhandled error bubbles up intentionally.
         """
         try:
+            # Jitter
+            time.sleep(random.uniform(0.0, self.config.jitter))
             # Resolve filesystem paths
             target, hist_path, live_path, is_historical = self._resolve_paths(symbol, dt)
 

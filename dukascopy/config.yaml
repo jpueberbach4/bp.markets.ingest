@@ -61,6 +61,7 @@ download:
                                       # IMPORTANT: when you are initially syncing you might want to
                                       # make this higher, but keep it reasonable!
   mode: requests                      # DownloadWorker-type: requests or http2
+  jitter: 0.2                         # Add a random jitter up to this amount (seconds)
   paths:
     historic: cache                   # Historical downloads
     live: data/temp                   # Live downloads
