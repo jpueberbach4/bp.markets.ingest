@@ -325,11 +325,12 @@ def _format_json(df: pl.DataFrame, options: Dict):
     # Subformat 2: Columnar JSON (columns + value matrix)
     elif subformat == 2:
         df = df.drop(["time", "time_original", "year"], strict=False).rename({"time_ms": "time"})
+        
         return ORJSONResponse(content={
             "status": "ok",
             "options": options,
             "columns": df.columns,
-            "values": df.to_numpy().tolist(),
+            "values": df.rows(),  # NATIVE POLARS: Returns list of tuples (fast/stable)
         })
 
     # Subformat 3: Time-series optimized layout
