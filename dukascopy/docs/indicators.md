@@ -767,6 +767,22 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
 
 ```
 
+Performance of this indicator on a Ryzen 7/32GB/NVMe:
+
+```sh
+10: 1000000 records, time-passed: 99.48036499554291 ms + 1 indicators
+11: 1000000 records, time-passed: 101.10645199893042 ms + 1 indicators
+12: 1000000 records, time-passed: 98.68687699781731 ms + 1 indicators
+13: 1000000 records, time-passed: 101.89277300378308 ms + 1 indicators
+14: 1000000 records, time-passed: 95.17143201082945 ms + 1 indicators
+15: 1000000 records, time-passed: 97.07992101903073 ms + 1 indicators
+16: 1000000 records, time-passed: 97.17314000590704 ms + 1 indicators
+17: 1000000 records, time-passed: 98.03290499257855 ms + 1 indicators
+18: 1000000 records, time-passed: 98.6152499972377 ms + 1 indicators
+```
+
+About 10 million records per second-not bad for an indicator that does 3 recursive get_data calls.
+
 Tip: when optimizing for performance, always make sure you can validate the new-optimized-version against the original working version. Aka build a side-connector. Keep the original one intact until the responses match exactly.
 
 ![example](../images/example-mixed-tf-h1-h4-1d-polars.png)
