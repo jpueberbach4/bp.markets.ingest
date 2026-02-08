@@ -5,7 +5,7 @@ This is known to me. I had a go at it but took too much time to solve quickly. T
 
 If you really find it annoying, you can disable in `api/run.py` reload=True and set it to False. It's annoying. It spins up my fans too. However, when setting to False, it wont detect indicator `additions`. When you set it to false, you will need to keep setting it to False or do some git stash/pop tricks when updating, git pull. 
 
-The issue has pretty low priority given the list, spend an hour on it already. That's too much for this problem at this moment.
+The issue has pretty low priority given the list, spent an hour on it already. That's too much for this problem at this moment.
 
 I added it to the list (if can't find solution soon, i will make it configurable in `config.user.yaml`).
 
