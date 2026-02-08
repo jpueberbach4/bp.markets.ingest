@@ -25,6 +25,8 @@ download:
     live: data/temp                   # Live downloads
 ```
 
+(with these settings i can keep in-sync every minute, 40 symbols)
+
 ## **WSL Fast-API issue - `--reload` consumes one core**
 
 This is known to me. I had a go at it but took too much time to solve quickly. Tried watchfiles, watchdog, exclusions, inclusions. Everything. The problem is that, under WSL2, the inotify is broken. So when a file changes, the inotification is not being raised. FastAPI/UVLOOP with `--reload` detects that it is not working and instead goes in a loop mode. This causes the CPU-issue. Since the root has many files (cache, data,..).
