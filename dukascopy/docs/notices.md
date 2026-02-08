@@ -76,6 +76,13 @@ These are currently defined. If your custom timeframe is in there, no changes ne
         }
 ```
 
+**Update:** This approach works really well, and its simplicity stems from the system's design. The fail-fast principle plays a key role: if even one symbol’s download fails, the process fails immediately—preventing updates for any symbol.
+
+When all downloads succeed, and BTC-USD has new data, it serves as the reference point. If BTC-USD has new data but GBP-USD does not, this indicates that the GBP-USD market is closed.
+
+We can then take the last minute of BTC-USD data and subtract the timespan of the last candle (e.g., 4 hours). If the result is later than the start time of that last candle, the candle is considered closed.
+
+This method is symbol-agnostic and automatically handles market closures, holidays, and similar scenarios
 
 ## **Another performance update**
 
