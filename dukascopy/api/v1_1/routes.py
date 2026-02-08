@@ -395,13 +395,6 @@ async def get_ohlcv(
         options["filename"] = filename
 
     try:
-        # Enable profiling for performance diagnostics
-        profiling_enabled = True
-        if profiling_enabled:
-            import cProfile, pstats, io
-            pr = cProfile.Profile()
-            pr.enable()
-
         # Resolve derived options (selects, indicators, modifiers)
         options = discover_options(options)
 
@@ -472,13 +465,6 @@ async def get_ohlcv(
 
         # Generate serialized output
         output = generate_output(enriched_df, options)
-
-        if profiling_enabled:
-            pr.disable()
-            s = io.StringIO()
-            ps = pstats.Stats(pr, stream=s).sort_stats("cumulative")
-            ps.print_stats(20)
-            print(s.getvalue())
 
         if output:
             return output
