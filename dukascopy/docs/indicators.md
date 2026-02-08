@@ -785,6 +785,21 @@ About 10 million records per second-not bad for an indicator that does 3 recursi
 
 Tip: when optimizing for performance, always make sure you can validate the new-optimized-version against the original working version. Aka build a side-connector. Keep the original one intact until the responses match exactly.
 
+Tip: when using this for ML-feature engineering, be OBSESSIVE-like me-on performance. Even shaving off a few milliseconds can result into minutes of saved time. Optimize until you can't anymore. Do a manual pass first, then when no-more... start using AI. Or use AI from the start but query it in the correct way. Tell it EXPLICITLY to not change functionality or drop code from your working version. Pass it stacktraces too. 
+
+Generally the workflow is like this (my workflow):
+
+- Create a working pandas indicator
+- Test it in the web-interface
+- Use Gemini to convert to Polars dataframe version (or the fully native expression version, if not recursive) by passing in an example. Eg the example above. Generally you paste two snippets. First the example, then you add a line, use this for coding style and function signatures. Then you paste YOUR pandas implementation. You end with: Now convert last code snippet to an optimized version, using code style of first snippet. Dont drop any functionality, code and comments. Return full code. It will convert.
+- Paste it to a new indicator.py file. Test it, in the webinterface, compare old to new
+- When all OK. Performance optimization. Add the profiling blocks to your code.
+- Press update view. Grab profile output from your console window.
+- Paste your code PLUS the stacktrace to Gemini and say: Identify bottlenecks based on the profiling output and optimize my code. DONT drop any functionality, profiling blocks and comments. Here is my code: paste your latest snippet WITH the profiling block-so it can see what was profiled. End with: Return FULL corrected code.
+- Apply the changes. Compare performance. Repeat.
+
+It is not flawless and it can be frustrating. It tells you in a very convincing way about the suggested performance optimizations while it actually slows stuff down (sometimes dramatically). It's also a bit about knowing what you are doing/interpreting its response.
+
 ![example](../images/example-mixed-tf-h1-h4-1d-polars.png)
 
 **Note:** Live-edge handling is now handled in a pretty robust way. However, on "cabin in the woods without internet", it may fail. There will be an update for this on the `is-open indicator` in the future.  
