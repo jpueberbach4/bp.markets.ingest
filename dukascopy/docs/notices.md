@@ -1,17 +1,17 @@
 
 **Fix for the open-candle problem - NEEDS BTC-USD as HEARTBEAT symbol**
 
-We have a temporary solution for the "open-candle" problem. Eg mark the open-candle in the output `is_open:1` or `is_open:0`. However, this requires you to configure the symbol `BTC-USD` and have it synced up. The `BTC-USD` symbol acts as the heartbeat of the market. 
+We have a temporary solution for the "open-candle" problem. Eg mark the open-candle in the output `is-open:1` or `is-open:0`. However, this requires you to configure the symbol `BTC-USD` and have it synced up. The `BTC-USD` symbol acts as the heartbeat of the market. 
 
-An indicator `status` was added to the internal system indicators. You can query it in your webinterface or subquery it using `get_data` by passing `status` as an indicator.
+An indicator `is-open` was added to the internal system indicators. You can query it in your webinterface or subquery it using `get_data` by passing `is-open` as an indicator.
 
 This is a temporary but ROBUST solution when you can update at least `ONCE EVERY TWO HOURS`. So for live connections this works where update-time is < 2 hours. Eg your crontab setting is once-every-two-hours. You get the point.
 
 Another robustness update is coming for the "cabin in the woods but no internet"-problem.
 
-You can checkout the indicator [here](../util/plugins/indicators/status.py).
+You can checkout the indicator [here](../util/plugins/indicators/is-open.py).
 
-**Note:** When you have `custom timeframes` defined, copy over the `status.py` indicator to your `config.user/plugins/indicators` directory and add your `custom timeframe` to this block. The user-defined indicator will overrule the system-one (yes, conflicting with the indicator.md documentation, will change that documentation soon).
+**Note:** When you have `custom timeframes` defined, copy over the `is-open.py` indicator to your `config.user/plugins/indicators` directory and add your `custom timeframe` to this block. The user-defined indicator will overrule the system-one (yes, conflicting with the indicator.md documentation, will change that documentation soon).
 
 ```python
         # Around +- line 120
