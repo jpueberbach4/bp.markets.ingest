@@ -628,7 +628,11 @@ Example image:
 
 ### Tuned version of the above
 
-**Note:** Yeah I won't stop optimizing. We have now a new flag in meta section: `meta.polars_input`. This way you can prevent a polars to pandas conversion inside of your plugin. Shaving off quite a huge amount of costly milliseconds (saving about 50-60ms (50-60 percent) on 60k records). For 1000 records we went from 0.0511753559112549 (51ms) to 0.0189557075500488 (19ms).
+**Note:** Two thing about the example below:
+
+1. It queries the is-open status to detect the open-candles (you will need to have the BTC-USD symbol synced up)
+2. It discards the RSI of the open-candles. It only considers closed candles
+3. This avoids repainting
 
 ```python
 import polars as pl
@@ -662,127 +666,103 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "rsi_period": args[0] if len(args) > 0 else "14"
     }
 
-def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
+ddef calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
+    # Import here so these only load when the function actually runs
     from util.api import get_data
     from concurrent.futures import ThreadPoolExecutor
     import polars as pl
 
-    profiling_enabled = False    # If you want to see how profiling works, enable to True
-
+    # Toggle for performance profiling (leave False in production)
+    profiling_enabled = False
     if profiling_enabled:
-        import cProfile
-        import pstats
-        import io
+        import cProfile, pstats, io
         pr = cProfile.Profile()
         pr.enable()
 
-    rsi_period = int(options.get('rsi_period', 14))
-    rsi_col = f"rsi_{rsi_period}"
-    
-    # OPTIMIZATION: Move to Lazy early to allow for plan optimization
-    # We keep 'close' to calculate RSI locally, and cast time_ms for joins
-    ldf = df.with_columns([
-        pl.col("time_ms").cast(pl.UInt64),
-        pl.col("close").cast(pl.Float64)
-    ])
+    # Read RSI period from options, defaulting to 14 if not provided
+    rsi_period = int(options.get("rsi_period", 14))
 
-    # Faster scalar extraction using .item()
-    symbol = ldf["symbol"].item(0)
+    # Build the column name used by the indicator API (e.g. "rsi_14")
+    rsi_col = f"rsi_{rsi_period}"
+
+    # Create a lightweight DataFrame with only timestamps
+    # This becomes the "reference timeline" for all joins
+    ldf = df.select([pl.col("time_ms").cast(pl.UInt64)])
+
+    # Extract static metadata (assumed constant across all rows)
+    symbol = df["symbol"].item(0)
+    tf = df["timeframe"].item(0)
+
+    # Determine the time range we need indicator data for
     time_min = ldf["time_ms"].min()
     time_max = ldf["time_ms"].max()
-    
+
+    # Force API to return Polars DataFrames
     api_opts = {**options, "return_polars": True}
-    warmup_ms = warmup_count(options) * 3600000 * 24
 
-    # This runs in-memory on the existing data, saving ~15ms of I/O
-    def get_rsi_expr(col_name="close"):
-        delta = pl.col(col_name).diff()
-        up = delta.clip(lower_bound=0)
-        down = delta.clip(upper_bound=0).abs()
-        alpha = 1 / rsi_period
-        return 100 - (100 / (1 + (
-            up.ewm_mean(alpha=alpha, adjust=False, min_periods=rsi_period) /
-            down.ewm_mean(alpha=alpha, adjust=False, min_periods=rsi_period)
-        )))
+    # One full day of extra history to stabilize RSI calculations
+    warmup_ms = 86400000
 
-    # Fetch HTF Data in Parallel (4H & 1D)
-    # While we define the local calculation, we fetch remote data concurrently
-    def fetch_htf(tf, multiplier, alias):
-        return get_data(
-            symbol=symbol, timeframe=tf,
-            after_ms=time_min - (warmup_ms * multiplier),
+    def fetch_indicator_data(target_tf, alias):
+        # Fetch RSI + is-open flags for a given timeframe
+        data = get_data(
+            symbol=symbol,
+            timeframe=target_tf,
+            after_ms=time_min - (warmup_ms * 2),
             until_ms=time_max + 1,
-            indicators=[rsi_col], limit=len(df) + 50000, options=api_opts
-        ).select([
-            pl.col("time_ms").cast(pl.UInt64),
-            pl.col(rsi_col).alias(alias)
-        ]).sort("time_ms").lazy() # Return as LazyFrame
+            indicators=[rsi_col, "is-open"],
+            limit=100000,
+            options=api_opts
+        )
 
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        f_4h = executor.submit(fetch_htf, "4h", 1, "rsi4h")
-        f_1d = executor.submit(fetch_htf, "1d", 2, "rsi1d")
-        
-        # Apply Local RSI Calculation
-        lazy_base = ldf.lazy().with_columns(get_rsi_expr("close").alias("rsi"))
-        
-        # Wait for HTF LazyFrames
+        # Convert to lazy mode for efficient joins
+        # Drop open candles so values only update on closed bars
+        # Rename the RSI column so multiple timeframes can coexist
+        return (
+            data.lazy()
+            .filter(pl.col("is-open") == 0)
+            .select([
+                pl.col("time_ms").cast(pl.UInt64),
+                pl.col(rsi_col).alias(alias)
+            ])
+            .sort("time_ms")
+        )
+
+    # Fetch RSI data for three timeframes in parallel to save time
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        f_current = executor.submit(fetch_indicator_data, tf, "rsi")
+        f_4h = executor.submit(fetch_indicator_data, "4h", "rsi4h")
+        f_1d = executor.submit(fetch_indicator_data, "1d", "rsi1d")
+
+        # Wait for all fetches to finish
+        lazy_current = f_current.result()
         lazy_4h = f_4h.result()
         lazy_1d = f_1d.result()
 
-    # Join HTF Data onto Local Base using Lazy API
-    # Polars will optimize this into a single execution plan
+    # Join all RSI streams onto the base timeline
+    # Backward as-of join means "use the last known closed value"
     result_ldf = (
-        lazy_base.join_asof(lazy_4h, on="time_ms", strategy="backward")
+        ldf.lazy()
+        .join_asof(lazy_current, on="time_ms", strategy="backward")
+        .join_asof(lazy_4h, on="time_ms", strategy="backward")
         .join_asof(lazy_1d, on="time_ms", strategy="backward")
         .select(["rsi", "rsi4h", "rsi1d"])
-        .collect() # Materialize exactly once at the end
+        .collect()
     )
-    
+
+    # Stop profiling and print results if enabled
     if profiling_enabled:
         pr.disable()
         s = io.StringIO()
-        sortby = 'cumulative'   # Can also use 'tottime' to see self-time
-        ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-        ps.print_stats(30)      # Show top 30 most time-consuming calls
-        print(s.getvalue())     # See console
+        ps = pstats.Stats(pr, stream=s).sort_stats("cumulative")
+        ps.print_stats(20)
+        print(s.getvalue())
 
-    # Return polars df
+    # Return the final DataFrame with one RSI per timeframe
     return result_ldf
 
+
 ```
-
-Gain: performance increase (profiling really helps, and knowing the code, ofcourse) - 60k 5m records
-
-Profile:
-
-```sh
-         571 function calls (568 primitive calls) in 0.010 seconds
-
-   Ordered by: cumulative time
-   List reduced from 132 to 30 due to restriction <30>
-
-   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
-       20    0.005    0.000    0.005    0.000 {method 'acquire' of '_thread.lock' objects}
-        5    0.000    0.000    0.005    0.001 /usr/lib/python3.8/threading.py:270(wait)
-        2    0.000    0.000    0.004    0.002 ../polars/lazyframe/frame.py:1821(collect)
-        2    0.004    0.002    0.004    0.002 {method 'collect' of 'builtins.PyLazyFrame' objects}
-        2    0.000    0.000    0.004    0.002 /usr/lib/python3.8/concurrent/futures/_base.py:416(result)
-        2    0.000    0.000    0.001    0.001 /usr/lib/python3.8/concurrent/futures/thread.py:158(submit)
-        2    0.000    0.000    0.001    0.001 /usr/lib/python3.8/concurrent/futures/thread.py:193(_adjust_thread_count)
-        2    0.000    0.000    0.001    0.001 /usr/lib/python3.8/threading.py:834(start)
-        2    0.000    0.000    0.001    0.000 /usr/lib/python3.8/threading.py:540(wait)
-        1    0.000    0.000    0.001    0.001 ../polars/dataframe/frame.py:9008(with_columns)
-        1    0.000    0.000    0.000    0.000 /usr/lib/python3.8/concurrent/futures/_base.py:643(__exit__)
-        1    0.000    0.000    0.000    0.000 /usr/lib/python3.8/concurrent/futures/thread.py:230(shutdown)
-        2    0.000    0.000    0.000    0.000 /usr/lib/python3.8/threading.py:979(join)
-        2    0.000    0.000    0.000    0.000 /usr/lib/python3.8/threading.py:1017(_wait_for_tstate_lock)
-```
-
-This is to show:
-
-- What profiling brings you
-- I used Gemini to advice by giving it the stacktrace and the original pandas code (the calculate function) and by telling it about the "secret flag" return_polars.
-- Always tune for performance, it increases throughput, decreases direct and indirect cost by lowering walkthrough-times (more pleasant too).
 
 Tip: when optimizing for performance, always make sure you can validate the new-optimized-version against the original working version. Aka build a side-connector. Keep the original one intact until the responses match exactly.
 
