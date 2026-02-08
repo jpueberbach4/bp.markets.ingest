@@ -49,6 +49,12 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     # Extract the timeframe once (same assumption)
     tf = ldf["timeframe"].item(0)
 
+    # FAST PATH: 1m candles are always closed in this system
+    if tf == "1m":
+        return df.select([
+            pl.lit(0).cast(pl.Int8).alias("is_open")
+        ])
+
     # Get the earliest timestamp in the input data
     time_min = ldf["time_ms"].min()
 
