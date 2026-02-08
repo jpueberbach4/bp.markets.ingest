@@ -165,7 +165,7 @@ class DownloadEngineRequests:
                         "Accept-Encoding": "gzip, deflate",
                         "User-Agent": (
                             "dukascopy-downloader-requests/1.1 "
-                            "(+https://github.com/jpueberbach4)"
+                            "(+https://github.com/jpueberbach4/bp.markets.ingest/blob/main/dukascopy/etl/downloaders/requests.py)"
                         ),
                     },
                     timeout=self.config.timeout,

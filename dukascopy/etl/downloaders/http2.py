@@ -180,7 +180,7 @@ class DownloadEngineHTTP2:
                         "Accept-Encoding": "gzip, deflate",
                         "User-Agent": (
                             "dukascopy-downloader-h2/1.1 "
-                            "(+https://github.com/jpueberbach4)"
+                            "(+https://github.com/jpueberbach4/bp.markets.ingest/blob/main/dukascopy/etl/downloaders/http2.py)"
                         ),
                     },
                 )
