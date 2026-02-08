@@ -4,7 +4,26 @@ HTTP-API is now polars native. When querying with polars:1 indicators -> blazing
 
 ## **HTTP-STATUS 400 is now "transient"**
 
-I forgot to mention but this was implemented already a "few" commits back. Status-code 400 is now transient. That means when the ingestion encounters a 400 state, it will retry. This makes ingestion a bit more robust. Play with the number of retries, the backoff factor and the timeout if you are having issues syncing up. Don't overdo it on the rps setting though. Please. 
+I forgot to mention but this was implemented already a "few" commits back. Status-code 400 is now transient. That means when the ingestion encounters a 400 state, it will retry. This makes ingestion a bit more robust. Play with the number of retries, the backoff factor and the timeout if you are having issues syncing up. Don't overdo it on the rps setting though. Please.
+
+**Note:** I have abstracted the download-engine and added some options to make things more stable and prevent rate-limit hits. Especially when you are in-sync you can make the download clean. No warnings.
+Set `download.jitter` (new setting) to 2.0. Optionally set `download.mode` (new setting) to `http2` (note that you need to do a `pip install -r requirements.txt` for `http2` support). The jittering prevents slamming (thundering) with Ncore number of connections exactly in the same ms.
+
+I am in-sync and have jitter set to 5.0. It's a very sensitive rate-limit. Don't know exactly what the perfect settings are atm. My settings:
+
+```yaml
+# Below you will find the configuration for the download.py script. 
+download:
+  max_retries: 5                      # Number of retries before downloader raises
+  backoff_factor: 2                   # Exponential backoff factor (wait time)
+  timeout: 60                         # Request timeout
+  rate_limit_rps: 2                   # Protect end-point (number of cores * rps = requests/second)
+  mode: http2                         # DownloadWorker-type: requests or http2
+  jitter: 5.0                         # Add a random jitter up to this amount (seconds)
+  paths:
+    historic: cache                   # Historical downloads
+    live: data/temp                   # Live downloads
+```
 
 ## **WSL Fast-API issue - `--reload` consumes one core**
 
