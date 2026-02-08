@@ -626,9 +626,9 @@ Example image:
 
 ![example](../images/example-mixed-tf-h1-h4-1d.png)
 
-### Tuned version of the above
+### Tuned version of the above - plus is-open example implementation
 
-**Note:** Two thing about the example below:
+**Note:** Three thing about the example below:
 
 1. It queries the is-open status to detect the open-candles (you will need to have the BTC-USD symbol synced up)
 2. It discards the RSI of the open-candles. It only considers closed candles
@@ -666,7 +666,7 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "rsi_period": args[0] if len(args) > 0 else "14"
     }
 
-ddef calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
+def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     # Import here so these only load when the function actually runs
     from util.api import get_data
     from concurrent.futures import ThreadPoolExecutor
