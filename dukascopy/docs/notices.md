@@ -11,6 +11,8 @@ I added it to the list (if can't find solution soon, i will make it configurable
 
 **Update:** It is now configurable in the `config.user.yaml`. `http.reload:0` = do not watch files, no cpu-loop under WSL2 (production setting). `http.reload:1` watches files for changes and immediately adds new indicators to the interface (after pressing update view) as you add them (development setting).
 
+Note: changes to existing indicators are detected when `http.reload:0`. 
+
 ## **Fix for the open-candle problem - NEEDS BTC-USD as HEARTBEAT symbol**
 
 We have a temporary solution for the "open-candle" problem. Eg mark the open-candle in the output `is-open:1` or `is-open:0`. However, this requires you to configure the symbol `BTC-USD` and have it synced up. The `BTC-USD` symbol acts as the heartbeat of the market. 
