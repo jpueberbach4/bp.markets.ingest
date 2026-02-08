@@ -188,6 +188,7 @@ class DownloadEngineRequests:
                     or status_code >= 500
                 ):
                     wait_time = self.config.backoff_factor ** attempt
+                    print(f"{url} received {status_code}. Retrying in {wait_time}s...")
                     time.sleep(wait_time)
                     continue
 

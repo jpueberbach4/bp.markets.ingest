@@ -212,6 +212,7 @@ class DownloadEngineHTTP2:
 
                 if should_retry:
                     wait_time = self.config.backoff_factor ** attempt
+                    print(f"{url} received {status_code}. Retrying in {wait_time}s...")
                     await asyncio.sleep(wait_time)
                     continue
 
