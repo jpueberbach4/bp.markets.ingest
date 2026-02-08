@@ -19,6 +19,7 @@ Priorization:
 Note: we are setup now to integrate the extensions below (weekend work).
 
 Quality:
+  - [x] Abstraction download-engine and HTTP/2 support (configurable)
   - [x] Eliminate the Polars->Pandas conversion in HTTP-api
   - [x] Allow get_data_auto to receive a polars Dataframe (and options)
   - [x] Use BTC-USD as heartbeat to detect open-candles, build indicator
