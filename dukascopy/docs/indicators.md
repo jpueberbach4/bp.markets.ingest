@@ -628,13 +628,12 @@ Example image:
 
 ### Tuned version of the above - plus is-open example implementation
 
-**Note:** Five thing about the example below:
+**Note:** Four thing about the example below:
 
 1. It queries the is-open status to detect the open-candles (you will need to have the BTC-USD symbol synced up)
 2. It discards the RSI of the open-candles. It only considers closed candles
 3. This avoids repainting
 4. This indicator is now "live-capable"
-5. However, be careful on weekly in case of a market-holiday (fix will come in future)
 
 ```python
 import polars as pl
