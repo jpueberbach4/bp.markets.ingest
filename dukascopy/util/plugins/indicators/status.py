@@ -131,16 +131,18 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         # Compute the boundary timestamp for the current candle
         mark_ms = last_ms - tf_lengths.get(tf, 0)
 
-    if is_market_closed:
-        # If the market is closed, force is_open = 0 for all rows
-        ldf = ldf.with_columns(
-            pl.lit(0).cast(pl.Int8).alias("is_open")
-        )
+    is_open_expr = (pl.col("time_ms") >= mark_ms).cast(pl.Int8).alias("is_open")
+    
+    if tf in ["1M", "1Y"]:
+        # Monthly/Yearly candles are ALWAYS open if they are the latest period, 
+        # regardless of whether it's the weekend.
+        ldf = ldf.with_columns(is_open_expr)
+    elif is_market_closed:
+        # For smaller TFs, if the heartbeat says the market is dead, everything is closed.
+        ldf = ldf.with_columns(pl.lit(0).cast(pl.Int8).alias("is_open"))
     else:
-        # Otherwise, mark candles as open if they occur after the boundary time
-        ldf = ldf.with_columns(
-            (pl.col("time_ms") > mark_ms).cast(pl.Int8).alias("is_open")
-        )
+        # Standard live market check
+        ldf = ldf.with_columns(is_open_expr)
 
     # Return only the is_open column as the final output
     return ldf.select(["is_open"])
