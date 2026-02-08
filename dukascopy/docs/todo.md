@@ -19,7 +19,7 @@ Priorization:
 Note: we are setup now to integrate the extensions below (weekend work).
 
 Quality:
-  - [ ] Eliminate the Polars->Pandas conversion in HTTP-api
+  - [x] Eliminate the Polars->Pandas conversion in HTTP-api
   - [x] Allow get_data_auto to receive a polars Dataframe (and options)
   - [x] Use BTC-USD as heartbeat to detect open-candles, build indicator
   - [ ] Degradation and change of execution mode on memory-pressure
