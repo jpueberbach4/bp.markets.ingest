@@ -826,7 +826,7 @@ function getSeriesColor(col) {
 
 ```
 
-Refresh interface after changes. Voila.
+Refresh interface after changes. Voila. Be carefull with running ./setup-dukascopy.sh when you change these files. setup-dukascopy.sh will reset your changes back to original.
 
 ![example](../images/example-mixed-tf-h1-h4-1d-polars.png)
 
