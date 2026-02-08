@@ -768,4 +768,4 @@ Tip: when optimizing for performance, always make sure you can validate the new-
 
 ![example](../images/example-mixed-tf-h1-h4-1d-polars.png)
 
-**Note:** This requires a bit of tuning. Live edge-handling. I will think of something elegant to solve this. A proposed solution is building an `is_open` indicator that flags candles. Other solution is integrating it in the main core. Determination of is_open based on last-ingest-time. 
+**Note:** Live-edge handling is now handled in a pretty robust way. However, on holidays and weekly is-open detection, it may fail. There will be an update for this on the `is-open indicator` in the future.  

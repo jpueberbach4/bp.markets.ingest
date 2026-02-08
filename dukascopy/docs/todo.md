@@ -21,11 +21,10 @@ Note: we are setup now to integrate the extensions below (weekend work).
 Quality:
   - [ ] Eliminate the Polars->Pandas conversion in HTTP-api
   - [ ] Allow get_data_auto to receive a polars Dataframe (and options)
-  - [ ] Log somewhere when last resampling occured. We need it for open-candle information.
-  - [ ] Open candle marking in input-dataframe to provide for simple dropping of open candle in ind.
+  - [x] Use BTC-USD as heartbeat to detect open-candles, build indicator
   - [ ] Degradation and change of execution mode on memory-pressure
-  - [ ] Extra quality pass on indicator kaufman-er and up (sort by modified desc)
-  - [ ] Automated validation of the system indicators using TA-lib where possible
+  - [x] Extra quality pass on indicator kaufman-er and up (sort by modified desc)
+  - [x] Automated validation of the system indicators using TA-lib where possible
   - [ ] More unit-tests NOW - in progress
 
 Modularity:
