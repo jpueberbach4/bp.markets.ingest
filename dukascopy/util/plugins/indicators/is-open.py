@@ -126,6 +126,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         tf_lengths = {
             "1m": 0,
             "2m": 120000,
+            "3m": 180000,
             "5m": 300000,
             "15m": 900000,
             "30m": 1800000,
