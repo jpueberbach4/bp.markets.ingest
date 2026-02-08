@@ -53,6 +53,8 @@ License:
 
 import os
 import asyncio
+import orjson
+import numpy as np
 
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -96,7 +98,85 @@ class DownloadWorker:
             mode=self.config.mode,
         )
 
-    def resolve_paths(self, symbol: str, dt: date) -> Tuple[Path, Path, Path, bool]:
+    def _filter_backfilled_items(self, temp_path: Path, cache_path: Path) -> bool:
+        """
+        Merge forward-only candle data into an existing cache file.
+
+        This function guarantees:
+            - No duplicate candles
+            - No backward time movement
+            - Strict monotonic timestamp ordering
+
+        It works by reconstructing absolute timestamps using Dukascopy's
+        delta-encoded format and keeping only candles newer than the cache.
+
+        Args:
+            temp_path: Path to the newly downloaded JSON file.
+            cache_path: Existing cache file to merge against.
+
+        Returns:
+            True if a merge occurred, False if no cache existed or no new data.
+        """
+        # No existing cache means nothing to merge against
+        if not cache_path.exists():
+            return False
+
+        # Open both files in binary mode (required for orjson)
+        with open(temp_path, "r+b") as f_temp, open(cache_path, "rb") as f_cache:
+            data_temp = orjson.loads(f_temp.read())
+            data_cache = orjson.loads(f_cache.read())
+
+            # Empty cache = no meaningful cutoff
+            if not data_cache["times"]:
+                return False
+
+            # ------------------------------------
+            # Compute last timestamp in cache
+            # ------------------------------------
+            cut_off = (
+                np.cumsum(
+                    np.array(data_cache["times"], dtype=np.int64)
+                    * data_cache["shift"]
+                )
+                + data_cache["timestamp"]
+            )[-1]
+
+            # ------------------------------------
+            # Compute timestamps for new data
+            # ------------------------------------
+            times_temp = (
+                np.cumsum(
+                    np.array(data_temp["times"], dtype=np.int64)
+                    * data_temp["shift"]
+                )
+                + data_temp["timestamp"]
+            )
+
+            # Identify candles strictly AFTER the cutoff
+            mask = times_temp > cut_off
+            indices = np.where(mask)[0]
+            start_idx = indices[0] if indices.size > 0 else None
+
+            if start_idx is not None:
+                # Append new candles column-by-column (explicit on purpose)
+                for col in (
+                    "times",
+                    "opens",
+                    "highs",
+                    "lows",
+                    "closes",
+                    "volumes",
+                ):
+                    data_cache[col].extend(data_temp[col][start_idx:])
+
+            # Overwrite temp file with merged result
+            f_temp.seek(0)
+            f_temp.truncate(0)
+            f_temp.write(orjson.dumps(data_cache))
+
+        return True
+
+    def _resolve_paths(self, symbol: str, dt: date) -> Tuple[Path, Path, Path, bool]:
         """
         Resolve all filesystem paths for a symbol/date download.
 
@@ -162,7 +242,7 @@ class DownloadWorker:
         """
         try:
             # Resolve filesystem paths
-            target, hist_path, live_path, is_historical = self.resolve_paths(symbol, dt)
+            target, hist_path, live_path, is_historical = self._resolve_paths(symbol, dt)
 
             # Build the Dukascopy API URL
             url = self.engine.get_url(symbol, dt)
@@ -199,7 +279,7 @@ class DownloadWorker:
             # Prefer live cache if it exists, otherwise fall back
             # to historical cache.
             filter_source = live_path if live_path.is_file() else hist_path
-            self.engine.filter_backfilled_items(tmp_path, filter_source)
+            self._filter_backfilled_items(tmp_path, filter_source)
 
             # ---------------------------------------------------------
             # Atomic replace
