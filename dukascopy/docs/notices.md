@@ -1,4 +1,14 @@
 
+**WSL Fast-API issue - `--reload` consumes one core**
+
+This is known to me. I had a go at it but took too much time to solve quickly. Tries watchfiles, watchdog, exclusions, inclusions. Everything. The problem is that, under WSL2, the inotify is broken. So when i file changes, the notification is not being raised. FastAPI/UVLOOP with --reload detects that it is not working and instead goes in a loop mode. This causes the CPU-issue. 
+
+If you really find it annoying, you can disable in `api/run.py` reload=True and set it to False. It's annoying. It spins up my fans too. However, when setting to False, it wont detect indicator `additions`. When you set it to false, you will need to keep setting it to false or do some git stash/pop tricks when updating. 
+
+The issue has pretty low priority given the list, spend an hour on it already. That's too much for this problem at this moment.
+
+I added it to the list (if can't find solution soon, i will make it configurable in `config.user.yaml`).
+
 **Fix for the open-candle problem - NEEDS BTC-USD as HEARTBEAT symbol**
 
 We have a temporary solution for the "open-candle" problem. Eg mark the open-candle in the output `is-open:1` or `is-open:0`. However, this requires you to configure the symbol `BTC-USD` and have it synced up. The `BTC-USD` symbol acts as the heartbeat of the market. 

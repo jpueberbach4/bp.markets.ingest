@@ -26,6 +26,7 @@ Quality:
   - [x] Extra quality pass on indicator kaufman-er and up (sort by modified desc)
   - [x] Automated validation of the system indicators using TA-lib where possible
   - [ ] More unit-tests NOW - in progress
+  - [ ] Find solution for UVLOOP WSL2 watchfiles CPU 100pct issue. Optionally, configurable.
 
 Modularity:
   - [ ] Split up ETL and have a central "feeder" engine that can distribute in near-realtime
