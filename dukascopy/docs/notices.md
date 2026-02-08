@@ -4,9 +4,9 @@ We have a temporary solution for the "open-candle" problem. Eg mark the open-can
 
 And indicator `status` was added to the internal system indicators. You can query it in your webinterface or subquery it using `get_data` by passing `status` as an indicator.
 
-This is a temporary but ROBUST solution when you can update at least `ONCE EVERY TWO HOURS`.
+This is a temporary but ROBUST solution when you can update at least `ONCE EVERY TWO HOURS`. So for live connections this works where update-time is < 2 hours. Eg your crontab setting is once-every-two-hours. You get the point.
 
-Another robustness update is coming for the "cabin in the woods but no internet problem".
+Another robustness update is coming for the "cabin in the woods but no internet"-problem. 
 
 **Another performance update**
 
