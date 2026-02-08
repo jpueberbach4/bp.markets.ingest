@@ -131,7 +131,7 @@ class DownloadEngine:
                 # Retry only on server errors or rate limiting
                 if (
                     attempt < self.config.max_retries - 1
-                    and (status_code >= 500 or status_code == 429 or status_code == 503)
+                    and (status_code >= 500 or status_code == 429 or status_code == 503 or status_code == 400)
                 ):
                     wait_time = self.config.backoff_factor ** attempt
                     print(f"{url} received {status_code}. Retrying in {wait_time}s...")
