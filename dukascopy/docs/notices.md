@@ -9,7 +9,7 @@ I forgot to mention but this was implemented already a "few" commits back. Statu
 **Note:** I have abstracted the download-engine and added some options to make things more stable and prevent rate-limit hits. Especially when you are in-sync you can make the download clean. No warnings.
 Set `download.jitter` (new setting) to 1.0. Optionally set `download.mode` (new setting) to `http2` (note that you need to do a `pip install -r requirements.txt` for `http2` support). The jittering prevents slamming (thundering) with Ncore number of connections exactly in the same ms.
 
-I am in-sync and have jitter set to 1.0. It's a very sensitive rate-limit. Don't know exactly what the perfect settings are atm. My settings:
+I am in-sync and have jitter set to 1.0. Don't know exactly what the perfect settings are atm. My settings:
 
 ```yaml
 # Below you will find the configuration for the download.py script. 
@@ -26,6 +26,8 @@ download:
 ```
 
 (these are working settings for people that are in-sync)
+
+PS. it are actually status 500 errors, masked as a 400. Don't know for sure it's a rate-limit.
 
 ## **WSL Fast-API issue - `--reload` consumes one core**
 
