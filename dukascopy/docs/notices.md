@@ -6,27 +6,8 @@ HTTP-API is now polars native. When querying with polars:1 indicators -> blazing
 
 I forgot to mention but this was implemented already a "few" commits back. Status-code 400 is now transient. That means when the ingestion encounters a 400 state, it will retry. This makes ingestion a bit more robust. Play with the number of retries, the backoff factor and the timeout if you are having issues syncing up. Don't overdo it on the rps setting though.
 
-**Note:** My settings:
+Note: issues are resolved once more. i think its just regular maintenance window on weekends.
 
-```yaml
-# Below you will find the configuration for the download.py script. 
-download:
-  max_retries: 10                     # Number of retries before downloader raises
-  backoff_factor: 1.2                 # Exponential backoff factor (wait time)
-  timeout: 10                         # Request timeout
-  rate_limit_rps: 1                   # Protect end-point (number of cores * rps = requests/second)
-  mode: http2                         # DownloadWorker-type: requests or http2
-  jitter: 5.0                         # Add a random jitter up to this amount (seconds)
-  paths:
-    historic: cache                   # Historical downloads
-    live: data/temp                   # Live downloads
-```
-
-(these are working settings for people that are in-sync)
-
-PS. it are actually status 500 errors, masked as a 400. Don't know for sure it's a rate-limit. I checked again, doesnt look/feel like rate-limiting. This is something that needs to get solved professionally, later. This software is not yet far enough developed to actively start exploring options. Perhaps, i should change the priorization of todo items and first makes this "locally complete". Good night.
-
-You should position this as a market research- and prototyping-tool. 
 
 ## **WSL Fast-API issue - `--reload` consumes one core**
 
