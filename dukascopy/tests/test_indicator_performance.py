@@ -18,15 +18,15 @@ PLUGIN_DIRS = [
 ]
 
 # Threshold for warning (in milliseconds)
-PERF_THRESHOLD_MS = 10
+PERF_THRESHOLD_MS = 5
 
 class TestAllIndicatorsPerformance(unittest.TestCase):
     
     @classmethod
     def setUpClass(cls):
-        print(f"\n[SETUP] Generating 1,000,000 rows of OHLCV data for performance testing...")
-        
         rows = 10000
+        print(f"\n[SETUP] Generating {rows} rows of OHLCV data for performance testing...")
+        
         time_ms = np.arange(1672531200000, 1672531200000 + (rows * 60000), 60000, dtype=np.uint64)
         np.random.seed(42)
         returns = np.random.normal(0, 0.001, rows)
@@ -49,9 +49,6 @@ class TestAllIndicatorsPerformance(unittest.TestCase):
         mem_usage = cls.master_pd.memory_usage(deep=True).sum() / 1024**2
         print(f"[SETUP] Data generation complete. Memory: {mem_usage:.2f} MB")
         
-        # --- TABLE HEADER ---
-        # Widths: Status(8) | Indicator(25) | Time(10) | Type(15) | Source(12)
-        # Note: Time column includes units in header to save space in rows
         header = (
             f"{'STATUS':<8} | {'INDICATOR':<25} | {'TIME (ms)':>10} | {'TYPE':<15} | {'SOURCE'}"
         )
@@ -87,15 +84,11 @@ class TestAllIndicatorsPerformance(unittest.TestCase):
         if not indicator_files:
             self.fail(f"No indicator files found. Checked: {PLUGIN_DIRS}")
 
-        # Sort for consistent output
         indicator_files.sort()
 
         for file_path in indicator_files:
             indicator_name = os.path.basename(file_path).replace('.py', '')
             
-            # --- REAL-TIME STATUS ---
-            # Use \r to return to start of line. 
-            # Pad with spaces to ensure previous long lines are cleared.
             status_msg = f"TESTING  | {indicator_name:<25} ..."
             sys.stdout.write(f"\r{status_msg:<75}") 
             sys.stdout.flush()
@@ -108,37 +101,30 @@ class TestAllIndicatorsPerformance(unittest.TestCase):
                 else:
                     continue
 
-                # Standard arguments for testing
                 args = {}
                 if hasattr(plugin, 'position_args'):
-                    # Provide generic defaults that work for most indicators
-                    # FIX: Use "2" instead of "2.0" to prevent int() conversion errors
                     args = plugin.position_args(["14", "2", "9"])
 
                 mock_get_data = self._get_mock_get_data()
                 
-                # FIX: Use patch.dict to safely update sys.modules without breaking multiprocessing
                 with patch.dict(sys.modules, {'util.api': MagicMock(get_data=mock_get_data)}):
                     if hasattr(plugin, 'get_data'):
                         plugin.get_data = mock_get_data
 
                     start_time = time.perf_counter()
 
-                    # 1. Polars Expr
                     if meta.get('polars', 0) == 1 and hasattr(plugin, 'calculate_polars'):
                         lf = self.master_pl.lazy()
                         exprs = plugin.calculate_polars(indicator_name, args)
                         if not isinstance(exprs, list): exprs = [exprs]
                         res = lf.with_columns(exprs).collect()
 
-                    # 2. Polars DF
                     elif meta.get('polars_input', 0) == 1:
                         input_df = self.master_pl.clone()
                         res = plugin.calculate(input_df, args)
                         if isinstance(res, pl.LazyFrame):
                             res = res.collect()
 
-                    # 3. Pandas DF
                     else:
                         input_df = self.master_pd
                         res = plugin.calculate(input_df, args)
@@ -149,24 +135,15 @@ class TestAllIndicatorsPerformance(unittest.TestCase):
                     type_str = self._get_type_str(meta)
                     source_dir = "config.user" if "config.user" in file_path else "util"
                     
-                    # --- FINAL ROW OUTPUT ---
-                    # Clear the line first
                     sys.stdout.write("\r" + " " * 80 + "\r")
                     
-                    # Logic
                     icon = "⚠️" if duration_ms > PERF_THRESHOLD_MS else "✅"
                     label = "SLOW" if duration_ms > PERF_THRESHOLD_MS else "OK"
 
-                    # Fixed-width Table Row
                     print(f"{icon} {label:<5} | {indicator_name:<25} | {duration_ms:10.2f} | {type_str:<15} | {source_dir}")
-                    # Print Warning on new line if needed
-                    #if duration_ms > PERF_THRESHOLD_MS:
-                        # 8 (status) + 3 (sep) = 11 spaces indentation to align with INDICATOR
-                        #print(f"           > [WARN] Exceeded {PERF_THRESHOLD_MS}ms threshold!")
 
             except Exception as e:
                 sys.stdout.write("\r" + " " * 80 + "\r")
-                # Format error to fit nicely
                 err_msg = str(e).split('\n')[0][:40]
                 print(f"❌ FAIL   | {indicator_name:<25} | {0.0:10.2f} | ERROR           | {err_msg}")
 
@@ -176,7 +153,6 @@ class TestAllIndicatorsPerformance(unittest.TestCase):
         return "Pandas DF"
 
 if __name__ == '__main__':
-    # Ensure directories exist
     for d in PLUGIN_DIRS:
         if not os.path.exists(d):
             try:
