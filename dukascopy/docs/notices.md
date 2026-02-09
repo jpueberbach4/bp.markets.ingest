@@ -6,6 +6,8 @@ I have re-inserted the "bit scroll-glitchy" replay mockup for demonstration purp
 
 After copying `http://localhost:8000/replay-mockup.html`
 
+PS: this is a "chart player or playback", not a real replay. The real one will have partial bar building etc. But that is for later. Core needs to be great first.
+
 ## **HTTP-API now Polars-native**
 
 HTTP-API is now polars native. When querying with polars:1 indicators -> blazing. Good update.
