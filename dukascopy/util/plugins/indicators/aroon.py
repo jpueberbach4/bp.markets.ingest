@@ -23,7 +23,8 @@ def meta() -> Dict:
         "panel": 1,
         "verified": 1,
         "talib-validated": 1, 
-        "polars": 1
+        "polars": 0,
+        "polars_input": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -44,50 +45,47 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "period": args[0] if len(args) > 0 else "14"
     }
 
-def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
+def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
+    """
+    High-performance vectorized Aroon calculation using Numpy sliding windows.
+    Supports polars_input: 1
+    """
     try:
         period = int(options.get('period', 14))
     except (ValueError, TypeError):
         period = 14
 
-    high_shifts = [pl.col("high").shift(i) for i in range(period + 1)]
-    low_shifts = [pl.col("low").shift(i) for i in range(period + 1)]
+    window_size = period + 1
 
-    days_since_high = pl.concat_list(high_shifts).list.arg_max()
-    days_since_low = pl.concat_list(low_shifts).list.arg_min()
+    if len(df) < window_size:
+        return pl.DataFrame({
+            "aroon_down": [None] * len(df),
+            "aroon_up": [None] * len(df)
+        }).with_columns([
+            pl.col("aroon_down").cast(pl.Float64),
+            pl.col("aroon_up").cast(pl.Float64)
+        ])
 
-    aroon_up = (
-        (period - days_since_high) / period * 100
-    )
+    high_v = df["high"].to_numpy()
+    low_v = df["low"].to_numpy()
 
-    aroon_down = (
-        (period - days_since_low) / period * 100
-    )
+    high_windows = np.lib.stride_tricks.sliding_window_view(high_v, window_shape=window_size)
+    low_windows = np.lib.stride_tricks.sliding_window_view(low_v, window_shape=window_size)
 
-    return [
-        aroon_down.alias(f"{indicator_str}__aroon_down"),
-        aroon_up.alias(f"{indicator_str}__aroon_up")
-    ]
+    arg_max = np.argmax(high_windows, axis=1)
+    arg_min = np.argmin(low_windows, axis=1)
 
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
-    """
-    Legacy Pandas fallback.
-    """
-    try:
-        # FIX 1: Default period matched to 14
-        period = int(options.get('period', 14))
-    except (ValueError, TypeError):
-        period = 14
+    aroon_up = (arg_max / period) * 100
+    aroon_down = (arg_min / period) * 100
 
-    window = period + 1
-       
-    aroon_up_days = df['high'].rolling(window=window).apply(lambda x: x.argmax(), raw=True)
-    aroon_down_days = df['low'].rolling(window=window).apply(lambda x: x.argmin(), raw=True)
+    pad_size = window_size - 1
+    padding = np.full(pad_size, np.nan)
+    
+    final_up = np.concatenate([padding, aroon_up])
+    final_down = np.concatenate([padding, aroon_down])
 
-    res_up = (aroon_up_days / period) * 100
-    res_down = (aroon_down_days / period) * 100
-
-    return pd.DataFrame({
-        'aroon_down': res_down,
-        'aroon_up': res_up
-    }, index=df.index)
+    # 6. Return Polars DataFrame
+    return pl.DataFrame({
+        "aroon_down": final_down,
+        "aroon_up": final_up
+    })
