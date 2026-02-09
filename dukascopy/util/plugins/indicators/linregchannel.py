@@ -24,7 +24,8 @@ def meta() -> Dict:
         "author": "Google Gemini",
         "version": 1.1,
         "verified": 1,
-        "polars": 1
+        "polars": 0,
+        "polars_input": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -45,86 +46,53 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "period": args[0] if len(args) > 0 else "50"
     }
 
-
-def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
+def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     """
-    Pure Polars Native Linear Regression Channels.
-    No UDFs, no Python loops, 1:1 parity with Pandas math.
-    """
-    try:
-        period = int(options.get('period', 50))
-    except (ValueError, TypeError):
-        period = 50
-
-    n = period
-    sum_x = n * (n - 1) / 2
-    sum_x2 = (n - 1) * n * (2 * n - 1) / 6
-    divisor = n * sum_x2 - sum_x**2
-
-    y = pl.col("close")
-    idx = pl.int_range(0, pl.len(), eager=False)
-    
-    sum_y = y.rolling_sum(window_size=n)
-    sum_xy = (idx * y).rolling_sum(window_size=n) - (idx - n + 1) * sum_y
-
-    slope = (n * sum_xy - sum_x * sum_y) / divisor
-    intercept = (sum_y - slope * sum_x) / n
-    
-    lin_mid = slope * (n - 1) + intercept
-
-    residuals = []
-    for i in range(n):
-        x_i = (n - 1) - i
-        dist = (y.shift(i) - (slope * x_i + intercept)).abs()
-        residuals.append(dist)
-
-    width = pl.max_horizontal(residuals)
-
-    return [
-        (lin_mid + width).round(5).alias(f"{indicator_str}__lin_upper"),
-        lin_mid.round(5).alias(f"{indicator_str}__lin_mid"),
-        (lin_mid - width).round(5).alias(f"{indicator_str}__lin_lower")
-    ]
-
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
-    """
-    Legacy fallback for Pandas-only environments.
+    High-performance Linear Regression Channel for polars_input: 1.
+    Vectorizes slope, intercept, and max-deviation width across 1M rows.
     """
     try:
         period = int(options.get('period', 50))
     except (ValueError, TypeError):
         period = 50
 
-    try:
-        sample_price = str(df['close'].iloc[0])
-        precision = len(sample_price.split('.')[1])+1 if '.' in sample_price else 2
-    except (IndexError, AttributeError):
-        precision = 5
+    if len(df) < period:
+        return pl.DataFrame({
+            "lin_mid": [None] * len(df),
+            "lin_upper": [None] * len(df),
+            "lin_lower": [None] * len(df)
+        }).with_columns([pl.all().cast(pl.Float64)])
 
-    def get_linreg_stats(y: np.ndarray):
-        x = np.arange(len(y))
-        slope, intercept = np.polyfit(x, y, 1)
-        mid_point = slope * (len(y) - 1) + intercept
-        line = slope * x + intercept
-        width = np.max(np.abs(y - line))
-        return mid_point, width
-
-    res_raw = df['close'].rolling(window=period).apply(
-        lambda x: get_linreg_stats(x)[0], raw=True
-    )
+    y = df["close"].to_numpy()
+    windows = np.lib.stride_tricks.sliding_window_view(y, window_shape=period)
     
-    width_raw = df['close'].rolling(window=period).apply(
-        lambda x: get_linreg_stats(x)[1], raw=True
-    )
-
-    lin_mid = res_raw
-    lin_upper = lin_mid + width_raw
-    lin_lower = lin_mid - width_raw
-
-    res = pd.DataFrame({
-        'lin_mid': lin_mid.round(precision),
-        'lin_upper': lin_upper.round(precision),
-        'lin_lower': lin_lower.round(precision)
-    }, index=df.index)
+    x = np.arange(period)
+    x_mean = np.mean(x)
+    y_means = np.mean(windows, axis=1)[:, np.newaxis]
     
-    return res.dropna(subset=['lin_mid'])
+    x_diff = x - x_mean
+    numerator = np.sum(x_diff * (windows - y_means), axis=1)
+    denominator = np.sum(x_diff**2)
+    slopes = numerator / denominator
+    
+    intercepts = y_means.flatten() - slopes * x_mean
+    
+    mid_points = slopes * (period - 1) + intercepts
+    
+    full_lines = slopes[:, np.newaxis] * x + intercepts[:, np.newaxis]
+    widths = np.max(np.abs(windows - full_lines), axis=1)
+
+    padding = np.full(period - 1, np.nan)
+    
+    lin_mid = np.concatenate([padding, mid_points])
+    width_v = np.concatenate([padding, widths])
+    
+    lin_upper = lin_mid + width_v
+    lin_lower = lin_mid - width_v
+
+    # 6. Return as Polars DataFrame
+    return pl.DataFrame({
+        "lin_mid": lin_mid,
+        "lin_upper": lin_upper,
+        "lin_lower": lin_lower
+    })
