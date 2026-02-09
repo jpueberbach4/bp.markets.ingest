@@ -110,7 +110,6 @@ Polars dataframe example (meta.polars_input:1):
 
 ```python
 # Uses pre-trained models
-# Uses pre-trained models
 def calculate(ldf: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     # Use the passed 'ldf' (Polars DataFrame) for the internal API call
     features = get_data_auto(ldf, indicators=['feature1', 'feature2'], options={"return_polars": True})
