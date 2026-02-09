@@ -106,7 +106,7 @@ Cleanup:
 
 Rest
   - [x] Take a day off
-  - [ ] Take a second day off
+  - [x] Take a second day off
   - [ ] Take a third day off
 
 

@@ -1,3 +1,5 @@
+It was a busy weekend so today-monday-is a day off. Chilling.
+
 ## **HTTP-API now Polars-native**
 
 HTTP-API is now polars native. When querying with polars:1 indicators -> blazing. Good update.
