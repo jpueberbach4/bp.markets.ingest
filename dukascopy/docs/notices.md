@@ -228,7 +228,7 @@ I have done one performance optimization pass:
 ----------------------------------------------------------------------------
 STATUS   | INDICATOR                 |  TIME (ms) | TYPE            | SOURCE
 ----------------------------------------------------------------------------
-✅ OK    | rsi-1h4h1d                |       6.43 | Polars DF       | config.user <!-- the 3x RSI one
+✅ OK    | rsi-1h4h1d                |       6.43 | Polars DF       | config.user
 ✅ OK    | status2                   |       0.75 | Polars DF       | config.user
 ✅ OK    | talib-ad                  |       0.67 | Pandas DF       | config.user
 ✅ OK    | talib-add                 |       0.17 | Pandas DF       | config.user
