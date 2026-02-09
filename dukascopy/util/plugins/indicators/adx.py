@@ -22,7 +22,8 @@ def meta() -> Dict:
         "panel": 1,
         "verified": 1,
         "talib-validated": 1, 
-        "polars": 1  # Trigger high-speed Polars execution path
+        "polars": 0,
+        "polars_input": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -44,83 +45,48 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "period": args[0] if len(args) > 0 else "14"
     }
 
-def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
+def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     """
-    High-performance Polars-native ADX calculation.
+    High-performance ADX implementation for polars_input: 1.
+    Evaluates expressions within a select context to return a concrete DataFrame.
     """
     try:
         period = int(options.get('period', 14))
     except (ValueError, TypeError):
         period = 14
 
-    p_high = pl.col("high").shift(1)
-    p_low = pl.col("low").shift(1)
-    p_close = pl.col("close").shift(1)
+    alpha = 1.0 / period
+    span = 2 * period - 1
+
+    prev_close = pl.col("close").shift(1)
+    prev_high = pl.col("high").shift(1)
+    prev_low = pl.col("low").shift(1)
 
     tr = pl.max_horizontal([
         pl.col("high") - pl.col("low"),
-        (pl.col("high") - p_close).abs(),
-        (pl.col("low") - p_close).abs()
+        (pl.col("high") - prev_close).abs(),
+        (pl.col("low") - prev_close).abs()
     ])
 
-    diff_high = pl.col("high") - p_high
-    diff_low = p_low - pl.col("low")
+    up_move = pl.col("high") - prev_high
+    down_move = prev_low - pl.col("low")
 
-    plus_dm = pl.when((diff_high > diff_low) & (diff_high > 0)).then(diff_high).otherwise(0)
-    minus_dm = pl.when((diff_low > diff_high) & (diff_low > 0)).then(diff_low).otherwise(0)
+    plus_dm = pl.when((up_move > down_move) & (up_move > 0)).then(up_move).otherwise(0.0)
+    minus_dm = pl.when((down_move > up_move) & (down_move > 0)).then(down_move).otherwise(0.0)
 
-    atr_s = tr.ewm_mean(span=2 * period - 1, adjust=False)
-    plus_s = plus_dm.ewm_mean(span=2 * period - 1, adjust=False)
-    minus_s = minus_dm.ewm_mean(span=2 * period - 1, adjust=False)
+    atr_smooth = tr.ewm_mean(span=span, adjust=False)
+    plus_di_smooth = plus_dm.ewm_mean(span=span, adjust=False)
+    minus_di_smooth = minus_dm.ewm_mean(span=span, adjust=False)
 
-    plus_di = (100 * plus_s / atr_s)
-    minus_di = (100 * minus_s / atr_s)
+    plus_di = 100 * (plus_di_smooth / (atr_smooth + 1e-12))
+    minus_di = 100 * (minus_di_smooth / (atr_smooth + 1e-12))
 
-    dx = (100 * (plus_di - minus_di).abs() / (plus_di + minus_di)).fill_nan(0)
-    adx = dx.ewm_mean(span=2 * period - 1, adjust=False)
+    di_sum = plus_di + minus_di
+    dx = 100 * (plus_di - minus_di).abs() / pl.when(di_sum == 0).then(1.0).otherwise(di_sum)
+    adx = dx.ewm_mean(span=span, adjust=False)
 
-    return [
-        adx.alias(f"{indicator_str}__adx"),
-        plus_di.alias(f"{indicator_str}__plus_di"),
-        minus_di.alias(f"{indicator_str}__minus_di")
-    ]
-
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
-    """
-    Legacy Pandas fallback.
-    """
-    try:
-        period = int(options.get('period', 14))
-    except (ValueError, TypeError):
-        period = 14
-
-    prev_close = df['close'].shift(1)
-    prev_high = df['high'].shift(1)
-    prev_low = df['low'].shift(1)
-    
-    tr = pd.concat([
-        df['high'] - df['low'],
-        (df['high'] - prev_close).abs(),
-        (df['low'] - prev_close).abs()
-    ], axis=1).max(axis=1)
-    
-    plus_dm = np.where((df['high'] - prev_high) > (prev_low - df['low']), 
-                        np.maximum(df['high'] - prev_high, 0), 0)
-    minus_dm = np.where((prev_low - df['low']) > (df['high'] - prev_high), 
-                         np.maximum(prev_low - df['low'], 0), 0)
-    
-    atr_smooth = tr.ewm(alpha=1/period, adjust=False).mean()
-    plus_di_smooth = pd.Series(plus_dm, index=df.index).ewm(alpha=1/period, adjust=False).mean()
-    minus_di_smooth = pd.Series(minus_dm, index=df.index).ewm(alpha=1/period, adjust=False).mean()
-    
-    plus_di = 100 * (plus_di_smooth / atr_smooth)
-    minus_di = 100 * (minus_di_smooth / atr_smooth)
-    
-    dx = 100 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, np.nan)
-    adx = dx.ewm(alpha=1/period, adjust=False).mean()
-    
-    return pd.DataFrame({
-        'adx': adx,
-        'plus_di': plus_di,
-        'minus_di': minus_di
-    }, index=df.index).dropna()
+    return df.select([
+        adx.alias("adx"),
+        plus_di.alias("plus_di"),
+        minus_di.alias("minus_di")
+    ])
