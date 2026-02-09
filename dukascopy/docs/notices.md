@@ -6,8 +6,7 @@ HTTP-API is now polars native. When querying with polars:1 indicators -> blazing
 
 I forgot to mention but this was implemented already a "few" commits back. Status-code 400 is now transient. That means when the ingestion encounters a 400 state, it will retry. This makes ingestion a bit more robust. Play with the number of retries, the backoff factor and the timeout if you are having issues syncing up. Don't overdo it on the rps setting though.
 
-Note: issues are resolved once more. i think its just regular maintenance window on weekends.
-
+Preliminary conclusion, since 3 weekends in a row: 400 errors? it's maintenance. When you are in-sync and somehow use this for 24/7 trading purposes, monitor your BTC-1m-candles closely (in the weekend). I will provide that `is-stale` counter-part to `is-open` soon.
 
 ## **WSL Fast-API issue - `--reload` consumes one core**
 
