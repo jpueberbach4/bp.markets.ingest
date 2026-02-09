@@ -40,7 +40,10 @@ class TestAllIndicatorsPerformance(unittest.TestCase):
             "close": price_path,
             "volume": np.random.randint(100, 10000, rows),
             "symbol": ["EUR-USD"] * rows,
-            "timeframe": ["1m"] * rows
+            "timeframe": ["1m"] * rows,
+            # --- FIXES FOR INTEGRATION-TEST PLUGINS (NEED TO THINK OF BETTER SOLUTION SOON) ---
+            "rsi_14": np.random.uniform(30, 70, rows), # Required by rsi-1h4h1d-org
+            "is-open": np.zeros(rows, dtype=np.int32)  # Required by rsi-1h4h1d
         }
 
         cls.master_pl = pl.DataFrame(data_dict)

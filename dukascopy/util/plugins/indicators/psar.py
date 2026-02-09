@@ -25,7 +25,8 @@ def meta() -> Dict:
         "version": 1.1,
         "verified": 1,
         "talib-validated": 1, 
-        "polars": 1
+        "polars": 0,
+        "polars_input": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -48,6 +49,7 @@ def position_args(args: List[str]) -> Dict[str, Any]:
 def _psar_backend(highs: np.ndarray, lows: np.ndarray, step: float, max_step: float) -> np.ndarray:
     """
     Internal NumPy state machine for recursive PSAR calculation.
+    Optimized to run on raw memory buffers.
     """
     n = len(highs)
     psar = np.zeros(n)
@@ -61,6 +63,7 @@ def _psar_backend(highs: np.ndarray, lows: np.ndarray, step: float, max_step: fl
         
         if bull:
             psar[i] = prev_psar + af * (ep - prev_psar)
+            # Ensure SAR is not above the lows of the previous two periods
             psar[i] = min(psar[i], lows[i-1], lows[max(0, i-2)])
             
             if lows[i] < psar[i]:
@@ -74,6 +77,7 @@ def _psar_backend(highs: np.ndarray, lows: np.ndarray, step: float, max_step: fl
                     af = min(af + step, max_step)
         else:
             psar[i] = prev_psar + af * (ep - prev_psar)
+            # Ensure SAR is not below the highs of the previous two periods
             psar[i] = max(psar[i], highs[i-1], highs[max(0, i-2)])
             
             if highs[i] > psar[i]:
@@ -87,29 +91,10 @@ def _psar_backend(highs: np.ndarray, lows: np.ndarray, step: float, max_step: fl
                     af = min(af + step, max_step)
     return psar
 
-def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
+def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     """
-    High-performance Polars-native calculation for PSAR.
-    Uses map_batches to execute the recursive state machine in a single pass.
-    """
-    try:
-        step = float(options.get('step', 0.02))
-        max_step = float(options.get('max_step', 0.2))
-    except (ValueError, TypeError):
-        step, max_step = 0.02, 0.2
-
-    return pl.struct(["high", "low"]).map_batches(
-        lambda s: _psar_backend(
-            s.struct.field("high").to_numpy(),
-            s.struct.field("low").to_numpy(),
-            step, 
-            max_step
-        )
-    ).round(5).alias(indicator_str)
-
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
-    """
-    Legacy fallback for Pandas-only environments.
+    High-performance PSAR implementation for polars_input: 1.
+    Directly accesses Polars memory buffers for NumPy processing.
     """
     try:
         step = float(options.get('step', 0.02))
@@ -117,18 +102,24 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     except (ValueError, TypeError):
         step, max_step = 0.02, 0.2
 
+    # Precision detection (optional for performance, but kept for UI parity)
+    # We sample the first row to determine rounding
     try:
-        sample_price = str(df['close'].iloc[0])
-        precision = len(sample_price.split('.')[1])+1 if '.' in sample_price else 2
+        sample_price = df.select(pl.col("close").head(1)).to_series()[0]
+        precision = len(str(sample_price).split('.')[1]) + 1 if '.' in str(sample_price) else 2
     except (IndexError, AttributeError):
         precision = 5
 
-    highs = df['high'].values
-    lows = df['low'].values
+    # 1. Zero-copy access to underlying NumPy arrays
+    highs = df['high'].to_numpy()
+    lows = df['low'].to_numpy()
+
+    # 2. Compute recursive logic via NumPy backend
     psar_values = _psar_backend(highs, lows, step, max_step)
 
-    res = pd.DataFrame({
-        'psar': psar_values
-    }, index=df.index)
-    
-    return res.round(precision)
+    # 3. Return concrete Polars DataFrame
+    return pl.DataFrame({
+        "psar": psar_values
+    }).with_columns(
+        pl.col("psar").round(precision)
+    )
