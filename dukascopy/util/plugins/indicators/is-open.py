@@ -40,23 +40,23 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     # Copy options and force API to return polars DataFrames
     api_opts = {**options, "return_polars": True}
 
-    # Ensure time_ms is an unsigned integer so math works correctly
-    ldf = df.with_columns([pl.col("time_ms").cast(pl.UInt64)])
-
     # Extract the symbol once (assumes all rows use the same symbol)
-    symbol = ldf["symbol"].item(0)
+    symbol = df["symbol"].item(0)
 
     # Extract the timeframe once (same assumption)
-    tf = ldf["timeframe"].item(0)
+    tf = df["timeframe"].item(0)
+
+    # Get the earliest timestamp in the input data
+    time_min = df["time_ms"].min()
+
+    # Ensure time_ms is an unsigned integer so math works correctly
+    ldf = df.lazy().with_columns([pl.col("time_ms").cast(pl.UInt64)])
 
     # FAST PATH: 1m candles are always closed in this system
     if tf == "1m":
         return ldf.select([
             (pl.col("time_ms") * 0).cast(pl.Int8).alias("is-open")
         ])
-
-    # Get the earliest timestamp in the input data
-    time_min = ldf["time_ms"].min()
 
     def fetch_heartbeat():
         # Fetch the latest BTC-USD 1-minute candle

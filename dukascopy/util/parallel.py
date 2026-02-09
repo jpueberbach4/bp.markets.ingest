@@ -112,6 +112,9 @@ class IndicatorWorker:
         if res_df is None:
             return None
 
+        if isinstance(res_df, pl.LazyFrame):
+            res_df = res_df.collect()
+
         # Handle the case where the plugin returned a Polars DataFrame
         if isinstance(res_df, pl.DataFrame):
             # Polars has its own way of checking for emptiness
@@ -282,8 +285,9 @@ class IndicatorEngine:
 
                 # Decide which DataFrame view to pass into the worker
                 if plugin_meta.get('polars_input', False):
-                    # Plugin can consume Polars directly (zero-copy)
-                    task_input = df_polars_source
+                    # Plugin can consume Polars directly (zero-copy)'
+                    # FiX: multithreaded locking issues. pldf not threadsafe
+                    task_input = df_polars_source.copy()
                 else:
                     # Plugin requires pandas; convert only once if needed
                     if df_for_pandas is None:
