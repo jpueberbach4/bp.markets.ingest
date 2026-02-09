@@ -39,8 +39,6 @@ This method is symbol-agnostic and automatically handles market closures, holida
 
 **Update:** The cabin-in-the-woods-without-internet problem is a non-existent problem for `is-open`. We do not use the laptops `time()` anywhere. It only looks at the timestamps of the ingested candles. However, since we need to detect staleness-eg the dataprovider died on a market-we will introduce another indicator: `is-stale`. This indicator can be used to `safeguard` things. Soon.
 
-Currently `is-open` allows a 2-hour window for a market to get "repaired". Eg BTC-USD is live but GBP-USD should be live too but is not, it closes lower TF candles after two hours. When the market comes back after those two hours and the 4H got closed, it will detect it and put the 4H back to open.
-
 ## **Next**
 
 Hardening, quality. Panama-data sidetrack. Then. Splitting up ETL to make more modular-more kubernetes friendly, retaking performance there-and adding a high-speed comm-layer.
