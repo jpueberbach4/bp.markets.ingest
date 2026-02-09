@@ -12,6 +12,8 @@ While this is fixed, I will need to do automated performance tests on the connec
 
 So yes, there is a need for automated performance testing of indicators. There may be more slow ones which i didnt catch before since not all, like aroon, wereincluded in previous load-tests.
 
+Note: when you copied the example for the 3x RSI: you will need to update it. See templates.md/indicators.md.
+
 ## **Replay mockup is back**
 
 I have re-inserted the "bit scroll-glitchy" replay mockup for demonstration purposes. You can use it to simulate market replay. It can be handy for certain purposes-eg examining custom-indicator-crosses. Its just a mockup but works with all your symbols, timeframes and indicators. I will leave it in. Copy over the `config/dukascopy/http-docs/replay-mockup.html` to your `config.user/dukascopy/http-docs/replay-mockup.html` if you want to "play with it".
