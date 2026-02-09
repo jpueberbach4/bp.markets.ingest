@@ -1,4 +1,6 @@
-It was a busy weekend so today-monday-is a day off. Chilling.
+## **API now multi-process**
+
+HTTP API is now multi-process when `reload:0`. You can specify the number of workers in `config.user.yaml` eg `http.workers:8`. This will spawn 8 worker processes distributed over 8 cores. Since we use memory-mapped files that rely on the OS page-cache-the processes share this cache- memory usage will remain limited. Concurrency issues are now solved. 
 
 ## **CSV export limit increased**
 
