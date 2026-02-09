@@ -4,12 +4,9 @@ HTTP-API is now polars native. When querying with polars:1 indicators -> blazing
 
 ## **HTTP-STATUS 400 is now "transient"**
 
-I forgot to mention but this was implemented already a "few" commits back. Status-code 400 is now transient. That means when the ingestion encounters a 400 state, it will retry. This makes ingestion a bit more robust. Play with the number of retries, the backoff factor and the timeout if you are having issues syncing up. Don't overdo it on the rps setting though. Please.
+I forgot to mention but this was implemented already a "few" commits back. Status-code 400 is now transient. That means when the ingestion encounters a 400 state, it will retry. This makes ingestion a bit more robust. Play with the number of retries, the backoff factor and the timeout if you are having issues syncing up. Don't overdo it on the rps setting though.
 
-**Note:** I have abstracted the download-engine and added some options to make things more stable and prevent rate-limit hits. Especially when you are in-sync you can make the download clean. No warnings.
-Set `download.jitter` (new setting) to 1.0. Optionally set `download.mode` (new setting) to `http2` (note that you need to do a `pip install -r requirements.txt` for `http2` support). The jittering prevents slamming (thundering) with Ncore number of connections exactly in the same ms.
-
-I am in-sync and have jitter set to 1.0. Don't know exactly what the perfect settings are atm. My settings:
+**Note:** My settings:
 
 ```yaml
 # Below you will find the configuration for the download.py script. 
@@ -27,11 +24,11 @@ download:
 
 (these are working settings for people that are in-sync)
 
-PS. it are actually status 500 errors, masked as a 400. Don't know for sure it's a rate-limit.
+PS. it are actually status 500 errors, masked as a 400. Don't know for sure it's a rate-limit. I checked again, doesnt look/feel like rate-limiting.
 
 ## **WSL Fast-API issue - `--reload` consumes one core**
 
-This is known to me. I had a go at it but took too much time to solve quickly. Tried watchfiles, watchdog, exclusions, inclusions. Everything. The problem is that, under WSL2, the inotify is broken. So when a file changes, the inotification is not being raised. FastAPI/UVLOOP with `--reload` detects that it is not working and instead goes in a loop mode. This causes the CPU-issue. Since the root has many files (cache, data,..).
+I had a go at it but took too much time to solve quickly. Tried watchfiles, watchdog, exclusions, inclusions. Everything. The problem is that, under WSL2, the inotify is broken. So when a file changes, the inotification is not being raised. FastAPI/UVLOOP with `--reload` detects that it is not working and instead goes in a loop mode. This causes the CPU-issue. Since the root has many files (cache, data,..).
 
 **Update:** It is now configurable in the `config.user.yaml`. `http.reload:0` = do not watch files, no cpu-loop under WSL2 (production setting). `http.reload:1` watches files for changes and immediately adds new indicators to the interface (after pressing update view) as you add them (development setting).
 
@@ -49,33 +46,6 @@ Another robustness update is coming for the "cabin in the woods but no internet"
 
 You can checkout the indicator [here](../util/plugins/indicators/is-open.py).
 
-**Note:** When you have `custom timeframes` defined, copy over the `is-open.py` indicator to your `config.user/plugins/indicators` directory and add your `custom timeframe` to this block. The user-defined indicator will overrule the system-one (yes, conflicting with the indicator.md documentation, will change that documentation soon).
-
-These are currently defined. If your custom timeframe is in there, no changes needed.
-
-```python
-        # Around +- line 120
-        # Duration (in ms) of each supported timeframe
-        tf_lengths = {
-            "1m": 0,
-            "2m": 120000,
-            "3m": 180000,
-            "5m": 300000,
-            "10m": 600000,
-            "15m": 900000,
-            "30m": 1800000,
-            "1h": 3600000,
-            "2h": 7200000,
-            "3h": 10800000,
-            "4h": 14400000,
-            "6h": 21600000,
-            "8h": 28800000,
-            "12h": 43200000,
-            "1d": 86400000,
-            "1W": 604800000,
-        }
-```
-
 **Update:** This approach works really well, and its simplicity stems from the system's design. The fail-fast principle plays a key role: if even one symbol’s download fails, the process fails immediately—preventing updates for any symbol.
 
 When all downloads succeed, and BTC-USD has new data, it serves as the reference point. If BTC-USD has new data but GBP-USD does not, this indicates that the GBP-USD market is closed.
@@ -83,20 +53,6 @@ When all downloads succeed, and BTC-USD has new data, it serves as the reference
 We can then take the last minute of BTC-USD data and subtract the timespan of the last candle (e.g., 4 hours). If the result is later than the start time of that last candle, the candle is considered closed.
 
 This method is symbol-agnostic and automatically handles market closures, holidays, and similar scenarios
-
-## **Another performance update**
-
-This one hits your indicators. You can now optionally accept a polars Dataframe inside of your plugin. You need to set `meta.polars_input` to 1. The calling function then passes in a polars dataframe. You can then either return a pandas dataframe or a polars dataframe. Generic advice is to prevent conversions as much as possible. So polars input has the preference. 
-
-Gain? For 1000 records on a complex recursive indicator: 51ms to 19ms. 60000 records from 100ms to 37ms. See the [indicators](indicators.md) doc.
-
-So my statement that it couldnt be pushed further was wrong-at least for "calculate"-indicators.
-
-Recursive calls got a lot cheaper.
-
-The HTTP-API is still on Pandas. It will be sped up too by switching it to return_polars=True. So the HTTP Wall time includes a conversion-overhead from polars to pandas. This is why it might feel that the latest performance fix actually does nothing, on the web-interface.
-
-The truth is (internal optimized get_data call), with complex indicator: 1000000 records, time-passed: 92.94088200840633 ms + 1 indicators (which subqueries both H4 and D1 frame RSI). I have added the HTTP-API fix to the todo list.
 
 ## **Next**
 
