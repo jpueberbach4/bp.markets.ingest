@@ -287,7 +287,11 @@ class IndicatorEngine:
                 if plugin_meta.get('polars_input', False):
                     # Plugin can consume Polars directly (zero-copy)'
                     # FiX: multithreaded locking issues. pldf not threadsafe
-                    task_input = df_polars_source.copy()
+                    if isinstance(df_polars_source, pl.DataFrame):
+                        task_input = df_polars_source.clone()
+                    else:
+                        # Fallback if source type is unexpected
+                        task_input = df_polars_source
                 else:
                     # Plugin requires pandas; convert only once if needed
                     if df_for_pandas is None:

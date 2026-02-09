@@ -24,7 +24,7 @@ def meta() -> Dict:
         "panel": 1,
         "verified": 1,
         "talib-validated": 1, 
-        "polars": 0  # Trigger high-speed Polars execution path
+        "polars": 0  # Polars is slower
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
