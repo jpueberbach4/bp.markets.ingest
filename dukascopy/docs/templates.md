@@ -180,15 +180,18 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
 
     # Create a lightweight DataFrame with only timestamps
     # This becomes the "reference timeline" for all joins
-    ldf = df.select([pl.col("time_ms").cast(pl.UInt64)])
+    ldf = df.select([
+        pl.col("time_ms").cast(pl.UInt64)
+    ])
 
     # Extract static metadata (assumed constant across all rows)
+    # DO NOT USE THE LDF!
     symbol = df["symbol"].item(0)
     tf = df["timeframe"].item(0)
 
     # Determine the time range we need indicator data for
-    time_min = ldf["time_ms"].min()
-    time_max = ldf["time_ms"].max()
+    time_min = df["time_ms"].min()
+    time_max = df["time_ms"].max()
 
     # Force API to return Polars DataFrames
     api_opts = {**options, "return_polars": True}
@@ -253,6 +256,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
 
     # Return the final DataFrame with one RSI per timeframe
     return result_ldf
+
 ```
 
 Note the profiling section. It is VERY good practice to profile your code in order to see where, often unnecessary performance-loss, could sit.
