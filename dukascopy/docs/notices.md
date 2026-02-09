@@ -24,7 +24,9 @@ download:
 
 (these are working settings for people that are in-sync)
 
-PS. it are actually status 500 errors, masked as a 400. Don't know for sure it's a rate-limit. I checked again, doesnt look/feel like rate-limiting. This is something that needs to get solved professionally, later. This software is not yet far enough developed to actively start exploring options. Perhaps, i should change the priorization of todo items and first makes this "locally complete". Good night. 
+PS. it are actually status 500 errors, masked as a 400. Don't know for sure it's a rate-limit. I checked again, doesnt look/feel like rate-limiting. This is something that needs to get solved professionally, later. This software is not yet far enough developed to actively start exploring options. Perhaps, i should change the priorization of todo items and first makes this "locally complete". Good night.
+
+You should position this as a market research- and prototyping-tool. 
 
 ## **WSL Fast-API issue - `--reload` consumes one core**
 
