@@ -135,7 +135,20 @@ class TestIndicatorEquivalence(unittest.TestCase):
                         actual = res_pl[indicator_name].to_numpy() if indicator_name in res_pl.columns else res_pl.to_numpy()[:, 0]
                         np.testing.assert_allclose(actual[warmup:], expected[warmup:], atol=1e-8, equal_nan=True)
                 else:
-                    res_pd = module.calculate(self.df_pd, options)
+                    if meta.get('polars_input', 0) == 1:
+                        input_data = pl.from_pandas(self.df_pd)
+                    else:
+                        input_data = self.df_pd
+
+                    res = module.calculate(input_data, options)
+                    
+                    if isinstance(res, (pl.DataFrame, pl.LazyFrame)):
+                        if isinstance(res, pl.LazyFrame):
+                            res = res.collect()
+                        res_pd = res.to_pandas()
+                    else:
+                        res_pd = res
+
                     if isinstance(expected, tuple):
                         for i in range(min(res_pd.shape[1], len(expected))):
                             actual = res_pd.iloc[:, i].to_numpy()
