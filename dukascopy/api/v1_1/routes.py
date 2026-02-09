@@ -65,7 +65,9 @@ import orjson
 import re
 import pandas as pd
 import polars as pl
+import asyncio
 
+from starlette.concurrency import run_in_threadpool
 from fastapi import APIRouter, Query, Depends
 from fastapi.responses import PlainTextResponse, JSONResponse
 from typing import Optional
@@ -419,28 +421,34 @@ async def get_ohlcv(
         # Collect Polars DataFrames for each select clause
         select_df = []
 
+        tasks = []
+
         for item in options["select_data"]:
             # Unpack resolved select tuple
             symbol, timeframe, _, modifiers, indicators = item
 
-            # Retrieve OHLCV data and indicators via internal API
-            temp_df = get_data(
-                symbol,
-                timeframe,
-                after_ms,
-                until_ms,
-                limit,
-                order,
-                indicators,
-                {
-                    "modifiers": modifiers,
-                    "disable_recursive_mapping": disable_recursive_mapping,
-                    "return_polars": True,
-                },
+            # run_in_threadpool offloads the blocking 'get_data' call to a thread
+            tasks.append(
+                # Retrieve OHLCV data and indicators via internal API
+                run_in_threadpool(
+                    get_data,
+                    symbol,
+                    timeframe,
+                    after_ms,
+                    until_ms,
+                    limit,
+                    order,
+                    indicators,
+                    {
+                        "modifiers": modifiers,
+                        "disable_recursive_mapping": disable_recursive_mapping,
+                        "return_polars": True,
+                    },
+                )
             )
 
-            # Accumulate results for multi-select queries
-            select_df.append(temp_df)
+        # This allows multiple symbols to be calculated on different threads simultaneously.
+        select_df = await asyncio.gather(*tasks)
 
         # Concatenate all result frames using Polars
         enriched_df = pl.concat(select_df)

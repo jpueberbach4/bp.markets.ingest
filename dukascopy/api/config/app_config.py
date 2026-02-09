@@ -21,6 +21,7 @@ class HTTPServiceConfig:
     fmode: str = "binary"
     poolmode: str = "thread"
     reload: int = 1
+    workers: int = 4
     limits: HTTPServiceLimits = field(default_factory=HTTPServiceLimits)
 
 @dataclass
