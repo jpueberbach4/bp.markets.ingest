@@ -2,7 +2,7 @@ It was a busy weekend so today-monday-is a day off. Chilling.
 
 ## **Replay mockup is back**
 
-I have re-inserted the "bit scroll-glitchy" replay mockup for demonstration purposes. You can use it to simulate market replay. It can be handy for certain purposes. Its just a mockup but works with all your symbols, timeframes and indicators. I will leave it in. Copy over the `config/dukascopy/http-docs/replay-mockup.html` to your `config.user/dukascopy/http-docs/replay-mockup.html` if you want to "play with it".
+I have re-inserted the "bit scroll-glitchy" replay mockup for demonstration purposes. You can use it to simulate market replay. It can be handy for certain purposes-eg examining custom-indicator-crosses. Its just a mockup but works with all your symbols, timeframes and indicators. I will leave it in. Copy over the `config/dukascopy/http-docs/replay-mockup.html` to your `config.user/dukascopy/http-docs/replay-mockup.html` if you want to "play with it".
 
 After copying `http://localhost:8000/replay-mockup.html`
 
