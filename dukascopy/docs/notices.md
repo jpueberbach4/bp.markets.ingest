@@ -1,5 +1,9 @@
 It was a busy weekend so today-monday-is a day off. Chilling.
 
+## **CSV export limit increased**
+
+You can now export up to 1 million rows from the HTTP-API-export view function-as CSV. With indicators. 
+
 ## **BUG!**
 
 Today, 2026-02-09T1730+0100, i found a bug while i was working with CSV data for trading. I use this stuff myself too, meaning automatically that deeper integration tests are being performed. I found out that mixing pandas indicators with polars dataframe indicators, somehow got broken. I have fixed this.
