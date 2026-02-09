@@ -148,7 +148,8 @@ class TestAllIndicatorsPerformance(unittest.TestCase):
             except Exception as e:
                 sys.stdout.write("\r" + " " * 80 + "\r")
                 err_msg = str(e).split('\n')[0][:40]
-                print(f"❌ FAIL   | {indicator_name:<25} | {0.0:10.2f} | ERROR           | {err_msg}")
+                icon, label = "❌", "FAIL"
+                print(f"{icon} {label:<5} | {indicator_name:<25} | {0.0:10.2f} | ERROR           | {err_msg}")
 
     def _get_type_str(self, meta):
         if meta.get('polars', 0) == 1: return "Polars Expr"
