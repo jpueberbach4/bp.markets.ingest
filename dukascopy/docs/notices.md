@@ -1,5 +1,17 @@
 It was a busy weekend so today-monday-is a day off. Chilling.
 
+## **BUG!**
+
+Today, 2026-02-09T1730+0100, i found a bug while i was working with CSV data for trading. I use this stuff myself too, meaning automatically that deeper integration tests are being performed. I found out that mixing pandas indicators with polars dataframe indicators, somehow got broken. I have fixed this.
+
+You will need to update. Now, a decent mix has been tested on 1 million records:
+
+indicators = ['is-open', 'rsi-1h4h1d_14','aroon_14','atrp_14','atr_14','ema_9','ema_18','ema_30','macd_12_26_9']
+
+While this is fixed, I will need to automated performance tests on the connectors. Another unit-test will come for that. The aroon indicator is very slow. The execution time of the above list is 1.2s. When I remove aroon, this drops to 120-140ms. 
+
+So yes, there is a need for automated performance testing of indicators. There may be more slow ones which i didnt catch before since not all, like aroon, wereincluded in previous load-tests.
+
 ## **Replay mockup is back**
 
 I have re-inserted the "bit scroll-glitchy" replay mockup for demonstration purposes. You can use it to simulate market replay. It can be handy for certain purposes-eg examining custom-indicator-crosses. Its just a mockup but works with all your symbols, timeframes and indicators. I will leave it in. Copy over the `config/dukascopy/http-docs/replay-mockup.html` to your `config.user/dukascopy/http-docs/replay-mockup.html` if you want to "play with it".
