@@ -1,12 +1,10 @@
-## **API now multi-process**
+## **HTTP API now multi-process and export limit increased, get_data now thread-safe**
 
-HTTP API is now multi-process when `reload:0`. You can specify the number of workers in `config.user.yaml` eg `http.workers:8`. This will spawn 8 worker processes distributed over 8 cores. Since we use memory-mapped files that rely on the OS page-cache-the processes share this cache- memory usage will remain limited. Concurrency issues are now solved. 
+HTTP API is now multi-process when `reload:0`. You can specify the number of workers in `config.user.yaml` eg `http.workers:8`. This will spawn 8 worker processes distributed over 8 cores. Since we use memory-mapped files that rely on the OS page-cache-the processes share this cache- memory usage will remain limited. Concurrency issues are now solved. `reload:1` means development mode == 1 worker.
 
-## **CSV export limit increased**
+Limit: You can now export up to 1 million rows from the HTTP-API-export view function-as CSV. With indicators.
 
-You can now export up to 1 million rows from the HTTP-API-export view function-as CSV. With indicators.
-
-I could, with ease, generate files over 500MB.
+Thread-safety: MarketDataCache is now thread-safe. It is now safe(r) to call get_data and get_data_auto from threads.
 
 ## **BUG!**
 
