@@ -21,6 +21,9 @@ def calculate_polars(indicator_str, options):
     period = int(options.get('period', 20))
     return [pl.col("close").rolling_mean(period).alias(indicator_str)]
 ```
+
+(this is the fastest path)
+
 ### 2. Multi-Output Indicator
 
 Pure polars expression based template. Use it with `meta.polars:1`.
