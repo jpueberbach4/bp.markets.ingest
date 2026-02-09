@@ -20,6 +20,7 @@ Priorization:
 Note: we are setup now to integrate the extensions below (weekend work).
 
 Quality:
+  - [ ] Another profile on the HTTP-API for 1 million records with 10 complex indicators. Direct get_data is much faster than the time it takes for the HTTP engine to start streaming. Why? Did we forget something during the optimization pass?
   - [x] Abstraction download-engine and HTTP/2 support (configurable)
   - [x] Eliminate the Polars->Pandas conversion in HTTP-api
   - [x] Allow get_data_auto to receive a polars Dataframe (and options)
