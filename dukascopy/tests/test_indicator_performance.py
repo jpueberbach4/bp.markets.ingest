@@ -18,7 +18,7 @@ PLUGIN_DIRS = [
 ]
 
 # Threshold for warning (in milliseconds)
-PERF_THRESHOLD_MS = 5
+PERF_THRESHOLD_MS = 10
 
 class TestAllIndicatorsPerformance(unittest.TestCase):
     

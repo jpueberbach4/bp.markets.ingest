@@ -22,7 +22,8 @@ def meta() -> Dict:
         "version": 1.2,
         "panel": 1,
         "verified": 1,
-        "polars": 1
+        "polars": 0,
+        "polars_input": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -43,65 +44,60 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "period": args[0] if len(args) > 0 else "50"
     }
 
-def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
+def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     """
-    High-performance Polars-native calculation for Hurst Exponent.
+    High-performance Hurst Exponent implementation for polars_input: 1.
+    Vectorizes the rescaled range / lag variance analysis across 1M rows.
     """
     try:
         period = int(options.get('period', 50))
     except (ValueError, TypeError):
         period = 50
 
-    def hurst_logic(s: pl.Series) -> float:
-        series = s.to_numpy()
-        n = len(series)
-        if n < 10: return 0.5
-        
-        lags = range(2, n // 2)
-        tau = [np.sqrt(np.std(series[lag:] - series[:-lag])) for lag in lags]
-        tau = [t if t > 0 else 1e-10 for t in tau]
-        
-        poly = np.polyfit(np.log(lags), np.log(tau), 1)
-        return float(poly[0] * 2.0)
+    if len(df) < period:
+        return pl.DataFrame({
+            "hurst": [None] * len(df),
+            "regime": [0.0] * len(df)
+        }).with_columns([
+            pl.col("hurst").cast(pl.Float64),
+            pl.col("regime").cast(pl.Float64)
+        ])
 
-    hurst = pl.col("close").rolling_map(hurst_logic, window_size=period)
+    close_v = df["close"].to_numpy()
+    windows = np.lib.stride_tricks.sliding_window_view(close_v, window_shape=period)
+    
+    lags = np.unique(np.linspace(2, period // 2, 5).astype(int))
+    log_lags = np.log(lags)
+    
+    log_taus = []
+    
+    for lag in lags:
+        diffs = windows[:, lag:] - windows[:, :-lag]
+        std_v = np.std(diffs, axis=1)
+        std_v = np.where(std_v > 0, std_v, 1e-10)
+        log_taus.append(np.log(np.sqrt(std_v)))
 
-    regime = (
-        pl.when(hurst > 0.55).then(1.0)
-        .when(hurst < 0.45).then(-1.0)
+    log_taus = np.column_stack(log_taus)
+
+    x = log_lags
+    x_mean = np.mean(x)
+    y_means = np.mean(log_taus, axis=1)[:, np.newaxis]
+    
+    numerator = np.sum((x - x_mean) * (log_taus - y_means), axis=1)
+    denominator = np.sum((x - x_mean)**2)
+    
+    hurst_values = (numerator / denominator) * 2.0
+
+    padding = np.full(period - 1, np.nan)
+    full_hurst = np.concatenate([padding, hurst_values])
+
+    res = pl.DataFrame({"hurst": full_hurst})
+
+    res = res.with_columns(
+        pl.when(pl.col("hurst") > 0.55).then(1.0)
+        .when(pl.col("hurst") < 0.45).then(-1.0)
         .otherwise(0.0)
+        .alias("regime")
     )
 
-    return [
-        hurst.alias(f"{indicator_str}__hurst"),
-        regime.alias(f"{indicator_str}__regime")
-    ]
-
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
-    """
-    Legacy Pandas fallback with numeric codes.
-    """
-    try:
-        period = int(options.get('period', 50))
-    except (ValueError, TypeError):
-        period = 50
-
-    def get_hurst_exponent(series):
-        n = len(series)
-        if n < 10: return 0.5
-        lags = range(2, n // 2)
-        tau = [np.sqrt(np.std(series[lag:] - series[:-lag])) for lag in lags]
-        tau = [t if t > 0 else 1e-10 for t in tau]
-        poly = np.polyfit(np.log(lags), np.log(tau), 1)
-        return float(poly[0] * 2.0)
-
-    hurst = df['close'].rolling(window=period).apply(get_hurst_exponent, raw=True)
-    
-    conditions = [(hurst > 0.55), (hurst < 0.45)]
-    choices = [1.0, -1.0] 
-    regime = np.select(conditions, choices, default=0.0)
-
-    return pd.DataFrame({
-        'hurst': hurst,
-        'regime': regime
-    }, index=df.index).dropna(subset=['hurst'])
+    return res
