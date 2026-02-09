@@ -60,4 +60,5 @@ This method is symbol-agnostic and automatically handles market closures, holida
 
 ## **Next**
 
-Hardening, quality. Then. Splitting up ETL to make more modular-more kubernetes friendly, retaking performance there-and adding a high-speed comm-layer.
+Hardening, quality. Panama-data sidetrack. Then. Splitting up ETL to make more modular-more kubernetes friendly, retaking performance there-and adding a high-speed comm-layer.
+
