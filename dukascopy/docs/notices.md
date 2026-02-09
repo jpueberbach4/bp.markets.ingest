@@ -8,7 +8,7 @@ You will need to update. Now, a decent mix has been tested on 1 million records:
 
 indicators = ['is-open', 'rsi-1h4h1d_14','aroon_14','atrp_14','atr_14','ema_9','ema_18','ema_30','macd_12_26_9']
 
-While this is fixed, I will need to automated performance tests on the connectors. Another unit-test will come for that. The aroon indicator is very slow. The execution time of the above list is 1.2s. When I remove aroon, this drops to 120-140ms. 
+While this is fixed, I will need to do automated performance tests on the connectors. Another unit-test will come for that. The aroon indicator is very slow. The execution time of the above list is 1.2s. When I remove aroon, this drops to 120-140ms. 
 
 So yes, there is a need for automated performance testing of indicators. There may be more slow ones which i didnt catch before since not all, like aroon, wereincluded in previous load-tests.
 
