@@ -46,8 +46,6 @@ The indicator `is-open` was added to the internal system indicators. You can que
 
 This is a temporary but ROBUST solution when you can update at least `ONCE EVERY TWO HOURS`. So for live connections this works where update-time is < 2 hours. Eg your crontab setting is once-every-two-hours. You get the point.
 
-Another robustness update is coming for the "cabin in the woods but no internet"-problem (is-stale:1 or 0). This solution will also cover warning for system outages. One of the points on the todo list. Warn user for data-source outages.
-
 You can checkout the indicator [here](../util/plugins/indicators/is-open.py).
 
 **Update:** This approach works really well, and its simplicity stems from the system's design. The fail-fast principle plays a key role: if even one symbol’s download fails, the process fails immediately—preventing updates for any symbol.
@@ -57,6 +55,8 @@ When all downloads succeed, and BTC-USD has new data, it serves as the reference
 We can then take the last minute of BTC-USD data and subtract the timespan of the last candle (e.g., 4 hours). If the result is later than the start time of that last candle, the candle is considered closed.
 
 This method is symbol-agnostic and automatically handles market closures, holidays, and similar scenarios
+
+**Update:** The cabin-in-the-woods-without-internet problem is a non-existent problem for `is-open`. We do not use the laptops `time()` anywhere. It only looks at the timestamps of the ingested candles. However, since we need to detect staleness-eg the dataprovider died on a market-we will introduce another indicator: `is-stale`. This indicator can be used to `safeguard` things. Soon.
 
 ## **Next**
 

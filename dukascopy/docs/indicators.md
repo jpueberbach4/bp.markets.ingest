@@ -830,4 +830,4 @@ Refresh interface after changes. Voila. Be carefull with running ./setup-dukasco
 
 ![example](../images/example-mixed-tf-h1-h4-1d-polars.png)
 
-**Note:** Live-edge handling is now handled in a pretty robust way. However, on "cabin in the woods without internet", it may fail. There will be an update for this on the `is-open indicator` in the future.  
+**Note:** Live-edge handling is now handled in a pretty robust way.
