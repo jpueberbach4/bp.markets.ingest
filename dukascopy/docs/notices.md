@@ -430,6 +430,8 @@ STATUS   | INDICATOR                 |  TIME (ms) | TYPE            | SOURCE
 
 Marketprofile and volumeprofile cannot be optimized. Will check it once more... but is difficult because of the nature of these two. Shannonentropy was horrible, is better, but still way too high. Others were fixed.
 
+Most dramatic tune was HURST. Was 7530ms, now 7.25ms.
+
 ## **Replay mockup is back**
 
 I have re-inserted the "bit scroll-glitchy" replay mockup for demonstration purposes. You can use it to simulate market replay. It can be handy for certain purposes-eg examining custom-indicator-crosses. Its just a mockup but works with all your symbols, timeframes and indicators. I will leave it in. Copy over the `config/dukascopy/http-docs/replay-mockup.html` to your `config.user/dukascopy/http-docs/replay-mockup.html` if you want to "play with it".
