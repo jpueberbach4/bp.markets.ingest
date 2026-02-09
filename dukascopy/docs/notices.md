@@ -2,7 +2,9 @@ It was a busy weekend so today-monday-is a day off. Chilling.
 
 ## **CSV export limit increased**
 
-You can now export up to 1 million rows from the HTTP-API-export view function-as CSV. With indicators. 
+You can now export up to 1 million rows from the HTTP-API-export view function-as CSV. With indicators.
+
+I could, with ease, generate files over 500MB.
 
 ## **BUG!**
 
