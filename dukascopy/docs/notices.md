@@ -430,6 +430,8 @@ STATUS   | INDICATOR                 |  TIME (ms) | TYPE            | SOURCE
 
 Marketprofile and volumeprofile cannot be optimized. Will check it once more... but is difficult because of the nature of these two. Shannonentropy was horrible, is better, but still way too high. Others were fixed.
 
+^^ These 3 are perfect candidates for the CUDA/Rapids path
+
 Most dramatic tune was HURST. Was 7530ms, now 7.25ms.
 
 ## **Replay mockup is back**
