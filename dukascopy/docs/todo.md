@@ -20,6 +20,7 @@ Priorization:
 Note: we are setup now to integrate the extensions below (weekend work).
 
 Quality:
+  - [x] Multi-process API service for true concurrency
   - [x] Unit-test that does a performance-test on indicators with 10,000 records and warns on > 10ms.
   - [ ] Aroon indicator is a PERFORMANCE-KILLER. Fix.
   - [x] Abstraction download-engine and HTTP/2 support (configurable)
