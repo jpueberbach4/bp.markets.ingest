@@ -8,51 +8,51 @@
  Updated:     2026-01-31
 
  Description:
-     Hybrid parallel execution engine for technical indicator computation.
+      Hybrid parallel execution engine for technical indicator computation.
 
-     This module provides a unified, high-performance pipeline for computing
-     technical indicators implemented across mixed execution backends
-     (Polars and Pandas).
+      This module provides a unified, high-performance pipeline for computing
+      technical indicators implemented across mixed execution backends
+      (Polars and Pandas).
 
-     The engine automatically selects the optimal execution strategy
-     per indicator:
+      The engine automatically selects the optimal execution strategy
+      per indicator:
 
-       - Polars-native indicators are injected directly into a single lazy
-         Polars execution graph and evaluated exactly once.
-       - Legacy or complex Pandas-based indicators are executed eagerly in
-         parallel using a thread pool and merged back into the final result.
+        - Polars-native indicators are injected directly into a single lazy
+          Polars execution graph and evaluated exactly once.
+        - Legacy or complex Pandas-based indicators are executed eagerly in
+          parallel using a thread pool and merged back into the final result.
 
-     Both execution paths operate concurrently without blocking each other.
+      Both execution paths operate concurrently without blocking each other.
 
  Core responsibilities:
-     - Accept Pandas or Polars input transparently
-     - Route each indicator to the correct execution backend
-     - Minimize data copying via shared Arrow-backed memory
-     - Normalize indicator output naming to prevent column collisions
-     - Preserve strict row alignment across all indicator outputs
-     - Safely handle warmup periods, missing values, and partial results
-     - Support both flat outputs and nested per-row indicator structures
+      - Accept Pandas or Polars input transparently
+      - Route each indicator to the correct execution backend
+      - Minimize data copying via shared Arrow-backed memory
+      - Normalize indicator output naming to prevent column collisions
+      - Preserve strict row alignment across all indicator outputs
+      - Safely handle warmup periods, missing values, and partial results
+      - Support both flat outputs and nested per-row indicator structures
 
  Design goals:
-     - Enable rapid prototyping with Pandas-based indicators
-     - Provide a seamless upgrade path to Polars for production workloads
-     - Maximize performance by batching Polars expressions and isolating
-       Pandas execution to parallel worker threads
-     - Maintain backward compatibility with existing plugin APIs
-     - Avoid unnecessary conversions and materializations
+      - Enable rapid prototyping with Pandas-based indicators
+      - Provide a seamless upgrade path to Polars for production workloads
+      - Maximize performance by batching Polars expressions and isolating
+        Pandas execution to parallel worker threads
+      - Maintain backward compatibility with existing plugin APIs
+      - Avoid unnecessary conversions and materializations
 
-     This architecture allows mixed Pandas/Polars indicator sets to coexist
-     in a single computation pipeline without sacrificing correctness,
-     performance, or developer ergonomics.
+      This architecture allows mixed Pandas/Polars indicator sets to coexist
+      in a single computation pipeline without sacrificing correctness,
+      performance, or developer ergonomics.
 
  Requirements:
-     - Python 3.8+
-     - pandas
-     - numpy
-     - polars
+      - Python 3.8+
+      - pandas
+      - numpy
+      - polars
 
  License:
-     MIT License
+      MIT License
 ===============================================================================
 """
 
@@ -69,6 +69,7 @@ try:
     import polars as pl
 except ImportError:
     raise ImportError("Polars is required. Run 'pip install polars'")
+
 
 class IndicatorWorker:
     """
@@ -145,6 +146,7 @@ class IndicatorWorker:
 
         # Return the normalized DataFrame
         return res_df
+
 
 class IndicatorEngine:
     """
@@ -285,7 +287,7 @@ class IndicatorEngine:
 
                 # Decide which DataFrame view to pass into the worker
                 if plugin_meta.get('polars_input', False):
-                    # Plugin can consume Polars directly (zero-copy)'
+                    # Plugin can consume Polars directly (zero-copy)
                     # FiX: multithreaded locking issues. pldf not threadsafe
                     if isinstance(df_polars_source, pl.DataFrame):
                         task_input = df_polars_source.clone()
@@ -321,7 +323,6 @@ class IndicatorEngine:
             return self._assemble_flat(df, collected_pl, pandas_tasks, return_polars)
         else:
             return self._assemble_nested(df, collected_pl, pandas_tasks, return_polars)
-
 
     def _resolve_options(self, ind_str: str, plugin_entry: Dict) -> Dict:
         """
@@ -425,7 +426,7 @@ class IndicatorEngine:
 
     def _assemble_flat(
             self,
-            df_orig: pd.DataFrame,
+            df_orig: Union[pd.DataFrame, pl.DataFrame],
             main_pl: pl.DataFrame,
             tasks: List,
             return_polars: bool = False
@@ -488,7 +489,7 @@ class IndicatorEngine:
 
     def _assemble_nested(
         self,
-        df_orig: pd.DataFrame,
+        df_orig: Union[pd.DataFrame, pl.DataFrame],
         main_pl: pl.DataFrame,
         tasks: List,
         return_polars: bool = False
