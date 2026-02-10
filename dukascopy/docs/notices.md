@@ -2,7 +2,7 @@ Product-positioning: market research- and analysis tool, feature-engineering, bu
 
 ## **Next**
 
-After the `is-stale` indicator we move on to Panama and Stocksplit support (eg Apple 2017). Panama and Stocksplit will be implemented as an additional stage in the ETL process that will sidetrack an adjusted dataset. The Panama and Stocksplit dataset will follow the regular incremental process for updates. So it will be just as "live" as the others, behave just like other for the resampling engine. The support will likely get injected in the aggregation stage. Likely, `symbols.users.txt` is going to support something like `BRENT-CMD.USD:panama`.
+After the `is-stale` indicator we move on to Panama and Stocksplit support (eg Apple 2017). Panama and Stocksplit will be implemented as an additional stage in the ETL process that will sidetrack an adjusted dataset. The Panama and Stocksplit dataset will follow the regular incremental process for updates. So it will be just as "live" as the others, behave just like others for the resampling engine. The support will likely get injected in/after the aggregation stage. Likely, `symbols.users.txt` is going to support something like `BRENT-CMD.USD:panama`.
 
 I will make sure that an adjusted set can be rebuild, seperately from the rest, preventing full-rebuilds.
 
