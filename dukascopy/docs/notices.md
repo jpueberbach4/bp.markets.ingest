@@ -72,7 +72,7 @@ Errors:         0
 ==============================
 ```
 
-Conclusion for this test: increase from 1 worker to 16 workers, increases throughput from 61 req/s to 340 req/s.
+Conclusion for this test: increase from 1 worker to 16 workers, increases throughput from 61 req/s to 340 req/s (20,400 requests per minute).
 
 By leaning on the OS page cache for memory-mapped files, this is essentially a lock-free, shared-memory data bus that allows 16 workers to hammer the same dataset without the usual RAM overhead or synchronization bottlenecks.
 
