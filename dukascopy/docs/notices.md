@@ -561,3 +561,6 @@ This method is symbol-agnostic and automatically handles market closures, holida
 **Update:** The is-stale functionality will compare last BTC 1m tick with the system-time one time and store an offset-file which updates once a day. Or something similar. This determines the local systems time-offset compared to the server (no need for a fixed configuration). It will store it somewhere and the argument being passed to is-stale (tolerance, needs to know how frequent you update) will be used to detect stale-ness. So the solution is known. Kinda busy today... but it will be here soon.
 
 
+This was fun times: https://www.youtube.com/watch?v=K2ku1A5Ox8U&list=RDK2ku1A5Ox8U . I "was there".
+
+WoLong too. Our chinese marketmover. https://www.youtube.com/watch?v=YGGzinyB1TI&list=RDYGGzinyB1TI&start_radio=1
