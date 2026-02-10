@@ -4,6 +4,10 @@
 
 The system indicators are [examples](../util/plugins/indicators). Use them as a guideline.
 
+**Important notice:** You should always aim for Polars expressions (1 & 2 below). At this moment, I cannot improve a situation with the GIL involving thread-locking. For (3 & 4 below) threads are used to execute indicators in parallel. When dataframes get large a significant amount of time is spent in thread.acquire and thread.lock, the GIL, to move data back and forth between thread and main-thread. The GIL is a common limitation of Python. From version 3.14 there is an option to run free-threaded, which may, at least partly, solve some of my issues. Until then, the general advice is to keep dataframe sizes limited when you are using (3 & 4 below).
+
+While the performance is extremely good, like god-tier for Python, a theoretical fix of the GIL-issue would put this almost in axiomatic-territory.
+
 ### 1. Simple Rolling Calculation
 
 Pure polars expression based template. Use it with `meta.polars:1`.
