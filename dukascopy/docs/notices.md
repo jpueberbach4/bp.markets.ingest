@@ -1,5 +1,13 @@
 Product-positioning: market research- and analysis tool, feature-engineering, but you can do so much more with it, if you are a bit "handy".
 
+## **Next**
+
+After the `is-stale` indicator we move on to Panama and Stocksplit support (eg Apple 2017). Panama and Stocksplit will be implemented as an additional stage in the ETL process that will sidetrack an adjusted dataset. The Panama and Stocksplit dataset will follow the regular incremental process for updates. So it will be just as "live" as the others, behave just like other for the resampling engine. The support will likely get injected in the aggregation stage. Likely, `symbols.users.txt` is going to support something like `BRENT-CMD.USD:panama`.
+
+I will make sure that an adjusted set can be rebuild, seperately from the rest, preventing full-rebuilds.
+
+Currently I am still in the quality/hardening phase for this single-machine-optimized setup.
+
 ## **HTTP API now multi-process and export limit increased, get_data now thread-safe**
 
 HTTP API is now multi-process when `reload:0`. You can specify the number of workers in `config.user.yaml` eg `http.workers:8`. This will spawn 8 worker processes distributed over 8 cores. Since we use memory-mapped files that rely on the OS page-cache-the processes share this cache- memory usage will remain limited. Concurrency issues are now solved. `reload:1` means development mode == 1 worker.
@@ -496,7 +504,4 @@ This method is symbol-agnostic and automatically handles market closures, holida
 
 **Update:** The is-stale functionality will compare last BTC 1m tick with the system-time one time and store an offset-file which updates once a day. Or something similar. This determines the local systems time-offset compared to the server (no need for a fixed configuration). It will store it somewhere and the argument being passed to is-stale (tolerance, needs to know how frequent you update) will be used to detect stale-ness. So the solution is known. Kinda busy today... but it will be here soon.
 
-## **Next**
-
-Hardening, quality. Panama-data sidetrack. Then. Splitting up ETL to make more modular-more kubernetes friendly, retaking performance there-and adding a high-speed comm-layer.
 
