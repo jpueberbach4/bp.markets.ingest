@@ -22,7 +22,7 @@ Latest mainbranch also makes it easier to customize line-colors for your custom 
 
 **Important:** only export 1 million rows with fast indicators. Don't export 1 million rows with either shannonentropy, market profile and volume profile. It works with these but you will be waiting literally "ages". When you need 1 million rows, programmatically, don't use the HTTP-API, use the [bootstrap](external.md) approach. HTTP API is purposed for monitoring/charting/low-friction exports.
 
-A high-speed TCP Apache Arrow Flight service will get implemented to support distributed processing. 
+A high-speed TCP [Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html) service will get implemented to support distributed processing. 
 
 Performance differences (concurrency: 64):
 
