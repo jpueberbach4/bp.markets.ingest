@@ -193,13 +193,19 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     ])
 
     # Extract static metadata (assumed constant across all rows)
-    # DO NOT USE THE LDF!
     symbol = df["symbol"].item(0)
     tf = df["timeframe"].item(0)
 
     # Determine the time range we need indicator data for
-    time_min = df["time_ms"].min()
-    time_max = df["time_ms"].max()
+    # Changed this from O(N) (min(),max()) to O(1) operation.
+    # On big chunks we don't want O(N) operations, anywhere.
+    # When developing indicators, always ask yourself the question:
+    # Is this an O(N) operation? Can it be replaced with a O(log N) 
+    # or O(1) operation? Especially for ML important!
+    # Incoming df's to calculate are always guaranteed to be asc on 
+    # time_ms. No scans needed.
+    time_min = df["time_ms"][0]
+    time_max = df["time_ms"][-1]
 
     # Force API to return Polars DataFrames
     api_opts = {**options, "return_polars": True}
@@ -243,10 +249,12 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         lazy_4h = f_4h.result()
         lazy_1d = f_1d.result()
 
+    # Make a flat timeline to join into
+    timeline = df.select([pl.col("time_ms").cast(pl.UInt64)]).lazy()
     # Join all RSI streams onto the base timeline
     # Backward as-of join means "use the last known closed value"
     result_ldf = (
-        ldf.lazy()
+        timeline
         .join_asof(lazy_current, on="time_ms", strategy="backward")
         .join_asof(lazy_4h, on="time_ms", strategy="backward")
         .join_asof(lazy_1d, on="time_ms", strategy="backward")
