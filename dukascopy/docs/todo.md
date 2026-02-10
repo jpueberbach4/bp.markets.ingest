@@ -20,6 +20,7 @@ Priorization:
 Note: we are setup now to integrate the extensions below (weekend work).
 
 Quality:
+  - [ ] Users will try to export 1 million rows with market/volume profile. Extend meta option with a maximum record count flag for these heavy indicators.
   - [x] Multi-process API service for true concurrency
   - [x] Thread safety for MarketDataCache (calling get_data from multiple threads)
   - [x] Unit-test that does a performance-test on indicators with 10,000 records and warns on > 10ms.
