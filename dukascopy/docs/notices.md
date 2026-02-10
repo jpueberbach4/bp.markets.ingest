@@ -8,7 +8,7 @@ I will make sure that an adjusted set can be rebuild, seperately from the rest, 
 
 Currently I am still in the quality/hardening phase for this single-machine-optimized setup.
 
-PS: i am looking into (supporting) (more) "corporate actions" but i want as little configuration friction as possible. Everything should be plug-and-play as much as possible. When starting with extensive configuration for "corporate actions" this becomes more plug-and-pray. We don't want that. Iow "corporate actions" configuration should be "generatable".
+PS: i am looking into (supporting) (more) "corporate actions" but i want as little configuration friction as possible. Everything should be plug-and-play as much as possible. When starting with extensive configuration for "corporate actions" this becomes more plug-and-pray. We don't want that. Iow "corporate actions" configuration should be "generatable". <!-- this is going to be hard (to support all symbols), so needs abstraction. Where to get what for what symbol.
 
 ## **HTTP API now multi-process and export limit increased, get_data now thread-safe**
 
