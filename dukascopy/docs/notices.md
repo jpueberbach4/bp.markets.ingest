@@ -8,7 +8,7 @@ I will make sure that an adjusted set can be rebuild, seperately from the rest, 
 
 Currently I am still in the quality/hardening phase for this single-machine-optimized setup.
 
-PS: i am looking into "corporate actions" but i want as little configuration friction as possible. Everything should be plug-and-play as much as possible. When starting with extensive configuration for "corporate actions" this becomes more plug-and-pray. We don't want that.
+PS: i am looking into (more) "corporate actions" but i want as little configuration friction as possible. Everything should be plug-and-play as much as possible. When starting with extensive configuration for "corporate actions" this becomes more plug-and-pray. We don't want that.
 
 ## **HTTP API now multi-process and export limit increased, get_data now thread-safe**
 
