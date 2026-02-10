@@ -227,7 +227,22 @@ function renderParams() {
         '<span style="color:#999; font-size:11px">No parameters</span>';
 }
 
+function reloadCustomScript() {
+    const oldScript = document.querySelector('script[src*="scripts/custom.js"]');
+    
+    if (oldScript) {
+        oldScript.parentNode.removeChild(oldScript);
+    }
+
+    const newScript = document.createElement('script');
+    newScript.src = `scripts/custom.js?t=${new Date().getTime()}`;
+    newScript.type = 'text/javascript';
+    document.body.appendChild(newScript);
+    console.log("custom.js reloaded");
+}
+
 function resetAndLoad(clear = false) {
+    reloadCustomScript();
     const s = document.createElement('script');
     s.src = `/ohlcv/1.1/list/indicators/output/JSONP?callback=__callbackIndicators&symbol=${getCurrentSymbol()}&timeframe=${getCurrentTimeframe()}`;
     document.body.appendChild(s);
@@ -275,7 +290,7 @@ function updateChartUI(cols = [], requestDirection) {
         statusEl.innerText = `Buffer: ${masterData.length} bars`;
     }
 
-    cols.forEach((col, idx) => {
+cols.forEach((col, idx) => {
         if (idx <= 5) return; 
 
         const rawName = col.split('_')[0]; 
@@ -284,21 +299,22 @@ function updateChartUI(cols = [], requestDirection) {
 
         const mainParts = col.split('__');
         const basePart = mainParts[0]; 
-        const displayTitle = (mainParts.length > 1) 
-            ? mainParts[1] 
-            : basePart.split('_')[0];
-
+        const displayTitle = (mainParts.length > 1) ? mainParts[1] : basePart.split('_')[0];
         const targetPanel = (meta.meta && meta.meta.panel === 1) ? 1 : 0;
+        const currentColor = getSeriesColor(col); 
 
         if (targetPanel === 0) {
             if (!overlaySeriesMap[col]) {
                 overlaySeriesMap[col] = mainChart.addSeries(LightweightCharts.LineSeries, {
-                    color: getSeriesColor(col),
                     lineWidth: 1,
-                    title: displayTitle,
                     priceFormat: { type: 'price', precision: 6, minMove: 0.000001 },
                 });
             }
+            overlaySeriesMap[col].applyOptions({
+                color: currentColor,
+                title: displayTitle
+            });
+            
             overlaySeriesMap[col].setData(masterData.map(d => ({ 
                 time: d.time, value: d.indicators[col] 
             })).filter(v => v.value !== null));
@@ -306,24 +322,22 @@ function updateChartUI(cols = [], requestDirection) {
         } else {
             const panelKey = basePart;
             if (!panelCharts[panelKey]) createPanel(panelKey);
-            
             const pObj = panelCharts[panelKey];
-
-            if (pObj.titleElement && !pObj.series[col]) {
-                pObj.titleElement.innerText = params.length > 0 ? `${nameOnly} (${params.join(',')})` : nameOnly;
-            }
 
             if (!pObj.series[col]) {
                 pObj.series[col] = pObj.chart.addSeries(
                     col.includes('hist') ? LightweightCharts.HistogramSeries : LightweightCharts.LineSeries, 
                     {
-                        color: getSeriesColor(col),
-                        title: displayTitle,
                         lineWidth: 1,
                         priceFormat: { type: 'price', precision: 6, minMove: 0.000001 }
                     }
                 );
             }
+            
+            pObj.series[col].applyOptions({
+                color: currentColor,
+                title: displayTitle
+            });
 
             const seriesData = masterData.map(d => {
                 const val = d.indicators[col];

@@ -271,7 +271,13 @@ Note the profiling section. It is VERY good practice to profile your code in ord
 
 ### 6. Custom color-coding of your indicators
 
-It is now possible to override the getSeriesColor javascript method in the interface through a `custom.js` javascript file. This allows you to apply specific line-colors to your custom indicators. You use the name of the column as the palette's `index`.
+It is now possible to override the `getSeriesColor` javascript method in the interface using a `custom.js` javascript file. This allows you to apply specific line-colors to your custom indicators. You use the name of the column as the palette's `index`.
+
+**Note:** For this to work set `http.reload:1` in your `config.user.yaml` (changing line colors is typically a development-mode thing).
+
+**Note:** When you have `vscode` you can just hover over a color to open-up a color-picker.
+
+**Note:** This file is not created or overwritten by `./setup-dukascopy.sh`.
 
 Create a new file `config.user/dukascopy/http-docs/scripts/custom.js`, paste the following contents to it:
 
@@ -310,4 +316,4 @@ function getSeriesColor(col) {
 }
 ```
 
-When you have `vscode` you can just hover over a color to open-up a color-picker. Hope this helps.
+When done changing colors, press `Update View` in the interface, the new colors should be applied immediately. Without a need to refresh the interface or remove/re-add the indicator. 

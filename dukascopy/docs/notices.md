@@ -6,6 +6,8 @@ Limit: You can now export up to 1 million rows from the HTTP-API-export view fun
 
 Thread-safety: MarketDataCache is now thread-safe. It is now safe(r) to call get_data and get_data_auto from threads.
 
+Latest mainbranch also makes it easier to customize line-colors for your custom indicators. After `git pull`, run `./setup-dukascopy.sh`. Read the [templates.md](templates.md) file (bottom) for the how-to.
+
 ## **BUG!**
 
 Today, 2026-02-09T1730+0100, i found a bug while i was working with CSV data for trading. I use this stuff myself too, meaning automatically that deeper integration tests are being performed. I found out that mixing pandas indicators with polars dataframe indicators, somehow got broken. I have fixed this.
