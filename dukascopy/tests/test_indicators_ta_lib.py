@@ -12,6 +12,7 @@ try:
 except ImportError:
     HAS_TALIB = False
 
+# Mapping of your local filename to the TA-Lib function name
 TALIB_MAP = {
     "sma": "SMA", "ema": "EMA", "bbands": "BBANDS", "rsi": "RSI",
     "macd": "MACD", "atr": "ATR", "adx": "ADX", "stddev": "STDDEV",
@@ -49,6 +50,7 @@ class TestIndicatorEquivalence(unittest.TestCase):
         func = getattr(talib, name.upper(), None)
         if not func: return None
 
+        # Logic to route parameters correctly to TA-Lib
         if name.upper() in ["SMA", "EMA", "RSI", "STDDEV", "CMO", "ROC"]:
             return func(df["close"].values, timeperiod=int(options.get('period', 14)))
         elif name.upper() == "BBANDS":
@@ -88,6 +90,9 @@ class TestIndicatorEquivalence(unittest.TestCase):
             return func(df["high"].values, df["low"].values, df["close"].values, df["volume"].values, fastperiod=3, slowperiod=10)
         elif name.upper() == "MIDPOINT":
             return func(df["close"].values, timeperiod=int(options.get('period', 14)))
+        elif name.upper() == "EMV":
+            # TA-Lib doesn't have a native EOM/EMV, typically you'd skip or use a custom check
+            return None
 
         return None
 
@@ -113,11 +118,13 @@ class TestIndicatorEquivalence(unittest.TestCase):
                 use_polars = meta.get("polars", 1) == 1
                 warmup = 300 
 
+                print(f"testing indicator {indicator_name}...")
+
                 if use_polars and hasattr(module, "calculate_polars"):
+                    # --- POLARS EXPRESSION PATH ---
                     expr = module.calculate_polars(indicator_name, options)
                     exprs = expr if isinstance(expr, list) else [expr]
                     res_pl = self.df_pl.select(exprs)
-                    print(f"testing indicator {indicator_name}...")
                     
                     if isinstance(expected, tuple):
                         suffixes = [
@@ -135,6 +142,7 @@ class TestIndicatorEquivalence(unittest.TestCase):
                         actual = res_pl[indicator_name].to_numpy() if indicator_name in res_pl.columns else res_pl.to_numpy()[:, 0]
                         np.testing.assert_allclose(actual[warmup:], expected[warmup:], atol=1e-8, equal_nan=True)
                 else:
+                    # --- CALCULATE (DATAFRAME) PATH ---
                     if meta.get('polars_input', 0) == 1:
                         input_data = pl.from_pandas(self.df_pd)
                     else:
@@ -142,23 +150,37 @@ class TestIndicatorEquivalence(unittest.TestCase):
 
                     res = module.calculate(input_data, options)
                     
+                    # Handle Polars DataFrame/LazyFrame returns
                     if isinstance(res, (pl.DataFrame, pl.LazyFrame)):
                         if isinstance(res, pl.LazyFrame):
                             res = res.collect()
-                        res_pd = res.to_pandas()
-                    else:
-                        res_pd = res
-
-                    if isinstance(expected, tuple):
-                        for i in range(min(res_pd.shape[1], len(expected))):
-                            actual = res_pd.iloc[:, i].to_numpy()
-                            exp_segment = expected[i][-len(actual):]
-                            dropped = len(expected[i]) - len(actual)
+                        
+                        if isinstance(expected, tuple):
+                            for i in range(min(res.width, len(expected))):
+                                actual = res.to_numpy()[:, i]
+                                exp_segment = expected[i][-len(actual):]
+                                dropped = len(expected[i]) - len(actual)
+                                test_slice = max(0, warmup - dropped)
+                                np.testing.assert_allclose(actual[test_slice:], exp_segment[test_slice:], atol=1e-8, equal_nan=True)
+                        else:
+                            actual = res.to_numpy()[:, 0]
+                            exp_segment = expected[-len(actual):]
+                            dropped = len(expected) - len(actual)
                             test_slice = max(0, warmup - dropped)
                             np.testing.assert_allclose(actual[test_slice:], exp_segment[test_slice:], atol=1e-8, equal_nan=True)
                     else:
-                        actual = res_pd.iloc[:, 0].to_numpy()
-                        exp_segment = expected[-len(actual):]
-                        dropped = len(expected) - len(actual)
-                        test_slice = max(0, warmup - dropped)
-                        np.testing.assert_allclose(actual[test_slice:], exp_segment[test_slice:], atol=1e-8, equal_nan=True)
+                        # Handle standard Pandas/Numpy returns
+                        res_pd = res
+                        if isinstance(expected, tuple):
+                            for i in range(min(res_pd.shape[1], len(expected))):
+                                actual = res_pd.iloc[:, i].to_numpy()
+                                exp_segment = expected[i][-len(actual):]
+                                dropped = len(expected[i]) - len(actual)
+                                test_slice = max(0, warmup - dropped)
+                                np.testing.assert_allclose(actual[test_slice:], exp_segment[test_slice:], atol=1e-8, equal_nan=True)
+                        else:
+                            actual = res_pd.iloc[:, 0].to_numpy() if hasattr(res_pd, 'iloc') else res_pd
+                            exp_segment = expected[-len(actual):]
+                            dropped = len(expected) - len(actual)
+                            test_slice = max(0, warmup - dropped)
+                            np.testing.assert_allclose(actual[test_slice:], exp_segment[test_slice:], atol=1e-8, equal_nan=True)
