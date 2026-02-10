@@ -54,9 +54,9 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
 
     # FAST PATH: 1m candles are always closed in this system
     if tf == "1m":
-        return ldf.select([
-            (pl.col("time_ms") * 0).cast(pl.Int8).alias("is-open")
-        ])
+        return ldf.with_columns(
+            pl.lit(0, dtype=pl.Int8).alias("is-open")
+        ).select("is-open")
 
     def fetch_heartbeat():
         # Fetch the latest BTC-USD 1-minute candle
