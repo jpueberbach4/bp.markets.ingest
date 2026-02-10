@@ -74,6 +74,8 @@ Errors:         0
 
 Conclusion for this test: increase from 1 worker to 16 workers, increases throughput from 61 req/s to 340 req/s.
 
+By leaning on the OS page cache for memory-mapped files, this is essentially a lock-free, shared-memory data bus that allows 16 workers to hammer the same dataset without the usual RAM overhead or synchronization bottlenecks.
+
 ## **BUG!**
 
 Today, 2026-02-09T1730+0100, i found a bug while i was working with CSV data for trading. I use this stuff myself too, meaning automatically that deeper integration tests are being performed. I found out that mixing pandas indicators with polars dataframe indicators, somehow got broken. I have fixed this.
