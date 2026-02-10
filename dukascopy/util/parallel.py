@@ -290,7 +290,7 @@ class IndicatorEngine:
                 # Polars-native calculation function
                 calc_func_pl = plugin_entry.get('calculate_polars')
                 if not calc_func_pl:
-                    logger.warning(f"{ind_str} lacks calculate_polars, skipping.")
+                    logger.warning(f"{ind_str} lacks calculate_polars function, skipping.")
                     continue
 
                 # Generate one or more Polars expressions
@@ -321,6 +321,8 @@ class IndicatorEngine:
                     # Plugin can consume Polars directly (zero-copy)
                     # FiX: multithreaded locking issues. pldf not threadsafe
                     if isinstance(df_polars_source, pl.DataFrame):
+                        # Note: clone is a metadata only copy. Not a full data copy!
+                        # So cheap protection.
                         task_input = df_polars_source.clone()
                     else:
                         # Fallback if source type is unexpected
