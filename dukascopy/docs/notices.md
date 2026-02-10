@@ -10,7 +10,7 @@ Thread-safety: MarketDataCache is now thread-safe. It is now safe(r) to call get
 
 Latest mainbranch also makes it easier to customize line-colors for your custom indicators. After `git pull`, run `./setup-dukascopy.sh`. Read the [templates.md](templates.md) file (bottom) for the how-to.
 
-**Important:** only export 1 million rows with fast indicators. Don't export 1 million rows with either shannonentropy, market profile and volume profile.
+**Important:** only export 1 million rows with fast indicators. Don't export 1 million rows with either shannonentropy, market profile and volume profile. It works with these but you will be waiting literally "ages".
 
 ## **BUG!**
 
