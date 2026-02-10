@@ -23,21 +23,26 @@ Quality:
   - [x] Multi-process API service for true concurrency
   - [x] Thread safety for MarketDataCache (calling get_data from multiple threads)
   - [x] Unit-test that does a performance-test on indicators with 10,000 records and warns on > 10ms.
-  - [ ] Aroon indicator is a PERFORMANCE-KILLER. Fix.
+  - [x] Aroon indicator is a PERFORMANCE-KILLER. Fix.
   - [x] Abstraction download-engine and HTTP/2 support (configurable)
   - [x] Eliminate the Polars->Pandas conversion in HTTP-api
   - [x] Allow get_data_auto to receive a polars Dataframe (and options)
   - [x] Use BTC-USD as heartbeat to detect open-candles, build indicator
+  - [x] Support is-open indicator to detect the live-edge (open candles)
+  - [ ] Support is-stale indicator to detect download/market-data issues
   - [ ] Degradation and change of execution mode on memory-pressure
   - [x] Extra quality pass on indicator kaufman-er and up (sort by modified desc)
   - [x] Automated validation of the system indicators using TA-lib where possible
   - [ ] More unit-tests NOW - in progress
   - [x] Find solution for UVLOOP WSL2 watchfiles CPU 100pct issue. Optionally, configurable.
+  - [ ] The panama and stock-split fixes
   - [ ] Third indicator execution path: CUDA/Rapids. I need to know this for ML. Can I gain with it?
 
 Note: UVLOOP WSL2 fix was implemented through a config.user.yaml setting.
 
 Note: Cuda/Rapids/GPU: The "Elegant" Fix: Use a Coalescing Buffer. Instead of immediate execution, the internal API should collect indicator requests within a tiny time window (e.g., 5-10ms) or until a batch size is met, then ship one massive Arrow table to the GPU. This maximizes the O(1) nature of the parallel execution. Could be too much for now. If too much: it moves down the feature-list.
+
+Note: as of 10 feb, we are down to the original quality features list. the important stuff.
 
 Modularity:
   - [ ] Split up ETL and have a central "feeder" engine that can distribute in near-realtime
