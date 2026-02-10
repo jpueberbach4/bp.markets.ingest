@@ -5,7 +5,7 @@
  File:        parallel.py
  Author:      JP Ueberbach
  Created:     2026-01-12
- Updated:     2026-01-31
+ Updated:     2026-02-10
 
  Description:
       Hybrid parallel execution engine for technical indicator computation.
@@ -61,6 +61,8 @@ import numpy as np
 import os
 import concurrent.futures
 import polars.selectors as cs
+import logging
+import warnings
 from typing import List, Dict, Any, Optional, Union
 
 # Polars is required for the high-performance execution path.
@@ -69,6 +71,9 @@ try:
     import polars as pl
 except ImportError:
     raise ImportError("Polars is required. Run 'pip install polars'")
+
+# Configure a module-level logger for robust error reporting
+logger = logging.getLogger(__name__)
 
 
 class IndicatorWorker:
@@ -93,6 +98,9 @@ class IndicatorWorker:
         results and normalizes column names so downstream consumers can safely
         merge results without collisions.
 
+        It includes a robust try/except block to ensure that a failure in one
+        specific indicator plugin does not crash the entire execution pipeline.
+
         Args:
             df_slice: Input DataFrame passed to the plugin. This may be a pandas
                 DataFrame or a Polars DataFrame depending on plugin capabilities.
@@ -106,46 +114,53 @@ class IndicatorWorker:
             A pandas or Polars DataFrame with normalized column names, or None
             if the plugin produces no usable output.
         """
-        # Run the plugin function using the provided data slice and options
-        res_df = p_func(df_slice, p_opts)
+        try:
+            # Run the plugin function using the provided data slice and options
+            res_df = p_func(df_slice, p_opts)
 
-        # If the plugin explicitly returned nothing, stop immediately
-        if res_df is None:
+            # If the plugin explicitly returned nothing, stop immediately
+            if res_df is None:
+                return None
+
+            if isinstance(res_df, pl.LazyFrame):
+                res_df = res_df.collect()
+
+            # Handle the case where the plugin returned a Polars DataFrame
+            if isinstance(res_df, pl.DataFrame):
+                # Polars has its own way of checking for emptiness
+                if res_df.is_empty():
+                    return None
+
+                # If the result has multiple columns, prefix each one
+                if len(res_df.columns) > 1:
+                    res_df = res_df.rename({
+                        c: f"{full_name}__{c}" for c in res_df.columns
+                    })
+                else:
+                    # Single-column result: rename it directly to the full indicator name
+                    res_df = res_df.rename({res_df.columns[0]: full_name})
+
+            # Handle the case where the plugin returned a pandas DataFrame
+            else:
+                # Pandas uses `.empty` to check for no rows
+                if res_df.empty:
+                    return None
+
+                # If the result has multiple columns, prefix each one
+                if len(res_df.columns) > 1:
+                    res_df.columns = [f"{full_name}__{c}" for c in res_df.columns]
+                else:
+                    # Single-column result: rename it directly to the full indicator name
+                    res_df.columns = [full_name]
+
+            # Return the normalized DataFrame
+            return res_df
+
+        except Exception as e:
+            # ROBUSTNESS: Catch plugin failures, log them, and return None
+            # so the rest of the pipeline can continue.
+            logger.error(f"Failed to execute indicator '{full_name}': {str(e)}")
             return None
-
-        if isinstance(res_df, pl.LazyFrame):
-            res_df = res_df.collect()
-
-        # Handle the case where the plugin returned a Polars DataFrame
-        if isinstance(res_df, pl.DataFrame):
-            # Polars has its own way of checking for emptiness
-            if res_df.is_empty():
-                return None
-
-            # If the result has multiple columns, prefix each one
-            if len(res_df.columns) > 1:
-                res_df = res_df.rename({
-                    c: f"{full_name}__{c}" for c in res_df.columns
-                })
-            else:
-                # Single-column result: rename it directly to the full indicator name
-                res_df = res_df.rename({res_df.columns[0]: full_name})
-
-        # Handle the case where the plugin returned a pandas DataFrame
-        else:
-            # Pandas uses `.empty` to check for no rows
-            if res_df.empty:
-                return None
-
-            # If the result has multiple columns, prefix each one
-            if len(res_df.columns) > 1:
-                res_df.columns = [f"{full_name}__{c}" for c in res_df.columns]
-            else:
-                # Single-column result: rename it directly to the full indicator name
-                res_df.columns = [full_name]
-
-        # Return the normalized DataFrame
-        return res_df
 
 
 class IndicatorEngine:
@@ -171,6 +186,20 @@ class IndicatorEngine:
         # ThreadPoolExecutor is created lazily so we pay the cost
         # only if Pandas indicators are actually used.
         self.executor = None
+
+    def __enter__(self):
+        """Context manager entry."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit to ensure threads are cleaned up."""
+        self.shutdown()
+
+    def shutdown(self):
+        """Explicitly shut down the executor if it exists."""
+        if self.executor:
+            self.executor.shutdown(wait=True)
+            self.executor = None
 
     def compute(
         self,
@@ -261,7 +290,8 @@ class IndicatorEngine:
                 # Polars-native calculation function
                 calc_func_pl = plugin_entry.get('calculate_polars')
                 if not calc_func_pl:
-                    raise ValueError(f"{ind_str} lacks calculate_polars")
+                    logger.warning(f"{ind_str} lacks calculate_polars, skipping.")
+                    continue
 
                 # Generate one or more Polars expressions
                 expr = calc_func_pl(ind_str, ind_opts)
@@ -277,7 +307,8 @@ class IndicatorEngine:
                 # Legacy or complex calculation function
                 calc_func_df = plugin_entry.get('calculate')
                 if not calc_func_df:
-                    raise ValueError(f"{ind_str} lacks calculate function")
+                    logger.warning(f"{ind_str} lacks calculate function, skipping.")
+                    continue
 
                 # Lazily create a thread pool executor
                 if not self.executor:
@@ -388,38 +419,44 @@ class IndicatorEngine:
 
         # Loop over tasks as they finish (order is NOT guaranteed)
         for future in concurrent.futures.as_completed(tasks):
-            # Get the result produced by the worker
-            res_df = future.result()
+            try:
+                # Get the result produced by the worker
+                res_df = future.result()
 
-            # If the task produced nothing, ignore it and move on
-            if res_df is None:
+                # If the task produced nothing, ignore it and move on
+                if res_df is None:
+                    continue
+
+                # If the result is already Polars, keep it as-is
+                # Otherwise, convert the pandas DataFrame to Polars
+                if isinstance(res_df, pl.DataFrame):
+                    p_res = res_df
+                else:
+                    p_res = pl.from_pandas(res_df)
+
+                # If this result has fewer rows than the original input,
+                # we need to pad the TOP with null rows so everything lines up
+                if p_res.height < height_ref:
+                    # Number of missing rows we need to add
+                    pad_len = height_ref - p_res.height
+
+                    # Create a DataFrame full of nulls that matches the schema
+                    # of the result (same columns, same dtypes)
+                    pad = pl.select([
+                        pl.repeat(None, pad_len, dtype=dtype).alias(name)
+                        for name, dtype in p_res.schema.items()
+                    ])
+
+                    # Stick the null rows on top of the actual data
+                    p_res = pl.concat([pad, p_res])
+
+                # Save the aligned result for later use
+                aligned_results.append(p_res)
+
+            except Exception as e:
+                # Catch result retrieval errors to ensure robustness
+                logger.error(f"Error processing future result: {str(e)}")
                 continue
-
-            # If the result is already Polars, keep it as-is
-            # Otherwise, convert the pandas DataFrame to Polars
-            if isinstance(res_df, pl.DataFrame):
-                p_res = res_df
-            else:
-                p_res = pl.from_pandas(res_df)
-
-            # If this result has fewer rows than the original input,
-            # we need to pad the TOP with null rows so everything lines up
-            if p_res.height < height_ref:
-                # Number of missing rows we need to add
-                pad_len = height_ref - p_res.height
-
-                # Create a DataFrame full of nulls that matches the schema
-                # of the result (same columns, same dtypes)
-                pad = pl.select([
-                    pl.repeat(None, pad_len, dtype=dtype).alias(name)
-                    for name, dtype in p_res.schema.items()
-                ])
-
-                # Stick the null rows on top of the actual data
-                p_res = pl.concat([pad, p_res])
-
-            # Save the aligned result for later use
-            aligned_results.append(p_res)
 
         # Return all aligned Polars DataFrames
         return aligned_results
@@ -472,16 +509,11 @@ class IndicatorEngine:
         # Merge all indicator outputs horizontally.
         combined_pl = pl.concat(indicator_frames, how="horizontal").rechunk()
 
-        # Identify indicator columns by excluding original input columns.
-        indicator_cols = [
-            c for c in combined_pl.columns
-            if c not in df_orig.columns
-        ]
-
         if return_polars:
             return combined_pl
 
         # Convert back to Pandas only at the very end.
+        # OPTIMIZATION: Use Arrow types mapper if available for speed
         return combined_pl.to_pandas(
             use_threads=True,
             types_mapper=pd.ArrowDtype if hasattr(pd, 'ArrowDtype') else None
@@ -599,12 +631,12 @@ def parallel_indicators(
     Returns:
         Union[pd.DataFrame, pl.DataFrame]: Indicator results.
     """
-    engine = IndicatorEngine()
-
-    return engine.compute(
-        df,
-        indicators,
-        plugins,
-        disable_recursive_mapping,
-        return_polars
-    )
+    # OPTIMIZATION: Use context manager to ensure threads are shut down
+    with IndicatorEngine() as engine:
+        return engine.compute(
+            df,
+            indicators,
+            plugins,
+            disable_recursive_mapping,
+            return_polars
+        )
