@@ -22,6 +22,8 @@ Latest mainbranch also makes it easier to customize line-colors for your custom 
 
 **Important:** only export 1 million rows with fast indicators. Don't export 1 million rows with either shannonentropy, market profile and volume profile. It works with these but you will be waiting literally "ages". When you need 1 million rows, programmatically, don't use the HTTP-API, use the [bootstrap](external.md) approach. HTTP API is purposed for monitoring/charting/low-friction exports.
 
+A high-speed TCP Apache Arrow Flight service will get implemented to support distributed processing. 
+
 ## **BUG!**
 
 Today, 2026-02-09T1730+0100, i found a bug while i was working with CSV data for trading. I use this stuff myself too, meaning automatically that deeper integration tests are being performed. I found out that mixing pandas indicators with polars dataframe indicators, somehow got broken. I have fixed this.
