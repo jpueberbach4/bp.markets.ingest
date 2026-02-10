@@ -94,7 +94,9 @@ Example Indicator:
 
 Protection
   - [x] Circular indicator dependency protection (V1 present as a unit-test, V2 options checking todo)
-  - [ ] Custom threadpool to optimize recursive get_data calls which use pandas indicators
+  - [x] ~~Custom threadpool to optimize recursive get_data calls which use pandas indicators~~
+
+Note: Tried an overload of the default threadpool and replaced it with a custom threadpool. Dynamically sizing, making it a global singleton etc etc etc. Profiling showed the wins are marginal because of the GIL locking for data transfer back and forth between threads and mainthread. Yes, thread creation is eliminated but the locking remains the same. Too much complexity for too little gains, so hands off. This didnt help, meaning: we are basically at the limits for what is possible in Python. If more performance needed, i will need to move to C++ or Rust (but C++ is already planned, that is what i know and gives full power).
 
 Testing:
   - [ ] Unit tests (80%+ coverage)
