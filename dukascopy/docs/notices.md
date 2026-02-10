@@ -2,11 +2,13 @@ Product-positioning: market research- and analysis tool, feature-engineering, bu
 
 ## **Next**
 
-After the `is-stale` indicator we move on to Panama and Stocksplit support (eg Apple 2017). Panama and Stocksplit will be implemented as an additional stage in the ETL process that will sidetrack an adjusted dataset. The Panama and Stocksplit dataset will follow the regular incremental process for updates. So it will be just as "live" as the others, behave just like others for the resampling engine. The support will likely get injected in/after the aggregation stage. Likely, `symbols.users.txt` is going to support something like `BRENT-CMD.USD:panama`. An adjusted set will become "just another symbol in the system".
+After the `is-stale` indicator we move on to Panama and Stocksplit support (eg Apple sept 2020). Panama and Stocksplit will be implemented as an additional stage in the ETL process that will sidetrack an adjusted dataset. The Panama and Stocksplit dataset will follow the regular incremental process for updates. So it will be just as "live" as the others, behave just like others for the resampling engine. The support will likely get injected in/after the aggregation stage. Likely, `symbols.users.txt` is going to support something like `BRENT-CMD.USD:panama`. An adjusted set will become "just another symbol in the system".
 
 I will make sure that an adjusted set can be rebuild, seperately from the rest, preventing full-rebuilds.
 
 Currently I am still in the quality/hardening phase for this single-machine-optimized setup.
+
+PS: i am looking into "corporate actions" but i want as little configuration friction as possible. Everything should be plug-and-play as much as possible. When starting with extensive configuration for "corporate actions" this becomes more plug-and-pray. We don't want that.
 
 ## **HTTP API now multi-process and export limit increased, get_data now thread-safe**
 
