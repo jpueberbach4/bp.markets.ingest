@@ -66,6 +66,7 @@ Panama:
 Drawing/Visualization:
   - [x] Split JS to libs (chart.js, drawing.js, ui.js)
   - [ ] Drawing tools (lines, channels, fibs)
+  - [ ] Allow for line-color specification in the indicator (currently via custom.js)
   - [x] ~~Export to PNG/SVG?~~
 
 Note: strike-through=wont do
