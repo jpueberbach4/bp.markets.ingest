@@ -317,3 +317,5 @@ function getSeriesColor(col) {
 ```
 
 When done changing colors, press `Update View` in the interface, the new colors should be applied immediately. Without a need to refresh the interface or remove/re-add the indicator. 
+
+**Note:** In a later version it will be possible to specify colors in the `meta` section of the indicator.
