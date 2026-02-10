@@ -59,9 +59,9 @@ I have added the http_loadtest to the examples directory-it uses the BTC-USD sym
 
 Eg 8 concurrent:
 
+```sh
 🚀 Starting Load Test: 1000 requests, 8 concurrent...
 
-```sh
 ==============================
 🏁 TEST COMPLETE
 Total Time:     4.06s
