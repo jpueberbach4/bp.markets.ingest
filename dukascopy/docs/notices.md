@@ -492,7 +492,7 @@ This method is symbol-agnostic and automatically handles market closures, holida
 
 **Update:** The cabin-in-the-woods-without-internet problem is a non-existent problem for `is-open`. We do not use the laptops `time()` anywhere. It only looks at the timestamps of the ingested candles. However, since we need to detect staleness-eg the dataprovider died on a market-we will introduce another indicator: `is-stale`. This indicator can be used to `safeguard` things. Soon.
 
-**Update:** The is-stale functionality will compare last BTC 1m tick with the system-time one time and store an offset-file (or look at the file lastmodified). Or something similar. This determines the local systems time-offset compared to the server (no need for a fixed configuration). It will store it somewhere and the argument being passed to is-stale (needs to know how frequent you update) will be used to detect stale-ness. So the solution is known. Kinda busy today... but it will be here soon.
+**Update:** The is-stale functionality will compare last BTC 1m tick with the system-time one time and store an offset-file which updates once a day. Or something similar. This determines the local systems time-offset compared to the server (no need for a fixed configuration). It will store it somewhere and the argument being passed to is-stale (tolerance, needs to know how frequent you update) will be used to detect stale-ness. So the solution is known. Kinda busy today... but it will be here soon.
 
 ## **Next**
 
