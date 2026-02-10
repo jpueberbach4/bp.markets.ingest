@@ -24,6 +24,54 @@ Latest mainbranch also makes it easier to customize line-colors for your custom 
 
 A high-speed TCP Apache Arrow Flight service will get implemented to support distributed processing. 
 
+Performance differences (concurrency: 64):
+
+```sh
+
+http.workers: 1, http.reload:0
+🚀 Starting Load Test: 1000 requests, 64 concurrent...
+
+==============================
+🏁 TEST COMPLETE
+Total Time:     16.31s
+Requests/sec:   61.30
+Avg Latency:    1015.40ms
+Status Codes:   {200: 1000}
+Errors:         0
+==============================
+
+http:workers: 16, http.reload:0
+🚀 Starting Load Test: 1000 requests, 64 concurrent...
+
+==============================
+🏁 TEST COMPLETE
+Total Time:     2.94s
+Requests/sec:   339.98
+Avg Latency:    175.25ms
+Status Codes:   {200: 1000}
+Errors:         0
+==============================
+```
+
+I have added the http_loadtest to the examples directory-it uses the BTC-USD symbol and standard indicators.
+
+**Note:** latency seems high, but this is with 64 concurrent clients. Latency drops dramatically when you lower number of concurrent clients in loadtest. 
+
+Eg 8 concurrent:
+
+🚀 Starting Load Test: 1000 requests, 8 concurrent...
+
+```sh
+==============================
+🏁 TEST COMPLETE
+Total Time:     4.06s
+Requests/sec:   246.21
+Avg Latency:    32.02ms
+Status Codes:   {200: 1000}
+Errors:         0
+==============================
+```
+
 ## **BUG!**
 
 Today, 2026-02-09T1730+0100, i found a bug while i was working with CSV data for trading. I use this stuff myself too, meaning automatically that deeper integration tests are being performed. I found out that mixing pandas indicators with polars dataframe indicators, somehow got broken. I have fixed this.
