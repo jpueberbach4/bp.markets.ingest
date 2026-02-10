@@ -127,6 +127,14 @@ def calculate(ldf: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
 
 This example plots 3x different TF RSI on a single panel for the current symbol and avoids repainting by using the `is-open` indicator to filter out `live-candles`.
 
+**Note:** Four thing about the example below:
+
+1. It queries the is-open status to detect the open-candles (you will need to have the BTC-USD symbol synced up)
+2. It discards the RSI of the open-candles. It only considers closed candles
+3. This avoids repainting
+4. This indicator is now "live-capable"
+
+
 ```python
 import polars as pl
 import pandas as pd
@@ -260,3 +268,46 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
 ```
 
 Note the profiling section. It is VERY good practice to profile your code in order to see where, often unnecessary performance-loss, could sit.
+
+### 6. Custom color-coding of your indicators
+
+It is now possible to override the getSeriesColor javascript method in the interface through a `custom.js` javascript file. This allows you to apply specific line-colors to your custom indicators. You use the name of the column as the palette's `index`.
+
+Create a new file `config.user/dukascopy/http-docs/scripts/custom.js`, paste the following contents to it:
+
+```javascript
+function getSeriesColor(col) {
+    const palette = {
+        'stoch_k': '#2962FF',           // Blue
+        'stoch_d': '#FF6D00',           // Orange
+        'signal': '#FF5252',            // Red
+        'macd': '#2962FF',              // Blue
+        'upper': '#787b86',             // Gray
+        'lower': '#787b86',             // Gray
+        'middle': '#FF9800',            // Amber
+        'rsi': '#9c27b0',               // Purple
+        'hist': '#26a69a',              // Teal
+        'confidence': '#FFD600',        // Orange
+        'threshold': '#00FF00',         // Lime
+        'relative-height': '#1B6E1B',   // Deep Forest
+        'rsi4h': '#00FF00',             // Lime
+        'rsi1d': '#FF5252',             // Lime
+    };
+    console.log(col);
+    const mainParts = col.split('__');
+    const suffix = (mainParts.length > 1 ? mainParts[1] : col.split('_').shift()).toLowerCase();
+    color = 0;
+    if (palette[suffix]) { 
+        color = palette[suffix];
+    } else {
+        let hash = 0;
+        for (let i = 0; i < col.length; i++) {
+            hash = col.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        color = `hsl(${Math.abs(hash % 360)}, 80%, 50%)`;
+    }
+    return color;
+}
+```
+
+When you have `vscode` you can just hover over a color to open-up a color-picker. Hope this helps.
