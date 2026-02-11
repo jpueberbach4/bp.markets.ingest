@@ -160,6 +160,8 @@ class IndicatorWorker:
             # ROBUSTNESS: Catch plugin failures, log them, and return None
             # so the rest of the pipeline can continue.
             logger.error(f"Failed to execute indicator '{full_name}': {str(e)}")
+            import traceback
+            traceback.print_exc()
             return None
 
 

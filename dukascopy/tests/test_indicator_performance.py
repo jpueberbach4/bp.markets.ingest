@@ -147,7 +147,7 @@ class TestAllIndicatorsPerformance(unittest.TestCase):
 
             except Exception as e:
                 sys.stdout.write("\r" + " " * 80 + "\r")
-                err_msg = str(e).split('\n')[0][:40]
+                err_msg = str(e)#.split('\n')[0][:40]
                 icon, label = "❌", "FAIL"
                 print(f"{icon} {label:<5} | {indicator_name:<25} | {0.0:10.2f} | ERROR           | {err_msg}")
 
