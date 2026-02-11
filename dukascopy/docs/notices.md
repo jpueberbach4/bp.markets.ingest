@@ -17,6 +17,8 @@ No. The issue was the RSI indicator. Warmup was 3 * rsi_period. Made it * 15. No
 
 The performance impact of increasing the `period * 15` is minimal, microseconds.
 
+**Note:** This is nitpicking. Rounded to two decimals there was no issue. It was an issue with the last 4 decimals. But for ML-setups these 4 decimals are definately relevant.
+
 ## **Notice: Numba JIT optimizations**
 
 Impressive performance optimizations on shannonentropy, marketprofile, volumeprofile and psar using numba JIT. Really impressive. See [here](numba.md) on how to optimize indicators that contain for-loops.
