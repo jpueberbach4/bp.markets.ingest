@@ -15,6 +15,10 @@ Note: you will need to install numba dependency: `pip install -r requirements.tx
 
 I am trying to build a "performance-first"-culture around this tool. Performance "enables". 
 
+Before: Try a new indicator idea → Wait 30 minutes for backtest → Lose focus → Abandon idea
+
+Now: Try idea → 1.2 seconds → See results → Refine → Try again → Stay in flow state
+
 ## **Next**
 
 After the `is-stale` indicator we move on to Panama and Stocksplit support (eg Apple sept 2020). Panama and Stocksplit will be implemented as an additional stage in the ETL process that will sidetrack an adjusted dataset. The Panama and Stocksplit dataset will follow the regular incremental process for updates. So it will be just as "live" as the others, behave just like others for the resampling engine. The support will likely get injected in/after the aggregation stage. Likely, `symbols.users.txt` is going to support something like `BRENT-CMD.USD:panama`. An adjusted set will become "just another symbol in the system".
