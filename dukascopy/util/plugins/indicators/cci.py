@@ -1,7 +1,14 @@
-import pandas as pd
 import numpy as np
 import polars as pl
 from typing import List, Dict, Any
+from functools import partial
+
+try:
+    import numba
+except ImportError:
+    raise ImportError("Numba is required. Run 'pip install numba' OR 'pip install -r requirements.txt'")
+
+from util.plugins.indicators.helpers.cci_backend import _cci_backend
 
 def description() -> str:
     """
@@ -23,8 +30,7 @@ def meta() -> Dict:
         "panel": 1,
         "verified": 1,
         "talib-validated": 1, 
-        "polars": 0,
-        "polars_input":1 
+        "polars": 1 
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -45,46 +51,43 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "period": args[0] if len(args) > 0 else "20"
     }
 
-def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
+def _cci_map_wrapper(s: pl.Series, period: int) -> pl.Series:
     """
-    High-performance vectorized implementation using Numpy sliding window views.
-    This eliminates the UDF overhead entirely.
+    Computes Typical Price and passes to Numba backend.
+    """
+    high = s.struct.field("high").to_numpy()
+    low = s.struct.field("low").to_numpy()
+    close = s.struct.field("close").to_numpy()
+    tp = (high + low + close) / 3.0
+    
+    cci_values = _cci_backend(tp, period)
+    
+    return pl.Series("cci", cci_values)
+
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
+    """
+    Fast CCI implementation using the map_batches pattern.
     """
     try:
-        period = int(options.get('period', 20))
+        p = int(options.get('period', 20))
     except (ValueError, TypeError):
-        period = 20
+        p = 20
 
-    if len(df) < period:
-        return pl.DataFrame({
-            "cci": [None] * len(df),
-            "direction": [None] * len(df)
-        }).with_columns([
-            pl.col("cci").cast(pl.Float64),
-            pl.col("direction").cast(pl.Int32)
-        ])
+    mapper = partial(_cci_map_wrapper, period=p)
 
-    tp = (df["high"] + df["low"] + df["close"]) / 3
-    tp_v = tp.to_numpy()
+    cci_expr = (
+        pl.struct(["high", "low", "close"])
+        .map_batches(mapper, return_dtype=pl.Float64)
+    )
 
-    windows = np.lib.stride_tricks.sliding_window_view(tp_v, window_shape=period)
-
-    means = np.mean(windows, axis=1)
-    mads = np.mean(np.abs(windows - means[:, None]), axis=1)
-
-    padding = np.full(period - 1, np.nan)
-    full_means = np.concatenate([padding, means])
-    full_mads = np.concatenate([padding, mads])
-
-    cci_values = (tp_v - full_means) / (0.015 * full_mads + 1e-12)
-
-    res = pl.DataFrame({"cci": cci_values})
-    
-    res = res.with_columns(
-        pl.when(pl.col("cci") > pl.col("cci").shift(1))
+    direction_expr = (
+        pl.when(cci_expr > cci_expr.shift(1))
         .then(100)
         .otherwise(-100)
-        .alias("direction")
-    ).cast({"direction": pl.Int32})
+        .cast(pl.Int32)
+    )
 
-    return res
+    return [
+        cci_expr.alias(indicator_str),
+        direction_expr.alias("direction")
+    ]
