@@ -1,7 +1,7 @@
 import numba
 import numpy as np
 
-@numba.jit(nopython=True, cache=True)
+@numba.jit(nopython=True, cache=True, nogil=True)
 def _swingpoints_backend(highs: np.ndarray, lows: np.ndarray, left: int, right: int):
     n = len(highs)
     out_high = np.full(n, np.nan, dtype=np.float64)

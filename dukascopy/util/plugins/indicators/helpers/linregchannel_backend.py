@@ -1,7 +1,7 @@
 import numba
 import numpy as np
 
-@numba.jit(nopython=True, cache=True)
+@numba.jit(nopython=True, cache=True, nogil=True)
 def _linregchannel_backend(y: np.ndarray, period: int):
     size = len(y)
     mid_out = np.full(size, np.nan, dtype=np.float64)

@@ -1,7 +1,7 @@
 import numba
 import numpy as np
 
-@numba.jit(nopython=True, cache=True)
+@numba.jit(nopython=True, cache=True, nogil=True)
 def _shannonentropy_backend(close_v, period, bins_count):
     n = len(close_v)
     entropy_arr = np.full(n, np.nan)

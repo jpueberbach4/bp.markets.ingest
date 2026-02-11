@@ -1,7 +1,7 @@
 import numpy as np
 import numba
 
-@numba.jit(nopython=True, cache=True)
+@numba.jit(nopython=True, cache=True, nogil=True)
 def _cci_backend(tp: np.ndarray, period: int):
     size = tp.shape[0]
     cci = np.full(size, np.nan, dtype=np.float64)

@@ -1,7 +1,7 @@
 import numba
 import numpy as np
 
-@numba.jit(nopython=True, cache=True)
+@numba.jit(nopython=True, cache=True, nogil=True)
 def _mcginley_backend(prices: np.ndarray, period: int) -> np.ndarray:
     n = len(prices)
     md = np.zeros(n)

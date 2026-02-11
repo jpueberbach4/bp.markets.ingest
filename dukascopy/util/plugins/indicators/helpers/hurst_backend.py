@@ -2,7 +2,7 @@
 import numba
 import numpy as np
 
-@numba.jit(nopython=True, cache=True)
+@numba.jit(nopython=True, cache=True, nogil=True)
 def _hurst_backend(close_v: np.ndarray, period: int) -> np.ndarray:
     n = len(close_v)
     hurst_arr = np.full(n, np.nan)

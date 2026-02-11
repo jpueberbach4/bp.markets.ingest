@@ -255,6 +255,9 @@ class MarketDataCache:
                     schema=['open', 'high', 'low', 'close', 'volume']
                 )
 
+                if isinstance(plf, pl.DataFrame):
+                    plf = plf.lazy()
+
                 # Add metadata columns (timestamp, symbol, timeframe)
                 plf = plf.with_columns([
                     pl.Series("time_ms", subset['ts'], dtype=pl.UInt64),

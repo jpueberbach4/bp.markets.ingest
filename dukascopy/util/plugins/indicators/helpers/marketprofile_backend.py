@@ -2,7 +2,7 @@
 import numba
 import numpy as np
 
-@numba.jit(nopython=True, cache=True)
+@numba.jit(nopython=True, cache=True, nogil=True)
 def _marketprofile_backend(highs, lows, closes, period, tick_size):
     n = len(closes)
     poc_arr = np.full(n, np.nan)

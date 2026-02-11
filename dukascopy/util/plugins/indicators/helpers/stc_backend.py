@@ -1,7 +1,7 @@
 import numpy as np
 import numba
 
-@numba.jit(nopython=True, cache=True)
+@numba.jit(nopython=True, cache=True, nogil=True)
 def _stc_backend(close: np.ndarray, cycle: int, fast: int, slow: int):
     size = len(close)
     stc_out = np.full(size, np.nan, dtype=np.float64)

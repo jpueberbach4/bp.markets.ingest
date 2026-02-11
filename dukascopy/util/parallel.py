@@ -1,23 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-===============================================================================
- File:        parallel.py
- Author:      JP Ueberbach
- Created:     2026-01-12
- Updated:     2026-02-11
-
- Description:
-      Hybrid parallel execution engine for technical indicator computation.
-      
-      OPTIMIZED VERSION:
-      - Native LazyFrame recursion support (no materialization in loops)
-      - Empty-task short-circuiting (avoids phantom collects)
-      - Robust error handling for mixed Pandas/Polars plugins
-
-===============================================================================
-"""
-
 import pandas as pd
 import numpy as np
 import os
@@ -38,23 +20,39 @@ class IndicatorWorker:
     """
     Stateless helper responsible for executing Pandas-based indicators.
     """
-
     @staticmethod
     def execute_pandas_task(
-        df_slice: Union[pd.DataFrame, pl.DataFrame],
+        df_lazy_or_frame: Union[pd.DataFrame, pl.DataFrame, pl.LazyFrame],
         p_func: Any,
         full_name: str,
-        p_opts: Dict
+        p_opts: Dict,
+        requires_pandas: bool = True
     ) -> Optional[Union[pd.DataFrame, pl.DataFrame, pl.LazyFrame]]:
         try:
-            res_df = p_func(df_slice, p_opts)
+            if requires_pandas:
+                if isinstance(df_lazy_or_frame, pl.LazyFrame):
+                    df_input = df_lazy_or_frame.collect().to_pandas()
+                elif isinstance(df_lazy_or_frame, pl.DataFrame):
+                    df_input = df_lazy_or_frame.to_pandas()
+                else:
+                    df_input = df_lazy_or_frame
+            else:
+                # Polars input requested
+                if isinstance(df_lazy_or_frame, pl.LazyFrame):
+                    df_input = df_lazy_or_frame.collect()
+                elif isinstance(df_lazy_or_frame, pl.DataFrame):
+                    df_input = df_lazy_or_frame
+                    # Clone cheap metadata if needed, but usually safe to read
+                else:
+                    df_input = df_lazy_or_frame
+
+            res_df = p_func(df_input, p_opts)
+            
             if res_df is None:
                 return None
 
-            # Handle Polars result (DataFrame or LazyFrame)
             if isinstance(res_df, (pl.DataFrame, pl.LazyFrame)):
                 if isinstance(res_df, pl.LazyFrame):
-                    # Use collect_schema() to avoid schema resolution warnings
                     columns = res_df.collect_schema().names()
                     if len(columns) > 1:
                         res_df = res_df.rename({c: f"{full_name}__{c}" for c in columns})
@@ -66,11 +64,8 @@ class IndicatorWorker:
                         res_df = res_df.rename({c: f"{full_name}__{c}" for c in res_df.columns})
                     else:
                         res_df = res_df.rename({res_df.columns[0]: full_name})
-
-            # Handle Pandas result
             else:
-                if res_df.empty:
-                    return None
+                if res_df.empty: return None
                 if len(res_df.columns) > 1:
                     res_df.columns = [f"{full_name}__{c}" for c in res_df.columns]
                 else:
@@ -122,17 +117,13 @@ class IndicatorEngine:
             if isinstance(df, pl.DataFrame) and df.is_empty():
                 return df
             
-            df_polars_source = df
             main_pl = df.lazy() if isinstance(df, pl.DataFrame) else df
-            df_for_pandas = None
         else:
             if hasattr(df, 'empty') and df.empty:
                 return df
-
-            # Convert to Polars once + Rechunk for SIMD
+            
             df_polars_source = pl.from_pandas(df).rechunk()
             main_pl = df_polars_source.lazy()
-            df_for_pandas = df.copy()
 
         pandas_tasks = []
         polars_expressions = []
@@ -140,8 +131,7 @@ class IndicatorEngine:
         # Process indicators
         for ind_str in indicators:
             name = ind_str.split('_')[0]
-            if name not in plugins:
-                continue
+            if name not in plugins: continue
 
             plugin_entry = plugins[name]
             ind_opts = self._resolve_options(ind_str, plugin_entry)
@@ -152,54 +142,42 @@ class IndicatorEngine:
             # FAST PATH: Polars Native
             if plugin_meta.get('polars', 0):
                 calc_func_pl = plugin_entry.get('calculate_polars')
-                if not calc_func_pl: continue
-
-                expr = calc_func_pl(ind_str, ind_opts)
-                if isinstance(expr, list):
-                    polars_expressions.extend(expr)
-                else:
-                    polars_expressions.append(expr)
+                if calc_func_pl:
+                    expr = calc_func_pl(ind_str, ind_opts)
+                    if isinstance(expr, list):
+                        polars_expressions.extend(expr)
+                    else:
+                        polars_expressions.append(expr)
+                    continue 
 
             # SLOW PATH: Threaded (Pandas/Legacy)
+            calc_func_df = plugin_entry.get('calculate')
+            if not calc_func_df: continue
+
+            if not self.executor:
+                self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers)
+
+            w_requires_pandas = not plugin_meta.get('polars_input', False)
+            
+            if is_polars_input:
+                task_input = df 
             else:
-                calc_func_df = plugin_entry.get('calculate')
-                if not calc_func_df: continue
+                task_input = df
 
-                if not self.executor:
-                    self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers)
-
-                # Prepare input view
-                if plugin_meta.get('polars_input', False):
-                    # Legacy Polars plugins might need concrete data
-                    if isinstance(df_polars_source, pl.LazyFrame):
-                        task_input = df_polars_source.collect()
-                    elif isinstance(df_polars_source, pl.DataFrame):
-                        task_input = df_polars_source.clone()
-                    else:
-                        task_input = df_polars_source
-                else:
-                    if df_for_pandas is None:
-                        if isinstance(df_polars_source, pl.LazyFrame):
-                            df_for_pandas = df_polars_source.collect().to_pandas()
-                        else:
-                            df_for_pandas = df_polars_source.to_pandas()
-                    task_input = df_for_pandas
-
-                pandas_tasks.append(
-                    self.executor.submit(
-                        IndicatorWorker.execute_pandas_task,
-                        df_slice=task_input,
-                        p_func=calc_func_df,
-                        full_name=ind_str,
-                        p_opts=ind_opts
-                    )
+            pandas_tasks.append(
+                self.executor.submit(
+                    IndicatorWorker.execute_pandas_task,
+                    df_lazy_or_frame=task_input,
+                    p_func=calc_func_df,
+                    full_name=ind_str,
+                    p_opts=ind_opts,
+                    requires_pandas=w_requires_pandas
                 )
+            )
 
-        # Inject Expressions
         if polars_expressions:
             main_pl = main_pl.with_columns(polars_expressions)
 
-        # Assemble Result
         if disable_recursive_mapping:
             return self._assemble_flat(df, main_pl, pandas_tasks, return_polars, lazy)
         else:
@@ -215,7 +193,6 @@ class IndicatorEngine:
             ind_opts.update(pos_args_func(parts[1:]))
         elif hasattr(plugin_func, "__globals__") and "position_args" in plugin_func.__globals__:
             ind_opts.update(plugin_func.__globals__["position_args"](parts[1:]))
-
         return ind_opts
 
     def _process_pandas_results(
@@ -224,13 +201,11 @@ class IndicatorEngine:
         df_orig: Union[pd.DataFrame, pl.DataFrame, pl.LazyFrame]
     ) -> List[pl.LazyFrame]:
         
-        # OPTIMIZATION: Short-circuit if no tasks exist (avoids phantom collect)
         if not tasks:
             return []
 
         aligned_results = []
         
-        # Determine reference height
         if isinstance(df_orig, pl.DataFrame):
             height_ref = df_orig.height
         elif isinstance(df_orig, pl.LazyFrame):
@@ -254,11 +229,9 @@ class IndicatorEngine:
                 else:
                     p_res = res_df 
 
-                # If length unknown, fetch it
                 if current_len is None:
                     current_len = p_res.select(pl.len()).collect().item()
 
-                # Padding logic
                 if current_len < height_ref:
                     pad_len = height_ref - current_len
                     schema = p_res.collect_schema() 
@@ -286,7 +259,10 @@ class IndicatorEngine:
      ) -> Union[pd.DataFrame, pl.DataFrame, pl.LazyFrame]:
         
         indicator_frames = [main_pl]
-        indicator_frames.extend(self._process_pandas_results(tasks, df_orig))
+
+        if tasks:
+            indicator_frames.extend(self._process_pandas_results(tasks, df_orig))
+        
         combined_lf = pl.concat(indicator_frames, how="horizontal")
         
         if lazy: return combined_lf
@@ -308,14 +284,14 @@ class IndicatorEngine:
         lazy: bool = False
     ) -> Union[pd.DataFrame, pl.DataFrame, pl.LazyFrame]:
         
-        aligned_pandas_results = self._process_pandas_results(tasks, df_orig)
-        if aligned_pandas_results:
-            indicator_lf = pl.concat(aligned_pandas_results, how="horizontal")
-            main_pl = pl.concat([main_pl, indicator_lf], how="horizontal")
+        if tasks:
+            aligned_pandas_results = self._process_pandas_results(tasks, df_orig)
+            if aligned_pandas_results:
+                indicator_lf = pl.concat(aligned_pandas_results, how="horizontal")
+                main_pl = pl.concat([main_pl, indicator_lf], how="horizontal")
 
         all_cols = main_pl.collect_schema().names()
         
-        # Identify new columns
         if isinstance(df_orig, pl.LazyFrame):
             orig_cols = df_orig.collect_schema().names()
         elif isinstance(df_orig, pl.DataFrame):

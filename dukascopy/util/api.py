@@ -29,6 +29,29 @@
      MIT License
 ===============================================================================
 """
+import polars as pl
+import traceback
+import pdb
+
+# 1. Save the original method so we can still actually execute it
+_original_collect = pl.LazyFrame.collect
+
+# 2. Define the wrapper
+def debug_collect(self, *args, **kwargs):
+    #print("\n>>> 🚨 COLLECT INTERCEPTED! 🚨 <<<")
+    
+    # Print the stack trace so you know exactly which function called this
+    #traceback.print_stack(limit=20) 
+    
+    # OPTIONAL: Uncomment the next line to strictly pause execution here
+    # pdb.set_trace() 
+    
+    # 3. Resume normal execution
+    return _original_collect(self, *args, **kwargs)
+
+# 4. Apply the patch
+pl.LazyFrame.collect = debug_collect
+
 import numpy as np
 import pandas as pd
 import polars as pl
@@ -38,89 +61,96 @@ from util.cache import MarketDataCache
 from util.parallel import parallel_indicators
 
 def get_data_auto(
-    df: Union[pd.DataFrame, pl.DataFrame],
+    df: Union[pd.DataFrame, pl.DataFrame, pl.LazyFrame],
     limit: int = -1,
     order: str = "asc",
     indicators: List[str] = [],
     options: Dict = {}
-) -> Union[pd.DataFrame, pl.DataFrame]:
+) -> Union[pd.DataFrame, pl.DataFrame, pl.LazyFrame]:
     """
-    Automatically fetch OHLCV data (and optional indicators) that matches
-    the time range and metadata of an existing DataFrame.
-
-    The function inspects the input DataFrame to determine:
-    - symbol
-    - timeframe
-    - start timestamp (after_ms)
-    - end timestamp (until_ms)
-
-    It supports both Pandas and Polars DataFrames and forwards all derived
-    parameters to the core `get_data` function.
-
-    Args:
-        df: Input DataFrame containing at least the columns:
-            `symbol`, `timeframe`, and `time_ms`.
-            Can be either a Pandas or Polars DataFrame.
-        limit: Maximum number of rows to return. If -1, defaults to the
-            number of rows in the input DataFrame.
-        order: Sort order of the returned data ("asc" or "desc").
-        indicators: List of indicator names to compute and attach.
-        options: Optional dictionary of additional parameters forwarded
-            directly to `get_data`.
-
-    Returns:
-        A Pandas or Polars DataFrame (matching the backend used by `get_data`)
-        containing OHLCV data and requested indicators for the inferred range.
-
-    Note: when input options are not set, the output defaults to a pandas Dataframe.
-          Generally a user should forward the incoming options to this function.
-          That keeps consistency automatically.
+    Automatically fetch OHLCV data matching the metadata of an existing DataFrame.
+    
+    BEHAVIOR:
+    - Defaults to returning PANDAS DataFrame (compatibility mode).
+    - Returns POLARS (LazyFrame/DataFrame) ONLY if options['return_polars'] is True.
     """
 
-    # Check whether we're dealing with a Polars DataFrame
-    is_pl = isinstance(df, pl.DataFrame)
-
-    if is_pl:
-        # Polars has no iloc; row(0) gets the first row, row(-1) gets the last
-        # named=True returns a dict-like object instead of a tuple
-        first_row = df.row(0, named=True)
-        last_row = df.row(-1, named=True)
-
-        # Pull required metadata from the first row
+    # 1. Extract Metadata from Input (Polars Lazy, Polars Eager, or Pandas)
+    if isinstance(df, pl.LazyFrame):
+        # Peek at first row for start/symbol
+        first_row_df = df.head(1).collect()
+        if first_row_df.is_empty(): 
+            return df
+        
+        # Peek at last row for end
+        last_row_df = df.tail(1).collect()
+        
+        # Count rows lazily
+        count = df.select(pl.len()).collect().item()
+        
+        first_row = first_row_df.row(0, named=True)
+        last_row = last_row_df.row(0, named=True)
+        
         symbol = first_row["symbol"]
         timeframe = first_row["timeframe"]
-
-        # Use the first timestamp as the lower bound
         after_ms = first_row["time_ms"]
-
-        # Use the last timestamp as the upper bound
         until_ms = last_row["time_ms"]
 
-        # Total number of rows in the input DataFrame
+    elif isinstance(df, pl.DataFrame):
+        if df.is_empty(): 
+            return df
+            
+        first_row = df.row(0, named=True)
+        last_row = df.row(-1, named=True)
+        
+        symbol = first_row["symbol"]
+        timeframe = first_row["timeframe"]
+        after_ms = first_row["time_ms"]
+        until_ms = last_row["time_ms"]
         count = len(df)
+
     else:
-        # Pandas path: iloc is safe regardless of index type
+        # Pandas Input
+        if df.empty: 
+            return df
+            
         symbol = df.iloc[0]["symbol"]
         timeframe = df.iloc[0]["timeframe"]
         after_ms = df.iloc[0]["time_ms"]
         until_ms = df.iloc[-1]["time_ms"]
         count = len(df)
 
-    # If limit is -1, default to the size of the input DataFrame
+    # 2. Determine Output Type (STRICTLY based on options)
+    wants_polars = options.get('return_polars', False)
+    
     final_limit = limit if limit != -1 else count
+    
+    # Prepare options copy to inject the preference
+    run_options = options.copy()
+    run_options['return_polars'] = wants_polars
 
-    # Delegate the actual data retrieval to get_data
-    return get_data(
+    # 3. Call get_data
+    result = get_data(
         symbol=symbol,
         timeframe=timeframe,
         after_ms=int(after_ms),
-        # +1 makes the upper bound exclusive so the last candle is included
         until_ms=int(until_ms) + 1,
         limit=final_limit,
         order=order,
         indicators=indicators,
-        options=options
+        options=run_options
     )
+
+    # 4. Enforce Output Consistency
+    # If the user did NOT explicitly ask for Polars, ensure we give them Pandas.
+    # (This handles cases where get_data defaults to Polars internally)
+    if not wants_polars:
+        if isinstance(result, pl.LazyFrame):
+            return result.collect().to_pandas()
+        elif isinstance(result, pl.DataFrame):
+            return result.to_pandas()
+            
+    return result
 
 
 
@@ -241,6 +271,7 @@ def get_data(
     # 8. Final Materialization (The Gatekeeper)
     # Only collect if this is the "main call" (lazy=False in options)
     if is_lazy and not is_lazy_requested:
+        print("COLLECT4")
         chunk_df = chunk_df.collect()
 
     # Final type conversion if needed

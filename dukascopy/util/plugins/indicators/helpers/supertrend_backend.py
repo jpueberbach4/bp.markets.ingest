@@ -1,7 +1,7 @@
 import numba
 import numpy as np
 
-@numba.jit(nopython=True, cache=True)
+@numba.jit(nopython=True, cache=True, nogil=True)
 def _supertrend_backend(high: np.ndarray, low: np.ndarray, close: np.ndarray, period: int, multiplier: float) -> np.ndarray:
     n = len(close)
     
