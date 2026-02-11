@@ -54,11 +54,20 @@ function clearOnUpdate() {
     masterData = [];
     candleSeries.setData([]);
     volumeSeries.setData([]);
-    Object.values(overlaySeriesMap).forEach(s => mainChart.removeSeries(s));
+
+    Object.keys(overlaySeriesMap).forEach(col => {
+        mainChart.removeSeries(overlaySeriesMap[col]);
+    });
     overlaySeriesMap = {};
-    Object.values(panelCharts).forEach(p => p.chart.remove());
+
+    Object.keys(panelCharts).forEach(id => {
+        panelCharts[id].chart.remove();
+    });
     panelCharts = {};
-    document.getElementById('panel-container').innerHTML = '';
+    
+    const panelContainer = document.getElementById('panel-container');
+    if (panelContainer) panelContainer.innerHTML = '';    
+
     candleSeries.priceScale().applyOptions({
         autoScale: true,
     });
@@ -290,7 +299,7 @@ function updateChartUI(cols = [], requestDirection) {
         statusEl.innerText = `Buffer: ${masterData.length} bars`;
     }
 
-cols.forEach((col, idx) => {
+    cols.forEach((col, idx) => {
         if (idx <= 5) return; 
 
         const rawName = col.split('_')[0]; 

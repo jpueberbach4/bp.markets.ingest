@@ -99,10 +99,13 @@ function getSeriesColor(col) {
         'lower': '#787b86',      // Gray
         'middle': '#FF9800',     // Amber
         'rsi': '#9c27b0',        // Purple
+        'rsi_14': '#9c27b0',        // Purple
         'hist': '#26a69a',       // Teal
         'confidence': '#FFD600', // Orange
         'threshold': '#00FF00',   // Lime
-        'relative-height': '#1B6E1B' //Deep Forest
+        'relative-height': '#1B6E1B', //Deep Forest
+        'rsi4h': '#00FF00',   // Lime
+        'rsi1d': '#FFD600',   // Lime
     };
     const mainParts = col.split('__');
     const suffix = (mainParts.length > 1 ? mainParts[1] : col.split('_').shift()).toLowerCase();
