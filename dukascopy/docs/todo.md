@@ -20,7 +20,7 @@ Priorization:
 Note: we are setup now to integrate the extensions below (weekend work).
 
 Quality:
-  - [ ] Users will try to export 1 million rows with market/volume profile. Extend meta option with a maximum record count flag for these heavy indicators.
+  - [x] ~~Users will try to export 1 million rows with market/volume profile.~~
   - [x] Multi-process API service for true concurrency
   - [x] Thread safety for MarketDataCache (calling get_data from multiple threads)
   - [x] Unit-test that does a performance-test on indicators with 10,000 records and warns on > 10ms.
@@ -42,6 +42,8 @@ Quality:
 Note: UVLOOP WSL2 fix was implemented through a config.user.yaml setting.
 
 Note: Cuda/Rapids/GPU: The "Elegant" Fix: Use a Coalescing Buffer. Instead of immediate execution, the internal API should collect indicator requests within a tiny time window (e.g., 5-10ms) or until a batch size is met, then ship one massive Arrow table to the GPU. This maximizes the O(1) nature of the parallel execution. Could be too much for now. If too much: it moves down the feature-list.
+
+Note: 1 million rows with market/volumeprofile is now acceptable after JIT optimizations. 
 
 Note: as of 10 feb, we are down to the original quality features list. the important stuff.
 
