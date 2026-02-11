@@ -28,6 +28,8 @@ Funny songs (something different for a moment, nostalgia):
 - https://www.youtube.com/watch?v=K2ku1A5Ox8U&list=RDK2ku1A5Ox8U (mount gox debacle, what latency can do)
 - https://www.youtube.com/watch?v=YGGzinyB1TI&list=RDYGGzinyB1TI (crypto pumps, wolong)
 
+Also have a solution to the GIL locking. Python 3.14t. But it is currently too unstable for the dependencies. Dependency wheels are not updated for 3.14 yet. So we wait. 
+
 ## **Next**
 
 After the `is-stale` indicator we move on to Panama and Stocksplit support (eg Apple sept 2020). Panama and Stocksplit will be implemented as an additional stage in the ETL process that will sidetrack an adjusted dataset. The Panama and Stocksplit dataset will follow the regular incremental process for updates. So it will be just as "live" as the others, behave just like others for the resampling engine. The support will likely get injected in/after the aggregation stage. Likely, `symbols.users.txt` is going to support something like `BRENT-CMD.USD:panama`. An adjusted set will become "just another symbol in the system".
