@@ -90,7 +90,7 @@ class IndicatorWorker:
         p_func: Any,
         full_name: str,
         p_opts: Dict
-    ) -> Optional[Union[pd.DataFrame, pl.DataFrame]]:
+    ) -> Optional[Union[pd.DataFrame, pl.DataFrame, pl.LazyFrame]]:
         """Execute a plugin task and normalize its DataFrame output.
 
         This function runs a plugin calculation that may operate on either a
@@ -122,23 +122,29 @@ class IndicatorWorker:
             if res_df is None:
                 return None
 
-            if isinstance(res_df, pl.LazyFrame):
-                res_df = res_df.collect()
+            #if isinstance(res_df, pl.LazyFrame):
+            #    res_df = res_df.collect()
 
             # Handle the case where the plugin returned a Polars DataFrame
-            if isinstance(res_df, pl.DataFrame):
-                # Polars has its own way of checking for emptiness
-                if res_df.is_empty():
-                    return None
-
-                # If the result has multiple columns, prefix each one
-                if len(res_df.columns) > 1:
-                    res_df = res_df.rename({
-                        c: f"{full_name}__{c}" for c in res_df.columns
-                    })
+            if isinstance(res_df, (pl.DataFrame, pl.LazyFrame)):
+                if isinstance(res_df, pl.LazyFrame):
+                    # We defer renaming/prefixing to the main thread or use simple rename
+                    # But pl.LazyFrame.rename works fine:
+                    
+                    # FIX: Use collect_schema().names() to avoid PerformanceWarning 
+                    # regarding schema resolution on LazyFrame.
+                    columns = res_df.collect_schema().names()  # This is metadata-only (fast)
+                    
+                    if len(columns) > 1:
+                        res_df = res_df.rename({c: f"{full_name}__{c}" for c in columns})
+                    else:
+                        res_df = res_df.rename({columns[0]: full_name})
                 else:
-                    # Single-column result: rename it directly to the full indicator name
-                    res_df = res_df.rename({res_df.columns[0]: full_name})
+                    if res_df.is_empty(): return None
+                    if len(res_df.columns) > 1:
+                        res_df = res_df.rename({c: f"{full_name}__{c}" for c in res_df.columns})
+                    else:
+                        res_df = res_df.rename({res_df.columns[0]: full_name})
 
             # Handle the case where the plugin returned a pandas DataFrame
             else:
@@ -256,7 +262,8 @@ class IndicatorEngine:
                 return df
 
             # Convert pandas to Polars ONCE (no rechunking to preserve zero-copy)
-            df_polars_source = pl.from_pandas(df, rechunk=False)
+            # FIX: rechunk() is essential here to enable SIMD for subsequent map_batches
+            df_polars_source = pl.from_pandas(df).rechunk()
 
             # Build a lazy execution graph on top of Polars
             main_pl = df_polars_source.lazy()
@@ -351,13 +358,13 @@ class IndicatorEngine:
             main_pl = main_pl.with_columns(polars_expressions)
 
         # Execute the entire Polars graph in a single materialization step
-        collected_pl = main_pl.collect()
+        # collected_pl = main_pl.collect()
 
         # Assemble final output (flat or nested mapping)
         if disable_recursive_mapping:
-            return self._assemble_flat(df, collected_pl, pandas_tasks, return_polars)
+            return self._assemble_flat(df, main_pl, pandas_tasks, return_polars)
         else:
-            return self._assemble_nested(df, collected_pl, pandas_tasks, return_polars)
+            return self._assemble_nested(df, main_pl, pandas_tasks, return_polars)
 
     def _resolve_options(self, ind_str: str, plugin_entry: Dict) -> Dict:
         """
@@ -395,7 +402,7 @@ class IndicatorEngine:
         self,
         tasks: List,
         df_orig: Union[pd.DataFrame, pl.DataFrame]
-    ) -> List[pl.DataFrame]:
+    ) -> List[pl.LazyFrame]:
         """Collect async task results and align them as Polars DataFrames.
 
         This function waits for a set of concurrent tasks to finish, collects
@@ -411,7 +418,7 @@ class IndicatorEngine:
                 the reference for how many rows each result should have.
 
         Returns:
-            A list of Polars DataFrames, all with the same row count as
+            A list of Polars DataFrames (Lazy), all with the same row count as
             `df_orig`, suitable for safe concatenation or downstream joins.
         """
         # This will store the final, cleaned, aligned Polars DataFrames
@@ -433,25 +440,37 @@ class IndicatorEngine:
 
                 # If the result is already Polars, keep it as-is
                 # Otherwise, convert the pandas DataFrame to Polars
-                if isinstance(res_df, pl.DataFrame):
-                    p_res = res_df
-                else:
-                    p_res = pl.from_pandas(res_df)
 
+                # Normalize to LazyFrame for consistent handling
+                if isinstance(res_df, pd.DataFrame):
+                    p_res = pl.from_pandas(res_df).lazy()
+                elif isinstance(res_df, pl.DataFrame):
+                    p_res = res_df.lazy()
+                else:
+                    p_res = res_df # It's already a LazyFrame
+                
                 # If this result has fewer rows than the original input,
                 # we need to pad the TOP with null rows so everything lines up
-                if p_res.height < height_ref:
-                    # Number of missing rows we need to add
-                    pad_len = height_ref - p_res.height
+                
+                # OPTIMIZATION: Micro-collect just the length to avoid full materialization
+                curr_height = p_res.select(pl.len()).collect().item()
 
-                    # Create a DataFrame full of nulls that matches the schema
-                    # of the result (same columns, same dtypes)
-                    pad = pl.select([
-                        pl.repeat(None, pad_len, dtype=dtype).alias(name)
-                        for name, dtype in p_res.schema.items()
-                    ])
-
-                    # Stick the null rows on top of the actual data
+                if curr_height < height_ref:
+                    pad_len = height_ref - curr_height
+                    
+                    # Lazily generate null padding
+                    # leveraging the schema from the lazy frame
+                    # FIX: Use collect_schema() to avoid PerformanceWarning
+                    schema = p_res.collect_schema() 
+                    
+                    # Create a standalone lazy frame for padding
+                    # Fastest way: materialize the PAD (it's nulls, super cheap) then lazy
+                    pad = pl.DataFrame(
+                        {c: [None]*pad_len for c in schema.names()}, 
+                        schema=schema
+                    ).lazy()
+                    
+                    # Lazy concat (Stacks plan, executes later)
                     p_res = pl.concat([pad, p_res])
 
                 # Save the aligned result for later use
@@ -468,7 +487,7 @@ class IndicatorEngine:
     def _assemble_flat(
             self,
             df_orig: Union[pd.DataFrame, pl.DataFrame],
-            main_pl: pl.DataFrame,
+            main_pl: pl.LazyFrame,
             tasks: List,
             return_polars: bool = False
      ) -> Union[pd.DataFrame, pl.DataFrame]:
@@ -492,7 +511,7 @@ class IndicatorEngine:
             df_orig (pd.DataFrame): The original input DataFrame used to compute
                 indicators. Used to determine row count and identify non-
                 indicator (market data) columns.
-            main_pl (pl.DataFrame): Collected Polars DataFrame containing all
+            main_pl (pl.LazyFrame): Collected Polars DataFrame containing all
                 Polars-native indicator results.
             tasks (List): List of Future objects representing running or
                 completed Pandas-based indicator computations.
@@ -511,7 +530,10 @@ class IndicatorEngine:
         indicator_frames.extend(self._process_pandas_results(tasks, df_orig))
 
         # Merge all indicator outputs horizontally.
-        combined_pl = pl.concat(indicator_frames, how="horizontal").rechunk()
+        combined_lf = pl.concat(indicator_frames, how="horizontal")
+        
+        # CRITICAL: Collect once at the very end to prevent LazyFrame.to_pandas crash
+        combined_pl = combined_lf.collect()
 
         if return_polars:
             return combined_pl
@@ -526,7 +548,7 @@ class IndicatorEngine:
     def _assemble_nested(
         self,
         df_orig: Union[pd.DataFrame, pl.DataFrame],
-        main_pl: pl.DataFrame,
+        main_pl: pl.LazyFrame,
         tasks: List,
         return_polars: bool = False
     ) -> Union[pd.DataFrame, pl.DataFrame]:
@@ -551,7 +573,7 @@ class IndicatorEngine:
             df_orig (pd.DataFrame): The original input DataFrame containing
                 market data. Used to distinguish indicator columns from
                 non-indicator columns.
-            main_pl (pl.DataFrame): Polars DataFrame containing collected
+            main_pl (pl.LazyFrame): Polars DataFrame containing collected
                 Polars-native indicator results.
             tasks (List): List of Future objects representing completed or
                 pending Pandas-based indicator computations.
@@ -573,9 +595,12 @@ class IndicatorEngine:
             # Then merge with the main Polars frame
             main_pl = pl.concat([main_pl, indicator_pl], how="horizontal")
 
-        # Identify indicator columns.
+        # FIX: main_pl is LazyFrame. We need schema to find columns without warning/crash.
+        # Use collect_schema() to safely get column names from LazyFrame
+        all_cols = main_pl.collect_schema().names()
+        
         indicator_cols = [
-            c for c in main_pl.columns
+            c for c in all_cols
             if c not in df_orig.columns
         ]
 
@@ -605,9 +630,12 @@ class IndicatorEngine:
             )
 
         # Pack everything into a single "indicators" column.
-        result_pl = main_pl.with_columns(
+        result_lf = main_pl.with_columns(
             pl.struct(struct_exprs).alias("indicators")
         ).select([*df_orig.columns, "indicators"])
+        
+        # CRITICAL: Collect once at the very end
+        result_pl = result_lf.collect()
 
         if return_polars:
             return result_pl

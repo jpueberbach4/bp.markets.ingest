@@ -239,6 +239,9 @@ def get_data(
             return_polars
         )
 
+        if isinstance(chunk_df, pl.LazyFrame):
+            chunk_df = chunk_df.collect()
+
     # Drop warmup rows
     is_pl = isinstance(chunk_df, pl.DataFrame)
     is_empty = chunk_df.is_empty() if is_pl else chunk_df.empty
