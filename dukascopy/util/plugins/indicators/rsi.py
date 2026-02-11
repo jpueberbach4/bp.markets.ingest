@@ -38,7 +38,7 @@ def warmup_count(options: Dict[str, Any]) -> int:
     except (ValueError, TypeError):
         period = 14
 
-    return period * 3
+    return period * 15
 
 def position_args(args: List[str]) -> Dict[str, Any]:
     """

@@ -9,13 +9,11 @@ Tomorrow is another massive-sprint day. I will have a go at panama. Panama and s
 
 Expect it to be done tomorrow and to land Friday or latest Saturday.
 
-## **Notice: Web-interface has a small issue**
+## **Notice: Web-interface small issue**
 
-I just discovered with one of my new indicators that the web-interface has a slight update issue. For example, the 3x RSI example from [this doc](templates.md). Install it. Then select it from the web-interface. Select first the 4H chart and then the 1H chart. Look at the end of the daily RSI. It seems to shift up (while it shouldnt), like the indicator doesnt work properly (looks like it repaints),... this is not the case. It's an interface issue. Pressing "Update view" repaints the whole interface, including the panels. 
+No. This was the RSI indicator. To reach 99.9% convergence (where the floating-point difference is negligible), you generally need about 10 to 15 times the RSI period.
 
-So. Moral of the story. If your indicator looks a bit funny after switching timeframes. Just press "Update view" to rule out the interface-issue, before you go hacking again.
-
-~~**Update:** Is already fixed. Javascript clearOnUpdate function was updated. Copy over `config/dukascopy/http-docs/scripts/interface.js` to your `config.user/dukascopy/http-docs/scripts/interface.js`, OR, when still using default configuration: `./setup-dukascopy.sh` (be careful with this command when you have custom configuration-always backup your `config.user.yaml` and `config.user` directory before running).~~
+It was 3 * rsi_period. Made it 15. Now all oke.
 
 ## **Notice: Numba JIT optimizations**
 
