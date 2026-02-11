@@ -214,15 +214,14 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     # Force API to return Polars DataFrames
     api_opts = {**options, "return_polars": True}
 
-    # One full day of extra history to stabilize RSI calculations
-    warmup_ms = 86400000
+    warmup_ms = 86400000 * 5 # cover weekends + safety value
 
     def fetch_indicator_data(target_tf, alias):
         # Fetch RSI + is-open flags for a given timeframe
         data = get_data(
             symbol=symbol,
             timeframe=target_tf,
-            after_ms=time_min - (warmup_ms * 2),
+            after_ms=time_min - warmup_ms,
             until_ms=time_max + 1,
             indicators=[rsi_col, "is-open"],
             limit=1000000,
@@ -263,7 +262,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         .join_asof(lazy_4h, on="time_ms", strategy="backward")
         .join_asof(lazy_1d, on="time_ms", strategy="backward")
         .select(["rsi", "rsi4h", "rsi1d"])
-        .collect()
+        .collect(streaming=True)
     )
 
     # Stop profiling and print results if enabled
