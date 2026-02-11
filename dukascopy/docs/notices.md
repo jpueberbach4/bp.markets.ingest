@@ -19,6 +19,15 @@ Before: Try a new indicator idea → Wait 30 minutes for backtest → Lose focus
 
 Now: Try idea → 1.2 seconds → See results → Refine → Try again → Stay in flow state
 
+I have been around long enough to know that performance is a first-class citizin for tools like these.
+
+How long? since 2009,...
+
+Funny songs (something different for a moment, nostalgia):
+
+- https://www.youtube.com/watch?v=K2ku1A5Ox8U&list=RDK2ku1A5Ox8U (mount gox debacle)
+- https://www.youtube.com/watch?v=YGGzinyB1TI&list=RDYGGzinyB1TI (crypto pumps)
+
 ## **Next**
 
 After the `is-stale` indicator we move on to Panama and Stocksplit support (eg Apple sept 2020). Panama and Stocksplit will be implemented as an additional stage in the ETL process that will sidetrack an adjusted dataset. The Panama and Stocksplit dataset will follow the regular incremental process for updates. So it will be just as "live" as the others, behave just like others for the resampling engine. The support will likely get injected in/after the aggregation stage. Likely, `symbols.users.txt` is going to support something like `BRENT-CMD.USD:panama`. An adjusted set will become "just another symbol in the system".
