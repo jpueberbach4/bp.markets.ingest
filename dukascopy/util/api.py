@@ -127,46 +127,20 @@ def get_data_auto(
 def get_data(
     symbol: str,
     timeframe: str,
-    after_ms: int=0,
-    until_ms: int=32503680000000,
+    after_ms: int = 0,
+    until_ms: int = 32503680000000,
     limit: int = 1000,
     order: str = "asc",
     indicators: List[str] = [],
     options: Dict = {}
-) -> Union[pd.DataFrame,pl.DataFrame]:
+) -> Union[pd.DataFrame, pl.DataFrame, pl.LazyFrame]:
     """Retrieve OHLCV data for a symbol and timeframe, optionally applying indicators.
-
-    This function fetches a contiguous slice of cached OHLCV data for a given symbol
-    and timeframe, respecting time boundaries, limits, sorting order, and indicator
-    warmup requirements. It also supports optional user-defined indicator calculation
-    and output modifiers (e.g., skiplast).
-
-    Args:
-        symbol (str): The trading symbol to query (e.g., "EURUSD").
-        timeframe (str): The OHLCV timeframe (e.g., "1m", "5m").
-        after_ms (int): Inclusive lower bound timestamp in epoch milliseconds.
-        until_ms (int): Exclusive upper bound timestamp in epoch milliseconds.
-        limit (int, optional): Maximum number of rows to return. Defaults to 1000.
-        order (str, optional): Sort order for data retrieval, "asc" or "desc".
-            Defaults to "desc".
-        indicators (List[str], optional): List of indicator strings to calculate
-            (e.g., ["sma_20", "bbands_20_2"]). Defaults to empty list.
-        options (Dict, optional): Dictionary of additional options and modifiers.
-            Recognized keys include:
-                - "modifiers": List of strings, e.g., ["skiplast"].
-                - "disable_recursive_mapping": Boolean flag for indicator processing.
-
-    Returns:
-        pd.DataFrame: A DataFrame containing OHLCV data sliced according to the
-        provided timestamps and limit, with indicator columns added if requested.
-        The DataFrame includes normalized columns:
-            - "symbol", "timeframe", "sort_key", "open", "high", "low",
-              "close", "volume", and any indicator columns.
+    
+    Optimized for LazyFrame execution to prevent premature materialization.
     """
-    # Setup cache
+    # 1. Setup & Validation
     cache = MarketDataCache()
-
-    # Validate inputs
+    
     if after_ms >= until_ms:
         raise ValueError("after_ms must be less than until_ms")
     
@@ -176,99 +150,103 @@ def get_data(
     if order not in ["asc", "desc"]:
         raise ValueError("order must be 'asc' or 'desc'")
 
-    # Output mode, polars or pandas (default)
+    # Extract options
     return_polars = options.get('return_polars', False)
-
-    # Extract modifiers, eg skiplast
     modifiers = options.get('modifiers', [])
+    is_lazy_requested = options.get('lazy', False)  # Check for recursion flag
 
-    # Check if the view is here, if not, cache it.
+    # 2. Cache Discovery & Warmup Calculation
     cache.discover_view(symbol, timeframe)
-
-    # Determine how many warmup rows are needed for indicators
-    warmup_rows = cache.indicators.get_maximum_warmup_rows(indicators)
-
-    # Total number of rows to retrieve, including warmup
+    
+    warmup_rows = cache.indicators.get_maximum_warmup_rows(indicators) if indicators else 0
     total_limit = limit + warmup_rows
 
-    # Find index positions in cache for the requested time range
+    # Find cache boundary indices
     after_idx = cache.find_record(symbol, timeframe, after_ms, "left")
     until_idx = cache.find_record(symbol, timeframe, until_ms, "right")
 
-    # Extend the start index backward to include warmup rows
+    # Adjust start index for warmup
     after_idx = after_idx - warmup_rows
 
-    # Enforce the total row limit depending on sort order
+    # Enforce row limits based on sort order
     if until_idx - after_idx > total_limit:
         if order == "desc":
             after_idx = until_idx - total_limit
         if order == "asc":
             until_idx = after_idx + total_limit
 
+    # Clamp indices to valid range
     max_idx = cache.get_record_count(symbol, timeframe)
-
-    # Never slice beyond last row
-    if until_idx > max_idx:
-        until_idx = max_idx
-
-    # Clamp the start index to zero to avoid negative indexing
-    if after_idx < 0:
-        after_idx = 0
-
-    # Skiplast handling
+    if until_idx > max_idx: until_idx = max_idx
+    if after_idx < 0: after_idx = 0
+    
+    # Handle 'skiplast' modifier
     if until_idx == max_idx and "skiplast" in modifiers:
         until_idx -= 1
 
-    # Retrieve the data slice from cache
+    # 3. Retrieve Data (Potentially Lazy)
     chunk_df = cache.get_chunk(symbol, timeframe, after_idx, until_idx, return_polars)
-
+    
+    # Ensure we are working with LazyFrame for the pipeline
+    is_lazy = isinstance(chunk_df, pl.LazyFrame)
+    if not is_lazy and return_polars:
+        chunk_df = chunk_df.lazy()
+        is_lazy = True
+    
+    # 4. Indicator Injection (Lazy-Aware)
     if indicators:
-        # Hot reload support (only for custom user indicators)
         indicator_registry = cache.indicators.refresh(indicators)
-
-        # Recursive mapping disable from options, True by default since get_data API in 
-        # indicators mostly needs it to be True 
         disable_recursive_mapping = options.get('disable_recursive_mapping', True)
 
-        # Enrich the returned result with the requested indicators (parallelized)
+        # Call parallel_indicators with lazy=True to prevent materialization
         chunk_df = parallel_indicators(
             chunk_df, 
             indicators, 
             indicator_registry, 
             disable_recursive_mapping, 
-            return_polars
+            return_polars,
+            lazy=True  # Important: Pass lazy=True to support recursion
         )
+        is_lazy = isinstance(chunk_df, pl.LazyFrame)
 
-        if isinstance(chunk_df, pl.LazyFrame):
-            chunk_df = chunk_df.collect()
-
-    # Drop warmup rows
-    is_pl = isinstance(chunk_df, pl.DataFrame)
-    is_empty = chunk_df.is_empty() if is_pl else chunk_df.empty
-
-    if not is_empty and warmup_rows:
-        chunk_df = chunk_df.slice(warmup_rows) if is_pl else chunk_df[warmup_rows:]
-
-    # Apply the sort
-    force_ordering = options.get('force_ordering', False)
-    if order == "desc" or force_ordering:
-        if is_pl:
-            chunk_df = chunk_df.sort("time_ms", descending=(order == "desc"))
+    # 5. Slicing (Warmup Drop) - FIX: Use safe integer limit
+    if warmup_rows > 0:
+        if is_lazy:
+            # FIX: Use 2^31 - 1 (2147483647) instead of 1e12 to avoid OverflowError on u32 bindings
+            SAFE_INT_MAX = 2147483647
+            chunk_df = chunk_df.slice(warmup_rows, SAFE_INT_MAX)
+        elif isinstance(chunk_df, pl.DataFrame):
+            chunk_df = chunk_df.slice(warmup_rows)
         else:
-            chunk_df = chunk_df.reset_index().sort_values(by='time_ms', ascending=(order == "asc"))
+            # Pandas
+            chunk_df = chunk_df.iloc[warmup_rows:]
 
-    # Reset/Limit/Drop (Pandas path only, Polars uses native methods)
-    if is_pl:
+    # 6. Sorting
+    should_sort_desc = (order == "desc")
+    force_ordering = options.get('force_ordering', False)
+    
+    if should_sort_desc or force_ordering:
+        if is_lazy or isinstance(chunk_df, pl.DataFrame):
+            chunk_df = chunk_df.sort("time_ms", descending=should_sort_desc)
+        else:
+            chunk_df = chunk_df.sort_values(by='time_ms', ascending=not should_sort_desc)
+
+    # 7. Limit (Head)
+    if is_lazy or isinstance(chunk_df, pl.DataFrame):
         chunk_df = chunk_df.head(limit)
     else:
-        chunk_df = chunk_df.reset_index(drop=True)
-        chunk_df = chunk_df.iloc[:limit]
+        chunk_df = chunk_df.head(limit)
         chunk_df.drop(columns=['index'], errors='ignore', inplace=True)
 
-    # Final return logic
-    if return_polars and not is_pl:
-        return pl.from_pandas(chunk_df)
+    # 8. Final Materialization (The Gatekeeper)
+    # Only collect if this is the "main call" (lazy=False in options)
+    if is_lazy and not is_lazy_requested:
+        chunk_df = chunk_df.collect()
 
+    # Final type conversion if needed
+    if return_polars and isinstance(chunk_df, pd.DataFrame):
+        return pl.from_pandas(chunk_df)
+    
     return chunk_df
 
     
