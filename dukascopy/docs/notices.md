@@ -28,7 +28,9 @@ Funny songs (something different for a moment, nostalgia):
 - https://www.youtube.com/watch?v=K2ku1A5Ox8U&list=RDK2ku1A5Ox8U (mount gox debacle, what latency can do)
 - https://www.youtube.com/watch?v=YGGzinyB1TI&list=RDYGGzinyB1TI (crypto pumps, wolong)
 
-Also have a solution to the GIL locking. Python 3.14t. But it is currently too unstable for the dependencies. Dependency wheels are not updated for 3.14 yet. So we wait. 
+Also have a solution to the GIL locking. Python 3.14t. But it is currently too unstable for the dependencies. Dependency wheels are not updated for 3.14 yet. So we wait.
+
+Will this become realtime? Short answer: yes. When? Within 6 months. There are some specific things that need to be done to make it realtime capable. The split-up and the seperate feeder with arrow flight is part of the solution. There will be a complete rewrite of the ingestion part.
 
 ## **Next**
 
