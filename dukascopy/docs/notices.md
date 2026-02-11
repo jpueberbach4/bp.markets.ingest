@@ -7,6 +7,8 @@ Tomorrow is another massive-sprint day. I will have a go at panama. Panama and s
 - `*` multiply (stock split ratio, reverse split)
 - `/` divide (rare, e.g. some spin-off value adjustments)
 
+Expect it to be done tomorrow and to land Friday or latest Saturday.
+
 ## **Notice: Numba JIT optimizations**
 
 Impressive performance optimizations on shannonentropy, marketprofile, volumeprofile and psar using numba JIT. Really impressive. See [here](numba.md) on how to optimize indicators that contain for-loops.
