@@ -2,6 +2,14 @@ import pandas as pd
 import numpy as np
 import polars as pl
 from typing import List, Dict, Any
+from functools import partial
+
+try:
+    import numba
+except ImportError:
+    raise ImportError("Numba is required. Run 'pip install numba' OR 'pip install -r requirements.txt'")
+
+from util.plugins.indicators.helpers.stc_backend import _stc_backend
 
 def description() -> str:
     """
@@ -25,7 +33,7 @@ def meta() -> Dict:
         "version": 1.2,
         "panel": 1,
         "verified": 1,
-        "polars": 0     # TODO: pandas version is faster, however, newer polars version fixes it. 
+        "polars": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -49,94 +57,33 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "slow": args[2] if len(args) > 2 else "50"
     }
 
+def _stc_map_wrapper(s: pl.Series, cycle: int, fast: int, slow: int) -> pl.Series:
+    close_v = s.to_numpy()
+    stc_values = _stc_backend(close_v, cycle, fast, slow)
+    
+    direction = np.where(stc_values > np.roll(stc_values, 1), 1, -1).astype(np.int32)
+    direction[0] = 0 # Handle initial roll
+    
+    return pl.DataFrame({
+        "stc": stc_values,
+        "direction": direction
+    }).to_struct("stc_results")
+
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
-    """
-    High-performance Polars-native calculation for STC.
-    Uses lazy evaluation to chain the 4-stage windowing process efficiently.
-    """
-    try:
-        cycle = int(options.get('cycle', 10))
-        fast = int(options.get('fast', 23))
-        slow = int(options.get('slow', 50))
-    except (ValueError, TypeError):
-        cycle, fast, slow = 10, 23, 50
+    c = int(options.get('cycle', 10))
+    f = int(options.get('fast', 23))
+    s = int(options.get('slow', 50))
 
-    smooth_span = max(1, int(cycle / 2))
+    mapper = partial(_stc_map_wrapper, cycle=c, fast=f, slow=s)
 
-    # 1. Ensure strictly Float64 input
-    close = pl.col("close").cast(pl.Float64)
+    stc_schema = pl.Struct([
+        pl.Field("stc", pl.Float64),
+        pl.Field("direction", pl.Int32),
+    ])
 
-    # 2. MACD Calculation
-    ema_fast = close.ewm_mean(span=fast, adjust=False)
-    ema_slow = close.ewm_mean(span=slow, adjust=False)
-    macd = ema_fast - ema_slow
-
-    # Helper: Polars Stochastic Calculation
-    # Handles division by zero (when high == low) via fill_nan(0)
-    def _polars_stoch(series_expr, window):
-        low_min = series_expr.rolling_min(window_size=window)
-        high_max = series_expr.rolling_max(window_size=window)
-        
-        # Note: 0/0 creates NaN, which fill_nan catches.
-        return (100.0 * (series_expr - low_min) / (high_max - low_min)).fill_nan(0.0).fill_null(0.0)
-
-    # 3. First Smoothing Cycle (Stoch -> EMA)
-    stoch_1 = _polars_stoch(macd, cycle)
-    smooth_1 = stoch_1.ewm_mean(span=smooth_span, adjust=False)
-
-    # 4. Second Smoothing Cycle (Stoch -> EMA)
-    stoch_2 = _polars_stoch(smooth_1, cycle)
-    stc = stoch_2.ewm_mean(span=smooth_span, adjust=False)
-
-    # 5. Directional Slope
-    # Matches Pandas logic: 1 if rising, -1 otherwise (including flat/falling)
-    direction = (
-        pl.when(stc > stc.shift(1))
-        .then(pl.lit(1.0))
-        .otherwise(pl.lit(-1.0))
-    )
+    stc_base = pl.col("close").map_batches(mapper, return_dtype=stc_schema)
 
     return [
-        stc.alias(f"{indicator_str}__stc"),
-        direction.alias(f"{indicator_str}__direction")
+        stc_base.struct.field("stc").alias(f"{indicator_str}__stc"),
+        stc_base.struct.field("direction").alias(f"{indicator_str}__direction")
     ]
-
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
-    """
-    Legacy fallback for Pandas-only environments.
-    """
-    try:
-        cycle = int(options.get('cycle', 10))
-        fast = int(options.get('fast', 23))
-        slow = int(options.get('slow', 50))
-    except (ValueError, TypeError):
-        cycle, fast, slow = 10, 23, 50
-
-    ema_fast = df['close'].ewm(span=fast, adjust=False).mean()
-    ema_slow = df['close'].ewm(span=slow, adjust=False).mean()
-    macd = ema_fast - ema_slow
-
-    def get_stoch(series, window):
-        low_min = series.rolling(window=window).min()
-        high_max = series.rolling(window=window).max()
-        # Avoid DivisionByZero warning in Pandas by replacing 0 denom with NaN
-        denom = (high_max - low_min).replace(0, np.nan)
-        return 100 * (series - low_min) / denom
-
-    smooth_span = max(1, int(cycle / 2))
-    
-    stoch_1 = get_stoch(macd, cycle).fillna(0)
-    smooth_1 = stoch_1.ewm(span=smooth_span, adjust=False).mean()
-
-    stoch_2 = get_stoch(smooth_1, cycle).fillna(0)
-    stc = stoch_2.ewm(span=smooth_span, adjust=False).mean()
-
-    direction = np.where(stc > stc.shift(1), 1, -1)
-
-    res = pd.DataFrame({
-        'stc': stc,
-        'direction': direction
-    }, index=df.index)
-    
-    warmup = slow + (cycle * 2)
-    return res.iloc[warmup:]
