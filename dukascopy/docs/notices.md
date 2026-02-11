@@ -1,4 +1,4 @@
-Product-positioning: market research- and analysis tool, feature-engineering, but you can do so much more with it, if you are a bit "handy".
+Market research- and analysis tool, feature-engineering, but you can do so much more with it, if you are a bit "handy".
 
 ## **Next**
 
