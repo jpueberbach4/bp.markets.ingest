@@ -25,8 +25,8 @@ How long? since 2009,...
 
 Funny songs (something different for a moment, nostalgia):
 
-- https://www.youtube.com/watch?v=K2ku1A5Ox8U&list=RDK2ku1A5Ox8U (mount gox debacle)
-- https://www.youtube.com/watch?v=YGGzinyB1TI&list=RDYGGzinyB1TI (crypto pumps)
+- https://www.youtube.com/watch?v=K2ku1A5Ox8U&list=RDK2ku1A5Ox8U (mount gox debacle, what latency can do)
+- https://www.youtube.com/watch?v=YGGzinyB1TI&list=RDYGGzinyB1TI (crypto pumps, wolong)
 
 ## **Next**
 
