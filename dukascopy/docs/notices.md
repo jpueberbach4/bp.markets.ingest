@@ -13,6 +13,8 @@ Impressive performance optimizations on shannonentropy, marketprofile, volumepro
 
 Note: you will need to install numba dependency: `pip install -r requirements.txt`
 
+I am trying to build a "performance-first"-culture around this tool. Performance "enables". 
+
 ## **Next**
 
 After the `is-stale` indicator we move on to Panama and Stocksplit support (eg Apple sept 2020). Panama and Stocksplit will be implemented as an additional stage in the ETL process that will sidetrack an adjusted dataset. The Panama and Stocksplit dataset will follow the regular incremental process for updates. So it will be just as "live" as the others, behave just like others for the resampling engine. The support will likely get injected in/after the aggregation stage. Likely, `symbols.users.txt` is going to support something like `BRENT-CMD.USD:panama`. An adjusted set will become "just another symbol in the system".
