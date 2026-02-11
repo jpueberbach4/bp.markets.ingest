@@ -2,6 +2,16 @@ import pandas as pd
 import numpy as np
 import polars as pl
 from typing import List, Dict, Any
+from functools import partial
+
+try:
+    import numba
+except ImportError:
+    raise ImportError("Numba is required. Run 'pip install numba' OR 'pip install -r requirements.txt'")
+
+from util.plugins.indicators.helpers.zigzag_backend import _zigzag_backend
+
+
 
 def description() -> str:
     """
@@ -21,11 +31,10 @@ def meta() -> Dict:
     return {
         "author": "Google Gemini",
         "version": 1.1,
-        "panel": 0,           # 0 = Overlay on price chart
+        "panel": 0,
         "verified": 1,
-        "talib-validated": 0, # TA-Lib doesn't have a standard ZigZag
-        "polars": 0,          # Uses numpy loop internally
-        "polars_input": 1     # Accepts Polars DataFrame directly
+        "talib-validated": 0,
+        "polars": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -42,89 +51,25 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "deviation": args[0] if len(args) > 0 else "0.5"
     }
 
-def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
-    """
-    High-performance ZigZag implementation for polars_input: 1.
-    Uses a raw Numpy state machine to identify pivots, then Polars to interpolate lines.
-    """
+def _map_wrapper(s: pl.Series, dev_threshold: float) -> pl.Series:
+    highs = s.struct.field("high").to_numpy()
+    lows = s.struct.field("low").to_numpy()
+    
+    pivots = _zigzag_backend(highs, lows, dev_threshold)
+    return pl.Series(pivots)
+
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     try:
-        deviation = float(options.get('deviation', 0.5))
+        deviation = float(options.get('deviation', 5.0))
     except (ValueError, TypeError):
         deviation = 5.0
 
     dev_threshold = deviation / 100.0
+    mapper = partial(_map_wrapper, dev_threshold=dev_threshold)
 
-    highs = df['high'].to_numpy()
-    lows = df['low'].to_numpy()
-    n = len(highs)
-    
-    pivots = np.full(n, np.nan)
-    
-    if n < 2:
-        return df.select(pl.lit(None).alias("zigzag"))
-
-    trend = 0 
-    last_pivot_idx = 0
-    last_pivot_val = 0.0
-    
-    curr_ext_val = 0.0
-    curr_ext_idx = 0
-
-    start_price = highs[0]
-    for i in range(1, n):
-        if highs[i] > start_price * (1 + dev_threshold):
-            trend = 1
-            last_pivot_idx = 0
-            last_pivot_val = lows[0] # Assume start was low
-            curr_ext_val = highs[i]
-            curr_ext_idx = i
-            pivots[0] = last_pivot_val # Anchor start
-            break
-        elif lows[i] < start_price * (1 - dev_threshold):
-            trend = -1
-            last_pivot_idx = 0
-            last_pivot_val = highs[0] # Assume start was high
-            curr_ext_val = lows[i]
-            curr_ext_idx = i
-            pivots[0] = last_pivot_val # Anchor start
-            break
-            
-    if trend == 0:
-        return df.select(pl.lit(None).cast(pl.Float64).alias("zigzag"))
-
-    for i in range(curr_ext_idx + 1, n):
-        if trend == 1: # Uptrend, looking for higher High
-            if highs[i] > curr_ext_val:
-                curr_ext_val = highs[i]
-                curr_ext_idx = i
-            elif lows[i] < curr_ext_val * (1 - dev_threshold):
-                pivots[curr_ext_idx] = curr_ext_val
-                
-                trend = -1
-                last_pivot_idx = curr_ext_idx
-                last_pivot_val = curr_ext_val
-                
-                curr_ext_val = lows[i]
-                curr_ext_idx = i
-                
-        else: # Downtrend, looking for lower Low
-            if lows[i] < curr_ext_val:
-                curr_ext_val = lows[i]
-                curr_ext_idx = i
-            elif highs[i] > curr_ext_val * (1 + dev_threshold):
-                pivots[curr_ext_idx] = curr_ext_val
-                
-                trend = 1
-                last_pivot_idx = curr_ext_idx
-                last_pivot_val = curr_ext_val
-                
-                curr_ext_val = highs[i]
-                curr_ext_idx = i
-
-    pivots[curr_ext_idx] = curr_ext_val
-    
-    zigzag_sparse = pl.Series("zigzag", pivots)
-    
-    return df.select(
-        zigzag_sparse.interpolate().alias("zigzag")
-    )
+    return [
+        pl.struct(["high", "low"])
+        .map_batches(mapper, return_dtype=pl.Float64)
+        .interpolate()
+        .alias(f"{indicator_str}__value")
+    ]
