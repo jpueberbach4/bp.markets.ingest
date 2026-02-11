@@ -9,6 +9,11 @@ Tomorrow is another massive-sprint day. I will have a go at panama. Panama and s
 
 Expect it to be done tomorrow and to land Friday or latest Saturday.
 
+
+## **Conversion pass to numba + polars expressions**
+
+Numba has enabled us to move almost all indicators to pure Polars expressions. Meaning that almost all are  fully parallelizable on all cores-and thus eliminating thread overhead/GIL as much as possible. Only 3 remaining of which one is a recursive indicator `is-open`. The other 2 are fractaldimension and hurst. An other time i will have a second look at these two.
+
 ## **Notice: Web-interface small issue**
 
 No. The issue was the RSI indicator. Warmup was 3 * rsi_period. Made it * 15. Now all oke.
