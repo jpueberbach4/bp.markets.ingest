@@ -11,9 +11,11 @@ Expect it to be done tomorrow and to land Friday or latest Saturday.
 
 ## **Notice: Web-interface small issue**
 
-No. This was the RSI indicator. To reach 99.9% convergence (where the floating-point difference is negligible), you generally need about 10 to 15 times the RSI period.
+No. The issue was the RSI indicator. Warmup was 3 * rsi_period. Made it * 15. Now all oke.
 
-It was 3 * rsi_period. Made it 15. Now all oke.
+**Note:** RSI stabilization is subtle. Using `3 times period` for warmup is common but often results in floating-point drift. By utilizing a larger multiplier (e.g., `15 times`), these drifts are eliminated as the influence of the initial seed value diminishes toward zero, ensuring mathematical convergence across different data windows.
+
+The performance impact of increasing the `period * 15` is minimal, microseconds.
 
 ## **Notice: Numba JIT optimizations**
 
