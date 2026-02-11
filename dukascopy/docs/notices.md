@@ -11,7 +11,7 @@ Expect it to be done tomorrow and to land Friday or latest Saturday.
 
 ## **Notice: Web-interface has a small issue**
 
-I just discovered with one of my new indicators that the web-interface has a slight update issue. For example, te 3x RSI example. Install it. Then select it from the web-interface. Select first the 4H chart and then the 1H chart. Look at the end of the daily RSI. It seems to shift up, like the indicator doesnt work properly,... this is not the case. It's an interface issue. Pressing "Update view" repaints the whole interface, including the panels. 
+I just discovered with one of my new indicators that the web-interface has a slight update issue. For example, the 3x RSI example from [this doc](templates.md). Install it. Then select it from the web-interface. Select first the 4H chart and then the 1H chart. Look at the end of the daily RSI. It seems to shift up (while it shouldnt), like the indicator doesnt work properly (looks like it repaints),... this is not the case. It's an interface issue. Pressing "Update view" repaints the whole interface, including the panels. 
 
 So. Moral of the story. If your indicator looks a bit funny after switching timeframes. Just press "Update view" to rule out the interface-issue, before you go hacking again.
 
