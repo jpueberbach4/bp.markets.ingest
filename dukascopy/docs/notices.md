@@ -1,5 +1,16 @@
 Market research- and analysis tool, feature-engineering, but you can do so much more with it, if you are a bit "handy".
 
+## **Notice**
+
+Impressive performance optimizations on shannonentropy, marketprofile, volumeprofile and psar using numba JIT. Really impressive. See [here](numba.md) on how to optimize indicators that contain for-loops.
+
+```sh
+✅ OK    | psar                      |       0.67 | Polars Expr     | util | Previous: 15ms+
+⚠️ SLOW  | marketprofile             |      13.35 | Polars Expr     | util | Previous: 500ms+
+✅ OK    | shannonentropy            |       3.72 | Polars Expr     | util | Previous: 900ms+
+⚠️ SLOW  | volumeprofile             |      31.58 | Polars Expr     | util | Previous: 500ms+
+```
+
 ## **Next**
 
 After the `is-stale` indicator we move on to Panama and Stocksplit support (eg Apple sept 2020). Panama and Stocksplit will be implemented as an additional stage in the ETL process that will sidetrack an adjusted dataset. The Panama and Stocksplit dataset will follow the regular incremental process for updates. So it will be just as "live" as the others, behave just like others for the resampling engine. The support will likely get injected in/after the aggregation stage. Likely, `symbols.users.txt` is going to support something like `BRENT-CMD.USD:panama`. An adjusted set will become "just another symbol in the system".
@@ -62,16 +73,6 @@ By leaning on the OS page cache for memory-mapped files, this is essentially a l
 Today, 2026-02-09T1730+0100, i found a bug while i was working with CSV data for trading. I use this stuff myself too, meaning automatically that deeper integration tests are being performed. I found out that mixing pandas indicators with polars dataframe indicators, somehow got broken. I have fixed this.
 
 You will need to update.
-
-Prevent using the following indicators for large queries:
-
-```sh
-⚠️ SLOW  | marketprofile             |     423.47 | Polars DF       | util
-⚠️ SLOW  | shannonentropy            |     801.78 | Polars DF       | util
-⚠️ SLOW  | volumeprofile             |     533.03 | Pandas DF       | util
-```
-
-Marketprofile and volumeprofile cannot be optimized. Will check it once more... but is difficult because of the nature of these two. Shannonentropy was horrible, is better, but still way too high. Others were fixed.
 
 ## **Replay mockup is back**
 

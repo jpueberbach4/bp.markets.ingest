@@ -616,3 +616,9 @@ For custom color-coding, see [here](templates.md)
 ![example](../images/example-mixed-tf-h1-h4-1d-polars.png)
 
 **Note:** Live-edge handling is now handled in a pretty robust way.
+
+### Advanced UDF / For-loop optimizations
+
+When your indicator uses an UDF and FOR-loops, optimize using numba JIT. 
+
+See [here](numba.md) for more details.
