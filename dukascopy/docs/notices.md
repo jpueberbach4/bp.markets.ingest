@@ -21,6 +21,8 @@ The performance impact of increasing the `period * 15` is minimal, microseconds.
 
 **Note:** This is nitpicking. Rounded to two decimals there was no issue. It was an issue with the last 3 decimals. But for ML-setups these 3 decimals are definately relevant.
 
+It looked like an interface issue but actually what happens, when you click "Update View", is that the `after_ms` and `until_ms` change, leading to different "data windows" and lengths. The seed value shifted, and when not enough buffer, that has impact, leading to convergence-issues. 
+
 ## **Notice: Numba JIT optimizations**
 
 Impressive performance optimizations on shannonentropy, marketprofile, volumeprofile and psar using numba JIT. Really impressive. See [here](numba.md) on how to optimize indicators that contain for-loops.
