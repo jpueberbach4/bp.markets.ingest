@@ -10,6 +10,9 @@ pyarrow >= 17.0.0
 # Polars (for merging dataframes)
 polars >= 1.8.2
 
+# Numba (for fast python loops (indicator optimization, eg psar))
+numba >= 0.58.1
+
 # Zoneinfo (Backport for Python 3.8)
 backports.zoneinfo; python_version < "3.9"
 

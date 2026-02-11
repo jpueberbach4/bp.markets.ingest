@@ -3,6 +3,8 @@ import numpy as np
 import polars as pl
 from typing import List, Dict, Any
 
+import numba
+
 def description() -> str:
     """
     Returns a human-readable description for the API and UI.
@@ -25,7 +27,7 @@ def meta() -> Dict:
         "version": 1.1,
         "verified": 1,
         "talib-validated": 1, 
-        "polars": 1
+        "polars": 0
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -45,9 +47,10 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "max_step": args[1] if len(args) > 1 else "0.2"
     }
 
+@numba.jit(nopython=True, cache=True)
 def _psar_backend(highs: np.ndarray, lows: np.ndarray, step: float, max_step: float) -> np.ndarray:
     """
-    Internal NumPy state machine for recursive PSAR calculation.
+    Numba-optimized State Machine for PSAR.
     """
     n = len(highs)
     psar = np.zeros(n)
@@ -61,6 +64,7 @@ def _psar_backend(highs: np.ndarray, lows: np.ndarray, step: float, max_step: fl
         
         if bull:
             psar[i] = prev_psar + af * (ep - prev_psar)
+            # Numba handles min/max with multiple args efficiently
             psar[i] = min(psar[i], lows[i-1], lows[max(0, i-2)])
             
             if lows[i] < psar[i]:
@@ -85,6 +89,7 @@ def _psar_backend(highs: np.ndarray, lows: np.ndarray, step: float, max_step: fl
                 if lows[i] < ep:
                     ep = lows[i]
                     af = min(af + step, max_step)
+                    
     return psar
 
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
