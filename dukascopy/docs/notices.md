@@ -17,6 +17,8 @@ No. The issue was the RSI indicator. Warmup was 3 * rsi_period. Made it * 15. No
 
 The performance impact of increasing the `period * 15` is minimal, microseconds.
 
+**Note:** I tested using the HTTP-API. Throughput decreased from 340(avg) to 326 req/sec (avg).
+
 **Note:** This is nitpicking. Rounded to two decimals there was no issue. It was an issue with the last 3 decimals. But for ML-setups these 3 decimals are definately relevant.
 
 ## **Notice: Numba JIT optimizations**
