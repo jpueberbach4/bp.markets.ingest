@@ -9,6 +9,14 @@ Tomorrow is another massive-sprint day. I will have a go at panama. Panama and s
 
 Expect it to be done tomorrow and to land Friday or latest Saturday.
 
+## **Notice: Web-interface has a small issue**
+
+I just discovered with one of my new indicators that the web-interface has a slight update issue. For example, te 3x RSI example. Install it. Then select it from the web-interface. Select first the 4H chart and then the 1H chart. Look at the end of the daily RSI. It seems to shift up, like the indicator doesnt work properly,... this is not the case. It's an interface issue. Pressing "Update view" repaints the whole interface, including the panels. 
+
+So. Moral of the story. If your indicator looks a bit funny after switching timeframes. Just press "Update view" to rule out the interface-issue, before you go hacking again.
+
+I will fix it tomorrow.
+
 ## **Notice: Numba JIT optimizations**
 
 Impressive performance optimizations on shannonentropy, marketprofile, volumeprofile and psar using numba JIT. Really impressive. See [here](numba.md) on how to optimize indicators that contain for-loops.
@@ -40,14 +48,6 @@ Funny songs (something different for a moment, nostalgia):
 Also have a solution to the GIL locking. Python 3.14t. But it is currently too unstable for the dependencies. Dependency wheels are not updated for 3.14 yet. So we wait.
 
 Will this become realtime? Short answer: yes. When? Within 6 months. There are some specific things that need to be done to make it realtime capable. The split-up and the seperate feeder with arrow flight is part of the solution. There will be a complete rewrite of the ingestion part.
-
-## **Next**
-
-After the `is-stale` indicator we move on to Panama and Stocksplit support (eg Apple sept 2020). Panama and Stocksplit will be implemented as an additional stage in the ETL process that will sidetrack an adjusted dataset. The Panama and Stocksplit dataset will follow the regular incremental process for updates. So it will be just as "live" as the others, behave just like others for the resampling engine. The support will likely get injected in/after the aggregation stage. Likely, `symbols.users.txt` is going to support something like `BRENT-CMD.USD:panama`. An adjusted set will become "just another symbol in the system".
-
-I will make sure that an adjusted set can be rebuild, seperately from the rest, preventing full-rebuilds.
-
-Currently I am still in the quality/hardening phase for this single-machine-optimized setup.
 
 ## **HTTP API now multi-process and export limit increased, get_data now thread-safe**
 
