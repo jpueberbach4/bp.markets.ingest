@@ -50,7 +50,11 @@ Thread-safety: MarketDataCache is now thread-safe. It is now safe(r) to call get
 
 Latest mainbranch also makes it easier to customize line-colors for your custom indicators. After `git pull`, run `./setup-dukascopy.sh`. Read the [templates.md](templates.md) file (bottom) for the how-to.
 
-**Important:** only export 1 million rows with fast indicators. Don't export 1 million rows with either shannonentropy, market profile and volume profile. It works with these but you will be waiting literally "ages". When you need 1 million rows, programmatically, don't use the HTTP-API, use the [bootstrap](external.md) approach. HTTP API is purposed for monitoring/charting/low-friction exports.
+~~**Important:** only export 1 million rows with fast indicators. Don't export 1 million rows with either shannonentropy, market profile and volume profile. It works with these but you will be waiting literally "ages". When you need 1 million rows, programmatically, don't use the HTTP-API, use the [bootstrap](external.md) approach. HTTP API is purposed for monitoring/charting/low-friction exports.~~
+
+^^ After optimizing market profile and volume profile, you can safely export 1 million rows with these. The download starts after about 3 seconds. 
+
+But... When you need 1 million rows, programmatically, don't use the HTTP-API, use the [bootstrap](external.md) approach. HTTP API is purposed for monitoring/charting/low-friction exports.
 
 A high-speed TCP [Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html) service will get implemented to support distributed processing. 
 
