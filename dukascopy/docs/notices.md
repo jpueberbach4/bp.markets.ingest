@@ -15,7 +15,7 @@ I just discovered with one of my new indicators that the web-interface has a sli
 
 So. Moral of the story. If your indicator looks a bit funny after switching timeframes. Just press "Update view" to rule out the interface-issue, before you go hacking again.
 
-I will fix it tomorrow.
+**Update:** Is already fixed. Javascript clearOnUpdate function was updated. Copy over `config/dukascopy/http-docs/scripts/interface.js` to your `config.user/dukascopy/http-docs/scripts/interface.js`, OR, when still using default configuration: `./setup-dukascopy.sh` (be careful with this command when you have custom configuration-always backup your `config.user.yaml` and `config.user` directory before running).
 
 ## **Notice: Numba JIT optimizations**
 
