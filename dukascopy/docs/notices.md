@@ -55,6 +55,8 @@ Also have a solution to the GIL locking. Python 3.14t. But it is currently too u
 
 Will this become realtime? Short answer: yes. When? Within 6 months. There are some specific things that need to be done to make it realtime capable. The split-up and the seperate feeder with arrow flight is part of the solution. There will be a complete rewrite of the ingestion part.
 
+This is a second reason why your indicators should be optimal-and thus "future-ready".
+
 ## **HTTP API now multi-process and export limit increased, get_data now thread-safe**
 
 HTTP API is now multi-process when `reload:0`. You can specify the number of workers in `config.user.yaml` eg `http.workers:8`. This will spawn 8 worker processes distributed over 8 cores. Since we use memory-mapped files that rely on the OS page-cache-the processes share this cache- memory usage will remain limited. Concurrency issues are now solved. `reload:1` means development mode == 1 worker.
