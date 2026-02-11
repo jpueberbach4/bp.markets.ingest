@@ -42,54 +42,11 @@ def position_args(args: List[str]) -> Dict[str, Any]:
     return {}
 
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
-    """
-    High-performance Polars-native VWAP.
-    Compatible with older Polars versions (no .from_epoch).
-    """
-    tp = (pl.col("high") + pl.col("low") + pl.col("close")) / 3.0
-    pv = (tp * pl.col("volume")).cast(pl.Float64)
     vol = pl.col("volume").cast(pl.Float64)
-
-    session_key = pl.col("time_ms").cast(pl.Datetime("ms")).dt.date()
-
-    cum_pv = pv.cum_sum().over(session_key)
-    cum_vol = vol.cum_sum().over(session_key)
-
-    vwap = cum_pv / cum_vol
-
-    return vwap.forward_fill().round(5).alias(indicator_str)
-
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
-    """
-    Fixed Legacy fallback for Pandas. 
-    Uses 'time_ms' column to trigger session resets.
-    """
-    try:
-        sample_val = df['close'].iloc[0]
-        sample_price = f"{sample_val:.10f}".rstrip('0')
-        precision = len(sample_price.split('.')[1])+1 if '.' in sample_price else 2
-        precision = min(max(precision, 2), 8) 
-    except (IndexError, AttributeError, ValueError):
-        precision = 2
-
-    tp = (df['high'] + df['low'] + df['close']) / 3
-    pv = tp * df['volume']
-
-    if 'time_ms' in df.columns:
-        dates = pd.to_datetime(df['time_ms'], unit='ms').dt.date
-        day_changed = dates != dates.shift(1)
-        group_id = day_changed.cumsum()
-        
-        cum_pv = pv.groupby(group_id).cumsum()
-        cum_vol = df['volume'].groupby(group_id).cumsum()
-    else:
-        cum_pv = pv.cumsum()
-        cum_vol = df['volume'].cumsum()
-
-    vwap = cum_pv / cum_vol.replace(0, np.nan)
-
-    res = pd.DataFrame({
-        'vwap': vwap.round(precision)
-    }, index=df.index)
-    
-    return res.ffill() # modern pandas ffill
+    # Multiplication is faster on CPU
+    tp = (pl.col("high") + pl.col("low") + pl.col("close")) * 0.3333333333333333
+    return (
+        (tp * vol).cum_sum().over(pl.col("time_ms") // 86400000) 
+        / 
+        vol.cum_sum().over(pl.col("time_ms") // 86400000)
+    ).alias(indicator_str)
