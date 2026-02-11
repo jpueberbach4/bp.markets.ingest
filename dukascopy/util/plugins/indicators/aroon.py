@@ -2,6 +2,16 @@ import pandas as pd
 import numpy as np
 import polars as pl
 from typing import List, Dict, Any
+from functools import partial
+
+try:
+    import numba
+except ImportError:
+    raise ImportError("Numba is required. Run 'pip install numba' OR 'pip install -r requirements.txt'")
+
+from util.plugins.indicators.helpers.aroon_backend import _aroon_backend
+
+
 
 def description() -> str:
     """
@@ -23,8 +33,7 @@ def meta() -> Dict:
         "panel": 1,
         "verified": 1,
         "talib-validated": 1, 
-        "polars": 0,
-        "polars_input": 1
+        "polars": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -45,47 +54,43 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "period": args[0] if len(args) > 0 else "14"
     }
 
-def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
+
+def _aroon_map_wrapper(s: pl.Series, period: int) -> pl.Series:
     """
-    High-performance vectorized Aroon calculation using Numpy sliding windows.
-    Supports polars_input: 1
+    Wrapper to bridge Polars Series and Numba backend.
+    """
+    highs = s.struct.field("high").to_numpy()
+    lows = s.struct.field("low").to_numpy()
+    
+    aroon_up, aroon_down = _aroon_backend(highs, lows, period)
+    
+    return pl.DataFrame({
+        "aroon_up": aroon_up,
+        "aroon_down": aroon_down
+    }).to_struct("aroon_results")
+
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
+    """
+    High-performance Aroon using Numba + Polars map_batches.
     """
     try:
-        period = int(options.get('period', 14))
+        p = int(options.get('period', 14))
     except (ValueError, TypeError):
-        period = 14
+        p = 14
 
-    window_size = period + 1
+    mapper = partial(_aroon_map_wrapper, period=p)
 
-    if len(df) < window_size:
-        return pl.DataFrame({
-            "aroon_down": [None] * len(df),
-            "aroon_up": [None] * len(df)
-        }).with_columns([
-            pl.col("aroon_down").cast(pl.Float64),
-            pl.col("aroon_up").cast(pl.Float64)
-        ])
+    aroon_schema = pl.Struct([
+        pl.Field("aroon_up", pl.Float64),
+        pl.Field("aroon_down", pl.Float64),
+    ])
 
-    high_v = df["high"].to_numpy()
-    low_v = df["low"].to_numpy()
+    aroon_base = (
+        pl.struct(["high", "low"])
+        .map_batches(mapper, return_dtype=aroon_schema)
+    )
 
-    high_windows = np.lib.stride_tricks.sliding_window_view(high_v, window_shape=window_size)
-    low_windows = np.lib.stride_tricks.sliding_window_view(low_v, window_shape=window_size)
-
-    arg_max = np.argmax(high_windows, axis=1)
-    arg_min = np.argmin(low_windows, axis=1)
-
-    aroon_up = (arg_max / period) * 100
-    aroon_down = (arg_min / period) * 100
-
-    pad_size = window_size - 1
-    padding = np.full(pad_size, np.nan)
-    
-    final_up = np.concatenate([padding, aroon_up])
-    final_down = np.concatenate([padding, aroon_down])
-
-    # 6. Return Polars DataFrame
-    return pl.DataFrame({
-        "aroon_down": final_down,
-        "aroon_up": final_up
-    })
+    return [
+        aroon_base.struct.field("aroon_down").alias(f"{indicator_str}__aroon_down"),
+        aroon_base.struct.field("aroon_up").alias(f"{indicator_str}__aroon_up")
+    ]
