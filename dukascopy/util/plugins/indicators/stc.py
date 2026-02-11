@@ -97,7 +97,7 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
     )
 
     return [
-        stc.round(2).alias(f"{indicator_str}__stc"),
+        stc.alias(f"{indicator_str}__stc"),
         direction.alias(f"{indicator_str}__direction")
     ]
 
@@ -134,7 +134,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     direction = np.where(stc > stc.shift(1), 1, -1)
 
     res = pd.DataFrame({
-        'stc': stc.round(2),
+        'stc': stc,
         'direction': direction
     }, index=df.index)
     
