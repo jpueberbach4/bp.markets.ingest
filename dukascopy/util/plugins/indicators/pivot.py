@@ -77,44 +77,9 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
     s2 = pp - diff
 
     return [
-        pp.round(5).alias(f"{indicator_str}__pp"),
-        r1.round(5).alias(f"{indicator_str}__r1"),
-        s1.round(5).alias(f"{indicator_str}__s1"),
-        r2.round(5).alias(f"{indicator_str}__r2"),
-        s2.round(5).alias(f"{indicator_str}__s2")
+        pp.alias(f"{indicator_str}__pp"),
+        r1.alias(f"{indicator_str}__r1"),
+        s1.alias(f"{indicator_str}__s1"),
+        r2.alias(f"{indicator_str}__r2"),
+        s2.alias(f"{indicator_str}__s2")
     ]
-
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
-    """
-    Legacy fallback for Pandas-only environments.
-    """
-    try:
-        period = int(options.get('lookback', 1))
-    except (ValueError, TypeError):
-        period = 1
-
-    try:
-        sample_price = str(df['close'].iloc[0])
-        precision = len(sample_price.split('.')[1])+1 if '.' in sample_price else 2
-    except (IndexError, AttributeError):
-        precision = 5
-
-    prev_h = df['high'].shift(1).rolling(window=period).max()
-    prev_l = df['low'].shift(1).rolling(window=period).min()
-    prev_c = df['close'].shift(1)
-
-    pp = (prev_h + prev_l + prev_c) / 3
-    r1 = (2 * pp) - prev_l
-    r2 = pp + (prev_h - prev_l)
-    s1 = (2 * pp) - prev_h
-    s2 = pp - (prev_h - prev_l)
-
-    res = pd.DataFrame({
-        'pp': pp.round(precision),
-        'r1': r1.round(precision),
-        's1': s1.round(precision),
-        'r2': r2.round(precision),
-        's2': s2.round(precision)
-    }, index=df.index)
-    
-    return res.dropna(subset=['pp'])
