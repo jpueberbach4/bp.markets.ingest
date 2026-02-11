@@ -18,6 +18,7 @@
   - Debugging & Profiling
   - TA-lib [generation](docs/talib-indicators.md)
   - Various examples
+  - Optimizing indicators with for-loops: [Numba](numba.md)
 - [Integration](docs/external.md)
   - Bootstrapping the API
   - Various examples
