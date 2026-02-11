@@ -1,7 +1,7 @@
 import numba
 import numpy as np
 
-@numba.jit(nopython=True, cache=True)
+@numba.jit(nopython=True, cache=True, nogil=True)
 def _volumeprofile_backend(highs, lows, closes, volumes, period, tick_size):
     n = len(closes)
     poc_arr = np.full(n, np.nan)

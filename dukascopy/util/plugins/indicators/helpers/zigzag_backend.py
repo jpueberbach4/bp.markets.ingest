@@ -1,7 +1,7 @@
 import numba
 import numpy as np
 
-@numba.jit(nopython=True, cache=True)
+@numba.jit(nopython=True, cache=True, nogil=True)
 def _zigzag_backend(highs: np.ndarray, lows: np.ndarray, dev_threshold: float) -> np.ndarray:
     n = len(highs)
     pivots = np.full(n, np.nan)

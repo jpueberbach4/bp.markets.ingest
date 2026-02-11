@@ -1,7 +1,7 @@
 import numba
 import numpy as np
 
-@numba.jit(nopython=True, cache=True)
+@numba.jit(nopython=True, cache=True, nogil=True)
 def _kalman_backend(values: np.ndarray, q_val: float, r_val: float) -> np.ndarray:
     size = len(values)
     xhat = np.zeros(size)
