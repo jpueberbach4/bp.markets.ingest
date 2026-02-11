@@ -2,12 +2,20 @@ import pandas as pd
 import numpy as np
 import polars as pl
 from typing import List, Dict, Any
+from functools import partial
+
+try:
+    import numba
+except ImportError:
+    raise ImportError("Numba is required. Run 'pip install numba' OR 'pip install -r requirements.txt'")
+
+from util.plugins.indicators.helpers.volumeprofile_backend import _volumeprofile_backend
 
 def description() -> str:
     return "Rolling Volume Profile: Calculates POC and Value Area (VAH/VAL) over a moving window."
 
 def meta() -> Dict:
-    return {"author": "Google Gemini", "version": 2.0, "panel": 0, "verified": 1, "polars": 0}
+    return {"author": "Google Gemini", "version": 2.0, "panel": 0, "verified": 1, "polars": 1}
 
 def warmup_count(options: Dict[str, Any]) -> int:
     return int(options.get('period', 100))
@@ -18,54 +26,37 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "ticks": args[1] if len(args) > 1 else "0.5"
     }
 
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+def _vp_map_wrapper(s: pl.Series, period: int, tick_size: float) -> pl.Series:
+    highs = s.struct.field("high").to_numpy()
+    lows = s.struct.field("low").to_numpy()
+    closes = s.struct.field("close").to_numpy()
+    volumes = s.struct.field("volume").to_numpy()
+    poc, vah, val = _volumeprofile_backend(highs, lows, closes, volumes, period, tick_size)
+    return pl.DataFrame({
+        "poc": poc,
+        "vah": vah,
+        "val": val
+    }).to_struct("vp_results")
+
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     p = int(options.get('period', 100))
-    tick_size = float(options.get('ticks', 0.5))
-    
-    n = len(df)
-    poc_arr = np.full(n, np.nan)
-    vah_arr = np.full(n, np.nan)
-    val_arr = np.full(n, np.nan)
-    
-    close = df['close'].values
-    volume = df['volume'].values
-    lows = df['low'].values
-    highs = df['high'].values
-    
-    for i in range(p, n):
-        w_close = close[i-p:i]
-        w_vol = volume[i-p:i]
-        min_p = np.min(lows[i-p:i])
-        max_p = np.max(highs[i-p:i])
-        
-        bins = np.arange(min_p, max_p + tick_size, tick_size)
-        if len(bins) < 2: continue # Not enough price variation
-            
-        hist, bin_edges = np.histogram(w_close, bins=bins, weights=w_vol)
-        
-        poc_idx = np.argmax(hist)
-        poc_arr[i] = bin_edges[poc_idx]
-        
-        total_vol = np.sum(hist)
-        target_vol = total_vol * 0.70
-        
-        sorted_indices = np.argsort(hist)[::-1]
-        
-        current_vol = 0
-        va_prices = []
-        
-        for idx in sorted_indices:
-            current_vol += hist[idx]
-            va_prices.append(bin_edges[idx])
-            if current_vol >= target_vol:
-                break
-        
-        if va_prices:
-            vah_arr[i] = np.max(va_prices)
-            val_arr[i] = np.min(va_prices)
-            
-    return pd.DataFrame({
-        'poc': poc_arr,
-        'vah': vah_arr,
-        'val': val_arr
-    }, index=df.index)
+    t = float(options.get('ticks', 0.5))
+
+    mapper = partial(_vp_map_wrapper, period=p, tick_size=t)
+
+    vp_schema = pl.Struct([
+        pl.Field("poc", pl.Float64),
+        pl.Field("vah", pl.Float64),
+        pl.Field("val", pl.Float64),
+    ])
+
+    vp_base = (
+        pl.struct(["high", "low", "close", "volume"])
+        .map_batches(mapper, return_dtype=vp_schema)
+    )
+
+    return [
+        vp_base.struct.field("poc").alias(f"{indicator_str}__poc"),
+        vp_base.struct.field("vah").alias(f"{indicator_str}__vah"),
+        vp_base.struct.field("val").alias(f"{indicator_str}__val"),
+    ]
