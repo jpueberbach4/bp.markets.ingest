@@ -78,9 +78,9 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
     lower = mid - (multiplier * atr)
 
     return [
-        upper.round(5).alias(f"{indicator_str}__upper"),
-        mid.round(5).alias(f"{indicator_str}__mid"),
-        lower.round(5).alias(f"{indicator_str}__lower")
+        upper.alias(f"{indicator_str}__upper"),
+        mid.alias(f"{indicator_str}__mid"),
+        lower.alias(f"{indicator_str}__lower")
     ]
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
