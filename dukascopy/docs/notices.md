@@ -1,6 +1,11 @@
 Market research- and analysis tool, feature-engineering, but you can do so much more with it, if you are a bit "handy".
 
-Tomorrow is another massive-sprint day. I will have a go at panama.
+Tomorrow is another massive-sprint day. I will have a go at panama. Panama and stock split are nothing more than applying an (optionally aggregated) correctional value to prices for a range of timestamps, either being a `-`, `+`, `*` or a `/`.
+
+- `-` subtract (e.g. cash dividend adjustment)
+- `+` add (rare, e.g. some special distributions)
+- `*` multiply (stock split ratio, reverse split)
+- `/` divide (rare, e.g. some spin-off value adjustments)
 
 ## **Notice: Numba JIT optimizations**
 
