@@ -1,7 +1,14 @@
-import pandas as pd
 import numpy as np
 import polars as pl
 from typing import List, Dict, Any
+from functools import partial
+
+try:
+    import numba
+except ImportError:
+    raise ImportError("Numba is required. Run 'pip install numba' OR 'pip install -r requirements.txt'")
+
+from util.plugins.indicators.helpers.shannonentropy_backend import _shannonentropy_backend
 
 def description() -> str:
     """
@@ -25,8 +32,7 @@ def meta() -> Dict:
         "version": 1.3,
         "panel": 1,
         "verified": 1,
-        "polars": 0,
-        "polars_input": 1 
+        "polars": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -49,53 +55,30 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "bins": args[1] if len(args) > 1 else "10"
     }
 
-def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
-    """
-    High-performance Shannon Entropy implementation for polars_input: 1.
-    Utilizes Numpy sliding window views to vectorize the returns and probability distribution.
-    """
-    try:
-        period = int(options.get('period', 20))
-        bins_count = int(options.get('bins', 10))
-    except (ValueError, TypeError):
-        period, bins_count = 20, 10
-
-    n = len(df)
-    entropy_arr = np.full(n, np.nan)
-    efficiency_arr = np.full(n, np.nan)
-
-    if n < period:
-        return pl.DataFrame({
-            "entropy": entropy_arr,
-            "efficiency": efficiency_arr
-        })
-
-    close_v = df["close"].to_numpy()
-    returns_v = np.diff(close_v) 
+def _entropy_map_wrapper(s: pl.Series, period: int, bins: int) -> pl.Series:
+    close_v = s.to_numpy()
     
-    ret_window_size = period - 1
+    ent, eff = _shannonentropy_backend(close_v, period, bins)
     
-    ret_windows = np.lib.stride_tricks.sliding_window_view(returns_v, window_shape=ret_window_size)
-    
-    max_entropy = np.log2(bins_count) if bins_count > 0 else 1.0
-
-    for i, w_ret in enumerate(ret_windows):
-        counts, _ = np.histogram(w_ret, bins=bins_count)
-        
-        probs = counts / ret_window_size
-        probs = probs[probs > 0] # Shannon Entropy ignores zero probabilities
-        
-        entropy = -np.sum(probs * np.log2(probs))
-        efficiency = 1.0 - (entropy / max_entropy) if max_entropy > 0 else 1.0
-        
-        idx = i + period - 1
-        entropy_arr[idx] = entropy
-        efficiency_arr[idx] = np.clip(efficiency, 0, 1)
-
     return pl.DataFrame({
-        "entropy": entropy_arr,
-        "efficiency": efficiency_arr
-    }).with_columns([
-        pl.col("entropy").round(4),
-        pl.col("efficiency").round(4)
+        "entropy": ent,
+        "efficiency": eff
+    }).to_struct("entropy_results")
+
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
+    p = int(options.get('period', 20))
+    b = int(options.get('bins', 10))
+
+    mapper = partial(_entropy_map_wrapper, period=p, bins=b)
+
+    entropy_schema = pl.Struct([
+        pl.Field("entropy", pl.Float64),
+        pl.Field("efficiency", pl.Float64),
     ])
+
+    base = pl.col("close").map_batches(mapper, return_dtype=entropy_schema)
+
+    return [
+        base.struct.field("entropy").round(4).alias(f"{indicator_str}__entropy"),
+        base.struct.field("efficiency").round(4).alias(f"{indicator_str}__efficiency"),
+    ]
