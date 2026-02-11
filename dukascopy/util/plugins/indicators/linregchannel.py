@@ -2,6 +2,14 @@ import pandas as pd
 import numpy as np
 import polars as pl
 from typing import List, Dict, Any
+from functools import partial
+
+try:
+    import numba
+except ImportError:
+    raise ImportError("Numba is required. Run 'pip install numba' OR 'pip install -r requirements.txt'")
+
+from util.plugins.indicators.helpers.linregchannel_backend import _linregchannel_backend
 
 def description() -> str:
     """
@@ -24,8 +32,7 @@ def meta() -> Dict:
         "author": "Google Gemini",
         "version": 1.1,
         "verified": 1,
-        "polars": 0,
-        "polars_input": 1
+        "polars": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -46,53 +53,30 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "period": args[0] if len(args) > 0 else "50"
     }
 
-def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
-    """
-    High-performance Linear Regression Channel for polars_input: 1.
-    Vectorizes slope, intercept, and max-deviation width across 1M rows.
-    """
-    try:
-        period = int(options.get('period', 50))
-    except (ValueError, TypeError):
-        period = 50
-
-    if len(df) < period:
-        return pl.DataFrame({
-            "lin_mid": [None] * len(df),
-            "lin_upper": [None] * len(df),
-            "lin_lower": [None] * len(df)
-        }).with_columns([pl.all().cast(pl.Float64)])
-
-    y = df["close"].to_numpy()
-    windows = np.lib.stride_tricks.sliding_window_view(y, window_shape=period)
+def _linregchannel_map_wrapper(s: pl.Series, period: int) -> pl.Series:
+    y = s.to_numpy()
+    mid, upper, lower = _linregchannel_backend(y, period)
     
-    x = np.arange(period)
-    x_mean = np.mean(x)
-    y_means = np.mean(windows, axis=1)[:, np.newaxis]
-    
-    x_diff = x - x_mean
-    numerator = np.sum(x_diff * (windows - y_means), axis=1)
-    denominator = np.sum(x_diff**2)
-    slopes = numerator / denominator
-    
-    intercepts = y_means.flatten() - slopes * x_mean
-    
-    mid_points = slopes * (period - 1) + intercepts
-    
-    full_lines = slopes[:, np.newaxis] * x + intercepts[:, np.newaxis]
-    widths = np.max(np.abs(windows - full_lines), axis=1)
-
-    padding = np.full(period - 1, np.nan)
-    
-    lin_mid = np.concatenate([padding, mid_points])
-    width_v = np.concatenate([padding, widths])
-    
-    lin_upper = lin_mid + width_v
-    lin_lower = lin_mid - width_v
-
-    # 6. Return as Polars DataFrame
     return pl.DataFrame({
-        "lin_mid": lin_mid,
-        "lin_upper": lin_upper,
-        "lin_lower": lin_lower
-    })
+        "lin_mid": mid,
+        "lin_upper": upper,
+        "lin_lower": lower
+    }).to_struct("lrc_results")
+
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
+    p = int(options.get('period', 50))
+    mapper = partial(_linregchannel_map_wrapper, period=p)
+
+    lrc_schema = pl.Struct([
+        pl.Field("lin_mid", pl.Float64),
+        pl.Field("lin_upper", pl.Float64),
+        pl.Field("lin_lower", pl.Float64),
+    ])
+
+    lrc_base = pl.col("close").map_batches(mapper, return_dtype=lrc_schema)
+
+    return [
+        lrc_base.struct.field("lin_mid").alias(f"{indicator_str}__mid"),
+        lrc_base.struct.field("lin_upper").alias(f"{indicator_str}__upper"),
+        lrc_base.struct.field("lin_lower").alias(f"{indicator_str}__lower")
+    ]
