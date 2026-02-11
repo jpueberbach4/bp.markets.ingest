@@ -1,6 +1,6 @@
 Market research- and analysis tool, feature-engineering, but you can do so much more with it, if you are a bit "handy".
 
-## **Notice**
+## **Notice: Numba JIT optimizations**
 
 Impressive performance optimizations on shannonentropy, marketprofile, volumeprofile and psar using numba JIT. Really impressive. See [here](numba.md) on how to optimize indicators that contain for-loops.
 
@@ -10,6 +10,8 @@ Impressive performance optimizations on shannonentropy, marketprofile, volumepro
 ✅ OK    | shannonentropy            |       3.72 | Polars Expr     | util | Previous: 900ms+
 ⚠️ SLOW  | volumeprofile             |      31.58 | Polars Expr     | util | Previous: 500ms+
 ```
+
+Note: you will need to install numba dependency: `pip install -r requirements.txt`
 
 ## **Next**
 
