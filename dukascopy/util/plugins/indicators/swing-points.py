@@ -1,6 +1,15 @@
 import polars as pl
 import numpy as np
 from typing import Dict, Any, List
+from functools import partial
+
+try:
+    import numba
+except ImportError:
+    raise ImportError("Numba is required. Run 'pip install numba' OR 'pip install -r requirements.txt'")
+
+from util.plugins.indicators.helpers.swingpoints_backend import _swingpoints_backend
+
 
 def description() -> str:
     return (
@@ -13,10 +22,9 @@ def meta() -> Dict:
     return {
         "author": "Google Gemini",
         "version": 1.0,
-        "panel": 0,           # Overlay
+        "panel": 0,
         "verified": 1,
-        "polars": 0,
-        "polars_input": 1
+        "polars": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -37,52 +45,40 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "right": args[1] if len(args) > 1 else "2"
     }
 
-def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
+def _swingpoints_map_wrapper(s: pl.Series, left: int, right: int) -> pl.Series:
     """
-    Vectorized Swing Point detection using Numpy sliding windows.
+    Wrapper to extract buffers and return a Polars Struct.
     """
-    try:
-        left = int(options.get('left', 2))
-        right = int(options.get('right', 2))
-    except (ValueError, TypeError):
-        left, right = 2, 2
-
-    window_size = left + right + 1
-    n = len(df)
+    highs = s.struct.field("high").to_numpy()
+    lows = s.struct.field("low").to_numpy()
     
-    swing_highs = np.full(n, np.nan)
-    swing_lows = np.full(n, np.nan)
-
-    if n < window_size:
-        return pl.DataFrame({
-            "swing_high": swing_highs, 
-            "swing_low": swing_lows
-        })
-
-    highs = df['high'].to_numpy()
-    lows = df['low'].to_numpy()
-
-    high_windows = np.lib.stride_tricks.sliding_window_view(highs, window_shape=window_size)
-    low_windows = np.lib.stride_tricks.sliding_window_view(lows, window_shape=window_size)
-
-    center_idx = left  # e.g., index 2 in a size 5 window
-        
-    center_highs = high_windows[:, center_idx]
-    center_lows = low_windows[:, center_idx]
+    sh, sl = _swingpoints_backend(highs, lows, left, right)
     
-    window_max = np.max(high_windows, axis=1)
-    window_min = np.min(low_windows, axis=1)
-    
-    is_swing_high = (center_highs == window_max)
-    is_swing_low = (center_lows == window_min)
-    
-    high_indices = np.where(is_swing_high)[0]
-    low_indices = np.where(is_swing_low)[0]
-    
-    swing_highs[high_indices + center_idx] = center_highs[high_indices]
-    swing_lows[low_indices + center_idx] = center_lows[low_indices]
-
     return pl.DataFrame({
-        "swing_high": swing_highs,
-        "swing_low": swing_lows
-    })
+        "swing_high": sh,
+        "swing_low": sl
+    }).to_struct("swing_results")
+
+def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
+    """
+    High-performance Pivot/Swing Point detection for Polars.
+    """
+    l = int(options.get('left', 2))
+    r = int(options.get('right', 2))
+
+    mapper = partial(_swingpoints_map_wrapper, left=l, right=r)
+
+    swing_schema = pl.Struct([
+        pl.Field("swing_high", pl.Float64),
+        pl.Field("swing_low", pl.Float64),
+    ])
+
+    swing_base = (
+        pl.struct(["high", "low"])
+        .map_batches(mapper, return_dtype=swing_schema)
+    )
+
+    return [
+        swing_base.struct.field("swing_high").alias(f"{indicator_str}__high"),
+        swing_base.struct.field("swing_low").alias(f"{indicator_str}__low")
+    ]
