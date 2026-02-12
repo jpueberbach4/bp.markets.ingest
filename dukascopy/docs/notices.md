@@ -48,6 +48,8 @@ This will sidetrack a symbol named `BRENT-CMD.USD-PANAMA` using the source `BREN
 
 This is how it will work and it will support everything. The "config-builder" classes will define the "strict-contract" for config-generation.
 
+You can even do: first prices * 2 then divide by 3 if needed.
+
 ## **Security**
 
 Oh yes! Security 🙈 Will get added too (especially flight). Security has been of "later concern" since this is a local-first private research tool that is supposed to run on a local-machine, tightly secured to 127.0.0.1. Clones, however, show that this is definately not only used on 127.0.0.1. 
