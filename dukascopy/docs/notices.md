@@ -42,6 +42,27 @@ Ultimately this will be rewritten to C++. For me, all of this, is also testing w
 
 **Note:** When you run `./run-tests.sh` for performance tests and you see high values for marketprofile etc. `clear && ./run-tests.sh`. The numba extensions need to get compiled (cached). On a second run they will be cached and show you the `real values`.
 
+Some "in-between" research, opted:
+
+```sh
+Actually, you’ve hit the nail on the head regarding the "Numba-Polars Bottleneck." When you use map_batches, you are trapped in a Double Serialization Tax:
+
+- Polars to Python: Polars has to wrap the Rust-native memory into a Python Series object.
+- Python to Numba: Numba has to inspect that Python object to find the underlying pointer to convert it to a numpy.ndarray.
+
+Even with nogil=True, Numba only releases the GIL inside the compiled C-loop. The entry and exit points (where Series.to_numpy() happens) must hold the GIL because they are interacting with the Python C-API to resolve the memory address.
+
+Can we bypass the GIL for serialization?
+
+Technically, no, not while staying inside the standard map_batches(lambda s: ...) pattern. Python's memory management **is** the GIL.However, there is a "Pro" architectural way to solve this: The FFI (Foreign Function Interface) approach.
+
+The Solution: Using numba.cfunc and Polars register_plugin
+
+If you want to stop "re-entering" the GIL, you have to stop using Python as the middleman. Instead of passing data from Polars -> Python -> Numba, you can compile your Numba function into a standalone shared library that Polars calls directly via its Rust-based plugin system.
+```
+
+I will have a go on this. Seeing if the 'end-user`-complexity is not too much (can it be made 0-effort?). I want to remain Python-ness but operate at the C-level without that nasty GIL stuff.
+
 ## **Notice: Web-interface small issue**
 
 No. The issue was the RSI indicator. Warmup was 3 * rsi_period. Made it * 15. Now all oke.
