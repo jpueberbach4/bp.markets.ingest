@@ -177,22 +177,39 @@ class TransformEngine:
 
             # Get symbol specific configuration
             sym_cfg = self.config.symbols.get(symbol) if self.config.symbols else None
+
+            # Performance optimization to tackle the O(NxM) problem below:
+            active_steps = []
             
-            # Determine post-processing steps
-            steps = []
+            # Convert boundaries to ISO strings ONCE per file
+            # Adding 1 day padding to handle N-hour timestamp shifts
+            fmt = "%Y-%m-%d %H:%M:%S"
+            s_start_str = (pd.Timestamp(self.dt) - pd.Timedelta(days=1)).strftime(fmt)
+            s_end_str = (pd.Timestamp(self.dt) + pd.Timedelta(days=2)).strftime(fmt)
+
             if sym_cfg and sym_cfg.post:
-                # Convert dicts to Dataclasses if they aren't already
-                steps = [
-                    TransformSymbolProcessingStep(**s) if isinstance(s, dict) else s 
-                    for s in sym_cfg.post.values()
-                ]
+                for s in sym_cfg.post.values():
+                    # Get raw strings from dict
+                    f_date_str = s.get('from_date')
+                    t_date_str = s.get('to_date')
 
-            # Inject the validation step dynamically if the flag is enabled
+                    # STRING-ONLY COMPARISON = Zero-allocation / O(1) overhead
+                    # Skip if rule ends before our window or starts after our window
+                    if t_date_str and t_date_str < s_start_str:
+                        continue
+                    if f_date_str and f_date_str > s_end_str:
+                        continue
+
+                    # Now pay the cost of object creation
+                    step = TransformSymbolProcessingStep(**s) if isinstance(s, dict) else s
+                    active_steps.append(step)
+
+            # If user specified validate=true in config file
             if self.config.validate:
-                steps.append(TransformSymbolProcessingStep(action="validate"))
+                active_steps.append(TransformSymbolProcessingStep(action="validate"))
 
-            # Apply post-processing
-            for step in steps:
+            # Execute active steps
+            for step in active_steps:
                 full_transformed = self._apply_post_processing(full_transformed, step)
 
             del times, opens, highs, lows, closes, volumes
