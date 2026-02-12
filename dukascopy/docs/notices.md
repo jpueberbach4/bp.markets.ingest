@@ -60,7 +60,9 @@ You can even do: first prices * 2 then divide by 3 if needed. When resample is b
 
 Some may argue that this is not only a panama, corporate actions update but actually a derivatives engine update.
 
-**Update:** I have a first working implementation. Works great. Aggregation, resampling, everything works out of the box on this sidetracked data. I decided to launch this Saturday, to give me a tiny bit more time to make the interfaces optimal. See below screenshots, how much difference panama-adjusted data is:
+**Update:** I have a first working implementation. Works great. Aggregation, resampling, everything works out of the box on this sidetracked data. Also the "live-appends" are working properly. 
+
+I decided to launch this Saturday, to give me a tiny bit more time to make the interfaces optimal. See below screenshots, how much difference panama-adjusted data is:
 
 Before:
 
