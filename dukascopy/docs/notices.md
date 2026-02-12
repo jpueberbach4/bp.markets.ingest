@@ -1,5 +1,11 @@
 Market research- and analysis tool, feature-engineering, but you can do so much more with it, if you are a bit "handy".
 
+## **Very cool tip**
+
+For the coders under us. I just discovered something cool with AI. Just push your code in and say: annotate the code and mention complexity O(1), O(log N) and O(NxM) where applicable. It exactly pinpoints bottlenecks. It amazed me how helpful that actually is.
+
+## **Panama and stocksplit**
+
 Tomorrow is another massive-sprint day. I will have a go at panama. Panama and stock split are nothing more than applying an (optionally aggregated) correctional value to prices for a range of timestamps, either being a `-`, `+`, `*` or a `/`.
 
 - `-` subtract (e.g. cash dividend adjustment)
