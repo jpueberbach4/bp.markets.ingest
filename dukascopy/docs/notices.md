@@ -12,9 +12,9 @@ Expect it to be done tomorrow and to land Friday or latest Saturday.
 
 ## **Conversion pass to numba + polars expressions**
 
-Numba has enabled us to move almost all indicators to pure Polars expressions. 
+Numba has enabled us to move almost all indicators to pure Polars expressions. We still use map_batches. I am back to the drawing board for some indicators. Perhaps some will need to fallback to the TA-lib ones. These have 20 years of C-optimizations. I wasnt able to break the speed-records of TA-lib with Pure Polars, Numba etc. Meaning that I will check that documentation on TA-lib i wrote soon to make TA-lib 0.6.x more easily installable. 
 
-But. I will stop fighting the GIL for now. It's feature day. I will test soon with 3.14t. 
+I will stop fighting the GIL for now. It's feature day. I will test soon with 3.14t. 
 
 ## **Notice: Web-interface small issue**
 
