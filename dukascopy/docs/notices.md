@@ -15,7 +15,7 @@ Then, when:
 
 The last candle is considered **OPEN**, `is-open = TRUE`
 
-Also, this means that when no data has arrived for some time, the candle will be closed after the time-span of the candle has passed.
+Also, this means that when no data has arrived for some time on the selected asset, while data is flowing for BTC-USD, the selected last candle will be closed after the time-span of that candle has passed.
 
 There will be two additional indicators:
 
