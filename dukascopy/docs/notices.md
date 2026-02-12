@@ -7,7 +7,7 @@ There was a nasty bug in is-open. Because it is such an important feature, here 
 - let global_now_ms be the time_ms of the last 1m BTC-USD candle
 - let tf be the currently selected timeframe (eg 4h)
 - let tf_lengths be a dictionary that maps a tf to its length in ms (eg 1h = 3600000)
-- let last_ms be the timestamp of the last candle of the currently selected asset and symbol
+- let last_ms be the timestamp of the last candle of the currently selected asset and timeframe
 
 Then, when:
 
