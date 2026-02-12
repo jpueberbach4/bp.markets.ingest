@@ -91,13 +91,13 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         ldf_1m = future_asset.result()
 
     # Latest timestamp from BTC-USD (global clock)
-    global_now_ms = heartbeat_df["time_ms"].max()
+    global_now_ms = heartbeat_df["time_ms"][0]
 
     # Latest timestamp from the asset being analyzed
-    last_ms = ldf_1m["time_ms"].max()
+    last_ms = ldf_1m["time_ms"][0]
 
-    # If the asset hasn’t traded for more than 2 hours, consider the market closed
-    HEARTBEAT_THRESHOLD = 7200000  # milliseconds = 2 hours
+    # If the assets last 1m is off from the heartbeat by this much, consider candle closed
+    HEARTBEAT_THRESHOLD = 60000 * 2
     is_market_closed = (global_now_ms - last_ms) > HEARTBEAT_THRESHOLD
 
     if tf in ["1M", "1Y"]:
@@ -143,7 +143,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         }
 
         # Compute the boundary timestamp for the current candle
-        mark_ms = last_ms - tf_lengths.get(tf, 0)
+        mark_ms = global_now_ms - tf_lengths.get(tf, 0)
 
     is_open_expr = (pl.col("time_ms") >= mark_ms).cast(pl.Int8).alias("is_open")
 
