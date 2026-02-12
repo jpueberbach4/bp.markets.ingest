@@ -48,7 +48,7 @@ This will sidetrack a symbol named `BRENT-CMD.USD-PANAMA` using the source `BREN
 
 This is how it will work and it will support everything. The "config-builder" classes will define the "strict-contract" for config-generation.
 
-You can even do: first prices * 2 then divide by 3 if needed. When resample is being rewritten, resample will also support post-processing to pre-generate indicators, so they don't have to be calculated at query-time and just can be pulled. 
+You can even do: first prices * 2 then divide by 3 if needed. When resample is being rewritten, resample will also support post-processing to pre-generate indicators, so they don't have to be calculated at query-time and just can be pulled. This will give back the 15-30 million records/sec performance.
 
 Some may argue that this is not only a panama, corporate actions update but actually a derivatives engine update.
 
