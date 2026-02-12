@@ -1,5 +1,27 @@
 Market research- and analysis tool, feature-engineering, but you can do so much more with it, if you are a bit "handy".
 
+## **Change in is-open**
+
+There was a nasty bug in is-open. Because it is such an important feature, here is how it (now) works:
+
+- let global_now_ms be the time_ms of the last 1m BTC-USD candle
+- let tf be the currently selected timeframe (eg 4h)
+- let tf_lengths be a dictionary that maps a tf to its length in ms (eg 1h = 3600000)
+- let last_ms be the timestamp of the last candle of the currently selected asset and symbol
+
+Then, when:
+
+**last_ms >= ( global_now_ms - tf_lengths.get(tf, 0))**
+
+The last candle is considered **OPEN**, `is-open = TRUE`
+
+Also, this means that when no data has arrived for some time, the candle will be closed after the time-span of the candle has passed.
+
+There will be two additional indicators:
+
+- drift: will output how many minutes the 1m candle of the selected asset has drifted from the last 1m BTC-USD candle
+- is-stale(tolerance): will output if a market did not receive any data for the number of minutes specified by tolerance, relative to laptop-time.
+
 ## **Very cool tip**
 
 For the coders under us. I just discovered something cool with AI. Just push your code in and say: annotate the code and mention complexity O(1), O(log N) and O(NxM) where applicable. It exactly pinpoints bottlenecks. It amazed me how helpful that actually is.
