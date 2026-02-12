@@ -13,3 +13,811 @@
 #      action: multiply
 #      column: volume
 #      value: 34484
+
+BRENT-CMD.USD-PANAMA:
+  source: BRENT-CMD.USD
+  post:
+    panama-roll-001:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 37.081000
+      from_date: "2010-01-01 00:00:00"
+      to_date: "2014-12-15 23:59:59"
+    panama-roll-002:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 37.361000
+      from_date: "2014-12-16 00:00:00"
+      to_date: "2015-01-14 23:59:59"
+    panama-roll-003:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 38.421000
+      from_date: "2015-01-15 00:00:00"
+      to_date: "2015-02-11 23:59:59"
+    panama-roll-004:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 39.641000
+      from_date: "2015-02-12 00:00:00"
+      to_date: "2015-03-13 23:59:59"
+    panama-roll-005:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 39.811000
+      from_date: "2015-03-14 00:00:00"
+      to_date: "2015-04-14 23:59:59"
+    panama-roll-006:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 41.061000
+      from_date: "2015-04-15 00:00:00"
+      to_date: "2015-05-13 23:59:59"
+    panama-roll-007:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 41.561000
+      from_date: "2015-05-14 00:00:00"
+      to_date: "2015-06-12 23:59:59"
+    panama-roll-008:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 42.291000
+      from_date: "2015-06-13 00:00:00"
+      to_date: "2015-07-15 23:59:59"
+    panama-roll-009:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 42.501000
+      from_date: "2015-07-16 00:00:00"
+      to_date: "2015-08-13 23:59:59"
+    panama-roll-010:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 42.961000
+      from_date: "2015-08-14 00:00:00"
+      to_date: "2015-09-14 23:59:59"
+    panama-roll-011:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 43.921000
+      from_date: "2015-09-15 00:00:00"
+      to_date: "2015-10-14 23:59:59"
+    panama-roll-012:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 44.421000
+      from_date: "2015-10-15 00:00:00"
+      to_date: "2015-11-12 23:59:59"
+    panama-roll-013:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 45.371000
+      from_date: "2015-11-13 00:00:00"
+      to_date: "2015-12-15 23:59:59"
+    panama-roll-014:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 45.631000
+      from_date: "2015-12-16 00:00:00"
+      to_date: "2016-01-13 23:59:59"
+    panama-roll-015:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 45.551000
+      from_date: "2016-01-14 00:00:00"
+      to_date: "2016-01-28 23:59:59"
+    panama-roll-016:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 46.471000
+      from_date: "2016-01-29 00:00:00"
+      to_date: "2016-02-26 23:59:59"
+    panama-roll-017:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 46.771000
+      from_date: "2016-02-27 00:00:00"
+      to_date: "2016-03-30 23:59:59"
+    panama-roll-018:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 47.521000
+      from_date: "2016-03-31 00:00:00"
+      to_date: "2016-04-28 23:59:59"
+    panama-roll-019:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 47.291000
+      from_date: "2016-04-29 00:00:00"
+      to_date: "2016-05-30 23:59:59"
+    panama-roll-020:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 47.881000
+      from_date: "2016-05-31 00:00:00"
+      to_date: "2016-06-29 23:59:59"
+    panama-roll-021:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 48.651000
+      from_date: "2016-06-30 00:00:00"
+      to_date: "2016-07-28 23:59:59"
+    panama-roll-022:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 49.261000
+      from_date: "2016-07-29 00:00:00"
+      to_date: "2016-08-30 23:59:59"
+    panama-roll-023:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 49.391000
+      from_date: "2016-08-31 00:00:00"
+      to_date: "2016-09-29 23:59:59"
+    panama-roll-024:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 50.001000
+      from_date: "2016-09-30 00:00:00"
+      to_date: "2016-10-28 23:59:59"
+    panama-roll-025:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 51.121000
+      from_date: "2016-10-29 00:00:00"
+      to_date: "2016-11-29 23:59:59"
+    panama-roll-026:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 52.071000
+      from_date: "2016-11-30 00:00:00"
+      to_date: "2016-12-28 23:59:59"
+    panama-roll-027:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 52.791000
+      from_date: "2016-12-29 00:00:00"
+      to_date: "2017-01-30 23:59:59"
+    panama-roll-028:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 52.961000
+      from_date: "2017-01-31 00:00:00"
+      to_date: "2017-02-27 23:59:59"
+    panama-roll-029:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 53.331000
+      from_date: "2017-02-28 00:00:00"
+      to_date: "2017-03-30 23:59:59"
+    panama-roll-030:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 53.561000
+      from_date: "2017-03-31 00:00:00"
+      to_date: "2017-04-27 23:59:59"
+    panama-roll-031:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 54.141000
+      from_date: "2017-04-28 00:00:00"
+      to_date: "2017-05-30 23:59:59"
+    panama-roll-032:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 54.551000
+      from_date: "2017-05-31 00:00:00"
+      to_date: "2017-06-29 23:59:59"
+    panama-roll-033:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 54.821000
+      from_date: "2017-06-30 00:00:00"
+      to_date: "2017-07-28 23:59:59"
+    panama-roll-034:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 54.701000
+      from_date: "2017-07-29 00:00:00"
+      to_date: "2017-08-30 23:59:59"
+    panama-roll-035:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 54.551000
+      from_date: "2017-08-31 00:00:00"
+      to_date: "2017-09-28 23:59:59"
+    panama-roll-036:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 54.181000
+      from_date: "2017-09-29 00:00:00"
+      to_date: "2017-10-30 23:59:59"
+    panama-roll-037:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 53.911000
+      from_date: "2017-10-31 00:00:00"
+      to_date: "2017-11-29 23:59:59"
+    panama-roll-038:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 53.481000
+      from_date: "2017-11-30 00:00:00"
+      to_date: "2017-12-27 23:59:59"
+    panama-roll-039:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 52.931000
+      from_date: "2017-12-28 00:00:00"
+      to_date: "2018-01-30 23:59:59"
+    panama-roll-040:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 52.601000
+      from_date: "2018-01-31 00:00:00"
+      to_date: "2018-02-27 23:59:59"
+    panama-roll-041:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 52.431000
+      from_date: "2018-02-28 00:00:00"
+      to_date: "2018-03-28 23:59:59"
+    panama-roll-042:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 51.731000
+      from_date: "2018-03-29 00:00:00"
+      to_date: "2018-04-27 23:59:59"
+    panama-roll-043:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 50.851000
+      from_date: "2018-04-28 00:00:00"
+      to_date: "2018-05-30 23:59:59"
+    panama-roll-044:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 50.951000
+      from_date: "2018-05-31 00:00:00"
+      to_date: "2018-06-28 23:59:59"
+    panama-roll-045:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 50.771000
+      from_date: "2018-06-29 00:00:00"
+      to_date: "2018-07-30 23:59:59"
+    panama-roll-046:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 51.261000
+      from_date: "2018-07-31 00:00:00"
+      to_date: "2018-08-30 23:59:59"
+    panama-roll-047:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 51.571000
+      from_date: "2018-08-31 00:00:00"
+      to_date: "2018-09-27 23:59:59"
+    panama-roll-048:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 51.111000
+      from_date: "2018-09-28 00:00:00"
+      to_date: "2018-10-30 23:59:59"
+    panama-roll-049:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 51.271000
+      from_date: "2018-10-31 00:00:00"
+      to_date: "2018-11-29 23:59:59"
+    panama-roll-050:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 51.601000
+      from_date: "2018-11-30 00:00:00"
+      to_date: "2018-12-27 23:59:59"
+    panama-roll-051:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 52.031000
+      from_date: "2018-12-28 00:00:00"
+      to_date: "2019-01-30 23:59:59"
+    panama-roll-052:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 51.941000
+      from_date: "2019-01-31 00:00:00"
+      to_date: "2019-02-27 23:59:59"
+    panama-roll-053:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 52.111000
+      from_date: "2019-02-28 00:00:00"
+      to_date: "2019-03-28 23:59:59"
+    panama-roll-054:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 51.531000
+      from_date: "2019-03-29 00:00:00"
+      to_date: "2019-04-29 23:59:59"
+    panama-roll-055:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 51.041000
+      from_date: "2019-04-30 00:00:00"
+      to_date: "2019-05-30 23:59:59"
+    panama-roll-056:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 49.571000
+      from_date: "2019-05-31 00:00:00"
+      to_date: "2019-06-27 23:59:59"
+    panama-roll-057:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 48.801000
+      from_date: "2019-06-28 00:00:00"
+      to_date: "2019-07-30 23:59:59"
+    panama-roll-058:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 48.701000
+      from_date: "2019-07-31 00:00:00"
+      to_date: "2019-08-29 23:59:59"
+    panama-roll-059:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 48.221000
+      from_date: "2019-08-30 00:00:00"
+      to_date: "2019-09-27 23:59:59"
+    panama-roll-060:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 47.281000
+      from_date: "2019-09-28 00:00:00"
+      to_date: "2019-10-30 23:59:59"
+    panama-roll-061:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 46.901000
+      from_date: "2019-10-31 00:00:00"
+      to_date: "2019-11-27 23:59:59"
+    panama-roll-062:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 45.891000
+      from_date: "2019-11-28 00:00:00"
+      to_date: "2019-12-27 23:59:59"
+    panama-roll-063:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 44.731000
+      from_date: "2019-12-28 00:00:00"
+      to_date: "2020-01-29 23:59:59"
+    panama-roll-064:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 43.951000
+      from_date: "2020-01-30 00:00:00"
+      to_date: "2020-02-26 23:59:59"
+    panama-roll-065:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 43.361000
+      from_date: "2020-02-27 00:00:00"
+      to_date: "2020-03-27 23:59:59"
+    panama-roll-066:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 46.231000
+      from_date: "2020-03-28 00:00:00"
+      to_date: "2020-04-28 23:59:59"
+    panama-roll-067:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 48.781000
+      from_date: "2020-04-29 00:00:00"
+      to_date: "2020-05-27 23:59:59"
+    panama-roll-068:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 49.451000
+      from_date: "2020-05-28 00:00:00"
+      to_date: "2020-06-26 23:59:59"
+    panama-roll-069:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 49.491000
+      from_date: "2020-06-27 00:00:00"
+      to_date: "2020-07-29 23:59:59"
+    panama-roll-070:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 49.871000
+      from_date: "2020-07-30 00:00:00"
+      to_date: "2020-08-26 23:59:59"
+    panama-roll-071:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 50.361000
+      from_date: "2020-08-27 00:00:00"
+      to_date: "2020-09-25 23:59:59"
+    panama-roll-072:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 50.861000
+      from_date: "2020-09-26 00:00:00"
+      to_date: "2020-10-27 23:59:59"
+    panama-roll-073:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 51.261000
+      from_date: "2020-10-28 00:00:00"
+      to_date: "2020-11-24 23:59:59"
+    panama-roll-074:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 51.261000
+      from_date: "2020-11-25 00:00:00"
+      to_date: "2020-12-23 23:59:59"
+    panama-roll-075:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 51.311000
+      from_date: "2020-12-24 00:00:00"
+      to_date: "2021-01-26 23:59:59"
+    panama-roll-076:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 51.061000
+      from_date: "2021-01-27 00:00:00"
+      to_date: "2021-02-23 23:59:59"
+    panama-roll-077:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 50.191000
+      from_date: "2021-02-24 00:00:00"
+      to_date: "2021-03-26 23:59:59"
+    panama-roll-078:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 50.101000
+      from_date: "2021-03-27 00:00:00"
+      to_date: "2021-04-27 23:59:59"
+    panama-roll-079:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 49.571000
+      from_date: "2021-04-28 00:00:00"
+      to_date: "2021-05-25 23:59:59"
+    panama-roll-080:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 49.491000
+      from_date: "2021-05-26 00:00:00"
+      to_date: "2021-06-25 23:59:59"
+    panama-roll-081:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 48.721000
+      from_date: "2021-06-26 00:00:00"
+      to_date: "2021-07-27 23:59:59"
+    panama-roll-082:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 47.881000
+      from_date: "2021-07-28 00:00:00"
+      to_date: "2021-08-27 23:59:59"
+    panama-roll-083:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 46.971000
+      from_date: "2021-08-28 00:00:00"
+      to_date: "2021-09-27 23:59:59"
+    panama-roll-084:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 46.121000
+      from_date: "2021-09-28 00:00:00"
+      to_date: "2021-10-26 23:59:59"
+    panama-roll-085:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 45.391000
+      from_date: "2021-10-27 00:00:00"
+      to_date: "2021-11-26 23:59:59"
+    panama-roll-086:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 44.261000
+      from_date: "2021-11-27 00:00:00"
+      to_date: "2021-12-28 23:59:59"
+    panama-roll-087:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 43.921000
+      from_date: "2021-12-29 00:00:00"
+      to_date: "2022-01-27 23:59:59"
+    panama-roll-088:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 42.681000
+      from_date: "2022-01-28 00:00:00"
+      to_date: "2022-02-24 23:59:59"
+    panama-roll-089:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 38.881000
+      from_date: "2022-02-25 00:00:00"
+      to_date: "2022-03-29 23:59:59"
+    panama-roll-090:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 36.181000
+      from_date: "2022-03-30 00:00:00"
+      to_date: "2022-04-27 23:59:59"
+    panama-roll-091:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 35.931000
+      from_date: "2022-04-28 00:00:00"
+      to_date: "2022-05-26 23:59:59"
+    panama-roll-092:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 32.871000
+      from_date: "2022-05-27 00:00:00"
+      to_date: "2022-06-28 23:59:59"
+    panama-roll-093:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 28.861000
+      from_date: "2022-06-29 00:00:00"
+      to_date: "2022-07-27 23:59:59"
+    panama-roll-094:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 23.981000
+      from_date: "2022-07-28 00:00:00"
+      to_date: "2022-08-29 23:59:59"
+    panama-roll-095:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 22.081000
+      from_date: "2022-08-30 00:00:00"
+      to_date: "2022-09-28 23:59:59"
+    panama-roll-096:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 20.861000
+      from_date: "2022-09-29 00:00:00"
+      to_date: "2022-10-27 23:59:59"
+    panama-roll-097:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 18.911000
+      from_date: "2022-10-28 00:00:00"
+      to_date: "2022-11-28 23:59:59"
+    panama-roll-098:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 19.241000
+      from_date: "2022-11-29 00:00:00"
+      to_date: "2022-12-27 23:59:59"
+    panama-roll-099:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 19.871000
+      from_date: "2022-12-28 00:00:00"
+      to_date: "2023-01-26 23:59:59"
+    panama-roll-100:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 19.901000
+      from_date: "2023-01-27 00:00:00"
+      to_date: "2023-02-23 23:59:59"
+    panama-roll-101:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 19.701000
+      from_date: "2023-02-24 00:00:00"
+      to_date: "2023-03-28 23:59:59"
+    panama-roll-102:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 19.261000
+      from_date: "2023-03-29 00:00:00"
+      to_date: "2023-04-25 23:59:59"
+    panama-roll-103:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 19.141000
+      from_date: "2023-04-26 00:00:00"
+      to_date: "2023-05-25 23:59:59"
+    panama-roll-104:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 19.071000
+      from_date: "2023-05-26 00:00:00"
+      to_date: "2023-06-27 23:59:59"
+    panama-roll-105:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 19.301000
+      from_date: "2023-06-28 00:00:00"
+      to_date: "2023-07-26 23:59:59"
+    panama-roll-106:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 18.931000
+      from_date: "2023-07-27 00:00:00"
+      to_date: "2023-08-28 23:59:59"
+    panama-roll-107:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 18.411000
+      from_date: "2023-08-29 00:00:00"
+      to_date: "2023-09-26 23:59:59"
+    panama-roll-108:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 16.971000
+      from_date: "2023-09-27 00:00:00"
+      to_date: "2023-10-26 23:59:59"
+    panama-roll-109:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 15.981000
+      from_date: "2023-10-27 00:00:00"
+      to_date: "2023-11-27 23:59:59"
+    panama-roll-110:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 15.981000
+      from_date: "2023-11-28 00:00:00"
+      to_date: "2023-12-21 23:59:59"
+    panama-roll-111:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 15.941000
+      from_date: "2023-12-22 00:00:00"
+      to_date: "2024-01-25 23:59:59"
+    panama-roll-112:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 15.531000
+      from_date: "2024-01-26 00:00:00"
+      to_date: "2024-02-26 23:59:59"
+    panama-roll-113:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 14.831000
+      from_date: "2024-02-27 00:00:00"
+      to_date: "2024-03-25 23:59:59"
+    panama-roll-114:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 14.241000
+      from_date: "2024-03-26 00:00:00"
+      to_date: "2024-04-25 23:59:59"
+    panama-roll-115:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 13.181000
+      from_date: "2024-04-26 00:00:00"
+      to_date: "2024-05-29 23:59:59"
+    panama-roll-116:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 12.941000
+      from_date: "2024-05-30 00:00:00"
+      to_date: "2024-06-25 23:59:59"
+    panama-roll-117:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 12.111000
+      from_date: "2024-06-26 00:00:00"
+      to_date: "2024-07-26 23:59:59"
+    panama-roll-118:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 11.201000
+      from_date: "2024-07-27 00:00:00"
+      to_date: "2024-08-26 23:59:59"
+    panama-roll-119:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 10.171000
+      from_date: "2024-08-27 00:00:00"
+      to_date: "2024-09-26 23:59:59"
+    panama-roll-120:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 9.751000
+      from_date: "2024-09-27 00:00:00"
+      to_date: "2024-10-28 23:59:59"
+    panama-roll-121:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 9.351000
+      from_date: "2024-10-29 00:00:00"
+      to_date: "2024-11-26 23:59:59"
+    panama-roll-122:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 8.831000
+      from_date: "2024-11-27 00:00:00"
+      to_date: "2024-12-23 23:59:59"
+    panama-roll-123:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 8.531000
+      from_date: "2024-12-24 00:00:00"
+      to_date: "2025-01-28 23:59:59"
+    panama-roll-124:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 7.591000
+      from_date: "2025-01-29 00:00:00"
+      to_date: "2025-02-25 23:59:59"
+    panama-roll-125:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 7.131000
+      from_date: "2025-02-26 00:00:00"
+      to_date: "2025-03-27 23:59:59"
+    panama-roll-126:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 6.461000
+      from_date: "2025-03-28 00:00:00"
+      to_date: "2025-04-25 23:59:59"
+    panama-roll-127:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 5.571000
+      from_date: "2025-04-26 00:00:00"
+      to_date: "2025-05-27 23:59:59"
+    panama-roll-128:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 4.941000
+      from_date: "2025-05-28 00:00:00"
+      to_date: "2025-06-26 23:59:59"
+    panama-roll-129:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 3.771000
+      from_date: "2025-06-27 00:00:00"
+      to_date: "2025-07-28 23:59:59"
+    panama-roll-130:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 3.010000
+      from_date: "2025-07-29 00:00:00"
+      to_date: "2025-08-26 23:59:59"
+    panama-roll-131:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 2.440000
+      from_date: "2025-08-27 00:00:00"
+      to_date: "2025-09-25 23:59:59"
+    panama-roll-132:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 1.670000
+      from_date: "2025-09-26 00:00:00"
+      to_date: "2025-10-28 23:59:59"
+    panama-roll-133:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 1.050000
+      from_date: "2025-10-29 00:00:00"
+      to_date: "2025-11-25 23:59:59"
+    panama-roll-134:
+      action: "-"
+      columns: ["open", "high", "low", "close"]
+      value: 0.440000
+      from_date: "2025-11-26 00:00:00"
+      to_date: "2025-12-23 23:59:59"
