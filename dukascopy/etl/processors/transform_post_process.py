@@ -44,6 +44,27 @@ def _apply_post_processing(o, df: pd.DataFrame, step: TransformSymbolProcessingS
     if step.action not in ["validate", "add", "subtract", "multiply", "divide", "+", "-", "*", "/"]:
         raise TransformLogicError(f"Unsupported transform action: {step.action}")
 
+    # Guard against empty DataFrames (the "BRENT-CMD" fix)
+    if df.empty:
+        return df
+
+    # Performance optimization
+    # Convert bounds to timestamps once (or assume they are pre-converted)
+    rule_start = pd.to_datetime(step.from_date) if hasattr(step, 'from_date') and step.from_date else None
+    rule_end = pd.to_datetime(step.to_date) if hasattr(step, 'to_date') and step.to_date else None
+
+    # Data boundaries (O(1) because it's sorted)
+    data_start = df.index[0]
+    data_end = df.index[-1]
+
+    # 1. Check if the entire DataFrame is AFTER the rule's window
+    if rule_end and data_start > rule_end:
+        return df
+
+    # 2. Check if the entire DataFrame is BEFORE the rule's window
+    if rule_start and data_end < rule_start:
+        return df
+
     # This will hold a boolean mask for date filtering.
     # If None, we apply changes to the entire DataFrame.
     mask = None
