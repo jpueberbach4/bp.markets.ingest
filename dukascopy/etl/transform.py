@@ -254,7 +254,7 @@ class TransformWorker:
                 exists for the worker's symbol and date.
         """
 
-        alias = self.symbol if None else alias
+        alias = alias if alias is not None else self.symbol
 
         extension = ResampleIOFactory.get_appropriate_extension(self.fmode)
 
