@@ -9,6 +9,11 @@ Tomorrow is another massive-sprint day. I will have a go at panama. Panama and s
 
 Expect it to be done tomorrow and to land Friday or latest Saturday.
 
+## **Security**
+
+Oh yes! Security 🙈 Will get added too (especially flight). Security has been of "later concern" since this is a local-first private research tool that is supposed to run on a local-machine, tightly secured to 127.0.0.1. Clones, however, show that this is definately not only used on 127.0.0.1. 
+
+I promise it will be taken care of when i rewrite the ingestion layer. If i will go as far as including a OAuth2 layer, i don't know yet. Needs to be lightweight. Performance-first.
 
 ## **Conversion pass to numba + polars expressions**
 
