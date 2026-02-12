@@ -16,9 +16,11 @@ Numba has enabled us to move almost all indicators to pure Polars expressions. W
 
 I will stop fighting the GIL for now. It's feature day. I will test soon with 3.14t. 
 
-[here](../examples/performance.txt) is the performance log for the indicators. It shows you exactly the performance of TA-lib's pure C performance against the Polars ones. Note that these tests are only done for 10000 records. I will do a second one to make sure that TA-lib holds up with a million records as well. 
+[here](../examples/performance.txt) is the performance log for the indicators. It shows you exactly the performance of TA-lib's pure C against the Polars ones. Note that these tests are only done for 10000 records. I will do a second one to make sure that TA-lib holds up with a million records as well. 
 
 But again: later.
+
+Ultimately this will be rewritten to C++. For me, all of this, is also testing what works best and what are the DOs and DONts,
 
 ## **Notice: Web-interface small issue**
 
