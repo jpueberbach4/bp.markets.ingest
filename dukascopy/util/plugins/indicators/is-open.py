@@ -47,7 +47,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     tf = df["timeframe"].item(0)
 
     # Get the earliest timestamp in the input data
-    time_min = df["time_ms"].min()
+    time_min = df["time_ms"].item(0)
 
     # Ensure time_ms is an unsigned integer so math works correctly
     ldf = df.lazy().with_columns([pl.col("time_ms").cast(pl.UInt64)])
