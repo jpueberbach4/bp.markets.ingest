@@ -6,16 +6,14 @@ from typing import List, Dict, Any
 def description() -> str:
     # Return a human-readable explanation of what this indicator does
     return (
-        "Determines whether each candle is open or closed by comparing it "
-        "against the most recent 1-minute candle. The BTC-USD 1-minute market "
-        "is used as a continuous 24/7 heartbeat to reliably detect global market activity."
+        "Drift displays the current drift in minutes relative to the BTC-USD heartbeat symbol."
     )
 
 def meta() -> Dict:
     # Metadata used by the platform to identify and validate this indicator
     return {
         "author": "JP",             # Who wrote this
-        "version": 2.6,             # Version number
+        "version": 1.0,             # Version number
         "panel": 1,                 # UI panel placement
         "verified": 1,              # Marked as verified
         "polars": 0,                # Does not require polars output by default
@@ -96,60 +94,11 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     # Latest timestamp from the asset being analyzed
     last_ms = ldf_1m["time_ms"][0]
 
-    if tf in ["1M", "1Y"]:
-        # Special handling for monthly and yearly candles
-        from datetime import datetime
+    # Drift
+    drift = (global_now_ms - last_ms) / 60000
+    
+    ldf = ldf.with_columns(
+        pl.lit(drift).alias("drift")
+    )
 
-        # Convert last candle time into a datetime object
-        dt = datetime.fromtimestamp(last_ms / 1000)
-
-        if tf == "1M":
-            # Start of the current month
-            mark_ms = int(
-                dt.replace(
-                    day=1, hour=0, minute=0, second=0, microsecond=0
-                ).timestamp() * 1000
-            )
-        else:
-            # Start of the current year
-            mark_ms = int(
-                dt.replace(
-                    month=1, day=1, hour=0, minute=0, second=0, microsecond=0
-                ).timestamp() * 1000
-            )
-    else:
-        # Duration (in ms) of each supported timeframe
-        tf_lengths = {
-            "1m": 0,
-            "2m": 120000,
-            "3m": 180000,
-            "5m": 300000,
-            "10m": 600000,
-            "15m": 900000,
-            "30m": 1800000,
-            "1h": 3600000,
-            "2h": 7200000,
-            "3h": 10800000,
-            "4h": 14400000,
-            "6h": 21600000,
-            "8h": 28800000,
-            "12h": 43200000,
-            "1d": 86400000,
-            "1W": 604800000,
-        }
-
-        # Compute the boundary timestamp for the current candle
-        mark_ms = global_now_ms - tf_lengths.get(tf, 0)
-
-    is_open_expr = (pl.col("time_ms") >= mark_ms).cast(pl.Int8).alias("is_open")
-
-    if tf in ["1M", "1Y"]:
-        # Monthly/Yearly candles are ALWAYS open if they are the latest period, 
-        # regardless of whether it's the weekend.
-        ldf = ldf.with_columns(is_open_expr)
-    else:
-        # Standard live market check
-        ldf = ldf.with_columns(is_open_expr)
-
-    # Return only the is_open column as the final output
-    return ldf.select(["is_open"])
+    return ldf.select(["drift"])
