@@ -4,86 +4,44 @@ import pandas as pd
 import numpy as np
 
 def _apply_post_processing(o, df: pd.DataFrame, step: TransformSymbolProcessingStep) -> pd.DataFrame:
-    """Applies post-processing transformations or validations to a symbol DataFrame.
+    """Applies post-processing transformations or validations to a symbol DataFrame."""
 
-    This function performs one of two high-level operations:
-
-    1. Mathematical transformation (add, subtract, multiply, divide)
-       on one or more DataFrame columns, optionally restricted
-       to a specific date range.
-    2. OHLC validation to ensure price integrity.
-
-    The operation is determined by `step.action`.
-
-    Args:
-        o: Processing context object. Expected to contain:
-            - symbol (str): Symbol name for error reporting.
-            - dt: Current processing date (for logging).
-            - config.round_decimals (int): Number of decimals to round to.
-        df (pd.DataFrame): DataFrame containing OHLC data indexed
-            by a DateTimeIndex.
-        step (TransformSymbolProcessingStep): Configuration describing
-            the transformation. Expected attributes:
-            - action (str): Operation type.
-            - columns (List[str]): Columns to modify (for math ops).
-            - value (float): Value used in math operations.
-            - from_date (optional): Inclusive start date filter.
-            - to_date (optional): Inclusive end date filter.
-
-    Returns:
-        pd.DataFrame: The modified (or validated) DataFrame.
-
-    Raises:
-        TransformLogicError: If the action is unsupported.
-        ProcessingError: If a specified column does not exist.
-        DataValidationError: If OHLC validation fails.
-    """
-
-    # Make sure the requested action is something we actually support.
-    # If not, fail fast and loudly.
-    if step.action not in ["validate", "add", "subtract", "multiply", "divide", "+", "-", "*", "/"]:
-        raise TransformLogicError(f"Unsupported transform action: {step.action}")
-
-    # Guard against empty DataFrames (the "BRENT-CMD" fix)
+    # Guard against empty DataFrames (The BRENT-CMD fix)
     if df.empty:
         return df
 
-    # Performance optimization
-    # Convert bounds to timestamps once (or assume they are pre-converted)
-    rule_start = pd.to_datetime(step.from_date) if hasattr(step, 'from_date') and step.from_date else None
-    rule_end = pd.to_datetime(step.to_date) if hasattr(step, 'to_date') and step.to_date else None
+    # Extract boundaries (Assume these are pre-converted or use pd.to_datetime)
+    # Using getattr for safety with the Step dataclass
+    from_date = getattr(step, 'from_date', None)
+    to_date = getattr(step, 'to_date', None)
 
-    # Data boundaries (O(1) because it's sorted)
-    data_start = df.index[0]
-    data_end = df.index[-1]
+    # Resolve actual timestamps if strings were provided
+    rule_start = pd.to_datetime(from_date) if from_date else None
+    rule_end = pd.to_datetime(to_date) if to_date else None
 
-    # 1. Check if the entire DataFrame is AFTER the rule's window
-    if rule_end and data_start > rule_end:
-        return df
+    # O(1) Short-circuit: Check if DataFrame is entirely outside the rule window
+    # Only perform if dates are actually provided in the step
+    if rule_start or rule_end:
+        data_start = df.index[0]
+        data_end = df.index[-1]
+        
+        # If data is completely after the rule or completely before it, skip.
+        if (rule_end and data_start > rule_end) or (rule_start and data_end < rule_start):
+            return df
 
-    # 2. Check if the entire DataFrame is BEFORE the rule's window
-    if rule_start and data_end < rule_start:
-        return df
+    # We use searchsorted for O(log n) lookup to find the integer slice bounds.
+    # This replaces the O(n) boolean mask scanning.
+    start_idx = 0
+    end_idx = len(df)
 
-    # This will hold a boolean mask for date filtering.
-    # If None, we apply changes to the entire DataFrame.
-    mask = None
+    if rule_start:
+        start_idx = df.index.searchsorted(rule_start, side='left')
 
-    # If a start date is provided, build a mask selecting rows >= that date.
-    if hasattr(step, 'from_date') and step.from_date:
-        start_ts = pd.to_datetime(step.from_date)  # Convert to proper timestamp
-        mask = (df.index >= start_ts)  # True for rows we want to modify
+    if rule_end:
+        end_idx = df.index.searchsorted(rule_end, side='right')
 
-    # If an end date is provided, extend or create a mask for rows <= that date.
-    if hasattr(step, 'to_date') and step.to_date:
-        end_ts = pd.to_datetime(step.to_date)  # Convert to proper timestamp
-        m_end = (df.index <= end_ts)  # True for rows within upper bound
-        # If we already had a mask (from from_date), combine both conditions.
-        mask = m_end if mask is None else mask & m_end
-
-    # If we defined a date range but no rows match it,
-    # there is nothing to do — return immediately.
-    if mask is not None and not mask.any():
+    # If the range results in no rows, return immediately.
+    if start_idx >= end_idx:
         return df
 
     # Handle arithmetic transformations.
@@ -97,9 +55,8 @@ def _apply_post_processing(o, df: pd.DataFrame, step: TransformSymbolProcessingS
                 # and ensure math operations behave consistently.
                 series = df[column].astype(np.float64)
 
-                # If we have a mask, only operate on selected rows.
-                # Otherwise, operate on the entire column.
-                target = series.loc[mask] if mask is not None else series
+                # Use integer slicing (iloc) to create a view of the target data.
+                target = series.iloc[start_idx:end_idx]
 
                 # Perform the correct math operation.
                 if step.action in ["*", "multiply"]:
@@ -113,10 +70,7 @@ def _apply_post_processing(o, df: pd.DataFrame, step: TransformSymbolProcessingS
 
                 # Write the result back into the DataFrame,
                 # rounding to configured decimal precision.
-                if mask is not None:
-                    df.loc[mask, column] = np.round(result, o.config.round_decimals)
-                else:
-                    df[column] = np.round(result, o.config.round_decimals)
+                df.iloc[start_idx:end_idx, df.columns.get_loc(column)] = np.round(result, o.config.round_decimals)
 
             else:
                 # If the column is missing, this is a hard failure.
@@ -127,22 +81,24 @@ def _apply_post_processing(o, df: pd.DataFrame, step: TransformSymbolProcessingS
     # Handle OHLC validation.
     if step.action == "validate":
         try:
+            # For validation, we focus on the relevant slice of the data.
+            v_df = df.iloc[start_idx:end_idx]
             errors = []
 
             # High must never be below Low.
-            if not (df['high'] >= df['low']).all():
+            if not (v_df['high'] >= v_df['low']).all():
                 errors.append("High price below Low price")
 
             # High must be >= both Open and Close.
-            if not (df['high'] >= df[['open', 'close']].max(axis=1)).all():
+            if not (v_df['high'] >= v_df[['open', 'close']].max(axis=1)).all():
                 errors.append("High price below Open or Close")
 
             # Low must be <= both Open and Close.
-            if not (df['low'] <= df[['open', 'close']].min(axis=1)).all():
+            if not (v_df['low'] <= v_df[['open', 'close']].min(axis=1)).all():
                 errors.append("Low price above Open or Close")
 
             # No negative prices allowed.
-            if (df[['open', 'high', 'low', 'close']] < 0).any().any():
+            if (v_df[['open', 'high', 'low', 'close']] < 0).any().any():
                 errors.append("Negative prices detected")
 
             # If we collected any validation errors, raise them.
