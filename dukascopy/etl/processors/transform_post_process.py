@@ -8,28 +8,30 @@ def _apply_post_processing(o, df: pd.DataFrame, step: TransformSymbolProcessingS
     if step.action not in ["validate", "add", "subtract", "multiply", "divide", "+", "-", "*", "/"]:
         raise TransformLogicError(f"Unsupported transform action: {step.action}")
 
-    # TODO: support date ranges
+    # TODO: support date ranges, build a boolean mask, of no mask, return unmodified
 
     # Apply multiplication transformation
     if step.action in ["add", "subtract", "multiply", "divide", "+", "-", "*", "/"]:
-        # Ensure the target column exists before modifying it
-        if step.column in df.columns:
-            # Convert column to float and multiply by the provided value
-            if step.action in ["*", "multiply"]:
-                df[step.column] = df[step.column].astype(np.float64) * step.value
-            if step.action in ["+", "add"]:
-                df[step.column] = df[step.column].astype(np.float64) + step.value
-            if step.action in ["-", "substract"]:
-                df[step.column] = df[step.column].astype(np.float64) - step.value
-            if step.action in ["/", "divide"]:
-                df[step.column] = df[step.column].astype(np.float64) / step.value 
-            # Round to stay compliant with settings
-            df[step.column] = np.round(df[step.column], o.config.round_decimals)
-        else:
-            # Raise an error if the column is missing
-            raise ProcessingError(
-                f"Symbol {o.symbol}, Column '{step.column}' not found during {step.action} step"
-            )
+        # Apply the action to all columns specified in the step
+        for column in step.columns:
+            # Ensure the target column exists before modifying it
+            if column in df.columns:
+                # Convert column to float and multiply by the provided value
+                if step.action in ["*", "multiply"]:
+                    df[column] = df[column].astype(np.float64) * step.value
+                if step.action in ["+", "add"]:
+                    df[column] = df[column].astype(np.float64) + step.value
+                if step.action in ["-", "subtract"]:
+                    df[column] = df[column].astype(np.float64) - step.value
+                if step.action in ["/", "divide"]:
+                    df[column] = df[column].astype(np.float64) / step.value 
+                # Round to stay compliant with settings
+                df[column] = np.round(df[column], o.config.round_decimals)
+            else:
+                # Raise an error if the column is missing
+                raise ProcessingError(
+                    f"Symbol {o.symbol}, Column '{column}' not found during {step.action} step"
+                )
 
     if step.action == "validate":
         try:

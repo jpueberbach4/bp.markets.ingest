@@ -170,7 +170,7 @@ class TransformSymbolProcessingStep:
     Configuration for a pre/post processing step
     """
     action: str = field(default=None,metadata={'yaml_key': 'action'}) 
-    column: str = field(default=None,metadata={'yaml_key': 'column'}) 
+    columns: List[str] = field(default_factory=list, metadata={'yaml_key': 'columns'})
     value: int = field(default=None, metadata={'yaml_key': 'value'})
 
 @dataclass
