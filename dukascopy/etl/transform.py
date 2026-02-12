@@ -250,7 +250,7 @@ class TransformEngine:
             # Execute each active step (each may scan dataframe → O(N × active_steps))
             for step in active_steps:
                 full_transformed = _transform_post_process(
-                    full_transformed, step
+                    self, full_transformed, step
                 )
 
             # Explicitly free large arrays to reduce memory pressure (O(1))
