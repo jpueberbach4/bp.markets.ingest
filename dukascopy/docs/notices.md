@@ -54,6 +54,18 @@ You can even do: first prices * 2 then divide by 3 if needed. When resample is b
 
 Some may argue that this is not only a panama, corporate actions update but actually a derivatives engine update.
 
+**Update:** I have a first working implementation. Works great. Aggregation, resampling, everything works out of the box on this sidetracked data. I decided to launch this Saturday, to give me a tiny bit more time to make the interfaces optimal. See below screenshots, how much difference panama-adjusted data is:
+
+Before:
+
+![before](../images/brent.panama.before.png)
+
+After:
+
+![before](../images/brent.panama.after.png)
+
+I am first writing for correctness and completeness, then a performance optimization pass will be performed.
+
 ## **Security**
 
 Oh yes! Security 🙈 Will get added too (especially flight). Security has been of "later concern" since this is a local-first private research tool that is supposed to run on a local-machine, tightly secured to 127.0.0.1. Clones, however, show that this is definately not only used on 127.0.0.1. 
