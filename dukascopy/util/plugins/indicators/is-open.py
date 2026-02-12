@@ -96,10 +96,6 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     # Latest timestamp from the asset being analyzed
     last_ms = ldf_1m["time_ms"][0]
 
-    # If the assets last 1m is off from the heartbeat by this much, consider candle closed
-    HEARTBEAT_THRESHOLD = 60000 * 2
-    is_market_closed = (global_now_ms - last_ms) > HEARTBEAT_THRESHOLD
-
     if tf in ["1M", "1Y"]:
         # Special handling for monthly and yearly candles
         from datetime import datetime
@@ -151,9 +147,6 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         # Monthly/Yearly candles are ALWAYS open if they are the latest period, 
         # regardless of whether it's the weekend.
         ldf = ldf.with_columns(is_open_expr)
-    elif is_market_closed:
-        # For smaller TFs, if the heartbeat says the market is dead, everything is closed.
-        ldf = ldf.with_columns(pl.lit(0).cast(pl.Int8).alias("is_open"))
     else:
         # Standard live market check
         ldf = ldf.with_columns(is_open_expr)
