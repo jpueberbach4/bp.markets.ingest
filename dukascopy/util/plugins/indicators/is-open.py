@@ -91,14 +91,10 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         ldf_1m = future_asset.result()
 
     # Latest timestamp from BTC-USD (global clock)
-    global_now_ms = heartbeat_df["time_ms"].max()
+    global_now_ms = heartbeat_df["time_ms"][0]
 
     # Latest timestamp from the asset being analyzed
-    last_ms = ldf_1m["time_ms"].max()
-
-    # If the asset hasn’t traded for more than 2 hours, consider the market closed
-    HEARTBEAT_THRESHOLD = 7200000  # milliseconds = 2 hours
-    is_market_closed = (global_now_ms - last_ms) > HEARTBEAT_THRESHOLD
+    last_ms = ldf_1m["time_ms"][0]
 
     if tf in ["1M", "1Y"]:
         # Special handling for monthly and yearly candles
@@ -143,7 +139,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         }
 
         # Compute the boundary timestamp for the current candle
-        mark_ms = last_ms - tf_lengths.get(tf, 0)
+        mark_ms = global_now_ms - tf_lengths.get(tf, 0)
 
     is_open_expr = (pl.col("time_ms") >= mark_ms).cast(pl.Int8).alias("is_open")
 
@@ -151,9 +147,6 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         # Monthly/Yearly candles are ALWAYS open if they are the latest period, 
         # regardless of whether it's the weekend.
         ldf = ldf.with_columns(is_open_expr)
-    elif is_market_closed:
-        # For smaller TFs, if the heartbeat says the market is dead, everything is closed.
-        ldf = ldf.with_columns(pl.lit(0).cast(pl.Int8).alias("is_open"))
     else:
         # Standard live market check
         ldf = ldf.with_columns(is_open_expr)
