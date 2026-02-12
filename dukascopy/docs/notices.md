@@ -9,6 +9,8 @@ Tomorrow is another massive-sprint day. I will have a go at panama. Panama and s
 
 Expect it to be done tomorrow and to land Friday or latest Saturday.
 
+Panama is nothing more than [this](../examples/BRENT-transform-panama.yaml) (example config).
+
 **Update:** Panama is not an issue. Data is retrievable and is superb. For the rest, dividend-adjustments, corporate actions etc, I will make sure that the configuration layer is fine. Interfaces will get implemented with a tight-contract to provide for data-exchange between this tool and a third party resource. 
 
 I have thought about building a repository for corporate actions, which can be auto-pulled to update your local enviroment, but there are two issues with this approach:
