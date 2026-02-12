@@ -9,6 +9,17 @@ Tomorrow is another massive-sprint day. I will have a go at panama. Panama and s
 
 Expect it to be done tomorrow and to land Friday or latest Saturday.
 
+**Update:** Panama is not an issue. Data is retrievable and is superb. For the rest, dividend-adjustments, corporate actions etc, I will make sure that the configuration layer is fine. Interfaces will get implemented with a tight-contract to provide for data-exchange between this tool and a third party resource. 
+
+I have thought about building a repository for corporate actions, which can be auto-pulled to update your local enviroment, but there are two issues with this approach:
+
+- 1st is a legal boundary (redistribution clause)
+- 2nd is maintainability (it would put too much burden on me)
+
+So correct strictly contracted interfaces implementation/support is the "mid-ground". An user can implement the interfaces to eg extract corporate action data from the SEC, Yahoo, CSV-files etc. Examples will be written but don't expect them to be ready before the weekend.
+
+Futures rollover's will be completely solved, however. Stay tuned.
+
 ## **Security**
 
 Oh yes! Security 🙈 Will get added too (especially flight). Security has been of "later concern" since this is a local-first private research tool that is supposed to run on a local-machine, tightly secured to 127.0.0.1. Clones, however, show that this is definately not only used on 127.0.0.1. 
