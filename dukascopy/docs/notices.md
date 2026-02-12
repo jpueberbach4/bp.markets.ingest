@@ -22,6 +22,8 @@ There will be two additional indicators:
 - drift: will output how many minutes the 1m candle of the selected asset has drifted from the last 1m BTC-USD candle (available in main)
 - is-stale(tolerance): will output if a market did not receive any data for the number of minutes specified by tolerance, relative to laptop-time.
 
+Documented here (future reference): [Market-status indicators](market-status.md)
+
 ## **Very cool tip**
 
 For the coders under us. I just discovered something cool with AI. Just push your code in and say: annotate the code and mention complexity O(1), O(log N) and O(NxM) where applicable. It exactly pinpoints bottlenecks. It amazed me how helpful that actually is.
