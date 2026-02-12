@@ -6,14 +6,53 @@
  Author:      JP Ueberbach
  Created:     2025-12-19
  Updated:     2025-12-23
-              Strengthening of code
-              - Optional OHLCV validation
-              - Optional fsync
-              - Custom exceptions for better traceability
+              2026-02-12
 
- Description: Transform Dukascopy Historical JSON delta
-              format into normalized OHLC CSV files. Supports vectorized
-              computation, multiprocessing, and progress tracking.
+ Description:
+     High-performance transformation engine for converting Dukascopy
+     delta-encoded historical JSON into normalized OHLCV datasets.
+
+     This module provides a deterministic, vectorized reconstruction pipeline
+     with optional post-processing, validation, multiprocessing support, and
+     atomic disk persistence.
+
+     Core responsibilities:
+
+         • Reconstruct timestamps and OHLC values via cumulative deltas
+         • Apply symbol- and date-specific time shifts (DST-aware)
+         • Filter non-trading candles
+         • Execute rule-based post-processing steps
+         • Perform optional OHLC structural validation
+         • Persist results using atomic write + optional fsync
+         • Support multiprocessing-safe execution
+
+     Design principles:
+
+         - O(N) vectorized computation (no row-wise loops)
+         - Strict exception boundaries for traceability
+         - Atomic writes to prevent partial/corrupt outputs
+         - Stateless transform engine (safe for parallel execution)
+         - Clear separation of:
+               TransformEngine  → computation
+               TransformWorker  → I/O + orchestration
+               fork_transform   → multiprocessing boundary
+
+     Complexity characteristics:
+
+         Let:
+             N = number of candles
+             M = active post-processing rules
+             K = number of derived aliases
+
+         Per alias:
+             - Reconstruction:        O(N)
+             - Post-processing:       O(N × M) (optimized)
+             - Disk write:            O(N)
+
+         Overall dominant cost:       O(N)
+
+     This module is designed for high-throughput batch pipelines and
+     large-scale historical processing workloads.
 
  Requirements:
      - Python 3.8+
@@ -40,7 +79,7 @@ from etl.io.protocols import *
 from etl.io.resample.factory import *
 from etl.exceptions import *
 
-from etl.processors.transform_post_process import _apply_post_processing
+from etl.processors.transform_post_process import _transform_post_process
 
 class TransformEngine:
     """
@@ -61,109 +100,98 @@ class TransformEngine:
         self.dt = dt
         self.config = config
 
-    def _apply_post_processing(self, df: pd.DataFrame, step: TransformSymbolProcessingStep) -> pd.DataFrame:
-        """Apply a symbol-specific post-processing step to an OHLCV DataFrame.
-
-        Supported actions include:
-        - ``multiply``: Multiply a target column by a scalar value and round the
-        result according to the configured precision.
-        - ``validate``: Perform logical integrity checks on OHLC price data
-        (e.g., high/low bounds and non-negative prices). Validation errors are
-        currently logged but do not interrupt processing.
-
-        Args:
-            df (pd.DataFrame): The OHLCV DataFrame to post-process.
-            step (TransformSymbolProcessingStep): Definition of the post-processing
-                step, including the action type, target column (if applicable),
-                and associated parameters.
-
-        Returns:
-            pd.DataFrame: The DataFrame after the post-processing step has been
-            applied. For validation steps, the input DataFrame is returned unchanged.
-
-        Raises:
-            TransformLogicError: If the specified post-processing action is not supported.
-            ProcessingError: If a required target column is missing during a
-                column-based transformation.
+    def process_json(self, data: dict, alias=None) -> pd.DataFrame:
         """
-        # Offloaded
-        df = _apply_post_processing(self, df, step)
-        return df
+        Transform Dukascopy delta-encoded JSON payload into normalized OHLCV DataFrame.
 
+        Pipeline:
+            1. Apply symbol/date-specific time shift.
+            2. Reconstruct timestamps via cumulative deltas.
+            3. Reconstruct OHLC prices via cumulative deltas.
+            4. Filter zero-volume candles.
+            5. Assemble pandas DataFrame and round prices.
+            6. Select relevant post-processing steps.
+            7. Execute active steps (including optional validation).
 
-    def process_json(self, data: dict, alias = None) -> pd.DataFrame:
-        """Convert a Dukascopy delta-encoded JSON payload into an OHLCV DataFrame.
+        Complexity:
+            - Timestamp reconstruction: O(N)
+            - OHLC reconstruction: O(N)
+            - Zero-volume filtering: O(N)
+            - Rule pruning: O(M) with O(1) boundary checks
+            - Post-processing execution: O(N × active_steps)
 
-        This method reconstructs timestamps and OHLC prices using cumulative
-        delta calculations, applies symbol- and date-specific time shifts
-        (e.g., DST handling), filters out non-trading candles, rounds prices
-        according to configuration, and applies symbol-specific post-processing
-        steps. If validation is enabled in the configuration, OHLC integrity
-        checks are injected dynamically into the post-processing pipeline.
+            Overall dominant cost: O(N)
 
-        All operations are vectorized for performance.
+            Where:
+                N = number of candles
+                M = number of configured post-processing rules
 
         Args:
-            data (dict): Parsed Dukascopy JSON payload containing delta-encoded
-                market data fields (e.g., times, opens, highs, lows, closes,
-                volumes, multipliers, and timestamps).
+            data (dict): Parsed JSON containing delta-encoded market data.
+            alias (str | None): Optional alias symbol override.
 
         Returns:
-            pd.DataFrame: A normalized OHLCV DataFrame with the following columns:
-                ['time', 'open', 'high', 'low', 'close', 'volume'].
+            pd.DataFrame: Normalized OHLCV DataFrame indexed by time.
 
         Raises:
-            ProcessingError: If the JSON schema is malformed, required fields are
-                missing, or an unexpected error occurs during transformation.
-            TransformLogicError: If an unsupported post-processing action is
-                encountered.
-            DataValidationError: If OHLC validation fails and validation errors
-                are propagated by configuration.
+            ProcessingError: If JSON schema malformed or transformation fails.
+            TransformLogicError: If invalid post-processing action encountered.
+            DataValidationError: If validation fails and propagation enabled.
         """
         try:
-            # Resolve symbol- and date-specific timestamp shift (e.g. DST handling)
+            # Get DST / symbol-specific timestamp shift (config lookup → O(1))
             time_shift_ms = get_symbol_time_shift_ms(self.dt, self.symbol, self.config)
 
-            # Symbol
+            # Resolve effective symbol name (constant time → O(1))
             symbol = alias if alias is not None else self.symbol
 
             try:
-                # Reconstruct timestamps using cumulative deltas
+                # Reconstruct timestamps via cumulative sum (vectorized → O(N))
                 times = (
                     np.cumsum(np.array(data["times"], dtype=np.int64) * data["shift"])
                     + (data["timestamp"] + time_shift_ms)
                 )
 
-                # Reconstruct OHLC values using cumulative delta math
+                # Reconstruct open prices (vectorized cumulative delta → O(N))
                 opens = data["open"] + np.cumsum(
                     np.array(data["opens"], dtype=np.float64) * data["multiplier"]
                 )
+
+                # Reconstruct high prices (O(N))
                 highs = data["high"] + np.cumsum(
                     np.array(data["highs"], dtype=np.float64) * data["multiplier"]
                 )
+
+                # Reconstruct low prices (O(N))
                 lows = data["low"] + np.cumsum(
                     np.array(data["lows"], dtype=np.float64) * data["multiplier"]
                 )
+
+                # Reconstruct close prices (O(N))
                 closes = data["close"] + np.cumsum(
                     np.array(data["closes"], dtype=np.float64) * data["multiplier"]
                 )
 
-                # Volume is absolute, not delta-based
+                # Volumes are absolute, simple array conversion (O(N))
                 volumes = np.array(data["volumes"], dtype=np.float64)
-            
-            except KeyError as e:
-                raise ProcessingError(f"Malformed JSON schema for {self.symbol}: missing key {e}")
 
-            # Filter out zero-volume candles (gaps / non-trading periods)
+            except KeyError as e:
+                raise ProcessingError(
+                    f"Malformed JSON schema for {self.symbol}: missing key {e}"
+                )
+
+            # Create boolean mask to remove zero-volume candles (vectorized → O(N))
             mask = volumes != 0.0
 
-            # Apply mask consistently across all arrays
+            # Apply mask to all arrays in single pass (O(N))
             t_f, o_f, h_f, l_f, c_f, v_f = [
                 arr[mask] for arr in [times, opens, highs, lows, closes, volumes]
             ]
 
-            # Assemble final DataFrame and apply price rounding
+            # Convert ms → ns for pandas index (vectorized multiplication → O(N))
             idx = pd.DatetimeIndex(t_f * 1_000_000, name="time")
+
+            # Build DataFrame from arrays (O(N))
             full_transformed = pd.DataFrame(
                 data={
                     "open": o_f,
@@ -173,55 +201,72 @@ class TransformEngine:
                     "volume": v_f,
                 },
                 index=idx
-            ).round(self.config.round_decimals)
+            ).round(self.config.round_decimals)  # Vectorized rounding → O(N)
 
-            # Get symbol specific configuration
+            # Get symbol-specific config block (dict lookup → O(1))
             sym_cfg = self.config.symbols.get(symbol) if self.config.symbols else None
 
-            # Performance optimization to tackle the O(NxM) problem below:
+            # Initialize list of active post-processing steps (O(1))
             active_steps = []
-            
-            # Convert boundaries to ISO strings ONCE per file
-            # Adding 1 day padding to handle N-hour timestamp shifts
+
+            # Precompute date boundaries ONCE (avoid repeated object creation → O(1))
             fmt = "%Y-%m-%d %H:%M:%S"
             s_start_str = (pd.Timestamp(self.dt) - pd.Timedelta(days=1)).strftime(fmt)
             s_end_str = (pd.Timestamp(self.dt) + pd.Timedelta(days=2)).strftime(fmt)
 
+            # If symbol has post-processing rules configured
             if sym_cfg and sym_cfg.post:
+
+                # Iterate rules (O(M) where M = number of rules)
                 for s in sym_cfg.post.values():
-                    # Get raw strings from dict
+
+                    # Extract raw boundary strings (O(1))
                     f_date_str = s.get('from_date')
                     t_date_str = s.get('to_date')
 
-                    # STRING-ONLY COMPARISON = Zero-allocation / O(1) overhead
-                    # Skip if rule ends before our window or starts after our window
+                    # ISO string comparison is lexicographically sortable → O(1)
+                    # Avoids datetime parsing cost and object allocation
                     if t_date_str and t_date_str < s_start_str:
                         continue
+
                     if f_date_str and f_date_str > s_end_str:
                         continue
 
-                    # Now pay the cost of object creation
-                    step = TransformSymbolProcessingStep(**s) if isinstance(s, dict) else s
+                    # Instantiate rule only if relevant (object creation → O(1))
+                    step = (
+                        TransformSymbolProcessingStep(**s)
+                        if isinstance(s, dict)
+                        else s
+                    )
+
                     active_steps.append(step)
 
-            # If user specified validate=true in config file
+            # Optionally inject validation step (constant append → O(1))
             if self.config.validate:
-                active_steps.append(TransformSymbolProcessingStep(action="validate"))
+                active_steps.append(
+                    TransformSymbolProcessingStep(action="validate")
+                )
 
-            # Execute active steps
+            # Execute each active step (each may scan dataframe → O(N × active_steps))
             for step in active_steps:
-                full_transformed = self._apply_post_processing(full_transformed, step)
+                full_transformed = _transform_post_process(
+                    full_transformed, step
+                )
 
+            # Explicitly free large arrays to reduce memory pressure (O(1))
             del times, opens, highs, lows, closes, volumes
             del t_f, o_f, h_f, l_f, c_f, v_f, mask, idx
 
-            # Return dataframe
+            # Return final normalized dataframe
             return full_transformed
 
         except (DataValidationError, ProcessingError, TransformLogicError):
             raise
         except Exception as e:
-            raise ProcessingError(f"Vectorized transformation failed for {symbol}: {e}") from e
+            raise ProcessingError(
+                f"Vectorized transformation failed for {symbol}: {e}"
+            ) from e
+
 
 
 class TransformWorker:
@@ -254,121 +299,158 @@ class TransformWorker:
         self.engine = TransformEngine(dt, symbol, self.config)
 
     def resolve_paths(self, alias=None) -> Tuple[Path, Path]:
-        """Resolve source JSON and target CSV paths for the worker's symbol and date.
+        """
+        Resolve source JSON and target output paths for a given symbol/date.
 
-        This method prefers historical data when available. If a historical JSON
-        file exists, any corresponding live JSON and CSV files are removed to
-        prevent duplicates or stale data. If historical data is not present,
-        the method falls back to live data paths.
+        The method prefers historical cache data over live data.
+
+        Resolution order:
+            1. If historic JSON exists → use it and delete stale live artifacts.
+            2. Else if live JSON exists → use live paths.
+            3. Else → raise DataNotFoundError.
+
+        Complexity:
+            - Path construction: O(1)
+            - File existence checks: O(1)
+            - File deletions (if triggered): O(1)
+
+            Overall: O(1)
+
+        Args:
+            alias (str | None): Optional alias symbol name. If None, uses self.symbol.
 
         Returns:
-            Tuple[Path, Path]: A tuple containing:
-                - Path to the source JSON file.
-                - Path to the target CSV file.
+            Tuple[Path, Path]: (source_json_path, target_output_path)
 
         Raises:
-            DataNotFoundError: If neither a historical nor live JSON source file
-                exists for the worker's symbol and date.
+            DataNotFoundError: If neither historic nor live JSON file exists.
         """
 
+        # Use alias if provided, otherwise default to primary symbol (O(1))
         alias = alias if alias is not None else self.symbol
 
+        # Determine correct file extension based on resample mode (factory lookup → O(1))
         extension = ResampleIOFactory.get_appropriate_extension(self.fmode)
 
-        # Historical cache and output paths
+        # Construct historic JSON source path (pure path arithmetic → O(1))
         hist_cache = (
             Path(self.config.paths.historic)
             / self.dt.strftime(f"%Y/%m/{self.symbol}_%Y%m%d.json")
         )
+
+        # Construct historic output path (O(1))
         hist_data = (
             Path(self.config.paths.data)
             / self.dt.strftime(f"%Y/%m/{alias}_%Y%m%d{extension}")
         )
 
-        # Live cache and output paths
+        # Construct live JSON source path (O(1))
         live_cache = (
             Path(self.config.paths.live)
             / self.dt.strftime(f"{self.symbol}_%Y%m%d.json")
         )
+
+        # Construct live output path (O(1))
         live_data = (
             Path(self.config.paths.live)
             / self.dt.strftime(f"{alias}_%Y%m%d{extension}")
         )
 
-        # Prefer historical data when available
+        # Prefer historic data if file exists (filesystem metadata check → O(1))
         if hist_cache.is_file():
+
+            # Delete possible stale live JSON (constant-time unlink if exists → O(1))
             live_cache.unlink(missing_ok=True)
+
+            # Delete possible stale live output file (O(1))
             live_data.unlink(missing_ok=True)
+
+            # Return historic source + historic output location
             return hist_cache, hist_data
 
-        # Fallback to live data if historical not present
+        # If no historic file, check for live file (O(1))
         if live_cache.is_file():
             return live_cache, live_data
 
-        # No source data available
-        raise DataNotFoundError(f"No JSON source found for {self.symbol} on {self.dt}")
+        # If neither exists, fail fast (constant time error path → O(1))
+        raise DataNotFoundError(
+            f"No JSON source found for {self.symbol} on {self.dt}"
+        )
+
 
     def run(self) -> bool:
-        """Execute the end-to-end transformation pipeline for the worker's symbol and date.
+        """
+        Execute the full transformation pipeline for a single symbol/date.
 
-        This method performs the following steps:
-        1. Resolves input JSON and target CSV paths (preferring historical data).
-        2. Loads the source JSON payload.
-        3. Transforms delta-encoded market data into normalized OHLCV format.
-        4. Applies symbol-specific post-processing and optional validation.
-        5. Writes the resulting DataFrame to disk using an atomic file replacement
-        strategy, optionally syncing to disk if configured.
+        This method:
+            1. Resolves the correct source JSON file (historic preferred).
+            2. Loads the JSON payload into memory.
+            3. Determines all alias symbols derived from this source symbol.
+            4. Runs the vectorized transformation for each alias.
+            5. Writes results atomically to disk.
+
+        Complexity:
+            - Path resolution: O(1)
+            - JSON load: O(file_size)
+            - Alias discovery: O(K) where K = number of configured symbols
+            - Transformation: O(N) per alias (vectorized) + O(N×M) if post-processing active
+            - Disk write: O(N)
+
+            Total per alias ≈ O(N) dominant
 
         Returns:
-            bool: True if the transformation and write completed successfully.
+            bool: True if transformation and atomic write succeed.
 
         Raises:
-            DataNotFoundError: If no source JSON file exists for the worker's symbol
-                and date.
-            ProcessingError: If the JSON payload cannot be transformed into
-                normalized OHLCV data.
-            TransactionError: If a disk I/O error occurs during writing, or if an
-                unexpected runtime error occurs during processing.
+            DataNotFoundError: If no source JSON exists.
+            ProcessingError: If transformation fails.
+            TransactionError: If disk I/O or unexpected runtime error occurs.
         """
         try:
-            # Resolve source JSON and target CSV paths
+            # Resolve correct input/output paths (constant-time path logic → O(1))
             source_path, target_path = self.resolve_paths()
 
-            # Load JSON payload
+            # Load entire JSON file into memory (linear in file size → O(N))
             data = orjson.loads(Path(source_path).read_bytes())
 
-            # Collect current symbol post-processing steps and any symbols for which the source is the current symbol
+            # Start with primary symbol (constant time → O(1))
             aliasses = [self.symbol]
 
+            # Discover derived symbols that use this symbol as source (scan config → O(K))
             for key in self.config.symbols.keys():
                 if self.config.symbols.get(key).source == self.symbol:
-                    # push it to the collection
                     aliasses.append(key)
 
-            # now, call the processing for each of the aliasses
+            # Process each alias independently (loop size = number of aliases)
             for alias in aliasses:
-                
-                # Rediscover paths
+
+                # Re-resolve paths for alias (still constant time → O(1))
                 source_path, target_path = self.resolve_paths(alias=alias)
-                
-                # Transform raw deltas into normalized OHLCV data
+
+                # Heavy lifting happens here:
+                # Vectorized reconstruction → O(N)
+                # Post-processing (if enabled) → up to O(N×M)
                 df = self.engine.process_json(data, alias=alias)
 
-                # Ensure output directory exists
+                # Ensure directory exists (filesystem check → effectively O(1))
                 target_path.parent.mkdir(parents=True, exist_ok=True)
 
-                # Atomic write: write to temp file, then replace
+                # Create temporary file path for atomic write (O(1))
                 temp_path = target_path.with_suffix(".tmp")
 
-                writer =  ResampleIOFactory.get_writer(temp_path, self.fmode, fsync=self.config.fsync)
+                # Get appropriate writer implementation (factory lookup → O(1))
+                writer = ResampleIOFactory.get_writer(
+                    temp_path,
+                    self.fmode,
+                    fsync=self.config.fsync
+                )
 
+                # Write full dataframe to disk (linear in rows → O(N))
                 with writer:
-                    # Write the dataframe to the file handle
-                    writer.write_batch(df)
-                    # Flush to OS (and SSD if fsync is True)
-                    writer.flush()
+                    writer.write_batch(df)  # Actual data write
+                    writer.flush()          # Ensure OS buffer flush (fsync if enabled)
 
-                # Atomic replace
+                # Atomic replace prevents partial/corrupt files (OS-level operation → O(1))
                 os.replace(temp_path, target_path)
 
             return True
@@ -379,6 +461,7 @@ class TransformWorker:
             raise TransactionError(f"Disk I/O failure writing {self.symbol}: {e}")
         except Exception as e:
             raise TransactionError(f"Unexpected worker failure for {self.symbol}: {e}")
+
 
 def fork_transform(args: tuple) -> bool:
     """Multiprocessing-safe entry point for running a transformation job.
