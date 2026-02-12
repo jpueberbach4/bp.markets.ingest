@@ -19,7 +19,7 @@ Also, this means that when no data has arrived for some time, the candle will be
 
 There will be two additional indicators:
 
-- drift: will output how many minutes the 1m candle of the selected asset has drifted from the last 1m BTC-USD candle
+- drift: will output how many minutes the 1m candle of the selected asset has drifted from the last 1m BTC-USD candle (available in main)
 - is-stale(tolerance): will output if a market did not receive any data for the number of minutes specified by tolerance, relative to laptop-time.
 
 ## **Very cool tip**
