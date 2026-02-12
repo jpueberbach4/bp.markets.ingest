@@ -66,6 +66,8 @@ After:
 
 I am first writing for correctness and completeness, then a performance optimization pass will be performed.
 
+**Note:** Negative prices are "normal" in backadjusted data for BRENT. So your backadjusted/adjusted data will run side-by-side with your live-broker data. I think this is the optimal strategy for handling this.
+
 ## **Security**
 
 Oh yes! Security 🙈 Will get added too (especially flight). Security has been of "later concern" since this is a local-first private research tool that is supposed to run on a local-machine, tightly secured to 127.0.0.1. Clones, however, show that this is definately not only used on 127.0.0.1. 
