@@ -163,9 +163,14 @@ class DownloadConfig:
     mode: str = "requests"
     jitter: float = 0.5
 
+@dataclass
+class TransformDateRange:
+    """Defines the 'from' and 'to' dates for a single date range."""
+    from_date: str = field(default=None,metadata={'yaml_key': 'from_date'}) 
+    to_date: str = field(default=None,metadata={'yaml_key': 'to_date'})
 
 @dataclass
-class TransformSymbolProcessingStep:
+class TransformSymbolProcessingStep(TransformDateRange):
     """
     Configuration for a pre/post processing step
     """
