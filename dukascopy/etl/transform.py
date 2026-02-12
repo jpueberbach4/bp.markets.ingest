@@ -232,7 +232,7 @@ class TransformWorker:
         # Create engine instance
         self.engine = TransformEngine(dt, symbol, self.config)
 
-    def resolve_paths(self) -> Tuple[Path, Path]:
+    def resolve_paths(self, alias=None) -> Tuple[Path, Path]:
         """Resolve source JSON and target CSV paths for the worker's symbol and date.
 
         This method prefers historical data when available. If a historical JSON
@@ -250,6 +250,8 @@ class TransformWorker:
                 exists for the worker's symbol and date.
         """
 
+        alias = self.symbol if None else alias
+
         extension = ResampleIOFactory.get_appropriate_extension(self.fmode)
 
         # Historical cache and output paths
@@ -259,7 +261,7 @@ class TransformWorker:
         )
         hist_data = (
             Path(self.config.paths.data)
-            / self.dt.strftime(f"%Y/%m/{self.symbol}_%Y%m%d{extension}")
+            / self.dt.strftime(f"%Y/%m/{alias}_%Y%m%d{extension}")
         )
 
         # Live cache and output paths
@@ -269,7 +271,7 @@ class TransformWorker:
         )
         live_data = (
             Path(self.config.paths.live)
-            / self.dt.strftime(f"{self.symbol}_%Y%m%d{extension}")
+            / self.dt.strftime(f"{alias}_%Y%m%d{extension}")
         )
 
         # Prefer historical data when available
@@ -314,25 +316,39 @@ class TransformWorker:
             # Load JSON payload
             data = orjson.loads(Path(source_path).read_bytes())
 
-            # Transform raw deltas into normalized OHLCV data
-            df = self.engine.process_json(data)
+            # Collect current symbol post-processing steps and any symbols for which the source is the current symbol
+            aliasses = [self.symbol]
 
-            # Ensure output directory exists
-            target_path.parent.mkdir(parents=True, exist_ok=True)
+            for key in self.config.symbols.keys():
+                if self.config.symbols.get(key).source == self.symbol:
+                    # push it to the collection
+                    aliasses.append(key)
 
-            # Atomic write: write to temp file, then replace
-            temp_path = target_path.with_suffix(".tmp")
+            # now, call the processing for each of the aliasses
+            for alias in aliasses:
+                
+                # Rediscover paths
+                source_path, target_path = self.resolve_paths(alias=alias)
+                
+                # Transform raw deltas into normalized OHLCV data
+                df = self.engine.process_json(data)
 
-            writer =  ResampleIOFactory.get_writer(temp_path, self.fmode, fsync=self.config.fsync)
+                # Ensure output directory exists
+                target_path.parent.mkdir(parents=True, exist_ok=True)
 
-            with writer:
-                # Write the dataframe to the file handle
-                writer.write_batch(df)
-                # Flush to OS (and SSD if fsync is True)
-                writer.flush()
+                # Atomic write: write to temp file, then replace
+                temp_path = target_path.with_suffix(".tmp")
 
-            # Atomic replace
-            os.replace(temp_path, target_path)
+                writer =  ResampleIOFactory.get_writer(temp_path, self.fmode, fsync=self.config.fsync)
+
+                with writer:
+                    # Write the dataframe to the file handle
+                    writer.write_batch(df)
+                    # Flush to OS (and SSD if fsync is True)
+                    writer.flush()
+
+                # Atomic replace
+                os.replace(temp_path, target_path)
 
             return True
 

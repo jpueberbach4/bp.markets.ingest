@@ -181,6 +181,7 @@ class TransformSymbolProcessingStep(TransformDateRange):
 @dataclass
 class TransformSymbol:
     """Per-symbol overrides for resampling behavior."""
+    source: str = field(default=None,metadata={'yaml_key': 'source'}) 
     post: Optional[Dict[str, TransformSymbolProcessingStep]] = field(default=None)
 
 @dataclass
