@@ -71,6 +71,10 @@ DuckDB:
 Panama:
   - [ ] Panama prevents text-strip, invent solution for binary
 
+Note: solution here is that we are embracing a "side-track" approach. This will eliminate the Panama builder component
+since the dataset is already there. No need to "build" it anymore. Just configure it instead. When Panama sidetracking is
+done we can strip text support completely. Lessening the code by 3-8 percent.
+
 Drawing/Visualization:
   - [x] Split JS to libs (chart.js, drawing.js, ui.js)
   - [ ] Drawing tools (lines, channels, fibs)
