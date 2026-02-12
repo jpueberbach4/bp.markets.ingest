@@ -91,7 +91,7 @@ class TransformEngine:
         return df
 
 
-    def process_json(self, data: dict) -> pd.DataFrame:
+    def process_json(self, data: dict, alias = None) -> pd.DataFrame:
         """Convert a Dukascopy delta-encoded JSON payload into an OHLCV DataFrame.
 
         This method reconstructs timestamps and OHLC prices using cumulative
@@ -123,6 +123,10 @@ class TransformEngine:
         try:
             # Resolve symbol- and date-specific timestamp shift (e.g. DST handling)
             time_shift_ms = get_symbol_time_shift_ms(self.dt, self.symbol, self.config)
+
+            # Symbol
+            symbol = alias if alias is not None else self.symbol
+
             try:
                 # Reconstruct timestamps using cumulative deltas
                 times = (
@@ -172,7 +176,7 @@ class TransformEngine:
             ).round(self.config.round_decimals)
 
             # Get symbol specific configuration
-            sym_cfg = self.config.symbols.get(self.symbol) if self.config.symbols else None
+            sym_cfg = self.config.symbols.get(symbol) if self.config.symbols else None
             
             # Determine post-processing steps
             steps = []
@@ -200,7 +204,7 @@ class TransformEngine:
         except (DataValidationError, ProcessingError, TransformLogicError):
             raise
         except Exception as e:
-            raise ProcessingError(f"Vectorized transformation failed for {self.symbol}: {e}") from e
+            raise ProcessingError(f"Vectorized transformation failed for {symbol}: {e}") from e
 
 
 class TransformWorker:
@@ -331,7 +335,7 @@ class TransformWorker:
                 source_path, target_path = self.resolve_paths(alias=alias)
                 
                 # Transform raw deltas into normalized OHLCV data
-                df = self.engine.process_json(data)
+                df = self.engine.process_json(data, alias=alias)
 
                 # Ensure output directory exists
                 target_path.parent.mkdir(parents=True, exist_ok=True)
