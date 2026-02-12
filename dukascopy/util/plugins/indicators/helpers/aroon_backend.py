@@ -2,21 +2,23 @@ import numpy as np
 import numba
 
 @numba.jit(nopython=True, cache=True, nogil=True)
-def _aroon_backend(highs: np.ndarray, lows: np.ndarray, period: int):
-    """
-    Compiled Numba backend for Aroon.
-    """
-    size = highs.shape[0]
-    out_up = np.full(size, np.nan, dtype=np.float64)
-    out_down = np.full(size, np.nan, dtype=np.float64)
-    
-    window_size = period + 1
-    
-    for i in range(window_size - 1, size):
-        h_win = highs[i - window_size + 1 : i + 1]
-        l_win = lows[i - window_size + 1 : i + 1]
-        
-        out_up[i] = (np.argmax(h_win) / period) * 100
-        out_down[i] = (np.argmin(l_win) / period) * 100
-        
-    return out_up, out_down
+def _aroon_backend_up(high: np.ndarray, period: int) -> np.ndarray:
+    size = high.shape[0]
+    out = np.full(size, np.nan, dtype=np.float64)
+    for i in range(period, size):
+        window = high[i - period : i + 1]
+        # Days since period high
+        days_since = period - np.argmax(window)
+        out[i] = ((period - days_since) / period) * 100
+    return out
+
+@numba.jit(nopython=True, cache=True, nogil=True)
+def _aroon_backend_down(low: np.ndarray, period: int) -> np.ndarray:
+    size = low.shape[0]
+    out = np.full(size, np.nan, dtype=np.float64)
+    for i in range(period, size):
+        window = low[i - period : i + 1]
+        # Days since period low
+        days_since = period - np.argmin(window)
+        out[i] = ((period - days_since) / period) * 100
+    return out

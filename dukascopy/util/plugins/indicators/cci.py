@@ -51,19 +51,6 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "period": args[0] if len(args) > 0 else "20"
     }
 
-def _cci_map_wrapper(s: pl.Series, period: int) -> pl.Series:
-    """
-    Computes Typical Price and passes to Numba backend.
-    """
-    high = s.struct.field("high").to_numpy()
-    low = s.struct.field("low").to_numpy()
-    close = s.struct.field("close").to_numpy()
-    tp = (high + low + close) / 3.0
-    
-    cci_values = _cci_backend(tp, period)
-    
-    return pl.Series("cci", cci_values)
-
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     """
     Fast CCI implementation using the map_batches pattern.
@@ -73,11 +60,11 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
     except (ValueError, TypeError):
         p = 20
 
-    mapper = partial(_cci_map_wrapper, period=p)
-
-    cci_expr = (
-        pl.struct(["high", "low", "close"])
-        .map_batches(mapper, return_dtype=pl.Float64)
+    tp_expr = (pl.col("high") + pl.col("low") + pl.col("close")) / 3.0
+    
+    cci_expr = tp_expr.map_batches(
+        lambda s: _cci_backend(s.to_numpy(), p),
+        return_dtype=pl.Float64
     )
 
     direction_expr = (

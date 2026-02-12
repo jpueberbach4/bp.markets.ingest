@@ -7,7 +7,7 @@ try:
 except ImportError:
     raise ImportError("Numba is required. Run 'pip install numba' OR 'pip install -r requirements.txt'")
 
-from util.plugins.indicators.helpers.aroon_backend import _aroon_backend
+from util.plugins.indicators.helpers.aroon_backend import _aroon_backend_down, _aroon_backend_up
 
 
 
@@ -52,43 +52,20 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "period": args[0] if len(args) > 0 else "14"
     }
 
-
-def _aroon_map_wrapper(s: pl.Series, period: int) -> pl.Series:
-    """
-    Wrapper to bridge Polars Series and Numba backend.
-    """
-    highs = s.struct.field("high").to_numpy()
-    lows = s.struct.field("low").to_numpy()
-    
-    aroon_up, aroon_down = _aroon_backend(highs, lows, period)
-    
-    return pl.DataFrame({
-        "aroon_up": aroon_up,
-        "aroon_down": aroon_down
-    }).to_struct("aroon_results")
-
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
-    """
-    High-performance Aroon using Numba + Polars map_batches.
-    """
-    try:
-        p = int(options.get('period', 14))
-    except (ValueError, TypeError):
-        p = 14
+    p = int(options.get('period', 14))
 
-    mapper = partial(_aroon_map_wrapper, period=p)
-
-    aroon_schema = pl.Struct([
-        pl.Field("aroon_up", pl.Float64),
-        pl.Field("aroon_down", pl.Float64),
-    ])
-
-    aroon_base = (
-        pl.struct(["high", "low"])
-        .map_batches(mapper, return_dtype=aroon_schema)
+    aroon_up = pl.col("high").map_batches(
+        lambda s: _aroon_backend_up(s.to_numpy(), p), 
+        return_dtype=pl.Float64
+    )
+    
+    aroon_down = pl.col("low").map_batches(
+        lambda s: _aroon_backend_down(s.to_numpy(), p), 
+        return_dtype=pl.Float64
     )
 
     return [
-        aroon_base.struct.field("aroon_down").alias(f"{indicator_str}__aroon_down"),
-        aroon_base.struct.field("aroon_up").alias(f"{indicator_str}__aroon_up")
+        aroon_up.alias(f"{indicator_str}__up"),
+        aroon_down.alias(f"{indicator_str}__down"),
     ]
