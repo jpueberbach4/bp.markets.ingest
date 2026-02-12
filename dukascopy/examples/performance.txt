@@ -3,7 +3,6 @@
 ----------------------------------------------------------------------------
 STATUS   | INDICATOR                 |  TIME (ms) | TYPE            | SOURCE
 ----------------------------------------------------------------------------
-❌ FAIL  | rsi-1h4h1d-org            |       0.00 | ERROR           | Can only merge Series or DataFrame objects, a <class 'unittest.mock.MagicMock'> was passed
 ✅ OK    | rsi-1h4h1d                |       7.67 | Polars DF       | config.user
 ✅ OK    | status2                   |       0.99 | Polars DF       | config.user
 ✅ OK    | talib-ad                  |       0.46 | Pandas DF       | config.user
@@ -203,4 +202,5 @@ STATUS   | INDICATOR                 |  TIME (ms) | TYPE            | SOURCE
 ✅ OK    | vwma                      |       0.74 | Polars Expr     | util
 ✅ OK    | williamsr                 |       2.90 | Polars Expr     | util
 ✅ OK    | zigzag                    |       1.12 | Polars Expr     | util
+
 ✅ OK    | zscore                    |       2.46 | Polars Expr     | util
