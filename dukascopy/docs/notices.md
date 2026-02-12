@@ -40,6 +40,8 @@ But again: later.
 
 Ultimately this will be rewritten to C++. For me, all of this, is also testing what works best and what are the DOs and DONts,
 
+**Note:** When you run `./run-tests.sh` for performance tests and you see high values for marketprofile etc. `clear && ./run-tests.sh`. The numba extensions need to get compiled (cached). On a second run they will be cached and show you the `real values`.
+
 ## **Notice: Web-interface small issue**
 
 No. The issue was the RSI indicator. Warmup was 3 * rsi_period. Made it * 15. Now all oke.
