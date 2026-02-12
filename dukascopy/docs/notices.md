@@ -26,6 +26,8 @@ Oh yes! Security 🙈 Will get added too (especially flight). Security has been 
 
 I promise it will be taken care of when i rewrite the ingestion layer. If i will go as far as including a OAuth2 layer, i don't know yet. Needs to be lightweight. Performance-first.
 
+TLS will be implemented as a minimum. Raw Public Key (RPK) Authentication will be implemented as a minimum.
+
 ## **Conversion pass to numba + polars expressions**
 
 Numba has enabled us to move almost all indicators to pure Polars expressions. We still use map_batches. I am back to the drawing board for some indicators. Perhaps some will need to fallback to the TA-lib ones. These have 20 years of C-optimizations. I wasnt able to break the speed-records of TA-lib with Pure Polars, Numba etc. Meaning that I will check that documentation on TA-lib i wrote soon to make TA-lib 0.6.x more easily installable. 
