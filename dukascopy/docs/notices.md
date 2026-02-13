@@ -68,6 +68,8 @@ This gives the backend server a bit more time to synchronize all symbols.
 
 Documented here (future reference): [Market-status indicators](market-status.md)
 
+**Update:** I have updated the `config/dukascopy/http-docs/index.html` to show the drift value in the upper right corner of the web-interface. You need to copy `config/dukascopy/http-docs/index.html` and `config/dukascopy/http-docs/scripts/monitor.js` to their respective `config.user` directies.
+
 ## **Very cool tip**
 
 For the coders under us. I just discovered something cool with AI. Just push your code in and say: annotate the code and mention complexity O(1), O(log N) and O(NxM) where applicable. It exactly pinpoints bottlenecks. It amazed me how helpful that actually is.
