@@ -21,6 +21,10 @@ eg AAPL.US-USD in Etc/UTC and the BTC-USD in America/New_York -> AAPL has an iss
 
 I have updated the `AAPL.US-USD` symbol in `config/dukascopy/timezones/america-new_york.yaml` to `AAPL.US-USDX`.
 
+**Update:** beta/0.6.8 (non-breaking) has an update for this. If you want to have it now, `git fetch -p && git checkout beta/0.6.8`. On sunday the fix will get merged to main branch, together with the full sidetracking (with config builders).
+
+After update: `./service.sh restart` (if you are running with `http.reload:0`). 0.6.8-beta also hold a beta for the BRENT panama adjustment. If you are interested. See the notices.md after you have switched to the beta for more information.
+
 ## **Server kindness**
 
 Re-iterating to be nice to the backend servers. After your initial sync, you can slow down your requests. Even when updating every minute (when you really need that). Implement a spreading/limit when in-sync.
