@@ -1,5 +1,43 @@
 Market research- and analysis tool, feature-engineering, but you can do so much more with it, if you are a bit "handy".
 
+## **Side-tracking beta**
+
+I have merged the sidetracking feature to the main-branch. This is without the config-builders, they are still being developed.
+
+**Note:** There is only a sidetrack for BRENT-CMD.USD configured in the beta. You will need to add BRENT-CMD.USD to `symbols.user.txt`.
+
+After updating with `git pull`, 
+
+- Create a directory `config.user/dukascopy/sidetracking`
+- Copy over the `config/dukascopy/sidetracking/BRENT-CMD.USD-PANAMA.yaml` to `config.user/dukascopy/sidetracking`
+
+Next 
+
+Open your `config.user.yaml`:
+
+```yaml
+# Below you will find the configuration for the transform.py script. 
+transform:
+  time_shift_ms: 7200000              # How many milliseconds should we shift (0=UTC, 7200000=GMT+2 (eg MT4 Dukascopy) )
+  round_decimals: 8                   # Number of decimals to round OHLCV to
+  fsync: false                        # Force flush to disk after each transformation
+  fmode: binary                       # Only binary is supported from v0.6.6 onward
+  validate: false                     # Force validation of OHLCV values
+  paths:
+    data: data/transform/1m           # Output directory for transform
+    historic: cache                   # Historical downloads
+    live: data/temp                   # Live downloads
+  timezones:
+    includes:
+    - config.user/dukascopy/timezones/*.yaml
+  symbols:
+    includes:
+    - config.user/dukascopy/processing.yaml
+    - config.user/dukascopy/sidetracking/*.yaml # Un-comment/Add this to enable the BETA sidetracking feature for BRENT
+```
+
+Per symbol rebuilds are currently unsupported, so you will need to do a `rebuild-full.sh`.
+
 ## **Change in is-open**
 
 There was a nasty bug in is-open. Because it is such an important feature, here is how it (now) works:
