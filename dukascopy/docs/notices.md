@@ -2,6 +2,8 @@ Market research- and analysis tool, feature-engineering, but you can do so much 
 
 ## **Change in is-open**
 
+Note: another update is needed. in case of SGD-IDX, 4H candles may actually be more than 4H long. This is a "broker quirk" we discovered a little while ago (see merge logic in SGD-IDX timeframe config). So, we will add a third subquery to get the last candle ts of the current timeframe and symbol. If the market is flowing and there is no drift, we will mark the last candle for current tf and symbol as open. If there is drift and the candle timespan has passed, the candle will get closed. Its an extension to the current logic.
+
 There was a nasty bug in is-open. Because it is such an important feature, here is how it (now) works:
 
 - let global_now_ms be the time_ms of the last 1m BTC-USD candle
@@ -292,3 +294,4 @@ This is a ROBUST solution.
 You can checkout the indicator [here](../util/plugins/indicators/is-open.py).
 
 **Update:** The is-stale functionality will compare last BTC 1m tick with the system-time one time and store an offset-file which updates once a day. Or something similar. This determines the local systems time-offset compared to the server (no need for a fixed configuration). It will store it somewhere and the argument being passed to is-stale (tolerance, needs to know how frequent you update) will be used to detect stale-ness. So the solution is known. Kinda busy today... but it will be here soon.
+
