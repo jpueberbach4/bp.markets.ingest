@@ -19,6 +19,10 @@ A candle is considered **OPEN** (`is-open = TRUE`) if:
 
 **`last_ms >= (global_now_ms - tf_lengths.get(tf, 0))`**
 
+**Broker Quirk Handling:** For timeframes less than 1 Day, if the asset's 1-minute drift is less than the timeframe duration, the system anchors the is-open boundary to the asset's own latest timestamp rather than the global heartbeat. This ensures non-standard candle lengths (e.g., SGD-IDX 6H30M "H4" candles) are correctly identified as open while the market is active.
+
+See [config/dukascopy/timeframes/indices/SGD-indices.yaml](../config/dukascopy/timeframes/indices/SGD-indices.yaml) (merge logic).
+
 ### Implications
 If an asset stops ticking (no new data arrives) while data continues to flow for BTC-USD, the asset's last candle will be marked **CLOSED** as soon as the global heartbeat moves past the candle's expected duration. This ensures that stale data is not indefinitely treated as an active "live" candle.
 

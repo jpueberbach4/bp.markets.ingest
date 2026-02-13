@@ -2,8 +2,6 @@ Market research- and analysis tool, feature-engineering, but you can do so much 
 
 ## **Change in is-open**
 
-Note: another update is needed. in case of SGD-IDX, 4H candles may actually be more than 4H long. This is a "broker quirk" we discovered a little while ago (see merge logic in SGD-IDX timeframe config). So, we will add a third subquery to get the last candle ts of the current timeframe and symbol. If the market is flowing and there is no drift, we will mark the last candle for current tf and symbol as open. If there is drift and the candle timespan has passed, the candle will get closed. Its an extension to the current logic.
-
 There was a nasty bug in is-open. Because it is such an important feature, here is how it (now) works:
 
 - let global_now_ms be the time_ms of the last 1m BTC-USD candle
@@ -23,6 +21,10 @@ There will be two additional indicators:
 
 - drift: will output how many minutes the 1m candle of the selected asset has drifted from the last 1m BTC-USD candle (available in main)
 - is-stale(tolerance): will output if a market did not receive any data for the number of minutes specified by tolerance, relative to laptop-time.
+
+**Broker Quirk Handling:** For timeframes less than 1 Day, if the asset's 1-minute drift is less than the timeframe duration, the system anchors the is-open boundary to the asset's own latest timestamp rather than the global heartbeat. This ensures non-standard candle lengths (e.g., SGD-IDX 6H30M "H4" candles) are correctly identified as open while the market is active.
+
+See [config/dukascopy/timeframes/indices/SGD-indices.yaml](../config/dukascopy/timeframes/indices/SGD-indices.yaml) (merge logic).
 
 Documented here (future reference): [Market-status indicators](market-status.md)
 
