@@ -17,7 +17,7 @@ The is-open/drift functionality will not work properly. Why?
 
 The BTC-USD symbol is configured with GMT+2-atm. So the timezone GMT+2 and Etc/UTC differ by two hours, causing a drift of 120 minutes. Is-close will detect candles as closed. I will add support for this when `is-stale` also gets implemented. Normally, you want all symbols in one timezone, the timezone of the MT4 server or ALL in UTC. This issue affects only `advanced users` that have multiple timezone/asset combinations configured and only affect the symbols that are in a different timezone than BTC.
 
-eg AAPL.US-USD in Etc/UTC and the BTC-USD in America/New_York.
+eg AAPL.US-USD in Etc/UTC and the BTC-USD in America/New_York -> AAPL has an issue.
 
 I have updated the `AAPL.US-USD` symbol in `config/dukascopy/timezones/america-new_york.yaml` to `AAPL.US-USDX`.
 
