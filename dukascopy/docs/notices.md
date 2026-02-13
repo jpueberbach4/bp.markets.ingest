@@ -7,7 +7,7 @@ There was a nasty bug in is-open. Because it is such an important feature, here 
 - let global_now_ms be the time_ms of the last 1m BTC-USD candle
 - let tf be the currently selected timeframe (eg 4h)
 - let tf_lengths be a dictionary that maps a tf to its length in ms (eg 1h = 3600000)
-- let last_ms be the timestamp of the last candle of the currently selected asset and symbol
+- let last_ms be the timestamp of the last candle of the currently selected asset and timeframe
 
 Then, when:
 
@@ -15,12 +15,26 @@ Then, when:
 
 The last candle is considered **OPEN**, `is-open = TRUE`
 
-Also, this means that when no data has arrived for some time, the candle will be closed after the time-span of the candle has passed.
+Also, this means that when no data has arrived for some time on the selected asset, while data is flowing for BTC-USD, the selected last candle will be closed after the time-span of that candle has passed.
 
 There will be two additional indicators:
 
 - drift: will output how many minutes the 1m candle of the selected asset has drifted from the last 1m BTC-USD candle (available in main)
 - is-stale(tolerance): will output if a market did not receive any data for the number of minutes specified by tolerance, relative to laptop-time.
+
+**Broker Quirk Handling:** For timeframes less than 1 Day, if the asset's 1-minute drift is less than the timeframe duration, the system anchors the is-open boundary to the asset's own latest timestamp rather than the global heartbeat. This ensures non-standard candle lengths (e.g., SGD-IDX 6H30M "H4" candles) are correctly identified as open while the market is active.
+
+See [config/dukascopy/timeframes/indices/SGD-indices.yaml](../config/dukascopy/timeframes/indices/SGD-indices.yaml) (merge logic).
+
+**Note:** If your drift between assets is sometimes 1 minute, update your crontab - change the sleep value to 10:
+
+```sh
+*/5 * * * * sleep 10 && cd /home/jpueberb/repos2/bp.markets.ingest/dukascopy && ./run.sh
+```
+
+This gives the backend server a bit more time to synchronize all symbols.
+
+Documented here (future reference): [Market-status indicators](market-status.md)
 
 ## **Very cool tip**
 
@@ -290,3 +304,4 @@ This is a ROBUST solution.
 You can checkout the indicator [here](../util/plugins/indicators/is-open.py).
 
 **Update:** The is-stale functionality will compare last BTC 1m tick with the system-time one time and store an offset-file which updates once a day. Or something similar. This determines the local systems time-offset compared to the server (no need for a fixed configuration). It will store it somewhere and the argument being passed to is-stale (tolerance, needs to know how frequent you update) will be used to detect stale-ness. So the solution is known. Kinda busy today... but it will be here soon.
+

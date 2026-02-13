@@ -50,12 +50,6 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     # Ensure time_ms is an unsigned integer so math works correctly
     ldf = df.lazy().with_columns([pl.col("time_ms").cast(pl.UInt64)])
 
-    # FAST PATH: 1m candles are always closed in this system
-    if tf == "1m":
-        return ldf.with_columns(
-            pl.lit(0, dtype=pl.Int8).alias("is-open")
-        ).select("is-open")
-
     def fetch_heartbeat():
         # Fetch the latest BTC-USD 1-minute candle
         # This acts as a global "market is alive" signal
