@@ -1,5 +1,24 @@
 Market research- and analysis tool, feature-engineering, but you can do so much more with it, if you are a bit "handy".
 
+## **Is-open and timezones**
+
+If you have something like this:
+
+```yaml
+Etc/UTC:                          # This is an example on how to resample assets using UTC
+  offset_to_shift_map:            # Defines a map to shift based on offset minutes
+    0: 0                          # No shift. Incoming data is already UTC. Warning: NO DASH!!
+  symbols:
+  # --- Stocks ---
+  - AAPL.US-USD                   # OK
+```
+
+The is-open/drift functionality will not work properly. Why? 
+
+The BTC-USD symbol is configured with GMT+2-atm. So the timezone GMT+2 and Etc/UTC differ by two hours, causing a drift of 120 minutes. Is-close will detect candles as closed. I will add support for this when `is-stale` also gets implemented. Normally, you want all symbols in one timezone, the timezone of the MT4 server. This issue affects only `advanced users` that have multiple timezone/asset combinations configured.
+
+I have updated the `AAPL.US-USD` symbol in `config/dukascopy/timezones/america-new_york.yaml` to `AAPL.US-USDX`.
+
 ## **Server kindness**
 
 Re-iterating to be nice to the backend servers. After your initial sync, you can slow down your requests. Even when updating every minute (when you really need that). Implement a spreading/limit when in-sync.
