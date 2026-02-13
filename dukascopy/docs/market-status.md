@@ -52,3 +52,23 @@ While `drift` compares two markets, `is-stale` compares the market feed against 
 | **`is-open`** | Asset vs. Global Heartbeat | Determines if a candle is final/settled. |
 | **`drift`** | Asset vs. Global Heartbeat | Measures market-to-market synchronization (Minutes). |
 | **`is-stale`** | Asset vs. System Clock | Detects local process or connectivity failure. |
+
+## Important example
+
+Take SGD-IDX:
+
+- The last 4H candle opened at 19:51.
+- The last 1m candle for SGD-IDX is at 22:59.
+- The last 1m BTC-USD candle (global reference) is at 02:11.
+
+This results in a drift of 192 minutes.
+
+Even though the drift (192) is less than the length of H4, the 4H candle is closed — and this is correct.
+
+Why?
+
+Because the last 1m candle at 22:59 still belongs to the 4H candle that started at 19:51. That 4H window has already completed relative to the global reference time.
+
+So don’t misinterpret the drift value in isolation.
+
+The candle boundaries are determined by the timeframe window — not just by the drift number.
