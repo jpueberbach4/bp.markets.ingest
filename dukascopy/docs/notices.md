@@ -1,5 +1,28 @@
 Market research- and analysis tool, feature-engineering, but you can do so much more with it, if you are a bit "handy".
 
+## **Server kindness**
+
+Re-iterating to be nice to the backend servers. After your initial sync, you can slow down your requests. Even when updating every minute (when you really need that). Implement a spreading/limit when in-sync.
+
+Example config:
+
+```yaml
+# Below you will find the configuration for the download.py script. 
+download:
+  max_retries: 10                     # Number of retries before downloader raises
+  backoff_factor: 1.2                 # Exponential backoff factor (wait time)
+  timeout: 10                         # Request timeout
+  rate_limit_rps: 1                   # Protect end-point (number of cores * rps = requests/second)
+  mode: http2                         # DownloadWorker-type: requests or http2
+  jitter: 5.0                         # Add a random jitter up to this amount (seconds)
+  paths:
+    historic: cache                   # Historical downloads
+    live: data/temp                   # Live downloads
+```
+
+This will spread a sync for +/- 40 symbols over 30 seconds. More than enough time to stay "realtime", well within the 1 minute opportunity/sync window. You are lagging anyhow at minimum 1 minute compared to real realtime since the 1m candles are added when they are closed.
+
+
 ## **Side-tracking beta**
 
 I have merged the sidetracking feature to the main-branch. This is without the config-builders, they are still being developed.
