@@ -1,5 +1,15 @@
 Market research- and analysis tool, feature-engineering, but you can do so much more with it, if you are a bit "handy".
 
+## **Sidetracking beta**
+
+If you want to examine/try:
+
+There is a branch beta/0.6.8 which includes the sidetracking feature. It doesnt have the config builders yet but has a sidetrack Panama configuration for BRENT-CMD.USD.
+
+The beta is NON-breaking. Read the notices.md after switching to the beta.
+
+Config-builders are expected to be ready in the weekend. All futures with rollovers will be 100 percent supported.
+
 ## **Change in is-open**
 
 There was a nasty bug in is-open. Because it is such an important feature, here is how it (now) works:
