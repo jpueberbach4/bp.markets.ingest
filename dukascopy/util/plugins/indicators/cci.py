@@ -1,7 +1,14 @@
-import pandas as pd
 import numpy as np
 import polars as pl
 from typing import List, Dict, Any
+from functools import partial
+
+try:
+    import numba
+except ImportError:
+    raise ImportError("Numba is required. Run 'pip install numba' OR 'pip install -r requirements.txt'")
+
+from util.plugins.indicators.helpers.cci_backend import _cci_backend
 
 def description() -> str:
     """
@@ -22,7 +29,8 @@ def meta() -> Dict:
         "version": 1.1,
         "panel": 1,
         "verified": 1,
-        "polars": 1  # Trigger high-speed Polars execution path
+        "talib-validated": 1, 
+        "polars": 1,
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -45,57 +53,28 @@ def position_args(args: List[str]) -> Dict[str, Any]:
 
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     """
-    High-performance Polars-native calculation using vectorized MAD.
+    Fast CCI implementation using the map_batches pattern.
     """
     try:
-        period = int(options.get('period', 20))
+        p = int(options.get('period', 20))
     except (ValueError, TypeError):
-        period = 20
+        p = 20
 
-    # 1. Calculate Typical Price (TP)
-    tp = (pl.col("high") + pl.col("low") + pl.col("close")) / 3
-
-    # 2. Calculate SMA of Typical Price
-    tp_sma = tp.rolling_mean(window_size=period)
-
-    # 3. Calculate Mean Absolute Deviation (MAD)
-    # We use rolling_map with a vectorized internal expression to stay in Rust
-    mad = tp.rolling_map(
-        lambda s: (s - s.mean()).abs().mean(), 
-        window_size=period
+    tp_expr = (pl.col("high") + pl.col("low") + pl.col("close")) / 3.0
+    
+    cci_expr = tp_expr.map_batches(
+        lambda s: _cci_backend(s.to_numpy(), p),
+        return_dtype=pl.Float64
     )
 
-    # 4. Calculate CCI and Direction
-    cci = (tp - tp_sma) / (0.015 * mad)
-    direction = pl.when(cci > cci.shift(1)).then(100).otherwise(-100)
+    direction_expr = (
+        pl.when(cci_expr > cci_expr.shift(1))
+        .then(100)
+        .otherwise(-100)
+        .cast(pl.Int32)
+    )
 
-    # Return aliased expressions for the nested orchestrator
     return [
-        cci.alias(f"{indicator_str}__cci"),
-        direction.alias(f"{indicator_str}__direction")
+        cci_expr.alias(indicator_str),
+        direction_expr.alias("direction")
     ]
-
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
-    """
-    Legacy Pandas fallback.
-    """
-    try:
-        period = int(options.get('period', 20))
-    except (ValueError, TypeError):
-        period = 20
-
-    tp = (df['high'] + df['low'] + df['close']) / 3
-    tp_sma = tp.rolling(window=period).mean()
-    
-    # Slow Python-based MAD
-    def get_mad(x):
-        return np.abs(x - x.mean()).mean()
-    mad = tp.rolling(window=period).apply(get_mad, raw=True)
-
-    cci = (tp - tp_sma) / (0.015 * mad)
-    direction = np.where(cci > cci.shift(1), 100, -100)
-    
-    return pd.DataFrame({
-        'cci': cci,
-        'direction': direction
-    }, index=df.index).dropna()

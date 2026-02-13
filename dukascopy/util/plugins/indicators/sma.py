@@ -21,7 +21,8 @@ def meta() -> Dict:
         "author": "Google Gemini",
         "version": 1.1,
         "verified": 1,
-        "polars": 1  # Flag to trigger high-speed Polars execution
+        "talib-validated":1, 
+        "polars": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -47,20 +48,17 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     """
     High-performance Polars-native calculation using Lazy expressions.
     """
-    # Parse Parameters
     try:
         period = int(options.get('period', 14))
     except (ValueError, TypeError):
         period = 14
 
-    # This is an instruction, not a calculation yet.
     return pl.col("close").rolling_mean(window_size=period).alias(indicator_str)
 
 def calculate(df: Any, options: Dict[str, Any]) -> Any:
     """
     Legacy fallback for Pandas-only environments.
     """
-    # If the engine is still Pandas, we maintain the original logic
     import pandas as pd
     period = int(options.get('period', 14))
     sma = df['close'].rolling(window=period).mean()

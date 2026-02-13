@@ -25,7 +25,7 @@ def meta() -> Dict:
         "version": 1.1,
         "panel": 1,
         "verified": 1,
-        "polars": 1  # Flag to trigger high-speed Polars execution
+        "polars": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -57,15 +57,11 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
     except (ValueError, TypeError):
         period = 20
 
-    # 1. Rolling Stats
     mean = pl.col("close").rolling_mean(window_size=period)
     std_dev = pl.col("close").rolling_std(window_size=period)
 
-    # 2. Z-Score Formula: (Price - Mean) / StdDev
-    # Polars handles division by zero by producing null/nan, filled for stability
     z_score = (pl.col("close") - mean) / std_dev
     
-    # 3. Directional Slope (1 for up, -1 for down)
     direction = (
         pl.when(z_score > z_score.shift(1))
         .then(pl.lit(1))

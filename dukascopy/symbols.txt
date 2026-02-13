@@ -1,4 +1,5 @@
 symbol
+BTC/USD
 EUR/USD
 USD/JPY
 

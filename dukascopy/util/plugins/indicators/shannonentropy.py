@@ -1,7 +1,14 @@
-import pandas as pd
 import numpy as np
 import polars as pl
 from typing import List, Dict, Any
+from functools import partial
+
+try:
+    import numba
+except ImportError:
+    raise ImportError("Numba is required. Run 'pip install numba' OR 'pip install -r requirements.txt'")
+
+from util.plugins.indicators.helpers.shannonentropy_backend import _shannonentropy_backend
 
 def description() -> str:
     """
@@ -25,7 +32,7 @@ def meta() -> Dict:
         "version": 1.3,
         "panel": 1,
         "verified": 1,
-        "polars": 0     # TODO: pandas version is faster, however, newer polars version fixes it. 
+        "polars": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -48,96 +55,30 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "bins": args[1] if len(args) > 1 else "10"
     }
 
-def _calc_entropy_only(y: np.ndarray, bins: int) -> float:
-    """
-    Optimized UDF: Calculates ONLY Entropy.
-    Efficiency is derived mathematically in the Polars graph to save CPU.
-    """
-    # Create returns inside the window to match Legacy Pandas logic
-    # Note: This is a Python loop inside Polars (unavoidable for histograms without custom Rust plugins)
-    returns = np.diff(y)
+def _entropy_map_wrapper(s: pl.Series, period: int, bins: int) -> pl.Series:
+    close_v = s.to_numpy()
     
-    if len(returns) == 0:
-        return 0.0
-        
-    # Histogram is the most expensive part
-    counts, _ = np.histogram(returns, bins=bins)
+    ent, eff = _shannonentropy_backend(close_v, period, bins)
     
-    # Filter non-zero probabilities to allow log2 calculation
-    probs = counts / np.sum(counts)
-    probs = probs[probs > 0] 
-    
-    # Shannon Entropy Formula: -Sum(p * log2(p))
-    return -np.sum(probs * np.log2(probs))
+    return pl.DataFrame({
+        "entropy": ent,
+        "efficiency": eff
+    }).to_struct("entropy_results")
 
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
-    """
-    High-performance Polars-native calculation for Shannon Entropy.
-    """
-    try:
-        period = int(options.get('period', 20))
-        bins = int(options.get('bins', 10))
-    except (ValueError, TypeError):
-        period, bins = 20, 10
+    p = int(options.get('period', 20))
+    b = int(options.get('bins', 10))
 
-    # 1. Calculate max entropy constant for this configuration
-    # H_max = log2(bins)
-    max_entropy = np.log2(bins) if bins > 0 else 1.0
+    mapper = partial(_entropy_map_wrapper, period=p, bins=b)
 
-    # 2. Define the Entropy Expression
-    # We remove 'return_dtype' from rolling_map as it's not supported there.
-    # Instead, we cast the result immediately after.
-    entropy_expr = (
-        pl.col("close")
-        .cast(pl.Float64)
-        .rolling_map(
-            lambda s: _calc_entropy_only(s.to_numpy(), bins),
-            window_size=period
-        ).cast(pl.Float64) # Explicit cast handles the type safety
-    )
+    entropy_schema = pl.Struct([
+        pl.Field("entropy", pl.Float64),
+        pl.Field("efficiency", pl.Float64),
+    ])
 
-    # 3. Derive Efficiency Expression (Zero-Cost Vectorized Operation)
-    # Efficiency = 1 - (Entropy / Max_Entropy)
-    efficiency_expr = (1.0 - (entropy_expr / max_entropy)).clip(0.0, 1.0)
+    base = pl.col("close").map_batches(mapper, return_dtype=entropy_schema)
 
-    # 4. Return both expressions
     return [
-        entropy_expr.round(4).alias(f"{indicator_str}__entropy"),
-        efficiency_expr.round(4).alias(f"{indicator_str}__efficiency")
+        base.struct.field("entropy").round(4).alias(f"{indicator_str}__entropy"),
+        base.struct.field("efficiency").round(4).alias(f"{indicator_str}__efficiency"),
     ]
-
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
-    """
-    Legacy fallback for Pandas-only environments.
-    """
-    try:
-        period = int(options.get('period', 20))
-        bins = int(options.get('bins', 10))
-    except (ValueError, TypeError):
-        period, bins = 20, 10
-
-    def get_entropy_stats(y: np.ndarray, bins: int):
-        returns = np.diff(y)
-        if len(returns) == 0: return 0.0, 1.0
-        counts, _ = np.histogram(returns, bins=bins)
-        probs = counts / np.sum(counts)
-        probs = probs[probs > 0]
-        entropy = -np.sum(probs * np.log2(probs))
-        max_entropy = np.log2(bins)
-        efficiency = 1.0 - (entropy / max_entropy) if max_entropy > 0 else 1.0
-        return entropy, np.clip(efficiency, 0, 1)
-
-    # Legacy double-calculation (Pandas)
-    entropy_raw = df['close'].rolling(window=period).apply(
-        lambda x: get_entropy_stats(x, bins)[0], raw=True
-    )
-    efficiency_raw = df['close'].rolling(window=period).apply(
-        lambda x: get_entropy_stats(x, bins)[1], raw=True
-    )
-
-    res = pd.DataFrame({
-        'entropy': entropy_raw.round(4),
-        'efficiency': efficiency_raw.round(4)
-    }, index=df.index)
-    
-    return res.dropna(subset=['entropy'])

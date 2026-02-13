@@ -7,38 +7,37 @@ File:        helper.py
 Author:      JP Ueberbach
 Created:     2026-01-02
 Updated:     2026-01-23
+             2026-02-08 Polars nativeness
 
 Core helper utilities for path-based OHLCV query parsing, resolution,
 and output formatting.
 
-This module implements the shared execution support layer for the OHLCV
-API. It parses a slash-delimited query DSL embedded in request paths,
-normalizes timestamps and query options, resolves symbol and timeframe
-selections against filesystem-backed datasets, and formats query results
-for API delivery.
+This module provides the shared execution and formatting layer used by
+the OHLCV API routes. It is responsible for translating a slash-delimited,
+path-encoded query DSL into structured query options, resolving symbol
+and timeframe selections against filesystem-backed datasets, normalizing
+timestamps, and serializing query results into API-ready response formats.
 
-The helpers defined here are used by multiple API routes to ensure
-consistent behavior between HTTP-based requests and internal,
-programmatic query execution. The module integrates with the dataset
-discovery layer, selection resolver, indicator registry, and cache-backed
-data access layer, but does not directly execute database queries itself.
+The helpers in this module intentionally do not perform data retrieval
+themselves. Instead, they prepare and post-process inputs and outputs
+around the cache-backed data access and indicator execution layers.
 
 Primary responsibilities:
     - Parse and normalize path-encoded OHLCV query URIs.
     - Normalize and validate timestamp inputs.
     - Resolve user selections into concrete dataset definitions using
-      filesystem-backed discovery.
+      filesystem-backed discovery and selection resolution.
     - Enrich query options with resolved symbol/timeframe selections.
     - Format query results into JSON, JSONP, CSV, or NDJSON outputs.
     - Apply MT4-compatible CSV formatting when requested.
     - Stream large result sets efficiently to minimize memory usage.
 
 Design notes:
-    - Query parsing and resolution are decoupled from data retrieval.
+    - Query parsing and dataset resolution are decoupled from data access.
     - Indicator warmup and execution are handled by downstream layers.
-    - Streaming responses (CSV, NDJSON) are used for large datasets to
-      reduce memory pressure.
-    - The module is optimized for read-heavy, low-latency API workloads.
+    - Streaming responses (CSV, NDJSON) are used for large result sets to
+      reduce memory pressure and latency.
+    - Polars is used as the internal DataFrame engine for performance.
 
 Public functions:
     normalize_timestamp(ts: str) -> str
@@ -51,10 +50,10 @@ Public functions:
         Resolve user selections against discovered datasets.
 
     generate_output(
-        df: pandas.DataFrame,
+        df: polars.DataFrame,
         options: Dict[str, Any]
     ) -> dict | PlainTextResponse | StreamingResponse | None
-        Format query results as JSON, JSONP, CSV, or NDJSON.
+        Format query results according to the requested output type.
 
 Internal helpers:
     _format_json(...)
@@ -71,7 +70,7 @@ Internal helpers:
 
 Requirements:
     - Python 3.8+
-    - Pandas
+    - Polars
     - FastAPI
     - orjson
 
@@ -80,13 +79,11 @@ License:
 ===============================================================================
 """
 
-
 import csv
 import io
 import orjson
 import re
-import pandas as pd
-import numpy as np
+import polars as pl
 
 from datetime import datetime, timezone
 from typing import Dict, Any, List
@@ -94,7 +91,7 @@ from urllib.parse import unquote_plus
 from pathlib import Path
 from fastapi.responses import PlainTextResponse, StreamingResponse, ORJSONResponse
 
-# Import builder utilities for resolving file-backed OHLCV selections
+# Import builder and utility components used for dataset discovery and resolution
 from builder.config.app_config import load_app_config
 from util.dataclass import *
 from util.discovery import *
@@ -102,56 +99,48 @@ from util.resolver import *
 
 from util.cache import MarketDataCache
 
+# Canonical timestamp format used for human-readable output
 TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 
+
 def normalize_timestamp(ts: str) -> str:
+    """Normalize user-supplied timestamp strings for consistent parsing.
+
+    This helper performs light normalization to make timestamps compatible
+    with downstream ISO parsing by replacing common separators.
+
+    Args:
+        ts (str): Timestamp string supplied via the request URI.
+
+    Returns:
+        str: Normalized timestamp string, or the original value if empty.
+    """
     if not ts:
         return ts
-    # Replace dots with dashes: 2025.12.22 -> 2025-12-22
-    # Replace commas with spaces: 2025.12.22,13:59 -> 2025.12.22 13:59
+
+    # Replace dots with dashes (e.g. 2025.12.22 -> 2025-12-22)
+    # Replace commas with spaces (e.g. 2025.12.22,13:59 -> 2025-12-22 13:59)
     normalized = ts.replace(".", "-").replace(",", " ")
     return normalized
+
 
 def parse_uri(uri: str) -> Dict[str, Any]:
     """Parse a path-based OHLCV query URI into structured query options.
 
-    This function interprets a slash-delimited query DSL embedded in the
-    request path. It extracts symbol and timeframe selections, temporal
-    filters, output format, and platform-specific flags, and normalizes
-    them into a dictionary suitable for downstream query resolution.
-
-    Supported path segments include:
-        - select/{symbol},{timeframe}[,...]
-        - after/{timestamp}
-        - until/{timestamp}
-        - output/{format}/[MT4]
+    This function interprets the slash-delimited DSL embedded in request
+    paths and extracts selection clauses, temporal filters, output format,
+    and platform-specific flags into a normalized options dictionary.
 
     Args:
-        uri (str):
-            Path-encoded query string (excluding the API prefix).
+        uri (str): Raw request URI path (excluding the API prefix).
 
     Returns:
-        Dict[str, Any]:
-            A dictionary containing parsed query options with the following
-            keys:
-
-            - select_data (list[str]):
-                Normalized symbol/timeframe selection strings.
-            - after (str):
-                Inclusive lower timestamp bound.
-            - until (str):
-                Exclusive upper timestamp bound.
-            - output_type (str | None):
-                Requested output format (e.g., "JSON", "CSV", "JSONP").
-            - mt4 (bool | None):
-                Flag indicating MT4-compatible output.
-            - options (list):
-                Reserved for future extensions.
+        Dict[str, Any]: Parsed and partially normalized query options.
     """
     # Split URI into non-empty path segments
     parts = [p for p in uri.split("/") if p]
 
-    # Initialize default query options
+    # Initialize default option values
     result = {
         "select_data": [],
         "after": "1970-01-01 00:00:00",
@@ -160,430 +149,311 @@ def parse_uri(uri: str) -> Dict[str, Any]:
         "mt4": None
     }
 
-    # Iterate over path segments sequentially
+    # Iterate through path segments sequentially
     it = iter(parts)
     for part in it:
-        # Handle symbol/timeframe selections
         if part == "select":
+            # Selection clause: symbol and timeframe definitions
             val = next(it, None)
             if val:
                 unquoted_val = unquote_plus(val)
 
-                parts = re.split(r',(?![^\[]*\])', unquoted_val)
+                # Split on commas, ignoring commas inside brackets
+                parts_split = re.split(r',(?![^\[]*\])', unquoted_val)
 
-                if len(parts) >= 2:
-                    symbol_part = parts[0]
-                    # Rejoin the rest in case there were other commas outside brackets
-                    tf_part = ",".join(parts[1:]) 
-                    
+                if len(parts_split) >= 2:
+                    symbol_part = parts_split[0]
+                    tf_part = ",".join(parts_split[1:])
                     formatted_selection = f"{symbol_part}/{tf_part}"
                     result["select_data"].append(formatted_selection)
                 else:
                     result["select_data"].append(unquoted_val)
 
-        # Handle lower time bound
         elif part == "after":
+            # Lower time bound
             quoted_val = next(it, None)
             result["after"] = normalize_timestamp(unquote_plus(quoted_val)) if quoted_val else None
 
-        # Handle upper time bound
         elif part == "until":
+            # Upper time bound
             quoted_val = next(it, None)
             result["until"] = normalize_timestamp(unquote_plus(quoted_val)) if quoted_val else None
 
-        # Handle output format and optional MT4 flag
         elif part == "output":
+            # Output format selector
             quoted_val = next(it, None)
             result["output_type"] = unquote_plus(quoted_val) if quoted_val else None
 
         elif part == "MT4":
+            # MT4 compatibility flag
             result["mt4"] = True
 
         else:
-            # Assume all other statements to be name/value
+            # Generic key/value option pairs
             val = next(it, None)
             if val:
                 result[part] = unquote_plus(val)
 
     return result
 
-def discover_options(options: Dict):
-    """Resolve and enrich data selection options using filesystem-backed sources.
 
-    This function loads the application configuration, discovers available
-    OHLCV data sources from the filesystem, and resolves the user-provided
-    data selections against those available sources. The resolved selections
-    are written back into the ``options`` dictionary.
+def discover_options(options: Dict):
+    """Resolve and enrich data selection options using discovered datasets.
+
+    This function converts user-specified selection strings into concrete
+    symbol/timeframe definitions by resolving them against the registry
+    of filesystem-backed OHLCV datasets.
 
     Args:
-        options (dict): Options dictionary containing user-requested settings.
-            Must include the key ``select_data``, which specifies the desired
-            OHLCV data selections.
+        options (Dict): Parsed query options containing unresolved selections.
 
     Returns:
-        dict: The updated options dictionary with ``select_data`` replaced
-        by the resolved and validated selections.
-
-    Raises:
-        Exception: Propagates any exception raised while loading configuration,
-        discovering available data, or resolving selections.
-
+        Dict: Options dictionary with resolved selection metadata injected.
     """
-
     try:
-        # Setup cache
+        # Initialize cache and selection resolver
         cache = MarketDataCache()
-
-        # Resolve selections
         resolver = SelectionResolver(cache.registry.get_available_datasets())
+
+        # Resolve select_data into concrete dataset definitions
         options["select_data"], _ = resolver.resolve(options["select_data"])
         return options
     except Exception as e:
         raise
 
-def generate_output(df: pd.DataFrame, options: Dict):
-    """Generates formatted output based on the requested output type.
 
-    This function converts a pandas DataFrame into one of several supported
-    output formats, including JSON, JSONP, and CSV. The output format is
-    selected using the ``output_type`` value in the options dictionary.
-    JSON output is used by default when no output type is specified.
+def generate_output(df: pl.DataFrame, options: Dict):
+    """Generate formatted API output from a Polars DataFrame.
+
+    This function dispatches to the appropriate formatter or streaming
+    implementation based on the requested output type.
 
     Args:
-        df (pandas.DataFrame): DataFrame containing the result data to be
-            serialized into the requested output format.
-        options (Dict[str, Any]): Output configuration options. Supported
-            keys include:
-            - output_type (str, optional): One of "JSON", "JSONP", or "CSV".
-              Defaults to "JSON" if not provided.
-            - callback (str, optional): JavaScript callback function name
-              used when output_type is "JSONP".
+        df (pl.DataFrame): Result DataFrame containing OHLCV data.
+        options (Dict): Query options including output type and formatting flags.
 
     Returns:
-        dict | PlainTextResponse | StreamingResponse | None:
-            - A dictionary for JSON output.
-            - A PlainTextResponse containing JavaScript for JSONP output.
-            - A StreamingResponse containing CSV data.
-            - None if the requested output type is unsupported.
+        Response | None: A FastAPI-compatible response object, or None if
+        the output type is unsupported.
     """
-    # Extract optional JSONP callback function name
     callback = options.get('callback')
 
     # Default JSON output
     if options.get("output_type") == "JSON" or options.get("output_type") is None:
-        # Normalize DataFrame into row-oriented dictionaries
         return _format_json(df, options)
 
-    # JSONP output for browser-based or cross-domain consumption
+    # JSONP output for browser-based consumption
     if options.get("output_type") == "JSONP":
-        # Normalize DataFrame into row-oriented dictionaries
         payload = _format_json(df, options)
-        # Serialize payload and wrap in callback invocation
         json_data = payload.body.decode("utf-8")
         return PlainTextResponse(
             content=f"{callback}({json_data});",
             media_type="text/javascript",
         )
 
-    # CSV output for file-based or analytical workflows
+    # CSV streaming output
     if options.get("output_type") == "CSV":
         return _stream_csv(df, options)
 
-    # Unsupported output type
     return None
 
-def _add_human_readable_time_column(df):
-    """Add human-readable time and year columns derived from the sort key.
 
-    This helper function converts the millisecond-based ``time_ms`` timestamp
-    into a UTC-aware datetime, derives a calendar year column for partitioning
-    or grouping, and adds a formatted, human-readable timestamp column. It also
-    reorders the DataFrame columns so that core identity and time-related fields
-    appear first.
+def _add_human_readable_time_column(df: pl.DataFrame):
+    """Add human-readable time and year columns using native Polars operations.
+
+    This helper converts the `time_ms` column to UTC datetimes and derives
+    formatted string and year columns for output serialization.
 
     Args:
-        df (pd.DataFrame): DataFrame containing a ``time_ms`` column with
-            epoch timestamps in milliseconds.
+        df (pl.DataFrame): Input DataFrame containing a `time_ms` column.
 
     Returns:
-        pd.DataFrame: The updated DataFrame including ``year`` and ``time``
-        columns, with columns reordered for consistent downstream consumption.
+        pl.DataFrame: DataFrame with additional `time` and `year` columns.
     """
-    # Convert the millisecond epoch sort key into a UTC datetime series
-    dt_series = pd.to_datetime(df['time_ms'], unit='ms', utc=True)
+    # Convert epoch milliseconds to UTC datetime
+    df = df.with_columns([
+        pl.from_epoch("time_ms", time_unit="ms")
+        .dt.replace_time_zone("UTC")
+        .alias("_dt_temp")
+    ])
 
-    # Extract the calendar year for partitioning or grouping use cases
-    df['year'] = dt_series.dt.year
+    # Extract year and formatted timestamp string
+    df = df.with_columns([
+        pl.col("_dt_temp").dt.year().alias("year"),
+        pl.col("_dt_temp").dt.strftime(TIMESTAMP_FORMAT).alias("time")
+    ])
 
-    # Format the timestamp into a human-readable string representation
-    df['time'] = dt_series.dt.strftime(TIMESTAMP_FORMAT)
-
-    # Define preferred column ordering for identity and time-related fields
+    # Reorder columns so metadata fields appear first
     priority = ['symbol', 'timeframe', 'year', 'time', 'time_ms']
+    all_cols = df.columns
 
-    # Capture the current column order
-    all_cols = df.columns.tolist()
-
-    # Build the reordered column list with priority columns first
-    # Column juggling....
     head = [c for c in priority if c in all_cols]
-    tail = [c for c in all_cols if c not in priority]
+    tail = [c for c in all_cols if c not in priority and c != "_dt_temp"]
 
-    # Reindex the DataFrame to apply the new column ordering
-    df = df.reindex(columns=head + tail)
-
-    return df
+    return df.select(head + tail)
 
 
-def _format_json(df, options):
-    """Format a DataFrame into structured JSON output.
+def _format_json(df: pl.DataFrame, options: Dict):
+    """Format a Polars DataFrame into structured JSON subformats.
 
-    This function serializes a pandas DataFrame into one of several JSON
-    subformats, controlled by the ``subformat`` option. Each subformat is
-    designed for a different consumption pattern, ranging from simple
-    record-oriented JSON to columnar or time-series–optimized layouts.
-
-    Supported subformats:
-        1. Record-oriented JSON (default)
-        2. Column/value arrays (columnar JSON)
-        3. Time-series–optimized structure with explicit OHLCV arrays
+    Supported subformats include record-oriented JSON, columnar arrays,
+    time-series optimized layouts, and streaming NDJSON.
 
     Args:
-        df (pandas.DataFrame): DataFrame containing OHLCV data and optional
-            indicator columns.
-        options (dict): Output options dictionary. Recognized keys:
-            - subformat (int, optional): JSON subformat selector.
-              Defaults to 1 when not provided.
+        df (pl.DataFrame): Result DataFrame.
+        options (Dict): Query options including subformat selection.
 
     Returns:
-        dict: A JSON-serializable dictionary containing formatted result
-        data and request options.
-
-    Raises:
-        Exception: If an unsupported subformat is specified.
+        ORJSONResponse | StreamingResponse: Formatted API response.
     """
-    num_symbols = len(options.get('select_data'))
-    # Resolve requested JSON subformat (default to 1)
-    subformat = options.get('subformat') if options.get('subformat') else 1
+    num_symbols = len(options.get('select_data', []))
+    subformat = options.get('subformat', 1)
 
-    # Just drop the index column HARD
-    if isinstance(df, pd.DataFrame):
-        df = df.drop(columns=['index', 'level_0'], errors='ignore')
+    # Drop index artifacts if present
+    df = df.drop(["index", "level_0"], strict=False)
 
-    # ------------------------------------------------------------------
-    # Subformat 1: Record-oriented JSON (list of row dictionaries)
-    # ------------------------------------------------------------------
+    # Subformat 1: Record-oriented JSON (list of dictionaries)
     if subformat == 1:
-        # This format has a human-readable time column
         df = _add_human_readable_time_column(df)
-        # Remove internal or non-public columns
-        df.drop(columns=['time_ms', 'year'], errors='ignore', inplace=True)
+        df = df.drop(["time_ms", "year"], strict=False)
         return ORJSONResponse(content={
             "status": "ok",
             "options": options,
-            "result": df.to_dict(orient='records'),
+            "result": df.to_dicts(),
         })
 
-    # ------------------------------------------------------------------
-    # Subformat 2: Columnar JSON (columns + 2D values array)
-    # ------------------------------------------------------------------
+    # Subformat 2: Columnar JSON (columns + value matrix)
     elif subformat == 2:
-        # Drop original timestamp columns and normalize time_ms -> time
-        df = (
-            df.drop(columns=['time', 'time_original', 'year'], errors='ignore')
-            .rename(columns={'time_ms': 'time'})
-        )       
-
+        df = df.drop(["time", "time_original", "year"], strict=False).rename({"time_ms": "time"})
+        
         return ORJSONResponse(content={
             "status": "ok",
             "options": options,
-            "columns": df.columns.tolist(),
-            "values": df.values.tolist(),
+            "columns": df.columns,
+            "values": df.rows(),  # NATIVE POLARS: Returns list of tuples (fast/stable)
         })
 
-    # ------------------------------------------------------------------
-    # Subformat 3: Time-series–optimized OHLCV structure
-    # ------------------------------------------------------------------
+    # Subformat 3: Time-series optimized layout
     elif subformat == 3:
-        # Drop non-essential metadata and normalize time_ms -> time
         if num_symbols == 1:
-            df = (
-                df.drop(
-                    columns=['symbol', 'timeframe', 'time', 'time_original', 'year', 'indicators'],
-                    errors='ignore'
-                )
-                .rename(columns={'time_ms': 'time'})
+            df = df.drop(
+                ["symbol", "timeframe", "time", "time_original", "year", "indicators"],
+                strict=False
             )
         else:
-            df = (
-                df.drop(
-                    columns=['time', 'time_original', 'year','indicators'],
-                    errors='ignore'
-                )
-                .rename(columns={'time_ms': 'time'})
+            df = df.drop(
+                ["time", "time_original", "year", "indicators"],
+                strict=False
             )
-        
-        result = df.astype(object).where(df.notnull(), None).to_dict(orient='list')
+
+        df = df.rename({"time_ms": "time"})
 
         return ORJSONResponse(content={
             "status": "ok",
             "options": options,
-            "columns": df.columns.tolist(),
-            "result": result
+            "columns": df.columns,
+            "result": df.to_dict(as_series=False)
         })
-    # ------------------------------------------------------------------
-    # Subformat 4: Stream–optimized OHLCV structure (NDJSON)
-    # ------------------------------------------------------------------
+
+    # Subformat 4: Streaming NDJSON
     elif subformat == 4:
-        # This format has a human-readable time column
         df = _add_human_readable_time_column(df)
-        # Return a streaming NDJSON response
         return _stream_json(df, options)
 
-    # ------------------------------------------------------------------
-    # Unsupported subformat
-    # ------------------------------------------------------------------
     else:
-        raise Exception("Unknown subformat, only subformat 1, 2 and 3 is known.")
+        raise Exception("Unknown subformat, only subformat 1, 2, 3 and 4 are known.")
 
 
-def _stream_json(df, options):
-    """Stream a pandas DataFrame as newline-delimited JSON (NDJSON).
-
-    This function converts each row of a DataFrame into an individual JSON
-    object and streams the result incrementally using the NDJSON format
-    (one JSON object per line). This approach is memory-efficient and well
-    suited for large result sets and streaming consumers.
+def _stream_json(df: pl.DataFrame, options: Dict):
+    """Stream a Polars DataFrame as newline-delimited JSON (NDJSON).
 
     Args:
-        df (pandas.DataFrame): DataFrame containing the data to be streamed.
-            Each row is serialized as an independent JSON object.
-        options (dict): Output options dictionary. Currently unused, but
-            included for interface consistency and future extensibility.
+        df (pl.DataFrame): Result DataFrame to stream.
+        options (Dict): Query options (unused, reserved for future use).
 
     Returns:
-        StreamingResponse: A FastAPI StreamingResponse that emits NDJSON
-        (`application/x-ndjson`) content.
+        StreamingResponse: NDJSON streaming response.
     """
-    async def json_generator_fast(df):
-        # Convert the DataFrame to a list of row dictionaries and stream
-        # each record as a standalone JSON object followed by a newline
-        for record in df.to_dict(orient='records'):
+    async def json_generator_fast(df_gen: pl.DataFrame):
+        for record in df_gen.to_dicts():
             yield orjson.dumps(record) + b"\n"
 
-    # Return a streaming NDJSON response suitable for large datasets
     return StreamingResponse(
         json_generator_fast(df),
         media_type="application/x-ndjson"
     )
 
-def _stream_csv(df, options):
-    """Streams a pandas DataFrame as a CSV HTTP response.
 
-    This function prepares a DataFrame for CSV export, optionally applying
-    MT4-compatible formatting rules, and returns a streaming response to
-    efficiently handle large datasets. The CSV is generated incrementally
-    to avoid loading the entire output into memory.
+def _stream_csv(df: pl.DataFrame, options: Dict):
+    """Stream a Polars DataFrame as a CSV response.
+
+    Applies optional MT4-compatible formatting when requested.
 
     Args:
-        df (pandas.DataFrame): DataFrame containing the data to be exported.
-            May include an ``indicators`` column with nested indicator data.
-        options (Dict[str, Any]): Output configuration options. Supported
-            keys include:
-            - mt4 (bool, optional): If True, applies MT4-compatible column
-              formatting and suppresses the CSV header.
-            - filename (str, optional): Filename to use in the
-              Content-Disposition response header.
+        df (pl.DataFrame): Result DataFrame.
+        options (Dict): Query options including MT4 and filename flags.
 
     Returns:
-        StreamingResponse | None: A streaming CSV HTTP response if data
-        is present; otherwise, None.
+        StreamingResponse | None: CSV streaming response or None if empty.
     """
-    # This format has a human-readable time column
+    # Add human-readable time fields and drop internal columns
     df = _add_human_readable_time_column(df)
+    df = df.drop(['index', 'indicators', 'time_ms', 'year'], strict=False)
 
-    # Remove the temporary columns
-    df.drop(columns=['index','indicators','time_ms','year'], inplace=True, errors='ignore')
-
-    # Apply MT4-specific column transformations if requested
     if options.get('mt4'):
-        # Split the combined datetime column into date and time components
-        temp_time = df['time'].astype(str).str.split(' ', expand=True)
+        # Derive MT4-specific date and time columns
+        df = df.with_columns([
+            pl.col("time").str.slice(0, 10).str.replace_all("-", ".").alias("date"),
+            pl.col("time").str.slice(11, 8).alias("time_only")
+        ])
 
-        # Drop columns not required for MT4 output
-        cols_to_drop = ['symbol', 'timeframe', 'time_ms', 'time', 'year', 'indicators']
-        df.drop(columns=cols_to_drop, inplace=True, errors='ignore')
+        # Reorder columns to MT4-required layout
+        cols_to_drop = ['symbol', 'timeframe', 'time']
+        remaining_cols = [
+            c for c in df.columns
+            if c not in cols_to_drop + ['date', 'time_only']
+        ]
+        df = df.select(['date', 'time_only'] + remaining_cols)
+        df = df.rename({"time_only": "time"})
 
-        # Insert formatted date (YYYY.MM.DD) and time (HH:MM:SS) columns
-        df.insert(0, 'date', temp_time[0].str.replace('-', '.'))
-        df.insert(1, 'time', temp_time[1])
-
-    # Extract column names and row values for CSV serialization
-    columns = df.columns.tolist()
-    results = df.values.tolist()
-
-    # Only generate a CSV response if there is data to export
-    if results:
-        async def csv_generator_fast():
-            # Emit the CSV header unless MT4-compatible output is requested
+    if not df.is_empty():
+        async def csv_generator_fast(df_csv: pl.DataFrame):
+            # Emit CSV header unless MT4 mode suppresses it
             if not options.get('mt4'):
-                yield ','.join(columns) + '\n'
+                yield ','.join(df_csv.columns) + '\n'
 
-            # Stream each row incrementally to minimize memory usage
-            for row in results:
-                formatted = []
-                for val in row:
-                    formatted.append(str(val))
-                yield ','.join(formatted) + '\n'
+            # Emit row data
+            for row in df_csv.iter_rows():
+                yield ','.join(str(val) if val is not None else "" for val in row) + '\n'
 
-        # Filename handling
-        filename = options.get('filename') if options.get('filename') else 'data.csv'
-
-        # Return a streaming CSV response suitable for large exports
+        filename = options.get('filename', 'data.csv')
         return StreamingResponse(
-            csv_generator_fast(),
+            csv_generator_fast(df),
             media_type="text/csv",
-            headers={
-                "Content-Disposition": f"attachment; filename={filename}"
-            }
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
+
+    return None
+
 
 def _get_ms(val):
     """Convert a numeric or timestamp value to epoch milliseconds (UTC).
 
-    This helper function normalizes different timestamp representations
-    into a single integer value expressed as milliseconds since the Unix
-    epoch (UTC). It supports numeric inputs, digit-only strings, and
-    ISO-formatted datetime strings.
-
     Args:
-        val (int | float | str):
-            The value to convert. Supported forms include:
-            - int or float: Assumed to already represent milliseconds.
-            - str of digits: Parsed directly as milliseconds.
-            - ISO-formatted datetime string (e.g. "2025-01-12 13:59:00").
+        val (int | float | str): Epoch milliseconds, numeric timestamp,
+            or ISO-like datetime string.
 
     Returns:
-        int: The corresponding timestamp in epoch milliseconds (UTC).
-
-    Raises:
-        ValueError: If the input string cannot be parsed as an ISO datetime.
-        TypeError: If the input type is unsupported.
+        int: Epoch time in milliseconds (UTC).
     """
-    # Fast path for numeric inputs already representing milliseconds
     if isinstance(val, (int, float)):
         return int(val)
 
-    # Handle digit-only strings representing milliseconds
     if isinstance(val, str) and val.isdigit():
         return int(val)
 
-    # Parse ISO-formatted datetime strings and convert to epoch milliseconds
     return int(
         datetime.fromisoformat(val.replace(' ', 'T'))
         .replace(tzinfo=timezone.utc)
         .timestamp() * 1000
     )
-
-
-

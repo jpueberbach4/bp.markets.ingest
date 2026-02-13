@@ -39,6 +39,7 @@ from contextlib import asynccontextmanager
 from typing import List
 from pathlib import Path
 import uvicorn
+import multiprocessing
 
 # Function to get config
 def get_config():
@@ -96,11 +97,24 @@ app.mount("/", StaticFiles(directory=docs_path, html=True), name="docs")
 if __name__ == "__main__":
     ip, port = config.listen.split(':', 1)
 
+    should_reload = bool(config.reload)
+
+    # Determine worker count
+    if should_reload:
+        # Uvicorn does not support multiple workers with reload enabled
+        workers = 1
+        print("Dev Mode: 'reload' is enabled. Forcing workers=1.")
+    else:
+        # Production Mode: Use configured workers OR default to CPU count
+        workers = getattr(config, 'workers', multiprocessing.cpu_count())
+        print(f"Production Mode: Spawning {workers} worker processes.")
+
     uvicorn.run(
-        "run:app",          # Module and app instance
-        host=ip,            # 🔒 LOCAL USE ONLY - Use public IP at your own risk!
-        port=int(port),     # Default port
-        loop="uvloop",      # High-performance event loop
-        http="httptools",   # HTTP protocol parser
-        reload=True         # Auto-reload on code changes
+        "run:app",                  
+        host=ip,                    
+        port=int(port),             
+        loop="uvloop",              
+        http="httptools",           
+        reload=should_reload,       
+        workers=workers
     )

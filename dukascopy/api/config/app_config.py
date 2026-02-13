@@ -20,6 +20,8 @@ class HTTPServiceConfig:
     listen: str = "127.0.0.1:8000"
     fmode: str = "binary"
     poolmode: str = "thread"
+    reload: int = 1
+    workers: int = 4
     limits: HTTPServiceLimits = field(default_factory=HTTPServiceLimits)
 
 @dataclass

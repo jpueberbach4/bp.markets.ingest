@@ -26,7 +26,8 @@ def meta() -> Dict:
         "version": 1.1,
         "panel": 1,
         "verified": 1,
-        "polars": 1  # Flag to trigger high-speed Polars execution
+        "talib-validated": 1, 
+        "polars": 1
     }
     
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -57,29 +58,23 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     except (ValueError, TypeError):
         period = 14
 
-    # 1. Get rolling high and low over the lookback period
     hh = pl.col("high").rolling_max(window_size=period)
     ll = pl.col("low").rolling_min(window_size=period)
     
-    # 2. Williams %R Formula: ((HH - Close) / (HH - LL)) * -100
-    # Handle division by zero for flat price action by filling with a neutral -50
     range_diff = hh - ll
     williams_r = ((hh - pl.col("close")) / range_diff) * -100
 
-    # 3. Final Alias and Rounding
-    return williams_r.fill_nan(-50).fill_null(-50).round(2).alias(indicator_str)
+    return williams_r.fill_nan(-50).fill_null(-50).alias(indicator_str)
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     """
     High-performance vectorized Williams %R calculation (Pandas Fallback).
     """
-    # 1. Parse Parameters
     try:
         period = int(options.get('period', 14))
     except (ValueError, TypeError):
         period = 14
 
-    # 2. Determine Price Precision
     try:
         sample_val = df['close'].iloc[0]
         sample_price = f"{sample_val:.10f}".rstrip('0')
@@ -88,15 +83,13 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     except (IndexError, AttributeError, ValueError):
         precision = 2
 
-    # 3. Vectorized Calculation Logic
     hh = df['high'].rolling(window=period).max()
     ll = df['low'].rolling(window=period).min()
     range_diff = (hh - ll).replace(0, np.nan)
     williams_r = ((hh - df['close']) / range_diff) * -100
 
-    # 4. Final Formatting and Rounding
     res = pd.DataFrame({
-        'williams_r': williams_r.round(precision)
+        'williams_r': williams_r
     }, index=df.index)
     
     return res.dropna(subset=['williams_r'])

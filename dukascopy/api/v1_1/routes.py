@@ -8,58 +8,51 @@ Author:      JP Ueberbach
 Created:     2026-01-12
 Updated:     2026-01-15
              2026-01-23
+             2026-02-08 Polars nativeness
 
-FastAPI router implementing a versioned OHLCV query and indicator execution API.
+FastAPI router implementing the public OHLCV query and indicator execution API.
 
-This module defines the public HTTP interface for querying OHLCV
-(Open, High, Low, Close, Volume) time-series market data and applying
-derived technical indicators using a path-based, slash-delimited query
-DSL. All endpoints are exposed under the "/ohlcv/{version}" namespace.
+This module exposes the HTTP interface for querying OHLCV (Open, High, Low,
+Close, Volume) market data and executing technical indicators via a
+path-based, slash-delimited query DSL. All endpoints are versioned and
+available under the "/ohlcv/{version}" namespace.
 
-The router translates encoded request URIs into structured query options,
-discovers available datasets and indicators, executes data retrieval,
-applies indicator logic, and serializes results into the requested
-output format.
+The router is responsible for:
+    - Parsing the encoded request URI into structured query options
+    - Validating query constraints (pagination, ordering, output format)
+    - Discovering available symbols, timeframes, and indicator plugins
+    - Retrieving OHLCV data from the underlying data layer
+    - Executing indicator logic and post-processing results
+    - Serializing responses into JSON, JSONP, or CSV
 
-Key Features:
-    - Path-based DSL for expressing OHLCV queries and indicator selection
-    - Filesystem-backed discovery of symbols and supported timeframes
-    - Integration with a dynamic indicator plugin registry
-    - Pagination, ordering, temporal filtering, and MT4 compatibility
-    - Multiple output formats: JSON, JSONP, and CSV
-    - Wall-clock execution timing included in response metadata
-
-Request Processing Pipeline:
-    1. Parse the path-based DSL into structured query options
-    2. Validate pagination, ordering, output mode, and platform constraints
-    3. Discover symbol/timeframe selections from filesystem-backed datasets
-    4. Retrieve OHLCV data via the configured data access layer
-    5. Apply indicator plugins to the result set
-    6. Apply temporal filtering, row limits, and column normalization
-    7. Serialize results into the requested output format
+Execution Model:
+    - Incoming requests are parsed into an internal options dictionary
+    - Data access and indicator execution are delegated to shared helpers
+    - Polars is used as the internal execution engine for performance
+    - Output formatting is handled centrally by helper utilities
 
 Indicator System:
-    - Indicator plugins are dynamically loaded at application startup
-    - Plugin metadata (defaults, warmup, description, meta) is exposed
-      via discovery endpoints
+    - Indicators are discovered dynamically from the plugin registry
+    - Metadata (defaults, warmup, descriptions) is exposed via list endpoints
     - Indicator execution is coordinated through the shared cache layer
 
 Public Endpoints:
-    - GET /ohlcv/{version}/{request_uri}:
+    - GET /ohlcv/{version}/{request_uri}
         Execute OHLCV queries and indicator calculations
-    - GET /ohlcv/{version}/list/indicators/{request_uri}:
-        Enumerate available indicator plugins and metadata
-    - GET /ohlcv/{version}/list/symbols/{request_uri}:
+    - GET /ohlcv/{version}/list/indicators/{request_uri}
+        List available indicator plugins and their metadata
+    - GET /ohlcv/{version}/list/symbols/{request_uri}
         List available symbols and supported timeframes
 
-Usage:
-    - This module is registered as part of the FastAPI router configuration
-    - It is not intended to be executed as a standalone script
+Notes:
+    - This module is intended to be imported and registered with FastAPI
+    - It is not designed to be executed as a standalone script
 
 Requirements:
     - Python 3.8+
     - FastAPI
     - Pandas
+    - Polars
     - orjson
 
 License:
@@ -71,204 +64,217 @@ import time
 import orjson
 import re
 import pandas as pd
+import polars as pl
+import asyncio
 
-from fastapi import APIRouter, Query
+from starlette.concurrency import run_in_threadpool
+from fastapi import APIRouter, Query, Depends
 from fastapi.responses import PlainTextResponse, JSONResponse
 from typing import Optional
 from pathlib import Path
 from functools import lru_cache
-from fastapi import Depends
 
 from util.cache import MarketDataCache
 from api.config.app_config import load_app_config
 from api.v1_1.helper import parse_uri, discover_options, generate_output, _get_ms
 from api.v1_1.version import API_VERSION
-
 from util.api import get_data
+
 
 @lru_cache
 def get_config():
-    config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else 'config.yaml'
-    app_config = load_app_config(config_file)
-    return app_config
+    """
+    Load and cache the application configuration.
 
-# Setup router
+    The configuration file is resolved once and cached for the lifetime
+    of the process. A user-specific configuration file is preferred when
+    present; otherwise, the default configuration is loaded.
+
+    Returns:
+        object: Parsed application configuration object.
+    """
+    config_file = "config.user.yaml" if Path("config.user.yaml").exists() else "config.yaml"
+    return load_app_config(config_file)
+
+
+# Initialize the FastAPI router for versioned OHLCV endpoints
 router = APIRouter(
     prefix=f"/ohlcv/{API_VERSION}",
-    tags=["ohlcv1_0"]
+    tags=["ohlcv1_0"],
 )
 
-@router.get(f"/list/indicators/{{request_uri:path}}")
+
+@router.get("/list/indicators/{request_uri:path}")
 async def list_indicators(
     request_uri: str,
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
     callback: Optional[str] = "__bp_callback",
-    id: Optional[str] = None, 
-    symbol: Optional[str] = None, 
-    timeframe: Optional[str] = None, 
+    id: Optional[str] = None,
+    symbol: Optional[str] = None,
+    timeframe: Optional[str] = None,
     config=Depends(get_config),
 ):
     """
-    List registered indicator plugins with optional output formatting.
+    List registered indicator plugins and their metadata.
 
-    This endpoint resolves a path-based request URI, collects metadata for all
-    registered indicator plugins, and returns the result in the requested
-    output format (JSON or JSONP). Execution timing information is included
-    in the response options.
+    This endpoint parses the request URI to resolve output options, then
+    retrieves metadata for all registered indicator plugins from the
+    indicator registry. The result can be returned as JSON or JSONP.
+
+    Wall-clock execution time is included in the response options.
 
     Args:
-        request_uri (str): Encoded URI specifying output options and format.
+        request_uri (str): Path-encoded URI defining output options.
         order (Optional[str]): Sort order for the response ("asc" or "desc").
         callback (Optional[str]): JSONP callback function name.
-        config: Application configuration dependency.
+        id (Optional[str]): Optional request identifier echoed in the response.
+        symbol (Optional[str]): Optional symbol used for template resolution.
+        timeframe (Optional[str]): Optional timeframe used for template resolution.
+        config: Injected application configuration.
 
     Returns:
-        dict or PlainTextResponse: A payload containing indicator metadata and
-        request options, formatted as JSON or JSONP depending on the request.
-
-    Raises:
-        Exception: If indicator metadata retrieval or response generation fails.
+        dict | PlainTextResponse | JSONResponse:
+            Successful responses include indicator metadata and options.
+            Errors return a standardized failure payload.
     """
-    # Track execution start time for wall-clock measurement
+    # Record start time for wall-clock execution measurement
     time_start = time.time()
 
     # Parse the path-based request URI into structured options
     options = parse_uri(request_uri)
 
-    # Inject callback and output mode from configuration
+    # Inject runtime options that are not encoded in the URI
     options.update(
         {
             "callback": callback,
             "fmode": config.http.fmode,
         }
     )
-    
-    # If an id was passed on the URL, return it in response
-    if id: options['id'] = id
+
+    # Echo request id back to the client if provided
+    if id:
+        options["id"] = id
 
     try:
-        # Setup cache
+        # Initialize cache access layer
         cache = MarketDataCache()
 
-        # Retrieve metadata for all registered indicators
+        # Retrieve metadata for all registered indicator plugins
         data = cache.indicators.get_metadata_registry()
 
-        # Resolve template strings
+        # Resolve template strings in indicator defaults when symbol/timeframe is provided
         if symbol or timeframe:
             for indicator_name in data:
-                for default_name in data[indicator_name]['defaults']:
-                    val = data[indicator_name]['defaults'][default_name]
-                    data[indicator_name]['defaults'][default_name] = val.format(**locals())
+                for default_name in data[indicator_name]["defaults"]:
+                    val = data[indicator_name]["defaults"][default_name]
+                    data[indicator_name]["defaults"][default_name] = val.format(**locals())
 
-        # Record wall-clock execution time
+        # Attach wall-clock execution time
         options["wall"] = time.time() - time_start
 
-        # Resolve callback name from options
         callback = options.get("callback")
 
         # Default JSON output
-        if options.get("output_type") == "JSON" or options.get("output_type") is None:
+        if options.get("output_type") in (None, "JSON"):
             return {
                 "status": "ok",
                 "options": options,
                 "result": data,
             }
 
-        # JSONP output for browser-based consumption
+        # JSONP output for browser-based consumers
         if options.get("output_type") == "JSONP":
             payload = {
                 "status": "ok",
                 "options": options,
                 "result": data,
             }
-
-            # Serialize payload and wrap in callback function
             json_data = orjson.dumps(payload).decode("utf-8")
             return PlainTextResponse(
                 content=f"{callback}({json_data});",
                 media_type="text/javascript",
             )
 
-        raise Exception("Unsupported content type (Sorry, CSV not supported)")
-        
+        # CSV output is intentionally not supported for indicator listings
+        raise Exception("Unsupported content type (CSV not supported)")
+
     except Exception as e:
-        # Print traceback in service console in case developer makes a mistake
+        # Log full traceback to the service console for debugging
         import traceback
         traceback.print_exc()
-        # Build standardized error payload
+
+        # Standardized error payload
         error_payload = {
             "status": "failure",
             "exception": f"{e}",
             "options": options,
         }
 
-        # Return JSONP error response if requested
+        # JSONP error response
         if options.get("output_type") == "JSONP":
             return PlainTextResponse(
                 content=f"{callback}({orjson.dumps(error_payload).decode('utf-8')});",
                 media_type="text/javascript",
             )
 
-        # Default to JSON error response
+        # Default JSON error response
         return JSONResponse(content=error_payload, status_code=400)
 
 
-@router.get(f"/list/symbols/{{request_uri:path}}")
+@router.get("/list/symbols/{request_uri:path}")
 async def get_ohlcv_list(
     request_uri: str,
     callback: Optional[str] = "__bp_callback",
-    id: Optional[str] = None, 
-    config = Depends(get_config)
+    id: Optional[str] = None,
+    config=Depends(get_config),
 ):
-    """List available OHLCV symbols and timeframes.
+    """
+    List available OHLCV symbols and their supported timeframes.
 
-    This endpoint parses a path-based request URI, discovers available
-    filesystem-backed OHLCV data sources, and returns a mapping of symbols
-    to their supported timeframes. The response can be returned as JSON
-    or JSONP, depending on the requested output type.
+    This endpoint ignores selection and temporal filters and instead
+    performs filesystem-backed discovery of available OHLCV datasets.
+    Results are grouped by symbol and sorted by timeframe duration.
 
     Args:
-        request_uri (str): Path-encoded query string specifying output
-            options (e.g., output format). Selection and temporal filters
-            are ignored for this endpoint.
-        callback (Optional[str]): JavaScript callback function name used
-            when output_type is "JSONP". Defaults to "__bp_callback".
+        request_uri (str): Path-encoded URI defining output options.
+        callback (Optional[str]): JSONP callback function name.
+        id (Optional[str]): Optional request identifier echoed in the response.
+        config: Injected application configuration.
 
     Returns:
         dict | PlainTextResponse | JSONResponse:
-        - A JSON object mapping symbols to lists of available timeframes
-          when output_type is "JSON" or not specified.
-        - A PlainTextResponse containing a JSONP payload when output_type
-          is "JSONP".
-        - A JSONResponse with error details and HTTP 400 status code on
-          failure.
-
-    Raises:
-        Exception: Raised when an unsupported output type is requested
-        (e.g., CSV), or when an internal error occurs during discovery.
-
+            Mapping of symbols to sorted timeframe lists, or an error payload.
     """
-    # Parse the path-based request URI into structured query options
+    # Parse request URI into structured options
     options = parse_uri(request_uri)
-    # If an id was passed on the URL, return it in response
-    if id: options['id'] = id
+
+    # Echo request id back to the client if provided
+    if id:
+        options["id"] = id
 
     try:
-        # Setup cache
+        # Initialize cache access layer
         cache = MarketDataCache()
 
-        # Discover available OHLCV data sources from the filesystem
+        # Discover all available datasets from the registry
         available_data = cache.registry.get_available_datasets()
 
-        # Group timeframes by symbol name
+        # Group discovered timeframes by symbol
         symbols = {}
         for ds in available_data:
             symbols.setdefault(ds.symbol, []).append(ds.timeframe)
 
-        # Define 
-        tf_order = {'m': 1, 'h': 60, 'd': 1440, 'W': 10080, 'M': 43200, 'Y': 525600}
-        
-        # Define sorting function
+        # Timeframe unit weights used for sorting (in minutes)
+        tf_order = {
+            "m": 1,
+            "h": 60,
+            "d": 1440,
+            "W": 10080,
+            "M": 43200,
+            "Y": 525600,
+        }
+
+        # Convert timeframe strings (e.g. "15m", "4h") into sortable numeric values
         def tf_sort_key(tf):
             match = re.match(r"(\d+)([a-zA-Z]+)", tf)
             if match:
@@ -276,19 +282,19 @@ async def get_ohlcv_list(
                 return int(val) * tf_order.get(unit, 1)
             return 0
 
-        # Sort the timeframes for each symbol
+        # Sort timeframes for each symbol in ascending duration
         for symbol in symbols:
             symbols[symbol].sort(key=tf_sort_key)
 
         # Default JSON output
-        if options.get("output_type") == "JSON" or options.get("output_type") is None:
+        if options.get("output_type") in (None, "JSON"):
             return {
                 "status": "ok",
                 "options": options,
                 "result": symbols,
             }
 
-        # JSONP output for browser-based consumption
+        # JSONP output
         if options.get("output_type") == "JSONP":
             payload = {
                 "status": "ok",
@@ -301,14 +307,19 @@ async def get_ohlcv_list(
                 media_type="text/javascript",
             )
 
-        raise Exception("Unsupported content type (Sorry, CSV not supported)")
+        raise Exception("Unsupported content type (CSV not supported)")
 
     except Exception as e:
-        # Print traceback in service console in case developer makes a mistake
+        # Log traceback for debugging
         import traceback
         traceback.print_exc()
-        # Standardized error response
-        error_payload = {"status": "failure", "exception": f"{e}","options": options}
+
+        error_payload = {
+            "status": "failure",
+            "exception": f"{e}",
+            "options": options,
+        }
+
         if options.get("output_type") == "JSONP":
             return PlainTextResponse(
                 content=f"{callback}({orjson.dumps(error_payload).decode('utf-8')});",
@@ -316,55 +327,52 @@ async def get_ohlcv_list(
             )
 
         return JSONResponse(content=error_payload, status_code=400)
-    pass
 
-@router.get(f"/{{request_uri:path}}")
+
+@router.get("/{request_uri:path}")
 async def get_ohlcv(
     request_uri: str,
-    limit: Optional[int] = Query(1440, gt=0, le=100000),
-    offset: Optional[int] = Query(0, ge=0, le=100000),
+    limit: Optional[int] = Query(1440, gt=0, le=1000000),
+    offset: Optional[int] = Query(0, ge=0, le=1000000),
     order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
     callback: Optional[str] = "__bp_callback",
     filename: Optional[str] = "data.csv",
-    id: Optional[str] = None, 
-    subformat: Optional[int] = None, 
-    config = Depends(get_config)
+    id: Optional[str] = None,
+    subformat: Optional[int] = None,
+    config=Depends(get_config),
 ):
-    """Resolve a path-based OHLCV query and return time-series market data.
+    """
+    Execute a path-based OHLCV query and return market data.
 
-    This endpoint accepts a path-encoded query language describing
-    symbol selections, timeframes, temporal filters, and output format.
-    The request is translated into a DuckDB SQL query executed against
-    CSV-backed OHLCV datasets.
+    This endpoint resolves the encoded request URI into structured query
+    options, retrieves OHLCV data, applies indicator logic, and serializes
+    the result into the requested output format.
 
-    The response format is determined by the parsed output type and may
-    be returned as JSON, JSONP, or CSV.
+    Internally, Polars is used as the execution engine for performance.
+    Output formatting is delegated to shared helper utilities.
 
     Args:
-        request_uri (str):
-            Path-encoded query string defining symbol selections,
-            filters, output format, and platform-specific options.
-        limit (Optional[int]):
-            Maximum number of records to return.
-        offset (Optional[int]):
-            Row offset for pagination.
-        order (Optional[str]):
-            Sort order for results, either `"asc"` or `"desc"`.
-        callback (Optional[str]):
-            JSONP callback function name when output type is JSONP.
+        request_uri (str): Path-encoded OHLCV query DSL.
+        limit (Optional[int]): Maximum number of rows to return.
+        offset (Optional[int]): Row offset for pagination.
+        order (Optional[str]): Sort order ("asc" or "desc").
+        callback (Optional[str]): JSONP callback function name.
+        filename (Optional[str]): Output filename when CSV is requested.
+        id (Optional[str]): Optional request identifier.
+        subformat (Optional[int]): Optional alternate JSON format selector.
+        config: Injected application configuration.
 
     Returns:
         dict | PlainTextResponse | JSONResponse:
-            A successful response contains OHLCV data formatted according
-            to the requested output type. On failure, an error payload is
-            returned with HTTP status code 400.
+            Serialized OHLCV data or a standardized error payload.
     """
-    # Wall
-    time_start = time.time()  
-    # Parse the path-based request URI into structured query options
+    # Record wall-clock start time
+    time_start = time.time()
+
+    # Parse the request URI into structured options
     options = parse_uri(request_uri)
 
-    # Inject pagination, ordering, and callback parameters
+    # Inject runtime query parameters and defaults
     options.update(
         {
             "limit": limit,
@@ -372,100 +380,115 @@ async def get_ohlcv(
             "order": order,
             "callback": callback,
             "fmode": config.http.fmode,
+            "return_polars": True,  # Always request Polars for internal execution
         }
     )
 
-    # If an id was passed on the URL, return it in response
-    if id: options['id'] = id
-    # Support for alternate JSON version
-    if subformat: options['subformat'] = subformat
-    # If CSV mode, get output filename from query url
-    if options.get('output_type') == "CSV": options['filename'] = filename
+    # Echo request id back to the client
+    if id:
+        options["id"] = id
+
+    # Support alternate JSON output formats
+    if subformat:
+        options["subformat"] = subformat
+
+    # Attach output filename for CSV responses
+    if options.get("output_type") == "CSV":
+        options["filename"] = filename
 
     try:
-        # Discover options
+        # Resolve derived options (selects, indicators, modifiers)
         options = discover_options(options)
 
-        # Handle MT4 cases
-        if options.get("mt4") and len(options.get("select_data"))>1:
-            raise Exception("MT4 flag cannot handle multi-symbol/multi-timeframe selects")
+        # MT4 compatibility checks
+        if options.get("mt4") and len(options.get("select_data")) > 1:
+            raise Exception("MT4 flag does not support multi-select queries")
 
         if options.get("mt4") and options.get("output_type") != "CSV":
-            raise Exception("MT4 flag requires output/CSV")
+            raise Exception("MT4 flag requires CSV output")
 
-        # Get default settings
-        after_ms = _get_ms(options.get('after', '1970-01-01 00:00:00'))
-        until_ms = _get_ms(options.get('until', '3000-01-01 00:00:00'))
-        limit = options.get('limit', 1000)
-        order = options.get('order', 'desc')
+        # Resolve temporal bounds and execution parameters
+        after_ms = _get_ms(options.get("after", "1970-01-01 00:00:00"))
+        until_ms = _get_ms(options.get("until", "3000-01-01 00:00:00"))
+        limit = options.get("limit", 1000)
+        order = options.get("order", "desc")
 
-        # Output option CSV and subformat 3 require disabled recursive_mapping
-        disable_recursive_mapping= False
-        if options.get("output_type") == "CSV" or options.get("subformat") == 3:
-            disable_recursive_mapping = True
+        # Disable recursive mapping for CSV and specific subformats
+        disable_recursive_mapping = (
+            options.get("output_type") == "CSV" or options.get("subformat") == 3
+        )
 
-        # Dataframe array
+        # Collect Polars DataFrames for each select clause
         select_df = []
 
-        for item in options['select_data']:
+        tasks = []
 
-            # Retrieve the arguments from resolved select_data
+        for item in options["select_data"]:
+            # Unpack resolved select tuple
             symbol, timeframe, _, modifiers, indicators = item
-            
-            # Call the new internal get_data functionality
-            temp_df = get_data(
-                symbol, timeframe, 
-                after_ms, until_ms, 
-                limit, order, indicators, 
-                {
-                    "modifiers": modifiers,                                 # eg skiplast
-                    "disable_recursive_mapping": disable_recursive_mapping  # disables recursive mapping to dicts
-                }
+
+            # run_in_threadpool offloads the blocking 'get_data' call to a thread
+            tasks.append(
+                # Retrieve OHLCV data and indicators via internal API
+                run_in_threadpool(
+                    get_data,
+                    symbol,
+                    timeframe,
+                    after_ms,
+                    until_ms,
+                    limit,
+                    order,
+                    indicators,
+                    {
+                        "modifiers": modifiers,
+                        "disable_recursive_mapping": disable_recursive_mapping,
+                        "return_polars": True,
+                    },
+                )
             )
 
-            # Append dataframe for multiselect
-            select_df.append(temp_df)
+        # This allows multiple symbols to be calculated on different threads simultaneously.
+        select_df = await asyncio.gather(*tasks)
 
-        # Join the dataframe array
-        enriched_df = pd.concat(select_df, ignore_index=True, copy=False)
+        # Concatenate all result frames using Polars
+        enriched_df = pl.concat(select_df)
 
-        # Default, we sort on time_ms (thats what it is for)
-        sort_columns = ['time_ms']
+        # Default sort order
+        sort_columns = ["time_ms"]
 
-        # In case of multi-selects, we need to sort by time_ms, symbol and timeframe
-        if len(options['select_data'])>1: sort_columns = ['time_ms','symbol','timeframe']
-        
-        # Apply the final sorting
-        if order == "asc":
-            enriched_df.sort_values(by=sort_columns, ascending=True, inplace=True)
-        else:
-            enriched_df.sort_values(by=sort_columns, ascending=False, inplace=True)            
+        # Multi-select queries require additional sort keys
+        if len(options["select_data"]) > 1:
+            sort_columns = ["time_ms", "symbol", "timeframe"]
 
-        if options.get('limit'):
-            # Limit rows
-            enriched_df = enriched_df.iloc[:options['limit']]
+        # Apply final sorting
+        enriched_df = enriched_df.sort(sort_columns, descending=(order != "asc"))
 
-        # Wall
-        options['count'] = len(enriched_df)
-        options['wall'] = time.time() - time_start
-        
-        # Generate the output
+        # Apply row limit after sorting
+        if options.get("limit"):
+            enriched_df = enriched_df.head(options["limit"])
+
+        # Attach response metadata
+        options["count"] = len(enriched_df)
+        options["wall"] = time.time() - time_start
+
+        # Generate serialized output
         output = generate_output(enriched_df, options)
 
-        # If we have output, return the result
         if output:
             return output
 
-        # Unsupported output type
         raise Exception("Unsupported content type")
 
     except Exception as e:
-        # Print traceback in service console in case developer makes a mistake
+        # Log traceback for debugging
         import traceback
         traceback.print_exc()
 
-        # Standardized error response
-        error_payload = {"status": "failure", "exception": f"{e}","options": options}
+        error_payload = {
+            "status": "failure",
+            "exception": f"{e}",
+            "options": options,
+        }
 
         if options.get("output_type") == "JSONP":
             return PlainTextResponse(

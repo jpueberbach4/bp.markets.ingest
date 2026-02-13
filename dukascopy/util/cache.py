@@ -64,6 +64,7 @@ import pyarrow as pa
 import os
 import sys
 import mmap
+import threading
 from typing import Dict
 from numpy.lib.stride_tricks import as_strided
 from util.helper import *
@@ -107,6 +108,8 @@ class MarketDataCache:
         self.indicators = IndicatorRegistry()
         # Set initialized to true
         self._initialized = True
+        # Setup lock (thread-safety)
+        self._lock = threading.RLock()
 
     def discover_view(self, symbol, tf):
         """Discover and register a dataset view for a symbol and timeframe.
@@ -122,15 +125,16 @@ class MarketDataCache:
         Raises:
             Exception: If no dataset is found for the given symbol and timeframe.
         """
-        # Look up the dataset matching the symbol and timeframe
-        dataset = self.registry.find(symbol, tf)
+        with self._lock:
+            # Look up the dataset matching the symbol and timeframe
+            dataset = self.registry.find(symbol, tf)
 
-        # Fail fast if no dataset is available
-        if not dataset:
-            raise Exception(f"No dataset found for symbol {symbol}/{tf}")
+            # Fail fast if no dataset is available
+            if not dataset:
+                raise Exception(f"No dataset found for symbol {symbol}/{tf}")
 
-        # Register a view using the dataset's file path
-        self._register_view(symbol, tf, dataset.path)
+            # Register a view using the dataset's file path
+            self._register_view(symbol, tf, dataset.path)
 
 
     def _register_view(self, symbol, tf, file_path):
@@ -150,83 +154,131 @@ class MarketDataCache:
         Returns:
             None
         """
-        # Construct a unique view name based on symbol and timeframe
-        view_name = f"{symbol}_{tf}"
+        with self._lock:
+            # Construct a unique view name based on symbol and timeframe
+            view_name = f"{symbol}_{tf}"
 
-        # Get the file size and modification time
-        size = os.path.getsize(file_path)
-        mtime = os.stat(file_path).st_mtime
+            # Get the file size and modification time
+            size = os.path.getsize(file_path)
+            mtime = os.stat(file_path).st_mtime
 
-        # Estimate number of records assuming 64 bytes per record
-        num_records = size // 64
+            # Estimate number of records assuming 64 bytes per record
+            num_records = size // 64
 
-        # Check if a cached view already exists
-        cached = self.mmaps.get(view_name)
+            # Check if a cached view already exists
+            cached = self.mmaps.get(view_name)
 
-        # If the cached view exists and file has not changed, do nothing
-        if cached and size == cached['size'] and mtime == cached['mtime']:
-            return
+            # If the cached view exists and file has not changed, do nothing
+            if cached and size == cached['size'] and mtime == cached['mtime']:
+                return
 
-        # Reuse the file object if cached, otherwise open the file
-        f = cached['f'] if cached else open(file_path, "rb")
-        
-        # Memory-map the file for fast access
-        new_mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-        new_mm.madvise(mmap.MADV_RANDOM)  # Optimize for random access
+            # Reuse the file object if cached, otherwise open the file
+            f = cached['f'] if cached else open(file_path, "rb")
+            
+            # Memory-map the file for fast access
+            new_mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+            new_mm.madvise(mmap.MADV_RANDOM)  # Optimize for random access
 
-        # Interpret the memory-mapped bytes as a structured NumPy array
-        data_view = np.frombuffer(new_mm, dtype=DTYPE)
+            # Interpret the memory-mapped bytes as a structured NumPy array
+            data_view = np.frombuffer(new_mm, dtype=DTYPE)
 
-        # Clean up old cached view if present
-        if cached:
-            cached['data'] = None
-            cached['ts_index'] = None 
-            cached['mm'].close()
+            # Clean up old cached view if present
+            if cached:
+                cached['data'] = None
+                cached['ts_index'] = None 
+                cached['mm'].close()
 
-        # Register the new memory-mapped view in the internal cache
-        self.mmaps[view_name] = {
-            'f': f, 
-            'mm': new_mm, 
-            'ts_index': data_view['ts'], 
-            'data': data_view,
-            'size': size, 
-            'mtime': mtime, 
-            'num_records': num_records,
-            'file_path': file_path
-        }
+            # Register the new memory-mapped view in the internal cache
+            self.mmaps[view_name] = {
+                'f': f, 
+                'mm': new_mm, 
+                'ts_index': data_view['ts'], 
+                'data': data_view,
+                'size': size, 
+                'mtime': mtime, 
+                'num_records': num_records,
+                'file_path': file_path
+            }
 
 
     def get_chunk(self, symbol, tf, from_idx, to_idx, return_polars=False):
-        view_name = f"{symbol}_{tf}"
-        cached = self.mmaps.get(view_name)
+        """
+        Retrieve a slice of OHLCV data for a given symbol and timeframe.
 
-        if not cached:
-            return pl.DataFrame() if return_polars else pd.DataFrame()
+        The data is read from a memory-mapped store and returned as either
+        a Polars DataFrame (fast path) or a Pandas DataFrame (slow path).
 
-        # Slice the structured array (NumPy view)
-        subset = cached['data'][from_idx:to_idx]
+        Args:
+            symbol (str): Trading symbol (e.g. "BTCUSDT").
+            tf (str): Timeframe identifier (e.g. "1m", "5m").
+            from_idx (int): Starting index (inclusive) of the data slice.
+            to_idx (int): Ending index (exclusive) of the data slice.
+            return_polars (bool): If True, return a Polars DataFrame.
+                If False, return a Pandas DataFrame.
 
-        # Pre-extract arrays to avoid repeated indexing
-        data_points = subset['ohlcv']
+        Returns:
+            pl.DataFrame | pd.DataFrame:
+                A DataFrame containing OHLCV data plus metadata columns.
+                Returns an empty DataFrame if no cached data exists.
+        """
+        with self._lock:
+            # Build the lookup key used to access the memory-mapped data
+            view_name = f"{symbol}_{tf}"
 
-        # Construction Dictionary
-        data_dict = {
-            'symbol': symbol,
-            'timeframe': tf,
-            'time_ms': subset['ts'],
-            'open':   data_points[:, 0],
-            'high':   data_points[:, 1],
-            'low':    data_points[:, 2],
-            'close':  data_points[:, 3],
-            'volume': data_points[:, 4],
-        }
+            # Try to fetch cached data for this symbol + timeframe
+            cached = self.mmaps.get(view_name)
 
-        if return_polars:
-            # Polars zero-copy construction from NumPy
-            return pl.from_dict(data_dict)
-        
-        # Pandas construction (Slow path)
-        return pd.DataFrame(data_dict)
+            # If nothing is cached, return an empty DataFrame of the requested type
+            if not cached:
+                return pl.DataFrame() if return_polars else pd.DataFrame()
+
+            # Slice the underlying structured NumPy array by index range
+            subset = cached['data'][from_idx:to_idx]
+
+            # Extract OHLCV data (shape: N x 5)
+            data_points = subset['ohlcv']
+
+            # Column names corresponding to OHLCV values
+            columns = ['open', 'high', 'low', 'close', 'volume']
+
+            # Fast path: construct a Polars DataFrame
+            if return_polars:
+                # Raw OHLCV NumPy array
+                ohlcv_raw = subset['ohlcv']
+
+                # Ensure memory is contiguous for faster zero-copy conversion
+                ohlcv_contiguous = np.ascontiguousarray(ohlcv_raw)
+
+                # Create Polars DataFrame directly from NumPy array
+                plf = pl.from_numpy(
+                    ohlcv_contiguous,
+                    schema=['open', 'high', 'low', 'close', 'volume']
+                )
+
+                # Add metadata columns (timestamp, symbol, timeframe)
+                plf = plf.with_columns([
+                    pl.Series("time_ms", subset['ts'], dtype=pl.UInt64),
+                    pl.lit(symbol).alias("symbol"),
+                    pl.lit(tf).alias("timeframe")
+                ])
+
+                # Return Polars DataFrame (check later - unit test compliance)
+                return plf.select([
+                    "symbol", "timeframe", "time_ms", 
+                    "open", "high", "low", "close", "volume"
+                ])
+
+            # Slow path: construct a Pandas DataFrame
+            pdf = pd.DataFrame(subset['ohlcv'], columns=columns)
+
+            # Add metadata columns directly for minimal overhead
+            pdf['time_ms'] = subset['ts']
+            pdf['symbol'] = symbol
+            pdf['timeframe'] = tf
+
+            # Return Pandas DataFrame (check later - unit test compliance)
+            return pdf[['symbol', 'timeframe', 'time_ms', 'open', 'high', 'low', 'close', 'volume']]
+
 
     def get_record_count(self, symbol, tf):
         """Return the number of timestamped records available in a cached view.
@@ -238,14 +290,15 @@ class MarketDataCache:
         Returns:
             int: Total number of records in the cache.
         """
-        # Construct the cache view name from symbol and timeframe
-        view_name = f"{symbol}_{tf}"
-        
-        # Retrieve the cached view from the memory-mapped storage
-        cached = self.mmaps.get(view_name)
+        with self._lock:
+            # Construct the cache view name from symbol and timeframe
+            view_name = f"{symbol}_{tf}"
+            
+            # Retrieve the cached view from the memory-mapped storage
+            cached = self.mmaps.get(view_name)
 
-        # Return the number of timestamp entries in the index
-        return len(cached['ts_index'])
+            # Return the number of timestamp entries in the index
+            return len(cached['ts_index'])
 
 
     def find_record(self, symbol, tf, target_ts, side="right"):
@@ -268,30 +321,32 @@ class MarketDataCache:
             int | None: Index position of the matching or insertion record if
             found, otherwise ``None``.
         """
-        # Construct the cache view name from symbol and timeframe
-        view_name = f"{symbol}_{tf}"
+        with self._lock:
+            # Construct the cache view name from symbol and timeframe
+            view_name = f"{symbol}_{tf}"
 
-        # Retrieve the cached data for this view
-        cached = self.mmaps.get(view_name)
+            # Retrieve the cached data for this view
+            cached = self.mmaps.get(view_name)
 
-        # Cast to numpy uint64 to avoid re-entry to GIL on each search
-        search_key = np.uint64(target_ts)
+            # Cast to numpy uint64 to avoid re-entry to GIL on each search
+            search_key = np.uint64(target_ts)
 
-        # Perform a binary search on the sorted timestamp index
-        idx = np.searchsorted(cached['ts_index'], search_key, side=side)
+            # Perform a binary search on the sorted timestamp index
+            idx = np.searchsorted(cached['ts_index'], search_key, side=side)
 
-        # Ensure the index is valid before returning
-        if idx >= 0:
-            return idx
+            # Ensure the index is valid before returning
+            if idx >= 0:
+                return idx
 
-        return None
+            return None
 
     def to_arrow_table(self, symbol, tf, from_idx, to_idx):
-        view = self.mmaps[f"{symbol}_{tf}"]['data'][from_idx:to_idx]
-        ts_arr = pa.array(view['ts'])
-        ohlcv_raw = view['ohlcv']
-        arrays = [ts_arr] + [pa.array(ohlcv_raw[:, i]) for i in range(5)]
-        names = ['ts', 'open', 'high', 'low', 'close', 'volume']
-        return pa.Table.from_arrays(arrays, names=names)
+        with self._lock:
+            view = self.mmaps[f"{symbol}_{tf}"]['data'][from_idx:to_idx]
+            ts_arr = pa.array(view['ts'])
+            ohlcv_raw = view['ohlcv']
+            arrays = [ts_arr] + [pa.array(ohlcv_raw[:, i]) for i in range(5)]
+            names = ['ts', 'open', 'high', 'low', 'close', 'volume']
+            return pa.Table.from_arrays(arrays, names=names)
 
 

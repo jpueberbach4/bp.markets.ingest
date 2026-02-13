@@ -2,7 +2,7 @@
 
 This guide provides the necessary steps to integrate the `get_data` API from the `bp.markets.ingest` repository into external Python projects. Because this API is designed as part of a specific directory hierarchy, it requires a **bootstrap** approach to resolve its internal dependencies.
 
-"This is the way"-would the mandolorian say- to currently include the internal-api of `bp.markets.ingest` in your external code. While not yet a formal library (Librarization is on the roadmap), this bootstrap method provides a robust, high-performance link to the core engine.
+This is the way to currently include the internal-api of `bp.markets.ingest` in your external code. While not yet a formal library (Librarization is on the roadmap), this bootstrap method provides a robust, high-performance link to the core engine.
 
 ## 1. API Architecture Overview
 
@@ -143,7 +143,7 @@ The engine is engineered for **Hyperparameter Optimization (HPO)** and large-sca
 ### Throughput Comparison - 1,000,000 rows
 | Query Type | Throughput | Performance Note |
 | :--- | :--- | :--- |
-| **Price-Only (Raw)** | **~13,000,000+ rows/sec** | Zero-copy memory mapped retrieval. |
+| **Price-Only (Raw)** | **~13,000,000+ rows/sec** | Memory mapped retrieval. |
 | **Heavy Load (500 Indicators)** | **~650,000 rows/sec** | **0.5 Billion datapoints processed in 1.5s**. |
 | **Light Load (5 Indicators)** | **~1,600,000 rows/sec** | Minimal overhead, purely IO bound. |
 

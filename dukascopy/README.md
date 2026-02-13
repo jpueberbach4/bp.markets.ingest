@@ -12,6 +12,16 @@
   - Adding New Symbols
 - [Advanded Configuration](docs/configuration.md#pipeline-configuration-v03-and-above)
   - Overriding timeframes, etc
+- [Building Custom Indicators](docs/indicators.md)
+  - Plugin Architecture
+  - Polars vs Pandas
+  - Debugging & Profiling
+  - TA-lib [generation](docs/talib-indicators.md)
+  - Various examples
+  - Optimizing indicators with for-loops: [Numba](numba.md)
+- [Integration](docs/external.md)
+  - Bootstrapping the API
+  - Various examples
 - [Output schema](docs/architecture.md#output-schema)
   - Details on generated files
 - [Quick Check](#quick-check)
@@ -33,6 +43,10 @@
 - [License](#license)
 
 ---
+
+## Notice: documentation has moved to a submodule
+
+This has been rolled back. It corrupts my (fast) workflow.
 
 ## What Is This Tool Used For?
 
@@ -103,6 +117,18 @@ Make sure python version is 3.8+.
 python3 --version
 ```
 
+### Important
+
+Initial Syncing Performance: When performing your first initial sync (especially for 40+ symbols), the default `download.rate_limit_rps` of `3.0` is a safe middle ground.
+
+For High-Core Systems (16+): You can safely increase this to `4.0` or `5.0` in `config.user.yaml` (you need to perform a `./setup-dukascopy.sh` first) to speed up the ingestion of your first 320,000+ files.
+
+Avoid 0.5: Setting this too low makes the software appear to hang and can turn a 2-hour sync into a multi-day process.
+
+Generic Advice: Keep total requests (RPS × Cores) below 60/s to avoid IP flags.
+
+---
+
 For this Dukascopy Data Pipeline project, the Python dependencies that need to be installed via pip are:
 
 | Package               | Version      | Purpose                                                                 |
@@ -127,6 +153,8 @@ Install with:
 ```sh
 ./setup-dukascopy.sh
 ```
+
+--- 
 
 **Permissions**
 
@@ -158,12 +186,14 @@ crontab -e
 Add the following line, adjust path accordingly-run once every 15m:
 
 ```sh
-*/15 * * * * sleep $(( (RANDOM \% 27) + 5 )) && cd /home/jpueberb/repos2/bp.markets.ingest/dukascopy && ./run.sh
+*/15 * * * * sleep $(( (RANDOM \% 17) + 10 )) && cd /home/jpueberb/repos2/bp.markets.ingest/dukascopy && ./run.sh
 ```
 
 In order to get the highest possible performance, I recommend to toggle ALL the `fmode` fields in `config.user.yaml` to `binary`. This is considered as "a custom change". When you make custom changes, you cannot use `./setup-dukascopy.sh` anymore since this script will restore the settings back to "text"-this will change in the future now CSV mode is deprecated.
 
 * For configuration of custom timeframes, sessions etc, [see here](docs/configuration.md)
+* For custom indicators etc, [see here](docs/indicators.md)
+* For querying from external Python projects, [see here](docs/external.md)
 * For more information on the binary format, [see here](docs/binary.md)
 * For more information on the HTTP API service, [see here](docs/http.md)
 * For more information on Parquet/CSV building, [see here](docs/tools.md)
@@ -182,6 +212,8 @@ cp symbols.txt symbols.user.txt
 ```
 
 Next edit symbols.user.txt to include your symbols of interest (symbols.user.txt is in .gitignore). 
+
+**Important:** If you are using this for "live-edge" as well, you should add BTC/USD to the symbols.user.txt. This symbol is the heartbeat symbol for the system. It allows you to detect open-candles at the live-edge correctly. See the [indicators.md](docs/indicators.md), mid- to bottom section on how to build indicators that discard open-candles (requirement for live-edge).
 
 ---
 
@@ -284,6 +316,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Dukascopy Ready](https://img.shields.io/badge/Dukascopy-Ready-006400?style=flat&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgMThjLTQuNDEgMC04LTMuNTktOC04czMuNTktOCA4LTggOCAzLjU5IDggOC0zLjU5IDgtOCA4eiIvPjxwYXRoIGQ9Ik0xNi4yIDkuNEwxMiAxMmw0LjIgMi42bC0yLjYgNC4ybC0yLjYtMi42LTQuMiAyLjZ2LTIuNi00LjJ6Ii8+PC9zdmc+)
+
+
 
 
 

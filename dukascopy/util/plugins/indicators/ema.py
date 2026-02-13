@@ -24,6 +24,7 @@ def meta() -> Dict:
         "author": "Google Gemini",
         "version": 1.1,
         "verified": 1,
+        "talib-validated":1, 
         "polars": 1  
     }
 
@@ -57,8 +58,6 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     except (ValueError, TypeError):
         period = 9
 
-    # Using ewm_mean for recursive calculation (adjust=False matches standard TA)
-    # This runs in Rust and bypasses the Python GIL.
     return pl.col("close").ewm_mean(span=period, adjust=False).alias(indicator_str)
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
@@ -70,10 +69,8 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     except (ValueError, TypeError):
         period = 14
 
-    # Vectorized EMA Calculation
     ema = df['close'].ewm(span=period, adjust=False).mean()
 
-    # Preserving original index for merging
     res = pd.DataFrame({
         'ema': ema
     }, index=df.index)

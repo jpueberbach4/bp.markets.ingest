@@ -57,17 +57,22 @@ download:
   max_retries: 3                      # Number of retries before downloader raises
   backoff_factor: 2                   # Exponential backoff factor (wait time)
   timeout: 60                         # Request timeout
-  rate_limit_rps: 10                  # Protect end-point (number of cores * rps = requests/second)
+  rate_limit_rps: 3                   # Protect end-point (number of cores * rps = requests/second)
+                                      # IMPORTANT: when you are initially syncing you might want to
+                                      # make this higher, but keep it reasonable!
+  mode: requests                      # DownloadWorker-type: requests or http2
+  jitter: 0.2                         # Add a random jitter up to this amount (seconds)
   paths:
     historic: cache                   # Historical downloads
     live: data/temp                   # Live downloads
 
 ## Below you will find the configuration for the http service script.
 http:
-  poolmode: thread                    # Poolmode indicator calculations (process/thread)
-  fmode: binary                       # Only binary is supported from v0.6.6 onward
-  docs: config/dukascopy/http-docs    # Directory where HTML docs will live
-  listen: "127.0.0.1:8000"                     # Listen to this port
+  fmode: binary                         # Only binary is supported from v0.6.6 onward
+  docs: config.user/dukascopy/http-docs # Directory where HTML docs will live
+  listen: "127.0.0.1:8000"              # Listen to this port
+  workers: 4                            # Number of worker processes to serve with
+  reload: 0                             # During development you want this probably set to 1. Production? 0
 
 ## Below you will find the configuration for the orchestrator script
 orchestrator:
@@ -95,6 +100,7 @@ transform:
   symbols:
     includes:
     - config/dukascopy/processing.yaml
+    # - config/dukascopy/sidetracking/*.yaml # Un-comment/Add this to enable the BETA sidetracking feature for BRENT
 
 # Below you will find the configuration for the resample.py script. 
 resample:

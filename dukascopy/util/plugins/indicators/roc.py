@@ -25,7 +25,8 @@ def meta() -> Dict:
         "version": 1.1,
         "panel": 1,
         "verified": 1,
-        "polars": 1  # Flag to trigger high-speed Polars execution
+        "talib-validated": 1, 
+        "polars": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -58,17 +59,10 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     except (ValueError, TypeError):
         period = 12
 
-    # 1. Historical Price Lookup
-    # We shift 'close' by the period to get the comparison base
     price_n = pl.col("close").shift(period)
-
-    # 2. Percentage Change Calculation
-    # Polars handles division by zero by producing 'null' or 'inf', 
-    # which we fill for stability.
     roc = ((pl.col("close") - price_n) / price_n) * 100
 
-    # 3. Final Alias and Rounding
-    return roc.fill_nan(0).fill_null(0).round(3).alias(indicator_str)
+    return roc.fill_nan(0).fill_null(0).alias(indicator_str)
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     """
@@ -85,7 +79,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     roc = ((df['close'] - price_n) / price_n.replace(0, np.nan)) * 100
 
     res = pd.DataFrame({
-        'roc': roc.round(precision)
+        'roc': roc
     }, index=df.index)
     
     return res.dropna(subset=['roc'])

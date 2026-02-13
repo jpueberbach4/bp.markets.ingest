@@ -31,6 +31,7 @@ import math
 import time
 import sys
 import pandas as pd
+import numpy as np
 from config.app_config import AppConfig, load_app_config
 from filelock import FileLock, Timeout
 from datetime import datetime, timezone, timedelta
@@ -229,6 +230,15 @@ def main():
                 if not Path(f"{config.paths.transforms}/{dt:%Y}/{dt:%m}/{sym}_{dt:%Y%m%d}.bin").is_file()
                 if Path(f"{config.paths.downloads}/{dt:%Y}/{dt:%m}/{sym}_{dt:%Y%m%d}.json").is_file()
             ]            
+
+        # Symbols need to get extended here with the symbols that are sidetracked
+        for key in app_config.transform.symbols.keys():
+            if app_config.transform.symbols.get(key).source:
+                if app_config.transform.symbols.get(key).source in symbols:
+                    # append the key to symbols
+                    symbols = np.append(symbols, key)
+                else:
+                    print(f"Warning: symbol {key} source {app_config.transform.symbols.get(key).source} not found")
 
         # Prepare aggregate tasks (one per symbol, covering all dates)
         aggregate_tasks = [(sym, dates, app_config) for sym in symbols]

@@ -37,66 +37,91 @@ from typing import Dict,List, Union
 from util.cache import MarketDataCache
 from util.parallel import parallel_indicators
 
-
-
 def get_data_auto(
-    df: pd.DataFrame,
+    df: Union[pd.DataFrame, pl.DataFrame],
     limit: int = -1,
     order: str = "asc",
-    indicators: List[str] = []
-) -> pd.DataFrame:
-    """Automatically retrieve OHLCV data and indicators based on an existing DataFrame.
+    indicators: List[str] = [],
+    options: Dict = {}
+) -> Union[pd.DataFrame, pl.DataFrame]:
+    """
+    Automatically fetch OHLCV data (and optional indicators) that matches
+    the time range and metadata of an existing DataFrame.
 
-    Note: get_data_auto only supports pandas dataframes
+    The function inspects the input DataFrame to determine:
+    - symbol
+    - timeframe
+    - start timestamp (after_ms)
+    - end timestamp (until_ms)
 
-    This is a convenience wrapper around `get_data` that infers the symbol,
-    timeframe, and time range directly from an existing OHLCV DataFrame.
-    It is commonly used when re-querying or extending previously fetched data
-    while preserving consistent parameters.
-
-    The time range is derived from the first and last rows of the input
-    DataFrame, and the limit defaults to the full length of the DataFrame
-    unless explicitly overridden.
+    It supports both Pandas and Polars DataFrames and forwards all derived
+    parameters to the core `get_data` function.
 
     Args:
-        df (pd.DataFrame): Source DataFrame containing at least the columns
-            `symbol`, `timeframe`, and `time_ms`. The first and last rows are
-            used to infer query boundaries.
-        limit (int, optional): Maximum number of rows to return. If set to -1,
-            the length of the input DataFrame is used. Defaults to -1.
-        order (str, optional): Sort order of the returned data ("asc" or "desc").
-            Currently passed through but enforced as ascending internally.
-            Defaults to "asc".
-        indicators (List[str], optional): List of indicator strings to compute
-            (e.g., ["sma_20", "rsi_14"]). Defaults to empty list.
+        df: Input DataFrame containing at least the columns:
+            `symbol`, `timeframe`, and `time_ms`.
+            Can be either a Pandas or Polars DataFrame.
+        limit: Maximum number of rows to return. If -1, defaults to the
+            number of rows in the input DataFrame.
+        order: Sort order of the returned data ("asc" or "desc").
+        indicators: List of indicator names to compute and attach.
+        options: Optional dictionary of additional parameters forwarded
+            directly to `get_data`.
 
     Returns:
-        pd.DataFrame: A DataFrame containing OHLCV data and requested indicators
-        for the inferred symbol, timeframe, and time range.
+        A Pandas or Polars DataFrame (matching the backend used by `get_data`)
+        containing OHLCV data and requested indicators for the inferred range.
+
+    Note: when input options are not set, the output defaults to a pandas Dataframe.
+          Generally a user should forward the incoming options to this function.
+          That keeps consistency automatically.
     """
-    # Extract symbol and timeframe from the first row
-    symbol = df.iloc[0].symbol
-    timeframe = df.iloc[0].timeframe
 
-    # Infer time boundaries from the DataFrame
-    after_ms = df.iloc[0].time_ms
-    until_ms = df.iloc[-1].time_ms
+    # Check whether we're dealing with a Polars DataFrame
+    is_pl = isinstance(df, pl.DataFrame)
 
-    # If limit is unset, default to the full DataFrame length
-    if limit == -1:
-        limit = len(df)
+    if is_pl:
+        # Polars has no iloc; row(0) gets the first row, row(-1) gets the last
+        # named=True returns a dict-like object instead of a tuple
+        first_row = df.row(0, named=True)
+        last_row = df.row(-1, named=True)
 
-    # Delegate to the core get_data API
-    # Note: until_ms is incremented to make the upper bound exclusive
+        # Pull required metadata from the first row
+        symbol = first_row["symbol"]
+        timeframe = first_row["timeframe"]
+
+        # Use the first timestamp as the lower bound
+        after_ms = first_row["time_ms"]
+
+        # Use the last timestamp as the upper bound
+        until_ms = last_row["time_ms"]
+
+        # Total number of rows in the input DataFrame
+        count = len(df)
+    else:
+        # Pandas path: iloc is safe regardless of index type
+        symbol = df.iloc[0]["symbol"]
+        timeframe = df.iloc[0]["timeframe"]
+        after_ms = df.iloc[0]["time_ms"]
+        until_ms = df.iloc[-1]["time_ms"]
+        count = len(df)
+
+    # If limit is -1, default to the size of the input DataFrame
+    final_limit = limit if limit != -1 else count
+
+    # Delegate the actual data retrieval to get_data
     return get_data(
         symbol=symbol,
         timeframe=timeframe,
-        after_ms=after_ms,
-        until_ms=until_ms + 1,
-        limit=limit,
+        after_ms=int(after_ms),
+        # +1 makes the upper bound exclusive so the last candle is included
+        until_ms=int(until_ms) + 1,
+        limit=final_limit,
         order=order,
-        indicators=indicators
+        indicators=indicators,
+        options=options
     )
+
 
 
 def get_data(

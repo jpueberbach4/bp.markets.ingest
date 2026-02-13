@@ -22,7 +22,8 @@ def meta() -> Dict:
         "version": 1.2,
         "panel": 1,
         "verified": 1,
-        "polars": 1     # Now fixed and enabled for high-speed execution
+        "polars": 0,
+        "polars_input": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -37,72 +38,53 @@ def position_args(args: List[str]) -> Dict[str, Any]:
         "period": args[0] if len(args) > 0 else "30"
     }
 
-def get_sevcik_dimension(y: np.ndarray) -> float:
+def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     """
-    Vectorized Sevcik Fractal Dimension calculation.
-    """
-    n = len(y)
-    if n < 2: return 1.0
-    y_min, y_max = np.min(y), np.max(y)
-    if y_max == y_min: return 1.0
-    
-    # Normalize price to [0, 1]
-    y_norm = (y - y_min) / (y_max - y_min)
-    
-    # Euclidean distance of normalized path inside a unit square
-    dist = np.sum(np.sqrt(np.diff(y_norm)**2 + (1.0 / (n - 1))**2))
-    
-    return 1.0 + (np.log(dist) + np.log(2)) / np.log(2 * (n - 1))
-
-def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
-    """
-    High-performance Polars-native calculation using Sevcik method.
-    Fixes the 'round' crash by separating numeric and string expressions.
+    High-performance Sevcik Fractal Dimension implementation for polars_input: 1.
+    Vectorizes windowed normalization and logarithmic scaling via Numpy views.
     """
     try:
         period = int(options.get('period', 30))
     except (ValueError, TypeError):
         period = 30
 
-    # 1. Dimension Calculation (using map_batches/rolling_map for the recursive math)
-    # We cast to Float64 immediately to prevent type panics
-    fractal_dim = pl.col("close").cast(pl.Float64).rolling_map(
-        lambda s: get_sevcik_dimension(s.to_numpy()), 
-        window_size=period
-    )
+    if len(df) < period:
+        return pl.DataFrame({
+            "fractal_dim": [None] * len(df),
+            "market_state": ["Transition"] * len(df)
+        }).with_columns([
+            pl.col("fractal_dim").cast(pl.Float64),
+            pl.col("market_state").cast(pl.Utf8)
+        ])
 
-    # 2. Market State Classification (Native Polars)
-    market_state = (
-        pl.when(fractal_dim < 1.3).then(pl.lit("Trending"))
-        .when(fractal_dim > 1.6).then(pl.lit("Turbulent/Noise"))
+    close_v = df["close"].to_numpy()
+    windows = np.lib.stride_tricks.sliding_window_view(close_v, window_shape=period)
+    
+    y_min = np.min(windows, axis=1)[:, np.newaxis]
+    y_max = np.max(windows, axis=1)[:, np.newaxis]
+    
+    range_v = y_max - y_min
+    range_v = np.where(range_v == 0, 1.0, range_v)
+    
+    y_norm = (windows - y_min) / range_v
+
+    diffs_sq = np.diff(y_norm, axis=1)**2
+    step_sq = (1.0 / (period - 1))**2
+    
+    dist_sum = np.sum(np.sqrt(diffs_sq + step_sq), axis=1)
+
+    fd_values = 1.0 + (np.log(dist_sum) + np.log(2)) / np.log(2 * (period - 1))
+
+    padding = np.full(period - 1, np.nan)
+    full_fd = np.concatenate([padding, fd_values])
+
+    res = pl.DataFrame({"fractal_dim": full_fd.round(4)})
+
+    res = res.with_columns(
+        pl.when(pl.col("fractal_dim") < 1.3).then(pl.lit("Trending"))
+        .when(pl.col("fractal_dim") > 1.6).then(pl.lit("Turbulent/Noise"))
         .otherwise(pl.lit("Transition"))
+        .alias("market_state")
     )
 
-    # 3. Return expressions. We round the numeric one here to satisfy the engine
-    return [
-        fractal_dim.round(4).alias(f"{indicator_str}__fractal_dim"),
-        market_state.alias(f"{indicator_str}__market_state")
-    ]
-
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
-    """
-    Pandas fallback. Handles precision locally to avoid engine-level rounding errors.
-    """
-    try:
-        period = int(options.get('period', 30))
-    except (ValueError, TypeError):
-        period = 30
-
-    # raw=True ensures we pass a high-speed NumPy array to the worker
-    fractal_dim = df['close'].rolling(window=period).apply(get_sevcik_dimension, raw=True)
-
-    conditions = [ (fractal_dim < 1.3), (fractal_dim > 1.6) ]
-    choices = ["Trending", "Turbulent/Noise"]
-    market_state = np.select(conditions, choices, default="Transition")
-
-    res = pd.DataFrame({
-        'fractal_dim': fractal_dim.round(4),
-        'market_state': market_state.astype(str)
-    }, index=df.index)
-    
-    return res.dropna(subset=['fractal_dim'])
+    return res

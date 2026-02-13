@@ -22,7 +22,8 @@ def meta() -> Dict:
         "version": 1.1,
         "panel": 1,
         "verified": 1,
-        "polars": 1  # Trigger high-speed Polars execution path
+        "talib-validated": 1, 
+        "polars": 1 
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -57,16 +58,11 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     except (ValueError, TypeError):
         short_period, long_period = 3, 10
 
-    # 1. Calculate Money Flow Multiplier and Volume
     h_l_range = pl.col("high") - pl.col("low")
     mfm = ((pl.col("close") - pl.col("low")) - (pl.col("high") - pl.col("close"))) / h_l_range
     
-    # 2. Derive ADL (Cumulative Sum of Money Flow Volume)
-    # fill_nan handles flat bars where High == Low
     adl = (mfm.fill_nan(0) * pl.col("volume")).cum_sum()
     
-    # 3. Chaikin Formula: EMA(ADL, short) - EMA(ADL, long)
-    # Polars optimizes this so the ADL isn't recalculated for each EMA
     chaikin = adl.ewm_mean(span=short_period, adjust=False) - adl.ewm_mean(span=long_period, adjust=False)
 
     return chaikin.alias(indicator_str)

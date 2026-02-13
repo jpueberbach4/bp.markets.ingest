@@ -22,7 +22,8 @@ def meta() -> Dict:
         "version": 1.1,
         "panel": 0,
         "verified": 1,
-        "polars": 1  # Trigger high-speed Polars execution path
+        "talib-validated":1, 
+        "polars": 1 
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
@@ -55,17 +56,12 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
     except (ValueError, TypeError):
         period, std_dev = 20, 2.0
 
-    # 1. Define the base rolling components
-    # Polars optimizes these to run in a single pass over the 'close' column
     mid = pl.col("close").rolling_mean(window_size=period)
-    std = pl.col("close").rolling_std(window_size=period)
+    std = pl.col("close").rolling_std(window_size=period,  ddof=0)
 
-    # 2. Calculate Upper and Lower bands
     upper = mid + (std * std_dev)
     lower = mid - (std * std_dev)
 
-    # 3. Return as a list of aliased expressions
-    # Using the __ prefix for the nested dictionary logic in parallel.py
     return [
         upper.alias(f"{indicator_str}__upper"),
         mid.alias(f"{indicator_str}__mid"),
@@ -83,7 +79,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
         period, std_dev = 20, 2.0
 
     mid = df['close'].rolling(window=period).mean()
-    rolling_std = df['close'].rolling(window=period).std()
+    rolling_std = df['close'].rolling(window=period, ddof=0).std()
     
     upper = mid + (rolling_std * std_dev)
     lower = mid - (rolling_std * std_dev)

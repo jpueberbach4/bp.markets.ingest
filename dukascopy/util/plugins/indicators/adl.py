@@ -43,19 +43,9 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     """
     High-performance Polars-native calculation for ADL.
     """
-    # 1. Money Flow Multiplier (MFM)
-    # Calculation: [(Close - Low) - (High - Close)] / (High - Low)
     h_l_range = pl.col("high") - pl.col("low")
-    
-    # Handle division by zero for flat bars where High == Low
     mfm = ((pl.col("close") - pl.col("low")) - (pl.col("high") - pl.col("close"))) / h_l_range
-    
-    # 2. Money Flow Volume (MFV)
-    # Fill NaN/Null from division by zero with 0, then multiply by volume
     mfv = mfm.fill_nan(0).fill_null(0) * pl.col("volume")
-    
-    # 3. Cumulative Sum
-    # Using the indicator_str as the alias for orchestrator compatibility
     return mfv.cum_sum().alias(indicator_str)
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:

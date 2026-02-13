@@ -1,5 +1,13 @@
 ## Short term todo list
 
+Priorization:
+
+- Stabilization - Seeing if we can prevent OOM's and instead degrade in a "nicer way"
+- Quality - Another full comparison pass on the indicators. LLM's can tell me they are fine but i want to SEE (TA-lib?).
+- Coverage - Unit-testing > 80-90% + "Unhappy paths"
+- Panama-adjusted sidetracked data plus stocksplit support. Two in one solution.
+- Then split up - I have a testeable base then. K8S-readiness changes are not "minor changes".
+
 [x] Initial refactor/preparation stage:
   - [x] Abstracting indicator registry
   - [x] Implementation get_data method (internal API)
@@ -10,6 +18,38 @@
   - [x] Initial bug-checking (since a lot has moved)
 
 Note: we are setup now to integrate the extensions below (weekend work).
+
+Quality:
+  - [x] ~~Users will try to export 1 million rows with market/volume profile.~~
+  - [x] Multi-process API service for true concurrency
+  - [x] Thread safety for MarketDataCache (calling get_data from multiple threads)
+  - [x] Unit-test that does a performance-test on indicators with 10,000 records and warns on > 10ms.
+  - [x] Aroon indicator is a PERFORMANCE-KILLER. Fix.
+  - [x] Abstraction download-engine and HTTP/2 support (configurable)
+  - [x] Eliminate the Polars->Pandas conversion in HTTP-api
+  - [x] Allow get_data_auto to receive a polars Dataframe (and options)
+  - [x] Use BTC-USD as heartbeat to detect open-candles, build indicator
+  - [x] Support is-open indicator to detect the live-edge (open candles)
+  - [ ] Support is-stale indicator to detect download/market-data issues
+  - [ ] Degradation and change of execution mode on memory-pressure
+  - [x] Extra quality pass on indicator kaufman-er and up (sort by modified desc)
+  - [x] Automated validation of the system indicators using TA-lib where possible
+  - [ ] More unit-tests NOW - in progress
+  - [x] Find solution for UVLOOP WSL2 watchfiles CPU 100pct issue. Optionally, configurable.
+  - [ ] The panama and stock-split fixes
+  - [ ] Third indicator execution path: CUDA/Rapids. I need to know this for ML. Can I gain with it?
+
+Note: UVLOOP WSL2 fix was implemented through a config.user.yaml setting.
+
+Note: Cuda/Rapids/GPU: The "Elegant" Fix: Use a Coalescing Buffer. Instead of immediate execution, the internal API should collect indicator requests within a tiny time window (e.g., 5-10ms) or until a batch size is met, then ship one massive Arrow table to the GPU. This maximizes the O(1) nature of the parallel execution. Could be too much for now. If too much: it moves down the feature-list.
+
+Note: 1 million rows with market/volumeprofile is now acceptable after JIT optimizations. 
+
+Note: as of 10 feb, we are down to the original quality features list. the important stuff.
+
+Modularity:
+  - [ ] Split up ETL and have a central "feeder" engine that can distribute in near-realtime
+  - [ ] Move resample to Polars
 
 Early warning:
   - [ ] Warning/Reporting system for datasource outages
@@ -25,15 +65,18 @@ Note: strike-through of above is because get_data is powerful enough to handle d
 ASX:
   - [ ] Custom timeshifting
 
-DuckDB:
-  - [ ] Eliminate completely
-
 Panama:
+  - [ ] Eliminate DuckDB completely
   - [ ] Panama prevents text-strip, invent solution for binary
+
+Note: solution here is that we are embracing a "side-track" approach. This will eliminate the Panama builder component
+since the dataset is already there. No need to "build" it anymore. Just configure it instead. When Panama sidetracking is
+done we can strip text/csv and DuckDB completely. Lessening the code by 3-8 percent.
 
 Drawing/Visualization:
   - [x] Split JS to libs (chart.js, drawing.js, ui.js)
   - [ ] Drawing tools (lines, channels, fibs)
+  - [ ] Allow for line-color specification in the indicator (currently via custom.js)
   - [x] ~~Export to PNG/SVG?~~
 
 Note: strike-through=wont do
@@ -43,8 +86,9 @@ Note: strike-through=wont do
   - [X] Cross-timeframe queries
   - [x] Make internal API queryable from external code (bootstrapping)
 
-[ ] TCP Layer
-  - [ ] Apache Arrow Flight? (research)
+[ ] TCP/Disk Layer
+  - [ ] Columnar and io_uring
+  - [ ] Apache Arrow Flight (research done ✔️)
 
 Note: the HTTP API is nice but it has a major serialization tax
 
@@ -53,13 +97,22 @@ Example Indicator:
   - [ ] EUR-USD vs Bond Pearson correlation example
 
 Protection
-  - [ ] Circular indicator dependency protection, AST inspection?
-  - [ ] Custom threadpool to optimize recursive get_data calls which use pandas indicators
+  - [x] Circular indicator dependency protection (V1 present as a unit-test, V2 options checking todo)
+  - [x] ~~Custom threadpool to optimize recursive get_data calls which use pandas indicators~~
+
+Note: Tried an overload of the default threadpool and replaced it with a custom threadpool. Dynamically sizing, making it a global singleton etc etc etc. Profiling showed the wins are marginal because of the GIL locking for data transfer back and forth between threads and mainthread. Yes, thread creation is eliminated but the locking remains the same. Too much complexity for too little gains, so hands off. This didnt help, meaning: we are basically at the limits for what is possible in Python. If more performance needed, i will need to move to C++ or Rust (but C++ is already planned, that is what i know and gives full power).
 
 Testing:
   - [ ] Unit tests (80%+ coverage)
   - [x] Load tests
   - [ ] New performance benchmarks
+
+Observability
+  - [ ] Monitoring Health/Throughput/ROE
+  - [ ] Normalized logging messages
+  - [ ] "Additional stuff"
+
+Note: better monitoring/normalized logging IS a requirement for K8S envs.
 
 Cleanup:
   - [ ] Builder cleanup
@@ -69,4 +122,9 @@ Cleanup:
   - [ ] Final bug fix sweep
 
 Rest
-  - [x] Take a day off (today)
+  - [x] Take a day off
+  - [x] Take a second day off
+  - [ ] Take a third day off
+
+
+I know Istio too. Seeing if it's beneficial to build adapters (but this is medium term).

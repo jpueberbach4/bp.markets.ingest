@@ -23,6 +23,7 @@ def meta() -> Dict:
         "version": 1.1,
         "panel": 1,
         "verified": 1,
+        "talib-validated": 1, 
         "polars": 1  # Trigger high-speed Polars execution path
     }
 
@@ -55,20 +56,14 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> pl.Expr:
     except (ValueError, TypeError):
         period = 14
 
-    # 1. Get Previous Close
     prev_close = pl.col("close").shift(1)
 
-    # 2. Calculate the 3 components of True Range
     tr1 = pl.col("high") - pl.col("low")
     tr2 = (pl.col("high") - prev_close).abs()
     tr3 = (pl.col("low") - prev_close).abs()
 
-    # 3. Calculate True Range (TR) using high-speed horizontal max
-    # This avoids the 'concat' overhead found in Pandas
     tr = pl.max_horizontal([tr1, tr2, tr3])
 
-    # 4. Apply Wilder's Smoothing
-    # Alpha = 1/N for Wilder's. In Polars ewm_mean, span = 2N - 1
     return tr.ewm_mean(span=2 * period - 1, adjust=False).alias(indicator_str)
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:

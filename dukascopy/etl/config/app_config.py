@@ -160,20 +160,28 @@ class DownloadConfig:
     timeout: int = 10
     rate_limit_rps: float = 0.5
     paths: DownloadPaths = field(default_factory=DownloadPaths)
-
+    mode: str = "requests"
+    jitter: float = 0.5
 
 @dataclass
-class TransformSymbolProcessingStep:
+class TransformDateRange:
+    """Defines the 'from' and 'to' dates for a single date range."""
+    from_date: str = field(default=None,metadata={'yaml_key': 'from_date'}) 
+    to_date: str = field(default=None,metadata={'yaml_key': 'to_date'})
+
+@dataclass
+class TransformSymbolProcessingStep(TransformDateRange):
     """
     Configuration for a pre/post processing step
     """
     action: str = field(default=None,metadata={'yaml_key': 'action'}) 
-    column: str = field(default=None,metadata={'yaml_key': 'column'}) 
+    columns: List[str] = field(default_factory=list, metadata={'yaml_key': 'columns'})
     value: int = field(default=None, metadata={'yaml_key': 'value'})
 
 @dataclass
 class TransformSymbol:
     """Per-symbol overrides for resampling behavior."""
+    source: str = field(default=None,metadata={'yaml_key': 'source'}) 
     post: Optional[Dict[str, TransformSymbolProcessingStep]] = field(default=None)
 
 @dataclass

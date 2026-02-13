@@ -24,7 +24,7 @@ def meta() -> Dict:
         "author": "Google Gemini",
         "version": 1.1,
         "verified": 1,
-        "polars": 1,  # Flag to trigger high-speed Polars execution
+        "polars": 1, 
         "needs": "surface-colouring"
     }
 
@@ -63,30 +63,24 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
     except (ValueError, TypeError):
         ema_period, atr_period, multiplier = 20, 10, 1.0
 
-    # 1. Mid Line (EMA)
     mid = pl.col("close").ewm_mean(span=ema_period, adjust=False)
 
-    # 2. True Range Calculation
     prev_close = pl.col("close").shift(1)
     tr1 = pl.col("high") - pl.col("low")
     tr2 = (pl.col("high") - prev_close).abs()
     tr3 = (pl.col("low") - prev_close).abs()
     
-    # max_horizontal for vectorized O(1) row-wise comparison
     true_range = pl.max_horizontal([tr1, tr2, tr3])
 
-    # 3. ATR (Wilder's Smoothing)
-    # alpha = 1 / period matches Wilder's original formula and your Pandas logic
     atr = true_range.ewm_mean(alpha=1/atr_period, adjust=False)
 
-    # 4. Bands
     upper = mid + (multiplier * atr)
     lower = mid - (multiplier * atr)
 
     return [
-        upper.round(5).alias(f"{indicator_str}__upper"),
-        mid.round(5).alias(f"{indicator_str}__mid"),
-        lower.round(5).alias(f"{indicator_str}__lower")
+        upper.alias(f"{indicator_str}__upper"),
+        mid.alias(f"{indicator_str}__mid"),
+        lower.alias(f"{indicator_str}__lower")
     ]
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
