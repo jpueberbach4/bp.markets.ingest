@@ -26,6 +26,14 @@ There will be two additional indicators:
 
 See [config/dukascopy/timeframes/indices/SGD-indices.yaml](../config/dukascopy/timeframes/indices/SGD-indices.yaml) (merge logic).
 
+**Note:** If your drift between assets is sometimes 1 minute, update your crontab - change the sleep value to 10:
+
+```sh
+*/5 * * * * sleep 10 && cd /home/jpueberb/repos2/bp.markets.ingest/dukascopy && ./run.sh
+```
+
+This gives the backend server a bit more time to synchronize all symbols.
+
 Documented here (future reference): [Market-status indicators](market-status.md)
 
 ## **Very cool tip**
