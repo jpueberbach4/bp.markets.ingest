@@ -65,7 +65,7 @@ mkdir -p config.user/dukascopy/sidetracking
 
 **Note:** You can test all of them to see what the differences are. Make sure you have `AAPL.US-USD` configured if you decide to run the AAPL one too.
 
-**Note:** For the AAPL example you need to do a `pip install -r requirements.txt` (needs "BeautifulSoup") and you need the AAPL.US-USD symbol configured.
+**Note:** For the AAPL example you need to do a `pip install -r requirements.txt` (needs "BeautifulSoup").
 
 Then open `config.user.yaml`:
 
@@ -151,6 +151,7 @@ TLS will be implemented as a minimum. Raw Public Key (RPK) Authentication will b
 I forgot to mention but this was implemented already a "few" commits back. Status-code 400 is now transient. That means when the ingestion encounters a 400 state, it will retry. This makes ingestion a bit more robust. Play with the number of `retries`, `jitter`, the `backoff_factor` and the `timeout` if you are having issues syncing up. Don't overdo it on the `rate_limit_rps` setting though.
 
 Preliminary conclusion, since 3 weekends in a row: 400 errors? it's likely maintenance. When you are in-sync and somehow use this for 24/7 trading purposes, monitor your BTC-1m-candles closely (in the weekend). I will provide that `is-stale` counter-part to `is-open` soon.
+
 
 
 
