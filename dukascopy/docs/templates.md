@@ -141,14 +141,13 @@ This example plots 3x different TF RSI on a single panel for the current symbol 
 
 ```python
 import polars as pl
-import pandas as pd
-import numpy as np
 from typing import List, Dict, Any
 
 def description() -> str:
     return (
         "Triple RSI Panel: Displays Current, 4H, and 1D RSI in a single panel. "
         "Uses data-relative 'is_open' filtering to prevent repainting on the live-edge."
+        "Note: the \"normal-rsi\" is the actual live value. The open-canle value."
     )
 
 def meta() -> Dict:
@@ -164,11 +163,13 @@ def meta() -> Dict:
 def warmup_count(options: Dict[str, Any]) -> int:
     rsi_period = int(options.get('rsi_period', 14))
     # 1D is 1440 mins. We need a massive 1H lead time for 1D RSI convergence.
-    return (rsi_period * 3) * 24
+    return 0
 
 def position_args(args: List[str]) -> Dict[str, Any]:
     return {
-        "rsi_period": args[0] if len(args) > 0 else "14"
+        "period": args[0] if len(args) > 0 else "14",
+        "period-4h": args[0] if len(args) > 0 else "14",
+        "period-1d": args[0] if len(args) > 0 else "14",
     }
 
 def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
@@ -185,10 +186,14 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         pr.enable()
 
     # Read RSI period from options, defaulting to 14 if not provided
-    rsi_period = int(options.get("rsi_period", 14))
+    rsi_period = int(options.get("period", 14))
+    rsi_period_4h = int(options.get("period-4h", 14))
+    rsi_period_1d = int(options.get("period-1d", 14))
 
     # Build the column name used by the indicator API (e.g. "rsi_14")
     rsi_col = f"rsi_{rsi_period}"
+    rsi_col_4h = f"rsi_{rsi_period_4h}"
+    rsi_col_1d = f"rsi_{rsi_period_1d}"
 
     # Create a lightweight DataFrame with only timestamps
     # This becomes the "reference timeline" for all joins
@@ -216,14 +221,14 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
 
     warmup_ms = 86400000 * 5 # cover weekends + safety value
 
-    def fetch_indicator_data(target_tf, alias):
+    def fetch_indicator_data(target_tf, alias, rsi_ind):
         # Fetch RSI + is-open flags for a given timeframe
         data = get_data(
             symbol=symbol,
             timeframe=target_tf,
             after_ms=time_min - warmup_ms,
             until_ms=time_max + 1,
-            indicators=[rsi_col, "is-open"],
+            indicators=[rsi_ind, "is-open"],
             limit=1000000,
             options=api_opts
         )
@@ -243,9 +248,9 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
 
     # Fetch RSI data for three timeframes in parallel to save time
     with ThreadPoolExecutor(max_workers=3) as executor:
-        f_current = executor.submit(fetch_indicator_data, tf, "rsi")
-        f_4h = executor.submit(fetch_indicator_data, "4h", "rsi4h")
-        f_1d = executor.submit(fetch_indicator_data, "1d", "rsi1d")
+        f_current = executor.submit(fetch_indicator_data, tf, "rsi", rsi_col)
+        f_4h = executor.submit(fetch_indicator_data, "4h", "rsi4h", rsi_col_4h)
+        f_1d = executor.submit(fetch_indicator_data, "1d", "rsi1d", rsi_col_1d)
 
         # Wait for all fetches to finish
         lazy_current = f_current.result()
