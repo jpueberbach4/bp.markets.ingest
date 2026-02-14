@@ -151,8 +151,8 @@ def description() -> str:
 
 def meta() -> Dict:
     return {
-        "author": "Google Gemini",
-        "version": 2.6, 
+        "author": "JP",
+        "version": 2.8, 
         "panel": 1,
         "verified": 1,
         "polars": 0,
@@ -160,8 +160,8 @@ def meta() -> Dict:
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
-    rsi_period = int(options.get('rsi_period', 14))
-    # 1D is 1440 mins. We need a massive 1H lead time for 1D RSI convergence.
+    # Doesnt need a warmup count because warmup is handled by the recursive
+    # get_data calls, internally.
     return 0
 
 def position_args(args: List[str]) -> Dict[str, Any]:
@@ -175,7 +175,6 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     # Import here so these only load when the function actually runs
     from util.api import get_data
     from concurrent.futures import ThreadPoolExecutor
-    import polars as pl
 
     # Toggle for performance profiling (leave False in production)
     profiling_enabled = False
@@ -334,5 +333,6 @@ function getSeriesColor(col) {
 When done changing colors, press `Update View` in the interface, the new colors should be applied immediately. Without a need to refresh the interface or remove/re-add the indicator. 
 
 **Note:** In a later version it will be possible to specify colors in the `meta` section of the indicator.
+
 
 
