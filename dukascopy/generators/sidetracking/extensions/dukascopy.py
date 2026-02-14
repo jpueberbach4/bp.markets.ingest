@@ -58,6 +58,7 @@ License:
 from generators.sidetracking.base import IAdjustmentStrategy, TimeWindowAction
 from typing import List, Dict, Any
 from datetime import datetime, timedelta
+from util.api import get_data
 import requests
 import json
 import re
@@ -216,14 +217,14 @@ class DukascopyPanamaStrategy(IAdjustmentStrategy):
         # Parse raw rows into (date, gap) pairs
         # Single pass over input → O(N)
         for row in raw_data:
-            if not row.get('date') or row.get('long') is None:
+            if not row.get('date') or row.get('short') is None:
                 continue
             try:
                 # Parse date string → O(1)
                 dt = datetime.strptime(row['date'], self.csv_date_fmt)
 
                 # Convert gap to float → O(1)
-                gap = float(row['long'])
+                gap = float(row['short'])
 
                 # Store normalized event → O(1)
                 events.append({'date': dt, 'gap': gap})
@@ -258,7 +259,7 @@ class DukascopyPanamaStrategy(IAdjustmentStrategy):
             if window_end > prev_date:
                 action = TimeWindowAction(
                     id=f"panama-roll-{i+1:03d}",
-                    action="-",
+                    action="+",
                     columns=list(self.target_columns),
                     value=round(current_offset, 6),
                     from_date=prev_date,
@@ -275,4 +276,135 @@ class DukascopyPanamaStrategy(IAdjustmentStrategy):
             )
 
         # Return final list of adjustment actions → O(1)
+        return actions
+    
+
+# ----- RETURN RATIO STRATEGY - SIMPLIFIED - NO NEGATIVE PRICES -----
+
+class DukascopyPanamaStrategyRR(IAdjustmentStrategy):
+    """
+    Ratio-based (Multiplicative) Futures Back-Adjustment.
+    Scales historical prices to prevent negative values.
+    """
+    BASE_URL = "https://freeserv.dukascopy.com/2.0/"
+    
+    def __init__(self):
+        self.target_columns = ["open", "high", "low", "close"]
+
+    def fetch_data(self, symbol: str) -> List[Dict[str, Any]]:
+        print(f"[*] Fetching rollover data for {symbol}...")
+        
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36",
+            "Referer": "https://freeserv.dukascopy.com/2.0/?path=cfd_monthly_adjustment/index&header=false",
+        }
+        params = {
+            "path": "cfd_monthly_adjustment/getData",
+            "start": "0000000000000",
+            "end": "9999999999999",
+            "jsonp": "_callbacks____qmjn9av6ydd",
+        }
+
+        try:
+            r = requests.get(self.BASE_URL, headers=headers, params=params, timeout=15)
+            r.raise_for_status()
+        except Exception as e:
+            raise Exception(f"[!] Network error: {e}")
+
+        # Normalize JSONP
+        text = r.text.strip()
+        if text.startswith("_callbacks"):
+            match = re.search(r"\((.*)\)", text, re.DOTALL)
+            text = match.group(1) if match else "{}"
+
+        try:
+            raw_json = json.loads(text)
+        except json.JSONDecodeError: return []
+
+        if not raw_json: return []
+
+        # Filter by symbol (Dukascopy uses '/' instead of '-')
+        # e.g. "BRENT.CMD-USD-RR" -> "BRENT.CMD/USD"
+        clean_sym = "/".join(symbol.replace("-RR", "").replace("-PANAMA", "").split("-")[:2])
+        
+        normalized = []
+        for row in raw_json:
+            # 1. Filter Symbol
+            if str(row.get("title", "")).strip().casefold() != clean_sym.casefold():
+                continue
+            
+            # 2. Safety Check: Skip rows with missing dates or gaps (THE FIX)
+            if not row.get("date") or row.get("short") is None:
+                continue
+
+            try:
+                dt = datetime.strptime(row["date"], "%d-%b-%y")
+                normalized.append({"date": dt, "gap": float(row["short"])})
+            except ValueError: continue
+
+        return normalized
+
+    def generate_config(self, symbol: str, raw_data: List[Dict[str, Any]]) -> List[TimeWindowAction]:
+        if not raw_data: return []
+        if get_data is None:
+            print("[!] Critical: 'api.get_data' missing.")
+            return []
+
+        # Sort Newest -> Oldest for Backward Accumulation
+        raw_data.sort(key=lambda x: x["date"], reverse=True)
+        
+        calculated_events = []
+        cum_ratio = 1.0
+        
+        # Clean symbol for price lookup
+        src_symbol = symbol.replace("-RR", "").replace("-PANAMA", "").replace("-ADJUSTED", "")
+        print(f"[*] Calculating Futures Ratios for {src_symbol}")
+
+        for event in raw_data:
+            roll_date = event["date"]
+            gap = event["gap"]
+            
+            # Fetch 'Old Contract' Close Price on Rollover Day
+            # We assume the gap happens AFTER this candle closes.
+            roll_ms = int(roll_date.timestamp() * 1000)
+            
+            try:
+                df = get_data(symbol=src_symbol, timeframe="1d", until_ms=roll_ms, limit=1, order="desc")
+                
+                if not df.empty and df.iloc[0]['close'] > 0:
+                    old_price = float(df.iloc[0]['close'])
+                    
+                    # Math: New = Old + Gap
+                    # Ratio = New / Old  => (Old + Gap) / Old => 1 + (Gap / Old)
+                    ratio = 1.0 + (gap / old_price)
+                    
+                    cum_ratio *= ratio
+                    calculated_events.append({"date": roll_date, "ratio": float(cum_ratio)})
+                else:
+                    print(f"[!] Warning: No price data for {roll_date}. Skipping ratio calc.")
+            except Exception:
+                pass
+
+        # Linearize Windows (Oldest -> Newest)
+        calculated_events.sort(key=lambda x: x["date"])
+        
+        actions = []
+        prev_end = datetime(2000, 1, 1)
+
+        for event in calculated_events:
+            # Window applies to data BEFORE the rollover
+            curr_end = event["date"].replace(hour=23, minute=59, second=59)
+
+            if curr_end > prev_end:
+                actions.append(TimeWindowAction(
+                    id=f"roll-ratio-{event['date'].strftime('%Y%m%d')}",
+                    action="*",
+                    columns=list(self.target_columns),
+                    value=round(event["ratio"], 8),
+                    from_date=prev_end,
+                    to_date=curr_end
+                ))
+
+            prev_end = curr_end + timedelta(seconds=1)
+
         return actions
