@@ -1,5 +1,46 @@
 Market research- and analysis tool, feature-engineering, but you can do so much more with it, if you are a bit "handy".
 
+## **Panama config building available in beta/0.6.8**
+
+**WAIT!!** For a tiny bit. Fixing a bug!
+
+So for future rolls, i have implemented the config generator. I am still testing and hardening it, but if you want to try:
+
+```sh
+mkdir -p config.user/dukascopy/sidetracking
+
+./build-sidetracking-config.sh --symbol BRENT.CMD-USD-PANAMA --source BRENT.CMD-USD \
+--class generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategy \
+--output config.user/dukascopy/sidetracking/BRENT.CMD-USD-PANAMA.yaml
+```
+
+Then open `config.user.yaml`:
+
+```yaml
+# Below you will find the configuration for the transform.py script. 
+transform:
+  time_shift_ms: 7200000              # How many milliseconds should we shift (0=UTC, 7200000=GMT+2 (eg MT4 Dukascopy) )
+  round_decimals: 8                   # Number of decimals to round OHLCV to
+  fsync: false                        # Force flush to disk after each transformation
+  fmode: binary                       # Only binary is supported from v0.6.6 onward
+  validate: false                     # Force validation of OHLCV values
+  paths:
+    data: data/transform/1m           # Output directory for transform
+    historic: cache                   # Historical downloads
+    live: data/temp                   # Live downloads
+  timezones:
+    includes:
+    - config.user/dukascopy/timezones/*.yaml
+  symbols:
+    includes:
+    - config.user/dukascopy/processing.yaml
+    - config.user/dukascopy/sidetracking/*.yaml # <!-- add this line
+```
+
+Then: `./rebuild-full.sh`
+
+It will create a sidetracking symbol named `BRENT.CMD-USD-PANAMA` that is backadjusted.
+
 ## **Is-open and timezones**
 
 If you have something like this:
