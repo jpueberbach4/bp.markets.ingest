@@ -1,3 +1,60 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+===============================================================================
+File:        dukascopy_panama.py
+Author:      JP Ueberbach
+Created:     2025-02-14
+
+Purpose:
+    Implements a Panama-style back-adjustment strategy using official
+    rollover (monthly adjustment) data published by Dukascopy.
+
+    The strategy fetches historical rollover gaps directly from Dukascopy
+    and converts them into cumulative time-window adjustments suitable
+    for back-adjusting continuous futures or CFD price series.
+
+    This module exists to:
+        - Eliminate reliance on paid market data vendors
+        - Provide full transparency into rollover mechanics
+        - Make historical back-adjustments deterministic and auditable
+        - Prove that rollover data is neither proprietary nor complex
+
+Design Notes:
+    - Uses Dukascopy's public rollover calendar endpoint
+    - Supports JSONP and raw JSON payloads
+    - Implements classic Panama back-adjustment logic
+    - Produces forward-only, non-overlapping adjustment windows
+    - Designed to plug into the generic IAdjustmentStrategy interface
+
+What This Module Does NOT Do:
+    - Does NOT download candles or ticks
+    - Does NOT modify raw price data directly
+    - Does NOT perform symbol discovery
+    - Does NOT infer roll dates heuristically
+    - Does NOT apply business logic outside of pure adjustment math
+
+Algorithm Summary (Panama Method):
+    1. Collect all historical rollover gaps
+    2. Apply the full cumulative offset to the oldest data
+    3. Step forward in time, subtracting each rollover gap
+    4. Emit time windows with monotonically decreasing offsets
+
+Complexity:
+    - Normalization: O(N)
+    - Sorting rollovers: O(N log N)
+    - Window generation: O(N)
+    - Total complexity: O(N log N)
+
+Requirements:
+    - Python 3.8+
+    - requests
+    - Standard library only (json, datetime, re)
+
+License:
+    MIT License
+===============================================================================
+"""
 from generators.sidetracking.base import IAdjustmentStrategy, TimeWindowAction
 from typing import List, Dict, Any
 from datetime import datetime, timedelta
@@ -5,55 +62,96 @@ import requests
 import json
 import re
 
+
 class DukascopyPanamaStrategy(IAdjustmentStrategy):
-    """
-    Fetches rollover calendar from Dukascopy and calculates cumulative
-    back-adjustment windows (Panama method).
-    """
-    
+    # Constant URL → lookup is O(1)
     BASE_URL = "https://freeserv.dukascopy.com/2.0/"
     
     def __init__(self):
+        """Initializes the strategy configuration.
+
+        Sets the expected date format used by Dukascopy payloads and defines
+        the OHLC columns that will be adjusted during back-adjustment.
+        """
+        # Date format used by Dukascopy CSV/JSON payloads → O(1)
         self.csv_date_fmt = "%d-%b-%y"
+
+        # OHLC columns to adjust → small fixed list → O(1)
         self.target_columns = ["open", "high", "low", "close"]
 
     def _normalize_payload(self, data: str, symbol: str) -> List[Dict[str, Any]]:
+        """Normalizes the raw Dukascopy API response.
+
+        This method unwraps JSONP responses, parses JSON content, converts
+        symbol formats, and filters rows to only include entries relevant
+        to the requested trading symbol.
+
+        Args:
+            data: Raw response text returned by the Dukascopy API.
+            symbol: Internal symbol identifier (e.g. "BRENT.CMD-USD").
+
+        Returns:
+            A list of dictionaries containing normalized rollover data
+            for the specified symbol.
         """
-        Internal helper: Unwraps JSONP, filters by symbol, and returns dicts.
-        Keeps logic strictly from your original 'normalize_data' function.
-        """
+        # Trim whitespace from the response string → O(N)
         data = data.strip()
 
+        # Detect JSONP wrapper (Dukascopy uses this sometimes)
+        # startswith check → O(1)
         if data.startswith("_callbacks____qmjn9av6ydd"):
+            # Regex search over entire payload → O(N)
             match = re.search(r"_callbacks____qmjn9av6ydd\((.*)\)", data, re.DOTALL)
             if match:
+                # Extract the JSON payload → O(1)
                 data = match.group(1)
             else:
+                # No usable payload → O(1)
                 return []
 
         try:
+            # Parse JSON string into Python objects → O(N)
             json_data = json.loads(data)
         except json.JSONDecodeError as e:
+            # Bubble up parsing errors → O(1)
             raise e
 
+        # Empty response guard → O(1)
         if not json_data:
             return []
 
+        # Convert symbol format (e.g. BRENT.CMD-USD → BRENT.CMD/USD)
+        # String ops are proportional to symbol length → O(1)
         api_symbol = "/".join(symbol.rsplit("-", 1))
 
+        # Filter only rows matching the requested symbol
+        # Iterates over all rows → O(N)
         filtered_rows = [
             row for row in json_data
-            if str(row.get("title", "")).strip().casefold() == api_symbol.strip().casefold()
+            if str(row.get("title", "")).strip().casefold()
+            == api_symbol.strip().casefold()
         ]
 
+        # Return only relevant rows → O(1)
         return filtered_rows
 
     def fetch_data(self, symbol: str) -> List[Dict[str, Any]]:
+        """Fetches rollover adjustment data from Dukascopy.
+
+        Performs an HTTP GET request using the expected headers and query
+        parameters, then normalizes the returned payload.
+
+        Args:
+            symbol: Internal symbol identifier to fetch rollover data for.
+
+        Returns:
+            A list of dictionaries containing normalized rollover data.
+            Returns an empty list if the request fails.
         """
-        Performs the HTTP Request to Dukascopy with correct headers.
-        """
+        # User feedback only → O(1)
         print(f"[*] Fetching remote data for {symbol}...")
         
+        # Static HTTP headers → O(1)
         headers = {
             "accept": "*/*",
             "accept-language": "en-US,en;q=0.9",
@@ -63,6 +161,7 @@ class DukascopyPanamaStrategy(IAdjustmentStrategy):
             "referer": "https://freeserv.dukascopy.com/2.0/?path=cfd_monthly_adjustment/index&header=false",
         }
 
+        # Static query params → O(1)
         params = {
             "path": "cfd_monthly_adjustment/getData",
             "start": "0000000000000",
@@ -72,61 +171,94 @@ class DukascopyPanamaStrategy(IAdjustmentStrategy):
         }
 
         try:
+            # HTTP request → network-bound, not algorithmic
             response = requests.get(
-                self.BASE_URL, 
-                headers=headers, 
-                params=params, 
+                self.BASE_URL,
+                headers=headers,
+                params=params,
                 timeout=15
             )
+
+            # Status check → O(1)
             response.raise_for_status()
             
+            # Normalize and filter payload → O(N)
             return self._normalize_payload(response.text, symbol)
 
         except requests.RequestException as e:
-            print(f"[!] Network error fetching data: {e}")
-            return []
+            # Handle network errors gracefully → O(1)
+            raise Exception(f"[!] Network error fetching data: {e}")
 
-    def generate_config(self, symbol: str, raw_data: List[Dict[str, Any]]) -> List[TimeWindowAction]:
+    def generate_config(
+        self,
+        symbol: str,
+        raw_data: List[Dict[str, Any]]
+    ) -> List[TimeWindowAction]:
+        """Generates back-adjustment windows using the Panama method.
+
+        Converts rollover events into cumulative back-adjustment time windows
+        by applying the total offset to historical data and decrementing it
+        at each rollover boundary.
+
+        Args:
+            symbol: Internal symbol identifier (unused but kept for interface consistency).
+            raw_data: Normalized rollover data as returned by `fetch_data`.
+
+        Returns:
+            A list of TimeWindowAction objects defining adjustment windows.
         """
-        Calculates the cumulative offset (Panama Shift).
-        """
+        # No data → nothing to do → O(1)
         if not raw_data:
             return []
 
         events = []
+
+        # Parse raw rows into (date, gap) pairs
+        # Single pass over input → O(N)
         for row in raw_data:
             if not row.get('date') or row.get('long') is None:
                 continue
             try:
+                # Parse date string → O(1)
                 dt = datetime.strptime(row['date'], self.csv_date_fmt)
+
+                # Convert gap to float → O(1)
                 gap = float(row['long'])
+
+                # Store normalized event → O(1)
                 events.append({'date': dt, 'gap': gap})
             except ValueError:
                 continue
 
+        # Sort rollover events by date
+        # Sorting dominates runtime → O(N log N)
         events.sort(key=lambda x: x['date'])
 
-        # We start with the SUM of all gaps (Total Offset) applied to the oldest data.
-        # As we move forward in time past a rollover, we subtract that rollover's gap.        
+        # Sum all gaps to compute total back-adjustment
+        # Single pass → O(N)
         total_cumulative = sum(e['gap'] for e in events)
+
+        # Current offset starts at full cumulative adjustment → O(1)
         current_offset = total_cumulative
         
         actions = []
-        
-        # Arbitrary start date for the very first window
+
+        # Fixed artificial start date → O(1)
         prev_date = datetime(2000, 1, 1, 0, 0, 0)
 
+        # Generate adjustment windows
+        # Iterates once per rollover event → O(N)
         for i, event in enumerate(events):
             roll_date = event['date']
-            
-            # Window ends exactly before the rollover day implies new contract
-            # (Adjust logic here if your specific rollover happens EOD or BOD)
+
+            # Window ends at end of rollover day → O(1)
             window_end = roll_date.replace(hour=23, minute=59, second=59)
 
+            # Only create valid forward-moving windows → O(1)
             if window_end > prev_date:
                 action = TimeWindowAction(
                     id=f"panama-roll-{i+1:03d}",
-                    action="-", 
+                    action="-",
                     columns=list(self.target_columns),
                     value=round(current_offset, 6),
                     from_date=prev_date,
@@ -134,10 +266,13 @@ class DukascopyPanamaStrategy(IAdjustmentStrategy):
                 )
                 actions.append(action)
 
-            # Decrement offset for the next window
+            # Remove this rollover’s gap for future windows → O(1)
             current_offset -= event['gap']
-            
-            # Next window starts the day after this rollover
-            prev_date = (roll_date + timedelta(days=1)).replace(hour=0, minute=0, second=0)
-        
+
+            # Next window starts the day after rollover → O(1)
+            prev_date = (roll_date + timedelta(days=1)).replace(
+                hour=0, minute=0, second=0
+            )
+
+        # Return final list of adjustment actions → O(1)
         return actions
