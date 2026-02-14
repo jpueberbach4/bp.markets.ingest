@@ -107,8 +107,8 @@ class AppleCorporateActionsStrategy(IAdjustmentStrategy):
         # Parse the HTML
         soup = BeautifulSoup(r.text, "html.parser")  # O(N) in HTML size
         table = soup.find("table")  # O(N) in HTML size
-        if not table: 
-            return []
+        if not table:
+            raise Exception("[!] Failed to fetch Apple dividend page (DATA MISSING)") 
 
         events = []
         # Loop over each row in table body
@@ -289,8 +289,7 @@ class AppleCorporateActionsStrategyRR(IAdjustmentStrategy):
         table = soup.find("table")  # O(N) in document size
 
         if not table:
-            print("[!] Warning: Could not find data table on page.")
-            return []
+            raise Exception("[!] Failed to fetch Apple dividend page (DATA MISSING)") 
 
         events = []
 
@@ -364,7 +363,7 @@ class AppleCorporateActionsStrategyRR(IAdjustmentStrategy):
         cumulative_ratio = 1.0
 
         # Clean symbol for API lookup
-        source_symbol = symbol.replace("-ADJUSTED", "").replace("-PANAMA", "").replace("-RR", "")
+        source_symbol = symbol
         print(f"[*] Calculating Total Return Ratios using raw data from: {source_symbol}")
 
         # Loop over each event (dividend or split)
