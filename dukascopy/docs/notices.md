@@ -25,29 +25,47 @@ So for future rolls, i have implemented the config generator. I am still testing
 ```sh
 mkdir -p config.user/dukascopy/sidetracking
 
-# BRENT EXAMPLE
+# BRENT EXAMPLE - NORMAL PANAMA (NEGATIVE PRICES)
 ./build-sidetracking-config.sh --symbol BRENT.CMD-USD-PANAMA --source BRENT.CMD-USD \
 --class generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategy \
 --output config.user/dukascopy/sidetracking/BRENT.CMD-USD-PANAMA.yaml
 
-# WTI EXAMPLE
+# OR
+
+# BRENT EXAMPLE - RETURN RATIO (NO NEGATIVE PRICES)
+./build-sidetracking-config.sh --symbol BRENT.CMD-USD-RR --source BRENT.CMD-USD \
+--class generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategyRR \
+--output config.user/dukascopy/sidetracking/BRENT.CMD-USD-RR.yaml
+
+# WTI EXAMPLE - NORMAL PANAMA (NEGATIVE PRICES)
 ./build-sidetracking-config.sh --symbol LIGHT.CMD-USD-PANAMA --source LIGHT.CMD-USD \
 --class generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategy \
 --output config.user/dukascopy/sidetracking/LIGHT.CMD-USD-PANAMA.yaml
 
-# VERY EXPERIMENTAL AAPL.US EXAMPLE (JUST AS A SHOWCASE) (SAME AS WITH PANAMA NEGATIVE PRICES)
-./build-sidetracking-config.sh --symbol AAPL.US-USD-ADJUSTED --source AAPL.US-USD \
---class generators.sidetracking.extensions.stocks.apple.AppleCorporateActionsStrategy \
---output config.user/dukascopy/sidetracking/AAPL.US-USD-ADJUSTED.yaml
+# OR 
 
-# OR, THE ALSO VERY EXPERIMENTAL AAPL.US EXAMPLE RETURN RATIO (JUST AS A SHOWCASE) (ADVANCED, NO NEGATIVE PRICES)
-./build-sidetracking-config.sh --symbol AAPL.US-USD-ADJUSTED --source AAPL.US-USD \
+# WTI EXAMPLE - RETURN RATIO (NO NEGATIVE PRICES)
+./build-sidetracking-config.sh --symbol LIGHT.CMD-USD-RR --source LIGHT.CMD-USD \
+--class generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategyRR \
+--output config.user/dukascopy/sidetracking/LIGHT.CMD-USD-RR.yaml
+
+# AAPL EXAMPLE - EXPERIMENTAL - NORMAL PANAMA (NEGATIVE PRICES)
+./build-sidetracking-config.sh --symbol AAPL.US-USD-PANAMA --source AAPL.US-USD \
+--class generators.sidetracking.extensions.stocks.apple.AppleCorporateActionsStrategy \
+--output config.user/dukascopy/sidetracking/AAPL.US-USD-PANAMA.yaml
+
+# OR
+
+# AAPL EXAMPLE - EXPERIMENTAL - RETURN RATIO (NO NEGATIVE PRICES)
+./build-sidetracking-config.sh --symbol AAPL.US-USD-RR --source AAPL.US-USD \
 --class generators.sidetracking.extensions.stocks.apple.AppleCorporateActionsStrategyRR \
---output config.user/dukascopy/sidetracking/AAPL.US-USD-ADJUSTED.yaml
+--output config.user/dukascopy/sidetracking/AAPL.US-USD-RR.yaml
 
 ```
 
-**Note:** For the AAPL example you need to do a `pip install -r requirements.txt` (needs "BeautifulSoup").
+**Note:** You can test all of them to see what the differences are
+
+**Note:** For the AAPL example you need to do a `pip install -r requirements.txt` (needs "BeautifulSoup") and you need the AAPL.US-USD symbol configured.
 
 Then open `config.user.yaml`:
 
