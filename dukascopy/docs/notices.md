@@ -6,12 +6,20 @@ Market research- and analysis tool, feature-engineering, but you can do so much 
 
 So for future rolls, i have implemented the config generator. I am still testing and hardening it, but if you want to try:
 
+**Important!** Make sure the symbols exist in your symbols.user.txt AND make sure not to use slashes in the symbol name. Replace slashes with `-` (dash).
+
 ```sh
 mkdir -p config.user/dukascopy/sidetracking
 
+# BRENT EXAMPLE
 ./build-sidetracking-config.sh --symbol BRENT.CMD-USD-PANAMA --source BRENT.CMD-USD \
 --class generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategy \
 --output config.user/dukascopy/sidetracking/BRENT.CMD-USD-PANAMA.yaml
+
+# WTI EXAMPLE
+./build-sidetracking-config.sh --symbol LIGHT.CMD-USD-PANAMA --source LIGHT.CMD-USD \
+--class generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategy \
+--output config.user/dukascopy/sidetracking/LIGHT.CMD-USD-PANAMA.yaml
 ```
 
 Then open `config.user.yaml`:
@@ -54,6 +62,12 @@ Sidetracked symbol:
 **Note:** The panama sets are "live-tracked" in a similar way as the regular symbols.
 
 **Note:** Finally, we can quack DuckDB out and cleanup the text/csv remains.
+
+**Note:** I am still hardening this against invalid flags and errors. But if you play nicely, this works already flawlessly.
+
+“I’m not selling magic. I’m showing you the plumbing. Once you see it, you can’t unsee how thin most ‘premium’ market data really is.”
+
+(Documentation on how to write your own custom extensions is coming. Perhaps i will add a SEC example-corporate actions-if i have time. It's carnaval over here. May go out for a drink)
 
 ## **Is-open and timezones**
 
@@ -102,44 +116,6 @@ download:
 
 This will spread a sync for +/- 40 symbols over 30 seconds. More than enough time to stay "realtime", well within the 1 minute opportunity/sync window. You are lagging anyhow at minimum 1 minute compared to real realtime since the 1m candles are added when they are closed.
 
-
-## **Side-tracking beta**
-
-I have merged the sidetracking feature to the main-branch. This is without the config-builders, they are still being developed.
-
-**Note:** There is only a sidetrack for BRENT-CMD.USD configured in the beta. You will need to add BRENT-CMD.USD to `symbols.user.txt`.
-
-After updating with `git pull`, 
-
-- Create a directory `config.user/dukascopy/sidetracking`
-- Copy over the `config/dukascopy/sidetracking/BRENT-CMD.USD-PANAMA.yaml` to `config.user/dukascopy/sidetracking`
-
-Next 
-
-Open your `config.user.yaml`:
-
-```yaml
-# Below you will find the configuration for the transform.py script. 
-transform:
-  time_shift_ms: 7200000              # How many milliseconds should we shift (0=UTC, 7200000=GMT+2 (eg MT4 Dukascopy) )
-  round_decimals: 8                   # Number of decimals to round OHLCV to
-  fsync: false                        # Force flush to disk after each transformation
-  fmode: binary                       # Only binary is supported from v0.6.6 onward
-  validate: false                     # Force validation of OHLCV values
-  paths:
-    data: data/transform/1m           # Output directory for transform
-    historic: cache                   # Historical downloads
-    live: data/temp                   # Live downloads
-  timezones:
-    includes:
-    - config.user/dukascopy/timezones/*.yaml
-  symbols:
-    includes:
-    - config.user/dukascopy/processing.yaml
-    - config.user/dukascopy/sidetracking/*.yaml # Un-comment/Add this to enable the BETA sidetracking feature for BRENT
-```
-
-Per symbol rebuilds are currently unsupported, so you will need to do a `rebuild-full.sh`.
 
 ## **Change in is-open**
 
@@ -371,6 +347,7 @@ This is a ROBUST solution.
 You can checkout the indicator [here](../util/plugins/indicators/is-open.py).
 
 **Update:** The is-stale functionality will compare last BTC 1m tick with the system-time one time and store an offset-file which updates once a day. Or something similar. This determines the local systems time-offset compared to the server (no need for a fixed configuration). It will store it somewhere and the argument being passed to is-stale (tolerance, needs to know how frequent you update) will be used to detect stale-ness. So the solution is known. Kinda busy today... but it will be here soon.
+
 
 
 

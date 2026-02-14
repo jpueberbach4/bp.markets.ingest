@@ -58,6 +58,8 @@ if __name__ == "__main__":
         yaml_output = generator.build_yaml(args.symbol, args.source)
     except Exception as e:
         print(f"Error during generation: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
     if args.output:
