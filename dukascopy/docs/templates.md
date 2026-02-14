@@ -167,8 +167,8 @@ def warmup_count(options: Dict[str, Any]) -> int:
 def position_args(args: List[str]) -> Dict[str, Any]:
     return {
         "period": args[0] if len(args) > 0 else "14",
-        "period-4h": args[0] if len(args) > 0 else "14",
-        "period-1d": args[0] if len(args) > 0 else "14",
+        "period-4h": args[1] if len(args) > 1 else "14",
+        "period-1d": args[2] if len(args) > 2 else "14",
     }
 
 def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
@@ -334,4 +334,5 @@ function getSeriesColor(col) {
 When done changing colors, press `Update View` in the interface, the new colors should be applied immediately. Without a need to refresh the interface or remove/re-add the indicator. 
 
 **Note:** In a later version it will be possible to specify colors in the `meta` section of the indicator.
+
 
