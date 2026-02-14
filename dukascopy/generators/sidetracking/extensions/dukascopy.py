@@ -95,11 +95,11 @@ class DukascopyPanamaStrategy(IAdjustmentStrategy):
 
         events = []
         for row in raw_data:
-            if not row.get('date') or row.get('short') is None:
+            if not row.get('date') or row.get('long') is None:
                 continue
             try:
                 dt = datetime.strptime(row['date'], self.csv_date_fmt)
-                gap = float(row['short'])
+                gap = float(row['long'])
                 events.append({'date': dt, 'gap': gap})
             except ValueError:
                 continue
