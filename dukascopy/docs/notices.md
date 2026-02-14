@@ -57,6 +57,8 @@ Sidetracked symbol:
 
 “I’m not selling magic. I’m showing you the plumbing. Once you see it, you can’t unsee how thin most ‘premium’ market data really is.”
 
+(Documentation on how to write your own custom extensions is coming. Perhaps i will add a SEC example-corporate actions-if i have time. It's carnaval over here. May go out for a drink)
+
 ## **Is-open and timezones**
 
 If you have something like this:
