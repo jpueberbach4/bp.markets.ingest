@@ -100,6 +100,7 @@ transform:
   symbols:
     includes:
     - config/dukascopy/processing.yaml
+    # - config/dukascopy/sidetracking/*.yaml # Un-comment/Add this to enable the BETA sidetracking feature for BRENT
 
 # Below you will find the configuration for the resample.py script. 
 resample:
