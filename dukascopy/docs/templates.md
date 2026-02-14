@@ -147,7 +147,6 @@ def description() -> str:
     return (
         "Triple RSI Panel: Displays Current, 4H, and 1D RSI in a single panel. "
         "Uses data-relative 'is_open' filtering to prevent repainting on the live-edge."
-        "Note: the \"normal-rsi\" is the actual live value. The open-canle value."
     )
 
 def meta() -> Dict:
@@ -335,3 +334,4 @@ function getSeriesColor(col) {
 When done changing colors, press `Update View` in the interface, the new colors should be applied immediately. Without a need to refresh the interface or remove/re-add the indicator. 
 
 **Note:** In a later version it will be possible to specify colors in the `meta` section of the indicator.
+
