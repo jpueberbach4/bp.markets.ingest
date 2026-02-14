@@ -216,14 +216,14 @@ class DukascopyPanamaStrategy(IAdjustmentStrategy):
         # Parse raw rows into (date, gap) pairs
         # Single pass over input → O(N)
         for row in raw_data:
-            if not row.get('date') or row.get('long') is None:
+            if not row.get('date') or row.get('short') is None:
                 continue
             try:
                 # Parse date string → O(1)
                 dt = datetime.strptime(row['date'], self.csv_date_fmt)
 
                 # Convert gap to float → O(1)
-                gap = float(row['long'])
+                gap = float(row['short'])
 
                 # Store normalized event → O(1)
                 events.append({'date': dt, 'gap': gap})
@@ -258,7 +258,7 @@ class DukascopyPanamaStrategy(IAdjustmentStrategy):
             if window_end > prev_date:
                 action = TimeWindowAction(
                     id=f"panama-roll-{i+1:03d}",
-                    action="-",
+                    action="+",
                     columns=list(self.target_columns),
                     value=round(current_offset, 6),
                     from_date=prev_date,
