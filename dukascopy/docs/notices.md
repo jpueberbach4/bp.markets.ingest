@@ -87,6 +87,8 @@ Sidetracked symbol (AAPL):
 
 ![before](../images/aapl.adjusted.after.png)
 
+**Note:** I will build an "Total Return (Ratio)" alternative for AAPL. The above is standard Panama.
+
 **Note:** Negative prices are "normal" in backadjusted data for BRENT. So your backadjusted/adjusted data will run side-by-side with your live-broker data. I think this is the optimal strategy for handling this.
 
 **Note:** The panama sets are "live-tracked" in a similar way as the regular symbols.
@@ -375,6 +377,7 @@ This is a ROBUST solution.
 You can checkout the indicator [here](../util/plugins/indicators/is-open.py).
 
 **Update:** The is-stale functionality will compare last BTC 1m tick with the system-time one time and store an offset-file which updates once a day. Or something similar. This determines the local systems time-offset compared to the server (no need for a fixed configuration). It will store it somewhere and the argument being passed to is-stale (tolerance, needs to know how frequent you update) will be used to detect stale-ness. So the solution is known. Kinda busy today... but it will be here soon.
+
 
 
 
