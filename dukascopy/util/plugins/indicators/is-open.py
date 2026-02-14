@@ -1,6 +1,8 @@
 import polars as pl
 from typing import List, Dict, Any
 
+from util.plugins.indicators.helpers.marketstate_backend import _marketstate_backend_shift_for_symbol
+
 def description() -> str:
     # Return a human-readable explanation of what this indicator does
     return (
@@ -30,6 +32,7 @@ def position_args(args: List[str]) -> Dict[str, Any]:
     return {}
 
 def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
+    SPECIAL_HANDLING = True
     # Import here to avoid loading unless the function is actually used
     from util.api import get_data
     from concurrent.futures import ThreadPoolExecutor
@@ -110,8 +113,22 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     # Latest timestamp from the asset and timeframe being analyzed
     heartbeat_asset_tf_ms = heartbeat_asset_tf_df["time_ms"][0]
 
-    # Calculate drift
-    drift_ms = heartbeat_btc_ms - heartbeat_asset_ms
+    if SPECIAL_HANDLING:
+        # Calculate what shift was applied to BTC (Config: America/New_York)
+        btc_shift = _marketstate_backend_shift_for_symbol("BTC-USD", heartbeat_btc_ms)
+        
+        # Calculate what shift was applied to Asset (Config: Etc/UTC or Fallback)
+        asset_shift = _marketstate_backend_shift_for_symbol(symbol, heartbeat_asset_tf_ms)
+
+        # Normalize to UTC
+        btc_utc = heartbeat_btc_ms - btc_shift
+        asset_utc = heartbeat_asset_tf_ms - asset_shift
+
+        # Calculate TRUE drift in UTC space
+        drift_ms = btc_utc - asset_utc
+    else:
+        # Calculate drift
+        drift_ms = heartbeat_btc_ms - heartbeat_asset_ms
 
     if tf in ["1M", "1Y"]:
         # Special handling for monthly and yearly candles

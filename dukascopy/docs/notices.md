@@ -1,5 +1,85 @@
 Market research- and analysis tool, feature-engineering, but you can do so much more with it, if you are a bit "handy".
 
+## **Panama config building available in beta/0.6.8**
+
+**Update:** Now it's fine. You can try. Accidentally used the short value instead of the long value. Works beautifully and completely customizable.
+
+So for future rolls, i have implemented the config generator. I am still testing and hardening it, but if you want to try:
+
+```sh
+mkdir -p config.user/dukascopy/sidetracking
+
+./build-sidetracking-config.sh --symbol BRENT.CMD-USD-PANAMA --source BRENT.CMD-USD \
+--class generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategy \
+--output config.user/dukascopy/sidetracking/BRENT.CMD-USD-PANAMA.yaml
+```
+
+Then open `config.user.yaml`:
+
+```yaml
+# Below you will find the configuration for the transform.py script. 
+transform:
+  time_shift_ms: 7200000              # How many milliseconds should we shift (0=UTC, 7200000=GMT+2 (eg MT4 Dukascopy) )
+  round_decimals: 8                   # Number of decimals to round OHLCV to
+  fsync: false                        # Force flush to disk after each transformation
+  fmode: binary                       # Only binary is supported from v0.6.6 onward
+  validate: false                     # Force validation of OHLCV values
+  paths:
+    data: data/transform/1m           # Output directory for transform
+    historic: cache                   # Historical downloads
+    live: data/temp                   # Live downloads
+  timezones:
+    includes:
+    - config.user/dukascopy/timezones/*.yaml
+  symbols:
+    includes:
+    - config.user/dukascopy/processing.yaml
+    - config.user/dukascopy/sidetracking/*.yaml # <!-- add this line
+```
+
+Then: `./rebuild-full.sh && ./service.sh restart`
+
+It will create a sidetracking symbol named `BRENT.CMD-USD-PANAMA` that is backadjusted.
+
+Original symbol:
+
+![before](../images/brent.panama.before.png)
+
+Sidetracked symbol:
+
+![before](../images/brent.panama.after.png)
+
+**Note:** Negative prices are "normal" in backadjusted data for BRENT. So your backadjusted/adjusted data will run side-by-side with your live-broker data. I think this is the optimal strategy for handling this.
+
+**Note:** The panama sets are "live-tracked" in a similar way as the regular symbols.
+
+**Note:** Finally, we can quack DuckDB out and cleanup the text/csv remains.
+
+## **Is-open and timezones**
+
+If you have something like this:
+
+```yaml
+Etc/UTC:                          # This is an example on how to resample assets using UTC
+  offset_to_shift_map:            # Defines a map to shift based on offset minutes
+    0: 0                          # No shift. Incoming data is already UTC. Warning: NO DASH!!
+  symbols:
+  # --- Stocks ---
+  - AAPL.US-USD                   # OK
+```
+
+The is-open/drift functionality will not work properly. Why? 
+
+The BTC-USD symbol is configured with GMT+2-atm. So the timezone GMT+2 and Etc/UTC differ by two hours, causing a drift of 120 minutes. Is-close will detect candles as closed. I will add support for this when `is-stale` also gets implemented. Normally, you want all symbols in one timezone, the timezone of the MT4 server or ALL in UTC. This issue affects only `advanced users` that have multiple timezone/asset combinations configured and only affect the symbols that are in a different timezone than BTC.
+
+eg AAPL.US-USD in Etc/UTC and the BTC-USD in America/New_York -> AAPL has an issue.
+
+I have updated the `AAPL.US-USD` symbol in `config/dukascopy/timezones/america-new_york.yaml` to `AAPL.US-USDX`.
+
+**Update:** beta/0.6.8 (non-breaking) has an update for this. If you want to have it now, `git fetch -p && git checkout beta/0.6.8`. On sunday the fix will get merged to main branch, together with the full sidetracking (with config builders).
+
+After update: `./service.sh restart` (if you are running with `http.reload:0`). 0.6.8-beta also hold a beta for the BRENT panama adjustment. If you are interested. See the notices.md after you have switched to the beta for more information.
+
 ## **Server kindness**
 
 Re-iterating to be nice to the backend servers. After your initial sync, you can slow down your requests. Even when updating every minute (when you really need that). Implement a spreading/limit when in-sync.
@@ -97,81 +177,7 @@ This gives the backend server a bit more time to synchronize all symbols.
 
 Documented here (future reference): [Market-status indicators](market-status.md)
 
-## **Very cool tip**
-
-For the coders under us. I just discovered something cool with AI. Just push your code in and say: annotate the code and mention complexity O(1), O(log N) and O(NxM) where applicable. It exactly pinpoints bottlenecks. It amazed me how helpful that actually is.
-
-## **Panama and stocksplit**
-
-Tomorrow is another massive-sprint day. I will have a go at panama. Panama and stock split are nothing more than applying an (optionally aggregated) correctional value to prices for a range of timestamps, either being a `-`, `+`, `*` or a `/`.
-
-- `-` subtract (e.g. cash dividend adjustment)
-- `+` add (rare, e.g. some special distributions)
-- `*` multiply (stock split ratio, reverse split)
-- `/` divide (rare, e.g. some spin-off value adjustments)
-
-Expect it to be done tomorrow and to land Friday or latest Saturday.
-
-Panama is nothing more than [this](../examples/BRENT-transform-panama.yaml) (example config).
-
-**Update:** Panama is not an issue. Data is retrievable and is superb. For the rest, dividend-adjustments, corporate actions etc, I will make sure that the configuration layer is fine. Interfaces will get implemented with a tight-contract to provide for data-exchange between this tool and a third party resource. 
-
-I have thought about building a repository for corporate actions, which can be auto-pulled to update your local enviroment, but there are two issues with this approach:
-
-- 1st is a legal boundary (redistribution clause)
-- 2nd is maintainability (it would put too much burden on me)
-
-So correct strictly contracted interfaces implementation/support is the "mid-ground". An user can implement the interfaces to eg extract corporate action data from the SEC, Yahoo, CSV-files etc. Examples will be written but don't expect them to be ready before the weekend.
-
-Futures rollover's will be completely solved, however. Stay tuned.
-
-**Update:** Decision is final, this is how panama and corporate actions get supported. You can include config files in the transform step, defining post-processing rules. Eg, for BRENT-CMD.USD, pseudo-example:
-
-```yaml
-BRENT-CMD.USD-PANAMA:
-  source: BRENT-CMD.USD
-  post:
-    volume-adjust:
-      action: "*"
-      columns: ["volume"]
-      value: 34484
-    panama-roll-01:
-      action: "-"
-      columns: ["open", "high", "low", "close"]
-      value: 2.34 # Cumulative value, generated by the config builder
-      from_date: "2026-01-25 00:00:00"
-      to_date: "2026-02-12 23:59:59"
-    panama-roll-02:
-      action: "-"
-      columns: ["open", "high", "low", "close"]
-      value: 1.15
-      from_date: "2026-02-13 00:00:00"
-      to_date: "2026-03-15 23:59:59"
-```
-
-This will sidetrack a symbol named `BRENT-CMD.USD-PANAMA` using the source `BRENT-CMD.USD` with the post-processing steps defined. The configuration, for `future-contracts` will be automatically generated. Changes will be added to be able to only rebuild one specific symbol.
-
-This is how it will work and it will support everything. The "config-builder" classes will define the "strict-contract" for config-generation.
-
-You can even do: first prices * 2 then divide by 3 if needed. When resample is being rewritten, resample will also support post-processing to pre-generate indicators, so they don't have to be calculated at query-time and just can be pulled. This will give back the 15-30 million records/sec performance.
-
-Some may argue that this is not only a panama, corporate actions update but actually a derivatives engine update.
-
-**Update:** I have a first working implementation. Works great. Aggregation, resampling, everything works out of the box on this sidetracked data. Also the "live-appends" are working properly. 
-
-I decided to launch this Saturday, to give me a tiny bit more time to make the interfaces optimal. See below screenshots, how much difference panama-adjusted data is:
-
-Before:
-
-![before](../images/brent.panama.before.png)
-
-After:
-
-![before](../images/brent.panama.after.png)
-
-I am first writing for correctness and completeness, then a performance optimization pass will be performed.
-
-**Note:** Negative prices are "normal" in backadjusted data for BRENT. So your backadjusted/adjusted data will run side-by-side with your live-broker data. I think this is the optimal strategy for handling this.
+**Update:** I have updated the `config/dukascopy/http-docs/index.html` to show the drift value in the upper right corner of the web-interface. You need to copy `config/dukascopy/http-docs/index.html` and `config/dukascopy/http-docs/scripts/monitor.js` to their respective `config.user` directies.
 
 ## **Security**
 
@@ -365,4 +371,8 @@ This is a ROBUST solution.
 You can checkout the indicator [here](../util/plugins/indicators/is-open.py).
 
 **Update:** The is-stale functionality will compare last BTC 1m tick with the system-time one time and store an offset-file which updates once a day. Or something similar. This determines the local systems time-offset compared to the server (no need for a fixed configuration). It will store it somewhere and the argument being passed to is-stale (tolerance, needs to know how frequent you update) will be used to detect stale-ness. So the solution is known. Kinda busy today... but it will be here soon.
+
+
+
+
 
