@@ -2,7 +2,7 @@ Market research- and analysis tool, feature-engineering, but you can do so much 
 
 ## **Panama config building available in beta/0.6.8**
 
-**WAIT!!** For a tiny bit. Fixing a bug!
+**Update:** Now it's fine. You can try. Accidentally used the short value instead of the long value. Works beautifully and completely customizable.
 
 So for future rolls, i have implemented the config generator. I am still testing and hardening it, but if you want to try:
 
@@ -37,7 +37,7 @@ transform:
     - config.user/dukascopy/sidetracking/*.yaml # <!-- add this line
 ```
 
-Then: `./rebuild-full.sh`
+Then: `./rebuild-full.sh && ./service.sh restart`
 
 It will create a sidetracking symbol named `BRENT.CMD-USD-PANAMA` that is backadjusted.
 
@@ -404,4 +404,5 @@ This is a ROBUST solution.
 You can checkout the indicator [here](../util/plugins/indicators/is-open.py).
 
 **Update:** The is-stale functionality will compare last BTC 1m tick with the system-time one time and store an offset-file which updates once a day. Or something similar. This determines the local systems time-offset compared to the server (no need for a fixed configuration). It will store it somewhere and the argument being passed to is-stale (tolerance, needs to know how frequent you update) will be used to detect stale-ness. So the solution is known. Kinda busy today... but it will be here soon.
+
 
