@@ -33,9 +33,14 @@ mkdir -p config.user/dukascopy/sidetracking
 --class generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategy \
 --output config.user/dukascopy/sidetracking/LIGHT.CMD-USD-PANAMA.yaml
 
-# VERY EXPERIMENTAL AAPL.US EXAMPLE (JUST AS A SHOWCASE)
+# VERY EXPERIMENTAL AAPL.US EXAMPLE (JUST AS A SHOWCASE) (SAME AS WITH PANAMA NEGATIVE PRICES)
 ./build-sidetracking-config.sh --symbol AAPL.US-USD-ADJUSTED --source AAPL.US-USD \
 --class generators.sidetracking.extensions.stocks.apple.AppleCorporateActionsStrategy \
+--output config.user/dukascopy/sidetracking/AAPL.US-USD-ADJUSTED.yaml
+
+# OR, THE ALSO VERY EXPERIMENTAL AAPL.US EXAMPLE RETURN RATIO (JUST AS A SHOWCASE) (ADVANCED, NO NEGATIVE PRICES)
+./build-sidetracking-config.sh --symbol AAPL.US-USD-ADJUSTED --source AAPL.US-USD \
+--class generators.sidetracking.extensions.stocks.apple.AppleCorporateActionsStrategyRR \
 --output config.user/dukascopy/sidetracking/AAPL.US-USD-ADJUSTED.yaml
 
 ```
