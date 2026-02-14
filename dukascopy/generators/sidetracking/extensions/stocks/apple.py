@@ -56,385 +56,238 @@ from bs4 import BeautifulSoup
 from util.api import get_data
 import re
 
+# ----- NORMAL PANAMA STRATEGY - SIMPLIFIED - NEGATIVE PRICES -----
 
 class AppleCorporateActionsStrategy(IAdjustmentStrategy):
-    """Strategy to calculate Apple's standard total return adjustments (Stitched Panama style)."""
+    """Simplified Strategy for Apple Standard Panama (Stitched) adjustments."""
 
     def __init__(self):
-        """Initialize the strategy with Apple IR URL and target OHLC columns.
-
-        Complexity:
-            O(1) — constant time to set initial properties.
-        """
-        # URL for Apple's dividend & split history
         self.url = "https://investor.apple.com/dividend-history/default.aspx"
-        # Columns that will be adjusted in TR calculation
         self.target_columns = ["open", "high", "low", "close"]
 
     def fetch_data(self, symbol: str) -> List[Dict[str, Any]]:
-        """Fetch and parse Apple's dividend and stock split history.
-
-        Args:
-            symbol (str): Stock symbol (ignored, Apple fixed URL used).
-
-        Returns:
-            List[Dict[str, Any]]: List of events with 'date', 'type', and optionally
-                                  'dividend' or 'split_factor'.
-
-        Complexity:
-            O(N) — N is the number of rows in the dividend/split table.
-        """
-        # Inform the user
-        print(f"[*] Fetching corporate actions for {symbol} from Apple IR...")
-
-        # Headers to mimic a real browser request
+        print(f"[*] Fetching corporate actions for {symbol}...")
+        
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                          "(KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Referer": "https://www.google.com/",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36"
         }
 
-        # Try to fetch Apple IR page
         try:
-            session = requests.Session()  # O(1)
-            r = session.get(self.url, headers=headers, timeout=15)  # network call, O(1)
+            r = requests.get(self.url, headers=headers, timeout=15)
             r.raise_for_status()
         except Exception as e:
-            raise Exception(f"[!] Failed to fetch Apple dividend page: {e}")
+            raise Exception(f"[!] Fetch failed: {e}")
 
-        # Parse the HTML
-        soup = BeautifulSoup(r.text, "html.parser")  # O(N) in HTML size
-        table = soup.find("table")  # O(N) in HTML size
-        if not table:
-            raise Exception("[!] Failed to fetch Apple dividend page (DATA MISSING)") 
+        soup = BeautifulSoup(r.text, "html.parser")
+        table = soup.find("table")
+        if not table: return []
 
         events = []
-        # Loop over each row in table body
-        for row in table.select("tbody tr"):  # O(R) for R rows
-            cols = row.find_all("td")  # O(C), C columns per row
-            if len(cols) < 5: 
-                continue
+        for row in table.select("tbody tr"):
+            cols = row.find_all("td")
+            if len(cols) < 5: continue
 
-            # Extract record & payable dates
-            record_date_str = cols[1].get_text(strip=True).replace(" ,", ",").replace("*", "")
-            payable_date_str = cols[2].get_text(strip=True).replace(" ,", ",").replace("*", "")
+            # Quick helper to clean text and fix typos
+            get_col = lambda i: cols[i].get_text(strip=True).replace(" ,", ",").replace("*", "")
+            
+            typ = get_col(4)
+            is_split = "Stock Split" in typ
+            
+            # Select Date: Payable (col 2) for Splits, Record (col 1) for Divs
+            date_str = get_col(2) if is_split else get_col(1)
 
-            # Amount (dividend) and type (dividend/split)
-            amount_str = cols[3].get_text(strip=True)
-            typ = cols[4].get_text(strip=True)
-
-            # Conditional date selection
-            target_date_str = payable_date_str if "Stock Split" in typ else record_date_str
-
-            # Convert string to datetime
             try:
-                dt = datetime.strptime(target_date_str, "%B %d, %Y")  # O(1)
-            except ValueError:
-                continue
+                dt = datetime.strptime(date_str, "%B %d, %Y")
+            except ValueError: continue
 
             event = {"date": dt, "type": typ}
 
-            # Handle regular cash dividends
             if "Regular Cash" in typ:
                 try:
-                    event["dividend"] = float(amount_str.replace("$", "").strip())
+                    event["dividend"] = float(get_col(3).replace("$", ""))
                     events.append(event)
-                except ValueError: 
-                    continue
-
-            # Handle stock splits
-            elif "Stock Split" in typ:
-                match = re.search(r"(\d+)\s*-?for-?\s*(\d+)", typ)  # O(1) regex on small string
+                except ValueError: continue
+            
+            elif is_split:
+                match = re.search(r"(\d+)\s*-?for-?\s*(\d+)", typ)
                 if match:
                     event["split_factor"] = int(match.group(1)) / int(match.group(2))
                     events.append(event)
-
-        return events  # O(R)
+                    
+        return events
 
     def generate_config(self, symbol: str, raw_data: List[Dict[str, Any]]) -> List[TimeWindowAction]:
-        """Generate stitched Standard Panama total return config.
+        if not raw_data: return []
 
-        Args:
-            symbol (str): Stock symbol.
-            raw_data (List[Dict[str, Any]]): List of raw dividend/split events.
-
-        Returns:
-            List[TimeWindowAction]: List of TimeWindowAction objects representing TR-adjusted windows.
-
-        Complexity:
-            O(N log N) — due to sorting + O(N) processing, where N = len(raw_data).
-        """
-        if not raw_data:  # O(1)
-            return []
-
-        # --- PASS 1: Compute cumulative state (Newest -> Oldest) ---
-        raw_data.sort(key=lambda x: x["date"], reverse=True)  # O(N log N)
+        # Pass 1: Calculate Cumulative State (Newest -> Oldest)
+        raw_data.sort(key=lambda x: x["date"], reverse=True)
         
-        history_segments = []
-        cum_split_factor = 1.0  # running multiplicative split factor
-        cum_dividend_offset = 0.0  # running dividend offset
+        segments = []
+        cum_split = 1.0
+        cum_div = 0.0
 
-        # Calculate cumulative state for each event
-        for event in raw_data:  # O(N)
-            current_date = event["date"]
+        for event in raw_data:
+            is_split = "split_factor" in event
+            
+            if is_split:
+                cum_split *= (1.0 / float(event["split_factor"]))
+            else:
+                cum_div += (event["dividend"] * cum_split)
 
-            if "dividend" in event:  # O(1)
-                # Add dividend adjusted for splits so far
-                cum_dividend_offset += (event["dividend"] * cum_split_factor)
-
-            elif "split_factor" in event:  # O(1)
-                # Apply split multiplier
-                cum_split_factor *= (1.0 / float(event["split_factor"]))
-
-            # Save the state for this event
-            history_segments.append({
-                "date": current_date,
-                "type": "Stock Split" if "split_factor" in event else "Dividend",
-                "split_val": float(cum_split_factor),
-                "div_val": float(cum_dividend_offset)
+            segments.append({
+                "date": event["date"],
+                "is_split": is_split,
+                "split_val": float(cum_split),
+                "div_val": float(cum_div)
             })
 
-        # --- PASS 2: Stitch windows (Oldest -> Newest) ---
-        history_segments.sort(key=lambda x: x["date"])  # O(N log N)
+        # Pass 2: Stitch Windows (Oldest -> Newest)
+        segments.sort(key=lambda x: x["date"])
         
         actions = []
-        prev_window_end = datetime(2000, 1, 1, 0, 0, 0)  # start of timeline
+        prev_end = datetime(2000, 1, 1)
 
-        for segment in history_segments:  # O(N)
-            seg_date = segment["date"]
+        for seg in segments:
+            # Window Logic: Splits include the event day; Divs end the day before
+            cutoff_date = seg["date"] if seg["is_split"] else seg["date"] - timedelta(days=1)
+            curr_end = cutoff_date.replace(hour=23, minute=59, second=59)
 
-            # Window ends the second before record/ex-date
-            current_window_end = (seg_date - timedelta(days=1)).replace(hour=23, minute=59, second=59) \
-                if segment["type"] == "Dividend" else seg_date.replace(hour=23, minute=59, second=59)
-
-            if current_window_end > prev_window_end:
-                # 1. Split action (multiplicative)
-                if abs(segment["split_val"] - 1.0) > 1e-9:
+            if curr_end > prev_end:
+                date_str = seg["date"].strftime('%Y%m%d')
+                
+                # Add Split Action (*)
+                if abs(seg["split_val"] - 1.0) > 1e-9:
                     actions.append(TimeWindowAction(
-                        id=f"seg-split-{seg_date.strftime('%Y%m%d')}",
-                        action="*",
-                        columns=list(self.target_columns),
-                        value=round(segment["split_val"], 8),
-                        from_date=prev_window_end,
-                        to_date=current_window_end
+                        id=f"seg-split-{date_str}", action="*", 
+                        columns=self.target_columns, value=round(seg["split_val"], 8),
+                        from_date=prev_end, to_date=curr_end
+                    ))
+                
+                # Add Dividend Action (-)
+                if abs(seg["div_val"]) > 1e-9:
+                    actions.append(TimeWindowAction(
+                        id=f"seg-div-{date_str}", action="-", 
+                        columns=self.target_columns, value=round(seg["div_val"], 6),
+                        from_date=prev_end, to_date=curr_end
                     ))
 
-                # 2. Dividend action (subtractive)
-                if abs(segment["div_val"]) > 1e-9:
-                    actions.append(TimeWindowAction(
-                        id=f"seg-div-{seg_date.strftime('%Y%m%d')}",
-                        action="-",
-                        columns=list(self.target_columns),
-                        value=round(segment["div_val"], 6),
-                        from_date=prev_window_end,
-                        to_date=current_window_end
-                    ))
+            prev_end = curr_end + timedelta(seconds=1)
 
-            # Stitch next window start 1 second later
-            prev_window_end = current_window_end + timedelta(seconds=1)
+        return actions
 
-        return actions  # O(N)
+# ----- RETURN RATIO STRATEGY - SIMPLIFIED - NO NEGATIVE PRICES -----
 
 class AppleCorporateActionsStrategyRR(IAdjustmentStrategy):
-    """Strategy to calculate Apple's total return adjustments from dividends and stock splits."""
+    """Simplified Strategy for Apple Total Return (Ratio-based) adjustments."""
 
     def __init__(self):
-        """Initialize the strategy with Apple IR URL and target OHLC columns.
-
-        Complexity:
-            O(1) — constant time to set initial properties.
-        """
-        # URL to fetch Apple dividend & split history
         self.url = "https://investor.apple.com/dividend-history/default.aspx"
-        # Columns that will be adjusted in total return calculations
         self.target_columns = ["open", "high", "low", "close"]
 
     def fetch_data(self, symbol: str) -> List[Dict[str, Any]]:
-        """Fetch and parse Apple's dividend and stock split history.
-
-        Args:
-            symbol (str): Stock symbol (ignored, Apple fixed URL is used).
-
-        Returns:
-            List[Dict[str, Any]]: List of events with keys 'date', 'type', 
-                                  and optionally 'dividend' or 'split_factor'.
-
-        Complexity:
-            O(N) — N is the number of rows in the dividend/split table.
-        """
-        # Inform the user that fetch started
-        print(f"[*] Fetching corporate actions for {symbol} from Apple IR...")
-
-        # HTTP headers to mimic a real browser request
+        print(f"[*] Fetching corporate actions for {symbol}...")
+        
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                          "(KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Referer": "https://www.google.com/",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36"
         }
 
-        # Attempt to get the Apple IR page
         try:
-            session = requests.Session()  # O(1)
-            r = session.get(self.url, headers=headers, timeout=15)  # network call, O(1)
+            r = requests.get(self.url, headers=headers, timeout=15)
             r.raise_for_status()
         except Exception as e:
-            raise Exception(f"[!] Failed to fetch Apple dividend page: {e}")
+            raise Exception(f"[!] Fetch failed: {e}")
 
-        # Parse the HTML using BeautifulSoup
-        soup = BeautifulSoup(r.text, "html.parser")  # O(N) in document size
-        table = soup.find("table")  # O(N) in document size
-
-        if not table:
-            raise Exception("[!] Failed to fetch Apple dividend page (DATA MISSING)") 
+        soup = BeautifulSoup(r.text, "html.parser")
+        table = soup.find("table")
+        if not table: return []
 
         events = []
+        for row in table.select("tbody tr"):
+            cols = row.find_all("td")
+            if len(cols) < 5: continue
 
-        # Loop through each row in the table body
-        for row in table.select("tbody tr"):  # O(R) where R = number of rows
-            cols = row.find_all("td")  # O(C) where C = number of columns per row
-            if len(cols) < 5:
-                continue  # skip invalid rows
+            # Helper to clean text
+            get_col = lambda i: cols[i].get_text(strip=True).replace(" ,", ",").replace("*", "")
+            
+            typ = get_col(4)
+            is_split = "Stock Split" in typ
+            
+            # Select Date: Payable (col 2) for Splits, Record (col 1) for Divs
+            date_str = get_col(2) if is_split else get_col(1)
 
-            # Extract record date and payable date as strings, clean formatting
-            record_date_str = cols[1].get_text(strip=True).replace(" ,", ",").replace("*", "")
-            payable_date_str = cols[2].get_text(strip=True).replace(" ,", ",").replace("*", "")
-
-            # Amount (dividend) and type (dividend/stock split)
-            amount_str = cols[3].get_text(strip=True)
-            typ = cols[4].get_text(strip=True)
-
-            # Choose target date: payable date for split, record date for dividend
-            target_date_str = payable_date_str if "Stock Split" in typ else record_date_str
-
-            # Convert string to datetime object
             try:
-                dt = datetime.strptime(target_date_str, "%B %d, %Y")  # O(1)
-            except ValueError:
-                continue  # skip invalid dates
+                dt = datetime.strptime(date_str, "%B %d, %Y")
+            except ValueError: continue
 
-            # Initialize event dict
-            event = {"date": dt, "type": typ}
+            event = {"date": dt, "type": "split" if is_split else "div"}
 
-            # Handle regular cash dividends
             if "Regular Cash" in typ:
                 try:
-                    event["dividend"] = float(amount_str.replace("$", "").strip())  # O(1)
+                    event["dividend"] = float(get_col(3).replace("$", ""))
                     events.append(event)
-                except ValueError:
-                    continue
-
-            # Handle stock splits
-            elif "Stock Split" in typ:
-                match = re.search(r"(\d+)\s*-?for-?\s*(\d+)", typ)  # O(1), regex on short string
+                except ValueError: continue
+            
+            elif is_split:
+                match = re.search(r"(\d+)\s*-?for-?\s*(\d+)", typ)
                 if match:
-                    event["split_factor"] = int(match.group(1)) / int(match.group(2))  # O(1)
+                    event["split_factor"] = int(match.group(1)) / int(match.group(2))
                     events.append(event)
-
-        return events  # O(R)
+                    
+        return events
 
     def generate_config(self, symbol: str, raw_data: List[Dict[str, Any]]) -> List[TimeWindowAction]:
-        """Generate linearized total return configuration from raw dividend/split events.
-
-        Args:
-            symbol (str): Stock symbol.
-            raw_data (List[Dict[str, Any]]): Raw events from fetch_data.
-
-        Returns:
-            List[TimeWindowAction]: List of TimeWindowAction objects representing TR-adjusted windows.
-
-        Complexity:
-            O(N log N) — sorting events + O(N) processing, where N = len(raw_data).
-        """
-        if not raw_data:  # O(1)
+        if not raw_data: return []
+        if get_data is None:
+            print("[!] Critical: 'api.get_data' missing.")
             return []
 
-        if get_data is None:  # O(1)
-            print("[!] Critical: 'api.get_data' not found. Cannot calculate Total Return Ratios.")
-            return []
+        # Pass 1: Calculate Cumulative Ratios (Newest -> Oldest)
+        raw_data.sort(key=lambda x: x["date"], reverse=True)
+        
+        calculated_events = []
+        cum_ratio = 1.0
+        
+        # Strip suffixes to query raw price data
+        src_symbol = symbol
 
-        # Sort raw events by date descending (newest first)
-        raw_data.sort(key=lambda x: x["date"], reverse=True)  # O(N log N)
-
-        calculated_events = []  # will store cumulative ratios
-        cumulative_ratio = 1.0
-
-        # Clean symbol for API lookup
-        source_symbol = symbol
-        print(f"[*] Calculating Total Return Ratios using raw data from: {source_symbol}")
-
-        # Loop over each event (dividend or split)
-        for event in raw_data:  # O(N)
-            current_date = event["date"]
-
-            if "split_factor" in event:  # O(1)
-                cumulative_ratio *= (1.0 / float(event["split_factor"]))  # adjust cumulative ratio
-                calculated_events.append({
-                    "date": current_date,
-                    "ratio": float(cumulative_ratio),
-                    "type": "split"
-                })
-
-            elif "dividend" in event:  # O(1)
-                # Fetch previous day's closing price (API call, O(1) per call)
-                event_ms = int(current_date.timestamp() * 1000)
+        for event in raw_data:
+            if event["type"] == "split":
+                cum_ratio *= (1.0 / float(event["split_factor"]))
+                calculated_events.append({**event, "ratio": float(cum_ratio)})
+            
+            elif event["type"] == "div":
+                # Peek at price on Ex-Date (Record Date - 1 day approx)
+                event_ms = int(event["date"].timestamp() * 1000)
                 try:
-                    price_df = get_data(
-                        symbol=source_symbol,
-                        timeframe="1d",
-                        until_ms=event_ms,
-                        limit=1,
-                        order="desc"
-                    )
-                except Exception as e:
-                    print(f"[!] Data error {current_date}: {e}")
-                    price_df = None
+                    df = get_data(symbol=src_symbol, timeframe="1d", until_ms=event_ms, limit=1, order="desc")
+                    if not df.empty and df.iloc[0]['close'] > 0:
+                        div_ratio = 1.0 - (float(event["dividend"]) / float(df.iloc[0]['close']))
+                        cum_ratio *= div_ratio
+                        calculated_events.append({**event, "ratio": float(cum_ratio)})
+                except Exception:
+                    pass # Skip if data missing
 
-                if price_df is not None and not price_df.empty:
-                    try:
-                        close_px = float(price_df.iloc[0]['close'])  # O(1)
-                        if close_px > 0:
-                            div_ratio = 1.0 - (float(event["dividend"]) / close_px)
-                            cumulative_ratio *= div_ratio
-                            calculated_events.append({
-                                "date": current_date,
-                                "ratio": float(cumulative_ratio),
-                                "type": "div"
-                            })
-                    except (KeyError, IndexError):
-                        pass
-                else:
-                    print(f"[!] Warning: No price data for {current_date}. Skipping dividend.")
+        # Pass 2: Linearize Windows (Oldest -> Newest)
+        calculated_events.sort(key=lambda x: x["date"])
+        
+        actions = []
+        prev_end = datetime(2000, 1, 1)
 
-        # Sort calculated events by ascending date (oldest first)
-        calculated_events.sort(key=lambda x: x["date"])  # O(N log N)
+        for event in calculated_events:
+            # Splits end ON event day; Divs end BEFORE event day
+            cutoff = event["date"] if event["type"] == "split" else event["date"] - timedelta(days=1)
+            curr_end = cutoff.replace(hour=23, minute=59, second=59)
 
-        actions = []  # will store TimeWindowAction objects
-        prev_window_end = datetime(2000, 1, 1, 0, 0, 0)  # starting baseline
-
-        # Create linearized time windows
-        for event in calculated_events:  # O(N)
-            event_date = event["date"]
-
-            # Set window end: for split use same day 23:59:59, for dividend day before
-            current_window_end = (event_date.replace(hour=23, minute=59, second=59)
-                                  if event["type"] == "split"
-                                  else (event_date - timedelta(days=1)).replace(hour=23, minute=59, second=59))
-
-            if current_window_end > prev_window_end:  # O(1)
+            if curr_end > prev_end:
                 actions.append(TimeWindowAction(
-                    id=f"{event['type']}-{event_date.strftime('%Y%m%d')}",  # O(1)
-                    action="*",  # adjust all columns
-                    columns=list(self.target_columns),  # O(C), small C=4
-                    value=round(event["ratio"], 8),  # O(1)
-                    from_date=prev_window_end,
-                    to_date=current_window_end
+                    id=f"{event['type']}-{event['date'].strftime('%Y%m%d')}",
+                    action="*",
+                    columns=self.target_columns,
+                    value=round(event["ratio"], 8),
+                    from_date=prev_end,
+                    to_date=curr_end
                 ))
 
-            # Next window starts 1 second after previous ends
-            prev_window_end = current_window_end + timedelta(seconds=1)
+            prev_end = curr_end + timedelta(seconds=1)
 
-        return actions  # O(N)
+        return actions
