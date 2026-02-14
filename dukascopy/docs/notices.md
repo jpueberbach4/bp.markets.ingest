@@ -55,6 +55,8 @@ Sidetracked symbol:
 
 **Note:** Finally, we can quack DuckDB out and cleanup the text/csv remains.
 
+**Note:** I am still hardening this against invalid flags and errors. But if you play nicely, this works already flawlessly.
+
 “I’m not selling magic. I’m showing you the plumbing. Once you see it, you can’t unsee how thin most ‘premium’ market data really is.”
 
 (Documentation on how to write your own custom extensions is coming. Perhaps i will add a SEC example-corporate actions-if i have time. It's carnaval over here. May go out for a drink)
