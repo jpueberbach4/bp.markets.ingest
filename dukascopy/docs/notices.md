@@ -1,5 +1,19 @@
 Market research- and analysis tool, feature-engineering, but you can do so much more with it, if you are a bit "handy".
 
+## “We don’t sell magic. We show the plumbing.”
+
+Most so-called “premium” market data hides a surprisingly thin layer of transformations behind a polished interface. Here, you see everything:
+
+- Raw rollover gaps and back-adjusted price series
+- Multi-timezone drift and open-candle detection
+- Thread-safe caches and high-performance indicators
+
+Nothing is hidden. No black boxes. No guesswork. Once you see how the system works, you can’t unsee it—and suddenly you understand what real, deterministic, auditable market data looks like.
+
+This is transparency first, performance always, empowering you to research, engineer features, and test strategies with confidence.
+
+“I’m not selling magic. I’m showing you the plumbing. Once you see it, you can’t unsee how thin most ‘premium’ market data really is.”
+
 ## **Panama config building available in beta/0.6.8**
 
 **Update:** Now it's fine. You can try. Accidentally used the short value instead of the long value. Works beautifully and completely customizable.
@@ -64,8 +78,6 @@ Sidetracked symbol:
 **Note:** Finally, we can quack DuckDB out and cleanup the text/csv remains.
 
 **Note:** I am still hardening this against invalid flags and errors. But if you play nicely, this works already flawlessly.
-
-“I’m not selling magic. I’m showing you the plumbing. Once you see it, you can’t unsee how thin most ‘premium’ market data really is.”
 
 (Documentation on how to write your own custom extensions is coming. Perhaps i will add a SEC example-corporate actions-if i have time. It's carnaval over here. May go out for a drink)
 
