@@ -34,6 +34,12 @@ mkdir -p config.user/dukascopy/sidetracking
 ./build-sidetracking-config.sh --symbol LIGHT.CMD-USD-PANAMA --source LIGHT.CMD-USD \
 --class generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategy \
 --output config.user/dukascopy/sidetracking/LIGHT.CMD-USD-PANAMA.yaml
+
+# VERY EXPERIMENTAL AAPL.US EXAMPLE (JUST AS A SHOWCASE)
+./build-sidetracking-config.sh --symbol AAPL.US-USD-ADJUSTED --source AAPL.US-USD \
+--class generators.sidetracking.extensions.stocks.apple.AppleCorporateActionsStrategy \
+--output config.user/dukascopy/sidetracking/AAPL.US-USD-ADJUSTED.yaml
+
 ```
 
 Then open `config.user.yaml`:
@@ -63,13 +69,23 @@ Then: `./rebuild-full.sh && ./service.sh restart`
 
 It will create a sidetracking symbol named `BRENT.CMD-USD-PANAMA` that is backadjusted.
 
-Original symbol:
+Original symbol (BRENT):
 
 ![before](../images/brent.panama.before.png)
 
-Sidetracked symbol:
+Sidetracked symbol (BRENT):
 
 ![before](../images/brent.panama.after.png)
+
+Example corporate actions (AAPL):
+
+Original symbol (AAPL):
+
+![before](../images/aapl.adjusted.before.png)
+
+Sidetracked symbol (AAPL):
+
+![before](../images/aapl.adjusted.after.png)
 
 **Note:** Negative prices are "normal" in backadjusted data for BRENT. So your backadjusted/adjusted data will run side-by-side with your live-broker data. I think this is the optimal strategy for handling this.
 
