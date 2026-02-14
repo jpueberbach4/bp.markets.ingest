@@ -55,6 +55,8 @@ Sidetracked symbol:
 
 **Note:** Finally, we can quack DuckDB out and cleanup the text/csv remains.
 
+“I’m not selling magic. I’m showing you the plumbing. Once you see it, you can’t unsee how thin most ‘premium’ market data really is.”
+
 ## **Is-open and timezones**
 
 If you have something like this:
@@ -333,6 +335,7 @@ This is a ROBUST solution.
 You can checkout the indicator [here](../util/plugins/indicators/is-open.py).
 
 **Update:** The is-stale functionality will compare last BTC 1m tick with the system-time one time and store an offset-file which updates once a day. Or something similar. This determines the local systems time-offset compared to the server (no need for a fixed configuration). It will store it somewhere and the argument being passed to is-stale (tolerance, needs to know how frequent you update) will be used to detect stale-ness. So the solution is known. Kinda busy today... but it will be here soon.
+
 
 
 
