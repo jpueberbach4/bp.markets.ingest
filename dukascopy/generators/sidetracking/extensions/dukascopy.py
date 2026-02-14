@@ -33,8 +33,8 @@ class DukascopyPanamaStrategy(IAdjustmentStrategy):
 
         try:
             json_data = json.loads(data)
-        except json.JSONDecodeError:
-            return []
+        except json.JSONDecodeError as e:
+            raise e
 
         if not json_data:
             return []
@@ -127,7 +127,7 @@ class DukascopyPanamaStrategy(IAdjustmentStrategy):
                 action = TimeWindowAction(
                     id=f"panama-roll-{i+1:03d}",
                     action="-", 
-                    columns=self.target_columns,
+                    columns=list(self.target_columns),
                     value=round(current_offset, 6),
                     from_date=prev_date,
                     to_date=window_end
@@ -139,8 +139,5 @@ class DukascopyPanamaStrategy(IAdjustmentStrategy):
             
             # Next window starts the day after this rollover
             prev_date = (roll_date + timedelta(days=1)).replace(hour=0, minute=0, second=0)
-
-        # Optional: Add a final window for "Today" with 0 offset if needed, 
-        # but typically 0 offset is default if no config exists.
         
         return actions

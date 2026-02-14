@@ -1,8 +1,9 @@
-from generators.sidetracking.base import DukascopyPanamaStrategy, ConfigGenerator
+from generators.sidetracking.base import ConfigGenerator
+from generators.sidetracking.extensions.dukascopy import DukascopyPanamaStrategy
 
 if __name__ == "__main__":
-    TARGET_SYMBOL = "BRENT-CMD.USD-PANAMA"
-    SOURCE_NAME = "BRENT-CMD.USD"
+    TARGET_SYMBOL = "BRENT.CMD-USD-PANAMA"
+    SOURCE_NAME = "BRENT.CMD-USD"
     
     # Instantiate Strategy
     strategy = DukascopyPanamaStrategy()

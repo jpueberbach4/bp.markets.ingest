@@ -1,18 +1,8 @@
 import abc
-import csv
-import io
-import json
-import re
-import requests
 import yaml
-import sys
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 from dataclasses import dataclass
-
-# ==============================================================================
-# 1. DOMAIN OBJECTS & INTERFACES
-# ==============================================================================
 
 @dataclass
 class TimeWindowAction:
@@ -52,13 +42,13 @@ class ConfigGenerator:
 
     def build_yaml(self, symbol: str, source_name: str) -> str:
         # Execute Remote Fetch
-        data = self.strategy.fetch_data(symbol)
+        data = self.strategy.fetch_data(source_name)
         
         if not data:
-            return f"# No data found or error occurred for {symbol}"
+            return f"# No data found or error occurred for {source_name}"
 
         # Execute Math/Logic
-        window_actions = self.strategy.generate_config(symbol, data)
+        window_actions = self.strategy.generate_config(source_name, data)
         
         # Serialize to Dictionary
         post_processors = {}
@@ -72,7 +62,7 @@ class ConfigGenerator:
             }
 
         final_config = {
-            f"{symbol}-PANAMA": {
+            f"{symbol}": {
                 "source": source_name,
                 "post": post_processors
             }
