@@ -6,12 +6,20 @@ Market research- and analysis tool, feature-engineering, but you can do so much 
 
 So for future rolls, i have implemented the config generator. I am still testing and hardening it, but if you want to try:
 
+**Important!** Make sure the symbols exist in your symbols.user.txt AND make sure not to use slashes in the symbol name. Replace slashes with `-` (dash).
+
 ```sh
 mkdir -p config.user/dukascopy/sidetracking
 
+# BRENT EXAMPLE
 ./build-sidetracking-config.sh --symbol BRENT.CMD-USD-PANAMA --source BRENT.CMD-USD \
 --class generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategy \
 --output config.user/dukascopy/sidetracking/BRENT.CMD-USD-PANAMA.yaml
+
+# WTI EXAMPLE
+./build-sidetracking-config.sh --symbol LIGHT.CMD-USD-PANAMA --source LIGHT.CMD-USD \
+--class generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategy \
+--output config.user/dukascopy/sidetracking/LIGHT.CMD-USD-PANAMA.yaml
 ```
 
 Then open `config.user.yaml`:
