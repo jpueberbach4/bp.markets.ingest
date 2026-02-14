@@ -1,5 +1,18 @@
 Market research- and analysis tool, feature-engineering, but you can do so much more with it, if you are a bit "handy".
 
+## **Panama config building available in beta/0.6.8**
+
+So for future rolls, i have implemented the config generator. I am still testing and hardening it, but if you want to try:
+
+```sh
+./build-sidetracking-config.sh --symbol BRENT.CMD-USD-PANAMA --source BRENT.CMD-USD \
+--class generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategy
+```
+
+Then: `./rebuild-full.sh`
+
+It will create a sidetracking symbol named `BRENT.CMD-USD-PANAMA` that is backadjusted.
+
 ## **Is-open and timezones**
 
 If you have something like this:
