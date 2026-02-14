@@ -40,6 +40,8 @@ mkdir -p config.user/dukascopy/sidetracking
 
 ```
 
+**Note:** For the AAPL example you need to do a `pip install -r requirements.txt` (needs "BeautifulSoup").
+
 Then open `config.user.yaml`:
 
 ```yaml
