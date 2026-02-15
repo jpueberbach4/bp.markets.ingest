@@ -2,6 +2,8 @@ Market research- and analysis tool, feature-engineering, but you can do so much 
 
 ## **Panama config building available - Regular Panama and the Return Ratio method**
 
+For more details on this, see [here](adjustments.md).
+
 **Note:** Documentation on how to write your own custom extensions is coming. Tbh this is the most-complex stuff for an user to learn about this pipeline. So, i will look into a generic approach for stocks. No promises though.
 
 For future-rolls, i have implemented the config generator. It seems to be fine so i decided to release it. However, next week I am starting to use this myself. If issues are found, they will get fixed immediately. Use the Dukascopy one for CMD with rollovers.
