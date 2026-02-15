@@ -1,13 +1,11 @@
 # Developer's Guide: Custom Back-Adjustment Strategies
 
-**VERIFICATION: First pass done, SECOND-PASS: PENDING!**
-
 This guide outlines how to implement custom **Back-Adjustment Strategies** for the `generators.sidetracking` module. This system allows you to create "Sidetracked" symbols (e.g., `AAPL.US-USD-ADJUSTED` or `BRENT.CMD-USD-PANAMA`) that exist in parallel to your raw broker data, providing a clean, continuous price history for backtesting and analysis.
 
 The system supports three primary adjustment methodologies:
 
 1.  **Futures Panama:** Subtractive rollover adjustment (for Commodities/Indices).
-2.  **Standard Corporate Actions:** Hybrid adjustment (Subtractive Dividends, Multiplicative s).
+2.  **Standard Corporate Actions:** Hybrid adjustment (Subtractive Dividends, Multiplicative splits).
 3.  **Total Return (Ratio):** Pure Multiplicative adjustment (Ratio-based Dividends to prevent negative prices).
 
 ---
