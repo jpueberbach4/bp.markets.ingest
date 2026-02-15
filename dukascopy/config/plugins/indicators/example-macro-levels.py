@@ -98,8 +98,8 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     while len(final_levels) < 10:
         final_levels.append(0.0)
 
-    # Hard-Lit Projection
+    # Using pl.repeat ensures no nulls in earlier rows.
     return df.select([
-        pl.lit(final_levels[i]).alias(f"macro_lvl_{i+1}") 
+        pl.repeat(final_levels[i], len(df)).alias(f"macro_lvl_{i+1}") 
         for i in range(10)
     ])
