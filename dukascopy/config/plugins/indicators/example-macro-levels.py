@@ -3,24 +3,19 @@ from typing import List, Dict, Any
 import time
 
 def description() -> str:
-    return (
-        "N-Year High-Power Macro Levels. Filters for structural pivots with high touch frequency "
-        "and enforces a minimum distance between lines to ensure only distinct major levels are shown."
-    )
+    return "Force-fills all rows with static 10Y macro levels using explicit repetition."
 
 def meta() -> Dict:
     return {
         "author": "Gemini",
-        "version": 11.0,
+        "version": 14.0,
         "panel": 0,
         "verified": 1,
         "polars_input": 1
     }
 
 def position_args(args: List[str]) -> Dict[str, Any]:
-    return {
-        "lookback-in-years": args[0] if len(args) > 0 else "7"
-    }
+    return {"lookback-in-years": args[0] if len(args) > 0 else "7"}
 
 def warmup_count(options: Dict[str, Any]):
     return 0
@@ -31,8 +26,8 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     import numpy as np
 
     symbol = df["symbol"].item(0)
+    df_len = len(df)
     
-    # Fixed Time Window (Independent of DF time, from now to lookback-in-years back)
     num_years = int(options.get('lookback-in-years', 7))
     now_ms = int(time.time() * 1000)
     start_ms = now_ms - (num_years * 365 * 24 * 60 * 60 * 1000)
@@ -47,13 +42,12 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     )
 
     if daily_hist is None or daily_hist.is_empty():
-        return df.select([pl.lit(0.0).alias(f"macro_lvl_{i}") for i in range(1, 11)])
+        return df.select([pl.repeat(0.0, df_len).alias(f"macro_lvl_{i}") for i in range(1, 11)])
 
     current_market_price = daily_hist["close"].item(-1)
     d_lows = daily_hist["low"].to_numpy()
     d_highs = daily_hist["high"].to_numpy()
     
-    # Extract Pivots
     pivots = []
     window = 30 
     for i in range(window, len(d_lows) - window):
@@ -62,14 +56,12 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         if d_highs[i] == np.max(d_highs[i - window : i + window + 1]):
             pivots.append(d_highs[i])
 
-    # Cluster by Power
     precision = 2 if "JPY" in symbol else 3
     counts = {}
     for p in pivots:
         lvl = round(p, precision)
         counts[lvl] = counts.get(lvl, 0) + 1
 
-    # Spacing Filter
     min_dist = 0.010 if "JPY" in symbol else 0.0100 
     
     def filter_levels(levels_dict, current_price, above=True, use_dist=True):
@@ -82,24 +74,20 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
                     filtered.append(l)
         return filtered
 
-    # Get 3 above and 7 below
-    top_3_above = filter_levels(counts, current_market_price, above=True, use_dist=True)[:3]
-    top_7_below = filter_levels(counts, current_market_price, above=False, use_dist=True)[:7]
+    t3a = filter_levels(counts, current_market_price, above=True, use_dist=True)[:3]
+    t7b = filter_levels(counts, current_market_price, above=False, use_dist=True)[:7]
+    
+    if len(t3a) < 3: t3a = filter_levels(counts, current_market_price, above=True, use_dist=False)[:3]
+    if len(t7b) < 7: t7b = filter_levels(counts, current_market_price, above=False, use_dist=False)[:7]
 
-    # If we still don't have 10 levels, relax the distance constraint
-    if len(top_3_above) < 3:
-        top_3_above = filter_levels(counts, current_market_price, above=True, use_dist=False)[:3]
-    if len(top_7_below) < 7:
-        top_7_below = filter_levels(counts, current_market_price, above=False, use_dist=False)[:7]
+    final_levels = sorted(t3a + t7b, reverse=True)
 
-    final_levels = sorted(top_3_above + top_7_below, reverse=True)
+    # Drop 0.0 levels (no time to debug fully, so just drop. 
+    # affects scaling of chart otherwise and a level 0.0 is not very meaningful)
+    active_levels = [lvl for lvl in final_levels if lvl > 0]
 
-    # Hard-fill to 10 columns if the symbol is brand new/has no history
-    while len(final_levels) < 10:
-        final_levels.append(0.0)
-
-    # Using pl.repeat ensures no nulls in earlier rows.
+    # Dynamically create columns only for the levels we actually found
     return df.select([
-        pl.repeat(final_levels[i], len(df)).alias(f"macro_lvl_{i+1}") 
-        for i in range(10)
+        pl.repeat(active_levels[i], df_len).alias(f"macro_lvl_{i+1}") 
+        for i in range(len(active_levels))
     ])
