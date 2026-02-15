@@ -232,3 +232,94 @@ class AppleCorporateActionsStrategyRR(IAdjustmentStrategy):
 
         return actions
 ```
+
+## 5. Panama-RR Hybrid Adjustment Output
+
+This section outlines the logic and structure for the Panama-RR adjustment method. This specific implementation is a "hybrid" model: it utilizes multiplication for structural events (splits) to maintain geometric consistency, and subtraction (Panama method) for cash events (dividends) to maintain point-value consistency.
+
+### 1. Data Structure Overview
+The output utilizes YAML Anchors (&id001) and Aliases (*id001) to maintain a DRY (Don't Repeat Yourself) configuration.
+
+- Source: The raw, unadjusted ticker symbol.
+
+- Post-Processing (post): A chronological list of segments (seg-) representing time windows between corporate actions.
+
+- Actions:
+
+  - action: `'*'` : Used for Stock Splits. Multiplies historical OHLC data by the value.
+
+  - action: `'-'` : Used for Dividends (Panama). Subtracts the value from historical OHLC data.
+
+
+### 2. The Hybrid Logic Flow
+
+When your ingestion engine processes this YAML, it applies adjustments backwards from the current date.
+
+#### Structural Scaling (Splits)
+
+For splits, we use the Ratio method.
+
+**Logic:** `Price_adj = Price_raw * 0.25`
+
+Reasoning: A 4-for-1 split fundamentally changes the "meaning" of a single share. To compare a 1988 candle to a 2026 candle, the 1988 price must be scaled down to modern "share units."
+
+#### Cash Leveling (Panama Dividends)
+
+For dividends in this specific set, we use the Panama method.
+
+**Logic:** `Price_adj = Price_raw - 8.69`
+
+Reasoning: This treats the dividend as a raw cash extraction. It keeps the "gap" in the chart equal to the actual cash paid out, rather than a percentage of the stock price at the time.
+
+### 3. Example
+```sh
+AAPL.US-USD-PANAMA:
+  source: AAPL.US-USD
+  post:
+    seg-split-19880520:
+      action: '*'
+      columns: &id001
+      - open
+      - high
+      - low
+      - close
+      value: 0.25
+      from_date: '1987-05-15 00:00:00'
+      to_date: '1988-05-19 23:59:59'
+      ...
+    seg-div-20200210:
+      action: '-'
+      columns: *id001                       # This is a reference to &id001
+      value: 5.8125
+      from_date: '2019-11-11 00:00:00'
+      to_date: '2020-02-09 23:59:59'
+    seg-split-20200511:
+      action: '*'
+      columns: *id001
+      value: 0.25                           # 4 for 1 stocksplit, 1/4 = 0.25
+      from_date: '2020-02-10 00:00:00'
+      to_date: '2020-05-10 23:59:59'
+    seg-div-20200511:
+      action: '-'
+      columns: *id001                       # This is a reference to &id001
+      value: 5.62
+      from_date: '2020-02-10 00:00:00'
+      to_date: '2020-05-10 23:59:59'
+      ...
+```
+
+The following example-code retrieves a webpages from investor.apple.com, extracts the mentioned dividend and stocksplit dates with their respective values. Builds an internal table and applies cumulative subtraction and, in case of stocksplits, a multiplication (1 divided by number stocksplut) for each window. Windows are stitched together:
+
+[Example AAPL](../generators/sidetracking/extensions/stocks/apple.py) (class `AppleCorporateActionsStrategy`)
+
+Similarly, for futures, we apply a cumulative subtraction on each rollover date:
+
+[Example futures](../generators/sidetracking/extensions/dukascopy.py) (class `DukascopyPanamaStrategy`)
+
+#### Field descriptions
+
+| Field                 | Developer Note |
+|----------------------|----------------|
+| columns              | Standardizes adjustments across open, high, low, and close. This ensures the entire candle is shifted or scaled as a single unit, preventing "broken" candles (e.g., where a High could mathematically end up lower than a Close after an adjustment). |
+| value drift          | Notice the seg-div values decrease over time (e.g., 8.69 in 1988 vs 0.26 in 2026). This reflects the cumulative "debt" of dividends being removed as you move closer to the present. The further back you go in the time series, the larger the total subtraction applied to the historical data. |
+| from_date / to_date  | These define strict inclusive windows. Your SQL or Memory-Sink query must ensure no overlap in the date ranges, or the system will double-adjust prices, leading to significant data corruption and skewed backtesting results. |
