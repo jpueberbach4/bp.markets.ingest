@@ -2,19 +2,40 @@ Market research- and analysis tool, feature-engineering, but you can do so much 
 
 ## **Bugs**
 
-There were some bugs when using the bootstrap API, related to is-open and drift. The problem was in marketstatus.py. It loads a cache with timezone information. The problem was with config loading and paths and did not affect the web-API. I am currently automating the integration tests, these will capture this kind of things more quickly in the future.
+There were a few bugs when using the bootstrap API, related to is-open and drift.
+The root cause was located in marketstatus.py, specifically in how timezone cache data was loaded. This turned out to be a configuration loading / path issue and did not affect the web API.
 
-- bugs were fixed
-- config generators were added with a stock-split and corporate actions example for AAPL
-- both Panama and Panama RR were implemented for futures (continuous price series for futures)
-- config generators are customizable via the config.user directory
-- aliassing of symbols is implemented
-- performance updates for aliassing have been implemented-may need a second run
-- some example indicators were added, some very advanced ones, others convenience
-- documentation was updated
-- whole roundtrip has been done
+I’m currently automating integration tests to ensure this class of issues is caught much earlier going forward.
 
-Busy weekend but getting there.... I have been doing a lot of indicator-experiments. So far i can do anything i want. No walls encountered.
+**Fixes & Additions**
+
+- Bugs fixed
+
+- Config generators added, including:
+
+  - Stock split handling
+
+  - Corporate actions example for AAPL
+
+- Both Panama and Panama Return Ratio (RR) implemented for futures (continuous price series)
+
+- Config generators are now customizable via the config.user directory
+
+- Symbol aliasing implemented
+
+- Performance improvements for aliasing (may require a second run to fully benefit)
+
+- Added several example indicators:
+
+  - Some advanced
+
+  - Others convenience-oriented
+
+- Documentation updated
+
+- Full end-to-end roundtrip completed and validated
+
+Busy weekend, but progress is solid. I’ve been doing a lot of indicator experiments lately — so far I can do everything I want. **No walls encountered**.
 
 ## **Panama config building available - Regular Panama and the Return Ratio method**
 
