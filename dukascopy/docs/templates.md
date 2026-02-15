@@ -526,12 +526,16 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     # Final Projection
     return (
         df.lazy()
-        .select([
+        .with_columns([
             pl.lit(final_levels[i]).alias(f"macro_lvl_{i+1}") 
             for i in range(10)
         ])
+        .select([
+            pl.col(f"macro_lvl_{i+1}") for i in range(10)
+        ])
         .collect(streaming=True)
     )
+
 ```
 
 ![Example macro levels](../images/example-macrolevels-daily-10y.png)
