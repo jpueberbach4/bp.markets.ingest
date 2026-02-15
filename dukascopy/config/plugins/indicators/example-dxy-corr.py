@@ -84,15 +84,15 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         )
 
     # ------------------------------------------------------------------
-    # STEP 2: Prepare the main symbol (EUR) price stream
+    # STEP 2: Prepare the main symbol (BASE) price stream
     # ------------------------------------------------------------------
-    eur_lazy = (
+    base_lazy = (
         df
         .lazy()
         # We only need time and close price
         .select([
             pl.col("time_ms").cast(pl.UInt64),
-            pl.col("close").alias("eur_close")
+            pl.col("close").alias("base_close")
         ])
         # Required for as-of joins
         .sort("time_ms")
@@ -102,14 +102,14 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     # STEP 3: Join, normalize, and make everything safe
     # ------------------------------------------------------------------
     return (
-        eur_lazy
+        base_lazy
         # Match each EUR bar with the latest DXY bar *at or before* that time
         .join_asof(dxy_lazy, on="time_ms", strategy="backward")
 
         # Capture the first prices so we can normalize later
         .with_columns([
             # First EUR close becomes the 0% reference point
-            pl.col("eur_close").first().alias("eur_start"),
+            pl.col("base_close").first().alias("base_start"),
 
             # First *valid* DXY close becomes the benchmark anchor
             # We skip nulls so empty datasets don’t poison the result
@@ -122,9 +122,9 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         .with_columns([
             # EUR percent change from its starting value
             # If anything goes wrong, default to 0.0 instead of NaN
-            ((pl.col("eur_close") / pl.col("eur_start")) - 1)
+            ((pl.col("base_close") / pl.col("base_start")) - 1)
                 .fill_null(0.0)
-                .alias("eur_pct"),
+                .alias("base_pct"),
 
             # DXY percent change:
             # If there is no valid benchmark data, return a flat line at 0.0
@@ -138,7 +138,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         ])
 
         # Only expose the final normalized series
-        .select(["eur_pct", "dxy_pct"])
+        .select(["base_pct", "dxy_pct"])
 
         # Execute everything using streaming to keep memory usage low
         .collect(streaming=True)
