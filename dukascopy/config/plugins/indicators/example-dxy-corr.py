@@ -21,7 +21,6 @@ def meta() -> Dict:
 
 def position_args(args: List[str]) -> Dict[str, Any]:
     return {
-        "lookback": int(args[0]) if len(args) > 1 else 100
     }
 
 def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:

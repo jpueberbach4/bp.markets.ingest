@@ -308,9 +308,7 @@ def meta() -> Dict:
     }
 
 def position_args(args: List[str]) -> Dict[str, Any]:
-    return {
-        "lookback": int(args[0]) if len(args) > 1 else 100
-    }
+    return {}
 
 def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     # Import locally so startup is fast and this only loads when used
