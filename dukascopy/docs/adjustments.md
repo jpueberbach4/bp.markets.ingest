@@ -458,7 +458,6 @@ BRENT.CMD-USD-PANAMA:
       - high
       - low
       - close
-      - volume
       value: 0.11
       from_date: '1970-01-01 00:00:00'
       to_date: '2014-12-15 23:59:59'
