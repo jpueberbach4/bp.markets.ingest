@@ -154,6 +154,25 @@ Install with:
 ./setup-dukascopy.sh
 ```
 
+If you are initially syncing up, your first run, it is advisable to update some limits in `config.user.yaml`. Eg for 40 symbols you need to sync up 320k files. With the default settings it may take "a bit too long". Recently there were some issues with the endpoint but these seem to be a "thing of the past". The section of interest in `config.user.yaml` is this one.
+
+```yaml
+download:
+  max_retries: 10                     # Number of retries before downloader raises
+  backoff_factor: 1.2                 # Exponential backoff factor (wait time)
+  timeout: 10                         # Request timeout
+  rate_limit_rps: 1                   # Protect end-point (number of cores * rps = requests/second)
+  mode: http2                         # DownloadWorker-type: requests or http2
+  jitter: 5.0                         # Add a random jitter up to this amount (seconds)
+  paths:
+    historic: cache                   # Historical downloads
+    live: data/temp                   # Live downloads
+```
+
+You can adjust the `jitter` to 0.0 and the rate_limit_rps to a higher value, only if you set it back after you have been synced up. We are grateful that this endpoint exists and we dont want it to survive.
+
+**Make sure you set it back to the settings above after you have synced up. Thank you.**
+
 --- 
 
 **Permissions**
