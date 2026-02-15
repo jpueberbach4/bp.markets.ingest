@@ -161,7 +161,7 @@ download:
     live: data/temp                   # Live downloads
 ```
 
-You can adjust the `jitter` to 0.0 and the `rate_limit_rps` to a higher value, only if you set it back after you have been synced up. We are grateful that this endpoint exists and we dont want it to survive.
+You can adjust the `jitter` to 0.0 and the `rate_limit_rps` to a higher value, only if you set it back after you have been synced up. We are grateful that this endpoint exists and we want it to survive.
 
 Try to stay below 60 requests/second: rate_limit_rps = 60 / number of cores
 
