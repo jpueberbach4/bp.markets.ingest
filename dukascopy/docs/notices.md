@@ -32,7 +32,7 @@ XPD.CMD-USD
 XPT.CMD-USD
 ```
 
-**Note:** If your symbol is not in this list, it is not sensitive to price adjustments. eg DAX, US30 etc not in this list, so no rolls.
+**Note:** If your symbol is not in this list, it is not sensitive to price adjustments. eg DAX, US30 etc not in this list, so no rolls. More info [here](https://www.dukascopy.com/swiss/english/marketwatch/calendars/cfd-price-adjustment-calendar/)
 
 **Important!** Make sure the symbols exist in your symbols.user.txt AND make sure not to use `/` (slashes) in the symbol name. Replace slashes with `-` (dash).
 
