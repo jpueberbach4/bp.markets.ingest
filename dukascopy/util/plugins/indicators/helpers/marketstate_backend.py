@@ -111,8 +111,6 @@ def _marketstate_backend_timezone_info_for_symbol(symbol: str) -> Tuple[str, Dic
     Finds the timezone configuration for a given symbol.
     """
     global _TZ_CACHE
-    
-    print(_TZ_CACHE)
 
     for tz_name, tz_data in _TZ_CACHE.items():
         symbols = tz_data.get('symbols', [])
