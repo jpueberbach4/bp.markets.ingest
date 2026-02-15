@@ -167,7 +167,10 @@ async def list_indicators(
             for indicator_name in data:
                 for default_name in data[indicator_name]["defaults"]:
                     val = data[indicator_name]["defaults"][default_name]
-                    data[indicator_name]["defaults"][default_name] = val.format(**locals())
+                    try:
+                        data[indicator_name]["defaults"][default_name] = val.format(**locals())
+                    except Exception as e:
+                        data[indicator_name]["defaults"][default_name] = val
 
         # Attach wall-clock execution time
         options["wall"] = time.time() - time_start
