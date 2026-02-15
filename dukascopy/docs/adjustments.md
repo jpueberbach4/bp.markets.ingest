@@ -399,3 +399,45 @@ Similarly to the stock logic, the rollover strategy calculates the ratio between
 | from_date / to_date  | These define strict inclusive windows. Your SQL or Memory-Sink query must ensure no overlap in the date ranges. Because RR is multiplicative, an overlap would compound the adjustment exponentially, resulting in massive price distortions.
 
 **Note on Backtesting:** When using these RR adjusted sets, never use absolute dollar values in your logic. Because the price has been multiplied by a cumulative factor, a $1.00 move in 2015 might be represented as an $0.80 move in your dataset. Always use Percentages or Price Units to ensure your indicators produce consistent signals across the entire timeline.
+
+## 7. Moral of the story
+
+"Premium" market-data, like backadjusted Futures data, is nothing more than applying a (cumulative) subtraction or multiplication to OHLC prices with a polished interface on top of it. 
+
+Important: Preferably, you should build a cronjob that daily executes, during a maintenance window, that updates the rollover files and rebuilds your set. Preferably during market closure times, outside of your trading window, eg 00:00:
+
+```sh
+#!/bin/sh
+echo "Beginning daily maintenance..."
+cd /path/to/dukascopy
+
+# Stop services
+./service.sh stop
+
+# Define Commodity Array (Brent and Light)
+SYMBOLS="BRENT LIGHT"
+
+for prefix in $SYMBOLS; do
+    echo "Processing $prefix.CMD-USD-RR..."
+    ./build-sidetracking-config.sh \
+        --symbol "${prefix}.CMD-USD-RR" \
+        --source "${prefix}.CMD-USD" \
+        --class generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategyRR \
+        --output "config.user/dukascopy/sidetracking/${prefix}.CMD-USD-RR.yaml"
+done
+
+# Process Stocks (Unique Strategy Class)
+echo "Processing AAPL.US-USD-RR..."
+./build-sidetracking-config.sh \
+    --symbol AAPL.US-USD-RR \
+    --source AAPL.US-USD \
+    --class generators.sidetracking.extensions.stocks.apple.AppleCorporateActionsStrategyRR \
+    --output config.user/dukascopy/sidetracking/AAPL.US-USD-RR.yaml
+
+# Finalize and Restart
+./rebuild-full.sh
+./service.sh start
+
+echo "Maintenance complete."
+
+```
