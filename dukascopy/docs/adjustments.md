@@ -342,7 +342,7 @@ The output utilizes YAML Anchors (&id001) and Aliases (*id001) to maintain a DRY
 
 ### 2. The Total Return Logic Flow
 
-When your ingestion engine processes this YAML, it applies adjustments backwards from the current date (the "Flight" ingestion path).
+When your ingestion engine processes this YAML, it applies adjustments backwards from the current date.
 
 #### Proportional Scaling (Rollovers)
 
