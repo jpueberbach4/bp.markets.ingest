@@ -32,6 +32,8 @@ XPD.CMD-USD
 XPT.CMD-USD
 ```
 
+**Note:** If your symbol is not in this list, it is not sensitive to price adjustments. eg DAX, US30 etc not in this list, so no rolls.
+
 **Important!** Make sure the symbols exist in your symbols.user.txt AND make sure not to use `/` (slashes) in the symbol name. Replace slashes with `-` (dash).
 
 ```sh
