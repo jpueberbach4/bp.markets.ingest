@@ -441,3 +441,32 @@ echo "Processing AAPL.US-USD-RR..."
 echo "Maintenance complete."
 
 ```
+
+**One more thing:** When quickly testing... you can also just set the from_date to an ancient past and have the engine handle the accumulations. However, this is not preferred because of performance. It would slow down the transform (and thus the rebuild) step significantly. If the engine finds multiple rules that match a date, it applies them all. 
+
+Window stitching solves the performance problem but is more advanced and more difficult to implement.
+
+```sh
+BRENT.CMD-USD-PANAMA:
+  source: BRENT.CMD-USD
+  post:
+    roll-ratio-20141215:
+      action: '-'
+      columns: &id001
+      - open
+      - high
+      - low
+      - close
+      - volume
+      value: 0.11
+      from_date: '1970-01-01 00:00:00'
+      to_date: '2014-12-15 23:59:59'
+    roll-ratio-20150114:
+      action: '-'
+      columns: *id001               # Reference to OHLC list
+      value: 0.55
+      from_date: '1970-01-01 00:00:00'
+      to_date: '2015-01-14 23:59:59'
+```
+
+This would apply both the `0.11` and `0.55` subtract for any OHLCV record with a date between `1970-01-01` and `2014-12-15`.
