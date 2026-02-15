@@ -1,5 +1,21 @@
 Market research- and analysis tool, feature-engineering, but you can do so much more with it, if you are a bit "handy".
 
+## **Bugs**
+
+There were some bugs when using the bootstrap API, related to is-open and drift. The problem was in marketstatus.py. It loads a cache with timezone information. The problem was with config loading and paths and did not affect the web-API. I am currently automating the integration tests, these will capture this kind of things more quickly in the future.
+
+- bugs were fixed
+- config generators were added with a stock-split and corporate actions example for AAPL
+- both Panama and Panama RR were implemented for futures (continuous price series for futures)
+- config generators are customizable via the config.user directory
+- aliassing of symbols is implemented
+- performance updates for aliassing have been implemented-may need a second run
+- some example indicators were added, some very advanced ones, others convenience
+- documentation was updated
+- whole roundtrip has been done
+
+Busy weekend but getting there.... I have been doing a lot of indicator-experiments. So far i can do anything i want. No walls encountered.
+
 ## **Panama config building available - Regular Panama and the Return Ratio method**
 
 For more details on this, see [here](adjustments.md). The document describes how to implement your own adjustment strategies. You can put these custom strategies inside of your `custom.user` directory (any path). It works for symbolic links as well.
