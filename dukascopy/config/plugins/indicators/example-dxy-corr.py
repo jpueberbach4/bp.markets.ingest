@@ -24,121 +24,92 @@ def position_args(args: List[str]) -> Dict[str, Any]:
     }
 
 def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
-    # Import locally so startup is fast and this only loads when used
+    # Import here so the engine only loads this when the indicator runs
     from util.api import get_data
     import polars as pl
 
-    # Hard-coded benchmark symbol (US Dollar Index)
+    # Hardcoded benchmark symbol we compare against
     benchmark = "DOLLAR.IDX-USD"
 
-    # The timeframe is the same for every row, so we read it once
+    # Timeframe of the incoming dataframe (e.g. 1h, 4h, 1d)
+    # Assumed constant for the whole chunk
     tf = df["timeframe"].item(0)
 
-    # Incoming data is always sorted by time
-    # So first and last rows give us the full time range instantly
-    time_min = df["time_ms"][0]
-    time_max = df["time_ms"][-1]
+    # We assume df is already sorted by time_ms
+    # So first row = earliest timestamp, last row = latest timestamp
+    time_min, time_max = df["time_ms"][0], df["time_ms"][-1]
 
-    # Extra history so joins don’t fail at the beginning
-    # 5 days covers weekends + safety margin
-    warmup_ms = 86400000 * 5 
-
-    # ------------------------------------------------------------------
-    # STEP 1: Load benchmark (DXY) price data
-    # ------------------------------------------------------------------
+    # Fetch benchmark (DXY) data slightly before our window
+    # The extra 5 days ensures we have a valid anchor even across weekends / gaps
     dxy_raw = get_data(
         symbol=benchmark,
         timeframe=tf,
-        # Start earlier than needed so first joins have data
-        after_ms=time_min - warmup_ms,
-        # End slightly after last bar
+        after_ms=time_min - (86400000 * 5),
         until_ms=time_max + 1,
-        # Force Polars output so we can use lazy execution
         options={**options, "return_polars": True}
     )
 
-    # If the API returns *no data at all*, joins would break
-    # So we inject a fake row that produces a flat 0% line
-    if dxy_raw.is_empty():
-        dxy_lazy = (
-            pl.DataFrame({
-                # Single timestamp at the start
-                "time_ms": [time_min],
-                # Null close forces downstream logic to output 0.0
-                "dxy_close": [None]
-            })
-            .lazy()
-            .cast({"time_ms": pl.UInt64})
-        )
-    else:
-        # Normal path: keep only what we need and sort for as-of join
-        dxy_lazy = (
-            dxy_raw
-            .lazy()
-            .select([
-                pl.col("time_ms").cast(pl.UInt64),
-                pl.col("close").alias("dxy_close")
-            ])
-            .sort("time_ms")
-        )
+    # Convert benchmark data to lazy mode (no execution yet)
+    # Keep only time and close price
+    # Rename close -> dxy_close so it doesn’t collide later
+    # Sort is REQUIRED for join_asof to work correctly
+    dxy_lazy = (
+        dxy_raw
+        .lazy()
+        .select([
+            pl.col("time_ms").cast(pl.UInt64),
+            pl.col("close").alias("dxy_close")
+        ])
+        .sort("time_ms")
+    )
 
-    # ------------------------------------------------------------------
-    # STEP 2: Prepare the main symbol (BASE) price stream
-    # ------------------------------------------------------------------
-    base_lazy = (
+    return (
+        # Convert the incoming dataframe to lazy mode
         df
         .lazy()
-        # We only need time and close price
+
+        # Keep only what we need: time and base asset close price
         .select([
             pl.col("time_ms").cast(pl.UInt64),
             pl.col("close").alias("base_close")
         ])
-        # Required for as-of joins
-        .sort("time_ms")
-    )
 
-    # ------------------------------------------------------------------
-    # STEP 3: Join, normalize, and make everything safe
-    # ------------------------------------------------------------------
-    return (
-        base_lazy
-        # Match each EUR bar with the latest DXY bar *at or before* that time
+        # Sort for join_asof safety
+        .sort("time_ms")
+
+        # Temporal join:
+        # For each base candle, attach the LAST known DXY candle at or before that time
         .join_asof(dxy_lazy, on="time_ms", strategy="backward")
 
-        # Capture the first prices so we can normalize later
+        # Compute anchors (reference prices)
         .with_columns([
-            # First EUR close becomes the 0% reference point
+            # base_start = first base_close in the entire window
+            # Used to normalize the base asset
             pl.col("base_close").first().alias("base_start"),
 
-            # First *valid* DXY close becomes the benchmark anchor
-            # We skip nulls so empty datasets don’t poison the result
-            pl.col("dxy_close")
-              .filter(pl.col("dxy_close").is_not_null())
-              .first()
-              .alias("dxy_anchor")
+            # dxy_anchor = first NON-null DXY close
+            # drop_nulls avoids picking a missing value as the anchor
+            pl.col("dxy_close").drop_nulls().first().alias("dxy_anchor")
         ])
 
-        .with_columns([
-            # EUR percent change from its starting value
-            # If anything goes wrong, default to 0.0 instead of NaN
+        # Convert prices into percentage performance series
+        .select([
+            # Base asset percent change from its starting price
+            # (price / start) - 1
+            # fill_null(0.0) prevents NaNs at the beginning
             ((pl.col("base_close") / pl.col("base_start")) - 1)
                 .fill_null(0.0)
                 .alias("base_pct"),
 
-            # DXY percent change:
-            # If there is no valid benchmark data, return a flat line at 0.0
-            pl.when(
-                pl.col("dxy_close").is_null() |
-                pl.col("dxy_anchor").is_null()
-            )
-            .then(0.0)
-            .otherwise((pl.col("dxy_close") / pl.col("dxy_anchor")) - 1)
-            .alias("dxy_pct")
+            # DXY percent change from its anchor price
+            # If DXY data is missing, result becomes null → filled to 0.0
+            ((pl.col("dxy_close") / pl.col("dxy_anchor")) - 1)
+                .fill_null(0.0)
+                .alias("dxy_pct")
         ])
 
-        # Only expose the final normalized series
-        .select(["base_pct", "dxy_pct"])
-
-        # Execute everything using streaming to keep memory usage low
+        # Execute the lazy query
+        # streaming=True keeps memory usage low on large datasets
         .collect(streaming=True)
     )
+
