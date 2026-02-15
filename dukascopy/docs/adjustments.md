@@ -404,7 +404,7 @@ Similarly to the stock logic, the rollover strategy calculates the ratio between
 
 "Premium" market-data, like backadjusted Futures data, is nothing more than applying a (cumulative) subtraction or multiplication to OHLC prices with a polished interface on top of it. 
 
-Important: Preferably, you should build a cronjob that daily executes, during a maintenance window, that updates the rollover files and rebuilds your set. Preferably during market closure times, outside of your trading window, eg 00:00:
+Important: Preferably, you should build a cronjob that executes daily, during a maintenance window, updates the rollover files and rebuilds your set. Preferably during market closure times, outside of your trading window, eg 00:00:
 
 ```sh
 #!/bin/sh
