@@ -18,7 +18,33 @@ This is transparency first, performance always, empowering you to research, engi
 
 **Note:** Documentation on how to write your own custom extensions is coming. Tbh this is the most-complex stuff for an user to learn about this pipeline. So, i will look into a generic approach for stocks. No promises though.
 
-For future-rolls, i have implemented the config generator. It seems to be fine so i decided to release it. However, next week I am starting to use this myself. If issues are found, they will get fixed immediately. Use the Dukascopy one for CMD with rollovers. I will present a list soon.
+For future-rolls, i have implemented the config generator. It seems to be fine so i decided to release it. However, next week I am starting to use this myself. If issues are found, they will get fixed immediately. Use the Dukascopy one for CMD with rollovers.
+
+List to be used with the `generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategy` or `generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategyRR` class:
+
+```sh
+BRENT.CMD/USD
+BUND.TR/EUR
+COCOA.CMD/USD
+COFFEE.CMD/USX
+COPPER.CMD/USD
+COTTON.CMD/USX
+DIESEL.CMD/USD
+DOLLAR.IDX/USD
+GAS.CMD/USD
+IND.IDX/USD
+LIGHT.CMD/USD
+OJUICE.CMD/USX
+PLN.IDX/PLN
+SOA.IDX/ZAR
+SOYBEAN.CMD/USX
+SUGAR.CMD/USD
+UKGILT.TR/GBP
+USTBOND.TR/USD
+VOL.IDX/USD
+XPD.CMD/USD
+XPT.CMD/USD
+```
 
 **Important!** Make sure the symbols exist in your symbols.user.txt AND make sure not to use `/` (slashes) in the symbol name. Replace slashes with `-` (dash).
 
