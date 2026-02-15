@@ -2,7 +2,7 @@ Market research- and analysis tool, feature-engineering, but you can do so much 
 
 ## **Panama config building available - Regular Panama and the Return Ratio method**
 
-For more details on this, see [here](adjustments.md).
+For more details on this, see [here](adjustments.md). The document describes how to implement your own adjustment strategies. You can put these custom strategies inside of your `custom.user` directory (any path). It works for symbolic links as well.
 
 **Note:** Documentation on how to write your own custom extensions is coming. Tbh this is the most-complex stuff for an user to learn about this pipeline. So, i will look into a generic approach for stocks. No promises though.
 
