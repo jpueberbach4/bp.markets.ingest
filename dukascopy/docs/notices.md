@@ -23,27 +23,27 @@ For future-rolls, i have implemented the config generator. It seems to be fine s
 List to be used with the `generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategy` or `generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategyRR` class:
 
 ```sh
-BRENT.CMD/USD
-BUND.TR/EUR
-COCOA.CMD/USD
-COFFEE.CMD/USX
-COPPER.CMD/USD
-COTTON.CMD/USX
-DIESEL.CMD/USD
-DOLLAR.IDX/USD
-GAS.CMD/USD
-IND.IDX/USD
-LIGHT.CMD/USD
-OJUICE.CMD/USX
-PLN.IDX/PLN
-SOA.IDX/ZAR
-SOYBEAN.CMD/USX
-SUGAR.CMD/USD
-UKGILT.TR/GBP
-USTBOND.TR/USD
-VOL.IDX/USD
-XPD.CMD/USD
-XPT.CMD/USD
+BRENT.CMD-USD
+BUND.TR-EUR
+COCOA.CMD-USD
+COFFEE.CMD-USX
+COPPER.CMD-USD
+COTTON.CMD-USX
+DIESEL.CMD-USD
+DOLLAR.IDX-USD
+GAS.CMD-USD
+IND.IDX-USD
+LIGHT.CMD-USD
+OJUICE.CMD-USX
+PLN.IDX-PLN
+SOA.IDX-ZAR
+SOYBEAN.CMD-USX
+SUGAR.CMD-USD
+UKGILT.TR-GBP
+USTBOND.TR-USD
+VOL.IDX-USD
+XPD.CMD-USD
+XPT.CMD-USD
 ```
 
 **Important!** Make sure the symbols exist in your symbols.user.txt AND make sure not to use `/` (slashes) in the symbol name. Replace slashes with `-` (dash).
