@@ -435,7 +435,7 @@ echo "Processing AAPL.US-USD-RR..."
     --output config.user/dukascopy/sidetracking/AAPL.US-USD-RR.yaml
 
 # Finalize and Restart
-./rebuild-full.sh
+./rebuild-weekly.sh         # Also handle any backfills
 ./service.sh start
 
 echo "Maintenance complete."
