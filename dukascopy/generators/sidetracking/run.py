@@ -19,13 +19,42 @@ class CustomArgumentParser(argparse.ArgumentParser):
         sys.exit(2)
 
 def load_class(class_path: str):
-    """Dynamically imports a class from a module string."""
+    """
+    Directly handles the 'config.user' folder anchor.
+    Converts trailing dots to slashes to locate the .py file.
+    """
+    parts = class_path.split('.')
+    class_name = parts.pop()
+    
+    # Check for our specific folder anchor
+    if "config.user" in class_path:        
+        path_str = class_path.replace(class_name, "").rstrip('.')
+        # Replace only the dots occurring AFTER config.user
+        if path_str.startswith("config.user."):
+            sub_path = path_str.replace("config.user.", "").replace(".", "/")
+            file_path = Path(f"config.user/{sub_path}.py")
+        else:
+            # It's just config.user.FileName
+            file_path = Path(path_str.replace(".", "/") + ".py")
+            
+        if file_path.is_file():
+            module_name = "custom_module" # Internal alias
+            try:
+                spec = importlib.util.spec_from_file_location(module_name, file_path.resolve())
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                return getattr(module, class_name)
+            except Exception as e:
+                print(f"Error loading {class_name} from {file_path}: {e}")
+                sys.exit(1)
+
+    # Standard Fallback for core generators or site-packages
     try:
-        module_path, class_name = class_path.rsplit('.', 1)
+        module_path = ".".join(parts)
         module = importlib.import_module(module_path)
         return getattr(module, class_name)
-    except (ImportError, AttributeError, ValueError) as e:
-        print(f"Error: Could not load strategy class '{class_path}'.\n{e}")
+    except Exception as e:
+        print(f"Error: Could not resolve '{class_path}'.\n{e}")
         sys.exit(1)
 
 if __name__ == "__main__":
