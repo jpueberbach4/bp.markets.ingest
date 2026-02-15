@@ -399,7 +399,7 @@ Similarly to the stock logic, the rollover strategy calculates the ratio between
 
 **Note on Backtesting:** When using these RR adjusted sets, never use absolute dollar values in your logic. Because the price has been multiplied by a cumulative factor, a $1.00 move in 2015 might be represented as an $0.80 move in your dataset. Always use Percentages or Price Units to ensure your indicators produce consistent signals across the entire timeline.
 
-## 7. Custom generators in your `custom.user` path
+## 7. Custom generators in your `config.user` path
 
 I have added support to be able to put your generators in your GIT-excluded config user directory. 
 
@@ -415,9 +415,7 @@ You can then use this class by executing the command.
 
 The config.user naming was not the smartest thing to do, need to build around it constantly.
 
-## 8. Moral of the story
-
-"Premium" market-data, like backadjusted Futures data, is nothing more than applying a (cumulative) subtraction or multiplication to OHLC prices with a polished interface on top of it. 
+## 8. Cronjob
 
 Important: Preferably, you should build a cronjob that executes daily, during a maintenance window, updates the rollover files and rebuilds your set. Preferably during market closure times, outside of your trading window, eg 00:00:
 
@@ -482,5 +480,6 @@ BRENT.CMD-USD-PANAMA:
       from_date: '1970-01-01 00:00:00'
       to_date: '2015-01-14 23:59:59'
 ```
+
 
 This would apply both the `0.11` and `0.55` subtract for any OHLCV record with a date between `1970-01-01` and `2014-12-15`.
