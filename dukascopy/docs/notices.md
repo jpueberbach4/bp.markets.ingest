@@ -4,8 +4,6 @@ Market research- and analysis tool, feature-engineering, but you can do so much 
 
 For more details on this, see [here](adjustments.md). The document describes how to implement your own adjustment strategies. You can put these custom strategies inside of your `custom.user` directory (any path). It works for symbolic links as well.
 
-**Note:** Documentation on how to write your own custom extensions is coming. Tbh this is the most-complex stuff for an user to learn about this pipeline. So, i will look into a generic approach for stocks. No promises though.
-
 For future-rolls, i have implemented the config generator. It seems to be fine so i decided to release it. However, next week I am starting to use this myself. If issues are found, they will get fixed immediately. Use the Dukascopy one for CMD with rollovers.
 
 List to be used with the `generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategy` or `generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategyRR` class:
