@@ -130,6 +130,8 @@ Sidetracked symbol (AAPL):
 
 **Note:** The panama sets are "live-tracked" in a similar way as the regular symbols. Incrementally updated.
 
+**Note:** When you are building your own adjustment strategy for Stocks, it is important to grap the concept of the 4 different dates related to dividens. You can read about them [here](https://www.dukascopy.com/swiss/english/marketwatch/calendars/dividends-calendar/).
+
 ## **Server kindness**
 
 Re-iterating to be nice to the backend servers. After your initial sync, you can slow down your requests. Even when updating every minute (when you really need that). Implement a spreading/limit when in-sync.
