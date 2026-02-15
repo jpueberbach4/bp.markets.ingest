@@ -96,7 +96,7 @@ def _load_timezones_config() -> Dict[str, Any]:
         # ugly fix but high priority
         config_path = Path(__file__).parent.parent.parent.parent.parent
         config_file = config_path/'config.user.yaml' if Path(config_path/'config.user.yaml').exists() else config_path/"config.yaml"
-        loader = ConfigLoader(project_root=".")
+        loader = ConfigLoader(project_root=config_path)
         full_config = loader.load(config_file)
         return full_config['transform']['timezones']
     except Exception as e:
@@ -112,6 +112,8 @@ def _marketstate_backend_timezone_info_for_symbol(symbol: str) -> Tuple[str, Dic
     """
     global _TZ_CACHE
     
+    print(_TZ_CACHE)
+
     for tz_name, tz_data in _TZ_CACHE.items():
         symbols = tz_data.get('symbols', [])
         
