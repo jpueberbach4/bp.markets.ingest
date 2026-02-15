@@ -1,19 +1,5 @@
 Market research- and analysis tool, feature-engineering, but you can do so much more with it, if you are a bit "handy".
 
-## “We don’t sell magic. We show the plumbing.”
-
-Most so-called “premium” market data hides a surprisingly thin layer of transformations behind a polished interface. Here, you see everything:
-
-- Raw rollover gaps and back-adjusted price series
-- Multi-timezone drift and open-candle detection
-- Thread-safe caches and high-performance indicators
-
-Nothing is hidden. No black boxes. No guesswork. Once you see how the system works, you can’t unsee it—and suddenly you understand what real, deterministic, auditable market data looks like.
-
-This is transparency first, performance always, empowering you to research, engineer features, and test strategies with confidence.
-
-“I’m not selling magic. I’m showing you the plumbing. Once you see it, you can’t unsee how thin most ‘premium’ market data really is.”
-
 ## **Panama config building available - Regular Panama and the Return Ratio method**
 
 **Note:** Documentation on how to write your own custom extensions is coming. Tbh this is the most-complex stuff for an user to learn about this pipeline. So, i will look into a generic approach for stocks. No promises though.
