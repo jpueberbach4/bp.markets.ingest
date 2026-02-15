@@ -260,7 +260,7 @@ class DukascopyPanamaStrategy(IAdjustmentStrategy):
                 action = TimeWindowAction(
                     id=f"panama-roll-{i+1:03d}",
                     action="+",
-                    columns=list(self.target_columns),
+                    columns=self.target_columns,
                     value=round(current_offset, 6),
                     from_date=prev_date,
                     to_date=window_end
@@ -399,7 +399,7 @@ class DukascopyPanamaStrategyRR(IAdjustmentStrategy):
                 actions.append(TimeWindowAction(
                     id=f"roll-ratio-{event['date'].strftime('%Y%m%d')}",
                     action="*",
-                    columns=list(self.target_columns),
+                    columns=self.target_columns,
                     value=round(event["ratio"], 8),
                     from_date=prev_end,
                     to_date=curr_end
