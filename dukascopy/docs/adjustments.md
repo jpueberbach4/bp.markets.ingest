@@ -410,7 +410,9 @@ Eg you have a `CustomPanamaStrategy` class in a `config.user/extensions/custom.p
 You can then use this class by executing the command.
 
 ```sh
-./build-sidetracking-config.sh --symbol LIGHT.CMD-USD-PANAMA --source LIGHT.CMD-USD --class config.user.extensions.custom.CustomStrategy --output config.user/dukascopy/sidetracking/LIGHT.CMD-USD-CUSTOM.yaml
+./build-sidetracking-config.sh --symbol LIGHT.CMD-USD-PANAMA --source LIGHT.CMD-USD \
+--class config.user.extensions.custom.CustomStrategy \
+--output config.user/dukascopy/sidetracking/LIGHT.CMD-USD-CUSTOM.yaml
 ```
 
 The config.user naming was not the smartest thing to do, need to build around it constantly.
