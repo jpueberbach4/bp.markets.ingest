@@ -5,7 +5,6 @@ Priorization:
 - Stabilization - Seeing if we can prevent OOM's and instead degrade in a "nicer way"
 - Quality - Another full comparison pass on the indicators. LLM's can tell me they are fine but i want to SEE (TA-lib?).
 - Coverage - Unit-testing > 80-90% + "Unhappy paths"
-- Panama-adjusted sidetracked data plus stocksplit support. Two in one solution.
 - Then split up - I have a testeable base then. K8S-readiness changes are not "minor changes".
 
 [x] Initial refactor/preparation stage:
@@ -36,7 +35,8 @@ Quality:
   - [x] Automated validation of the system indicators using TA-lib where possible
   - [ ] More unit-tests NOW - in progress
   - [x] Find solution for UVLOOP WSL2 watchfiles CPU 100pct issue. Optionally, configurable.
-  - [ ] The panama and stock-split fixes
+  - [x] The panama and stock-split fixes
+  - [ ] Parial rebuilds eg `./rebuild-full.sh --symbol BRENT.CMD-USD-PANAMA` (plus their sources)
   - [ ] Third indicator execution path: CUDA/Rapids. I need to know this for ML. Can I gain with it?
 
 Note: UVLOOP WSL2 fix was implemented through a config.user.yaml setting.
