@@ -93,8 +93,10 @@ class ConfigLoader:
 def _load_timezones_config() -> Dict[str, Any]:
     """Attempts to load the timezone configuration from the user or default yaml."""
     try:
-        config_file = 'config.user.yaml' if Path('config.user.yaml').exists() else "config.yaml"
-        loader = ConfigLoader(project_root=".")
+        # ugly fix but high priority
+        config_path = Path(__file__).parent.parent.parent.parent.parent
+        config_file = config_path/'config.user.yaml' if Path(config_path/'config.user.yaml').exists() else config_path/"config.yaml"
+        loader = ConfigLoader(project_root=config_path)
         full_config = loader.load(config_file)
         return full_config['transform']['timezones']
     except Exception as e:
@@ -109,7 +111,7 @@ def _marketstate_backend_timezone_info_for_symbol(symbol: str) -> Tuple[str, Dic
     Finds the timezone configuration for a given symbol.
     """
     global _TZ_CACHE
-    
+
     for tz_name, tz_data in _TZ_CACHE.items():
         symbols = tz_data.get('symbols', [])
         
