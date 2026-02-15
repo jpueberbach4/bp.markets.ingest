@@ -5,7 +5,7 @@ This guide outlines how to implement custom **Back-Adjustment Strategies** for t
 The system supports three primary adjustment methodologies:
 
 1.  **Futures Panama:** Subtractive rollover adjustment (for Commodities/Indices).
-2.  **Standard Corporate Actions:** Hybrid adjustment (Subtractive Dividends, Multiplicative Splits).
+2.  **Standard Corporate Actions:** Hybrid adjustment (Subtractive Dividends, Multiplicative s).
 3.  **Total Return (Ratio):** Pure Multiplicative adjustment (Ratio-based Dividends to prevent negative prices).
 
 ---
@@ -233,9 +233,9 @@ class AppleCorporateActionsStrategyRR(IAdjustmentStrategy):
         return actions
 ```
 
-## 5. Panama-RR Hybrid Adjustment Output
+## 5. Panama Hybrid Adjustment Output
 
-This section outlines the logic and structure for the Panama-RR adjustment method. This specific implementation is a "hybrid" model: it utilizes multiplication for structural events (splits) to maintain geometric consistency, and subtraction (Panama method) for cash events (dividends) to maintain point-value consistency.
+This section outlines the logic and structure for the Panama adjustment method. This specific implementation is a "hybrid" model: it utilizes multiplication for structural events (splits) to maintain geometric consistency, and subtraction (Panama method) for cash events (dividends) to maintain point-value consistency.
 
 ### 1. Data Structure Overview
 The output utilizes YAML Anchors (&id001) and Aliases (*id001) to maintain a DRY (Don't Repeat Yourself) configuration.
@@ -269,7 +269,7 @@ For dividends in this specific set, we use the Panama method.
 
 **Logic:** `Price_adj = Price_raw - 8.69`
 
-Reasoning: This treats the dividend as a raw cash extraction. It keeps the "gap" in the chart equal to the actual cash paid out, rather than a percentage of the stock price at the time.
+**Reasoning:** This treats the dividend as a raw cash extraction. It keeps the "gap" in the chart equal to the actual cash paid out, rather than a percentage of the stock price at the time.
 
 ### 3. Example
 ```sh
@@ -314,7 +314,7 @@ The following example-code retrieves a webpages from investor.apple.com, extract
 
 Similarly, for futures, we apply a cumulative subtraction on each rollover date:
 
-[Example futures](../generators/sidetracking/extensions/dukascopy.py) (class `DukascopyPanamaStrategy`)
+[Example Futures](../generators/sidetracking/extensions/dukascopy.py) (class `DukascopyPanamaStrategy`)
 
 #### Field descriptions
 
@@ -323,3 +323,79 @@ Similarly, for futures, we apply a cumulative subtraction on each rollover date:
 | columns              | Standardizes adjustments across open, high, low, and close. This ensures the entire candle is shifted or scaled as a single unit, preventing "broken" candles (e.g., where a High could mathematically end up lower than a Close after an adjustment). |
 | value drift          | Notice the seg-div values decrease over time (e.g., 8.69 in 1988 vs 0.26 in 2026). This reflects the cumulative "debt" of dividends being removed as you move closer to the present. The further back you go in the time series, the larger the total subtraction applied to the historical data. |
 | from_date / to_date  | These define strict inclusive windows. Your SQL or Memory-Sink query must ensure no overlap in the date ranges, or the system will double-adjust prices, leading to significant data corruption and skewed backtesting results. |
+
+
+## 6. Total Return Ratio (RR) Adjustment Output
+
+This section outlines the logic and structure for the Total Return Ratio (RR) adjustment method. Unlike the hybrid Panama model, this implementation is purely geometric: it utilizes multiplication for all adjustment events—primarily futures rollovers—to maintain continuous percentage returns across the entire time series.
+
+### 1. Data Structure Overview
+The output utilizes YAML Anchors (&id001) and Aliases (*id001) to maintain a DRY (Don't Repeat Yourself) configuration.
+
+- Source: The raw, unadjusted ticker symbol (e.g., BRENT.CMD-USD).
+
+- Post-Processing (post): A chronological list of segments (roll-ratio-) representing the execution windows between contract expirations or rollover dates.
+
+- Actions:
+
+  - action: `'*'` : Used for all Ratio adjustments. Multiplies historical OHLC data by the specific ratio value to eliminate price gaps while preserving relative volatility.
+
+### 2. The Total Return Logic Flow
+
+When your ingestion engine processes this YAML, it applies adjustments backwards from the current date (the "Flight" ingestion path).
+
+#### Proportional Scaling (Rollovers)
+
+For Commodity CFDs like Brent Crude, the price gap between the expiring front-month contract and the next contract is smoothed using a ratio rather than a fixed dollar amount.
+
+**Logic:** `Price_adj = Price_raw * 0.80668255`
+
+**Reasoning:** By using a multiplier, we ensure that a 1% move in the raw historical data remains a 1% move in the adjusted data. This is critical for indicators that rely on percentage-based volatility (e.g., RSI, Bollinger Bands). Using a ratio prevents the "Price Floor" issue where repeated subtractions could eventually push historical prices toward zero or negative values.
+
+### 3. Example
+
+```sh
+BRENT.CMD-USD-RR:
+  source: BRENT.CMD-USD
+  post:
+    roll-ratio-20141215:
+      action: '*'
+      columns: &id001
+      - open
+      - high
+      - low
+      - close
+      - volume
+      value: 0.80668255
+      from_date: '2000-01-01 00:00:00'
+      to_date: '2014-12-15 23:59:59'
+    roll-ratio-20150114:
+      action: '*'
+      columns: *id001               # Reference to OHLC list
+      value: 0.80354243
+      from_date: '2014-12-16 00:00:00'
+      to_date: '2015-01-14 23:59:59'
+    # ... successive rolls ...
+    roll-ratio-20260127:
+      action: '*'
+      columns: *id001
+      value: 0.9869108              # Most recent adjustment ratio
+      from_date: '2025-12-24 00:00:00'
+      to_date: '2026-01-27 23:59:59'
+```
+
+Similarly to the stock logic, the rollover strategy calculates the ratio between the "Old" contract price and the "New" contract price at the moment of the switch:
+
+[Example AAPL](../generators/sidetracking/extensions/stocks/apple.py) (class `AppleCorporateActionsStrategyRR`)
+
+[Example Futures](../generators/sidetracking/extensions/dukascopy.py) (class `DukascopyPanamaStrategyRR`)
+
+#### Field descriptions
+
+| Field                 | Developer Note |
+|----------------------|----------------|
+| columns              | Standardizes adjustments across open, high, low, and close. This ensures the entire candle is scaled as a single unit, preserving the internal "shape" (wicks and body) of the price action. |
+| value drift          | In RR sets, the value often represents a cumulative multiplier. Notice the values trend toward 1.0 as they approach the present (e.g., 0.80 in 2014 vs 0.98 in 2026). This reflects the diminishing cumulative adjustment required as you get closer to the current unadjusted "anchor" price. |
+| from_date / to_date  | These define strict inclusive windows. Your SQL or Memory-Sink query must ensure no overlap in the date ranges. Because RR is multiplicative, an overlap would compound the adjustment exponentially, resulting in massive price distortions.
+
+**Note on Backtesting:** When using these RR adjusted sets, never use absolute dollar values in your logic. Because the price has been multiplied by a cumulative factor, a $1.00 move in 2015 might be represented as an $0.80 move in your dataset. Always use Percentages or Price Units to ensure your CUDA kernels produce consistent signals across the entire timeline.
