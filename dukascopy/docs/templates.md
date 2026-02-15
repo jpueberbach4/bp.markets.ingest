@@ -321,9 +321,8 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     benchmark = "DOLLAR.IDX-USD"
     tf = df["timeframe"].item(0)
     
-    # Use the warmup count defined in your file as the rolling period
     # This ensures the "Zero" reference is always N bars behind the current bar
-    period = 500 
+    period = warmup_count({}) 
     
     time_min, time_max = df["time_ms"][0], df["time_ms"][-1]
     
