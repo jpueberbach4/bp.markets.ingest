@@ -130,7 +130,7 @@ Sidetracked symbol (AAPL):
 
 **Note:** The panama sets are "live-tracked" in a similar way as the regular symbols. Incrementally updated.
 
-**Note:** When you are building your own adjustment strategy for Stocks, it is important to grap the concept of the 4 different dates related to dividens. You can read about them [here](https://www.dukascopy.com/swiss/english/marketwatch/calendars/dividends-calendar/).
+**Note:** When you are building your own adjustment strategy for Stocks, it is important to grasp the concept of the 4 different dates related to dividends. You can read about them [here](https://www.dukascopy.com/swiss/english/marketwatch/calendars/dividends-calendar/).
 
 ## **Server kindness**
 
@@ -167,6 +167,7 @@ TLS will be implemented as a minimum. Raw Public Key (RPK) Authentication will b
 I forgot to mention but this was implemented already a "few" commits back. Status-code 400 is now transient. That means when the ingestion encounters a 400 state, it will retry. This makes ingestion a bit more robust. Play with the number of `retries`, `jitter`, the `backoff_factor` and the `timeout` if you are having issues syncing up. Don't overdo it on the `rate_limit_rps` setting though.
 
 Preliminary conclusion, since 3 weekends in a row: 400 errors? it's likely maintenance. When you are in-sync and somehow use this for 24/7 trading purposes, monitor your BTC-1m-candles closely (in the weekend). I will provide that `is-stale` counter-part to `is-open` soon.
+
 
 
 
