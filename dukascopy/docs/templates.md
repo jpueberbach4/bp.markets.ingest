@@ -127,6 +127,10 @@ def calculate(ldf: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     })
 ```
 
+---
+
+## NOTE: THE EXAMPLES BELOW ARE UNOPTIMIZED EXAMPLES AND OFTEN "FIRST VERSIONS".
+
 ### 5. Extensive example with thread-optimization
 
 This example plots 3x different TF RSI on a single panel for the current symbol and avoids repainting by using the `is-open` indicator to filter out `live-candles`.
