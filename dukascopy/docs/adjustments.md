@@ -367,7 +367,6 @@ BRENT.CMD-USD-RR:
       - high
       - low
       - close
-      - volume
       value: 0.80668255
       from_date: '2000-01-01 00:00:00'
       to_date: '2014-12-15 23:59:59'
