@@ -63,14 +63,14 @@ mkdir -p config.user/dukascopy/sidetracking
 --class generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategyRR \
 --output config.user/dukascopy/sidetracking/LIGHT.CMD-USD-RR.yaml
 
-# AAPL EXAMPLE - EXPERIMENTAL - NORMAL PANAMA (NEGATIVE PRICES)
+# AAPL EXAMPLE - EXPERIMENTAL - NORMAL PANAMA
 ./build-sidetracking-config.sh --symbol AAPL.US-USD-PANAMA --source AAPL.US-USD \
 --class generators.sidetracking.extensions.stocks.apple.AppleCorporateActionsStrategy \
 --output config.user/dukascopy/sidetracking/AAPL.US-USD-PANAMA.yaml
 
 # OR
 
-# AAPL EXAMPLE - EXPERIMENTAL - RETURN RATIO (NO NEGATIVE PRICES)
+# AAPL EXAMPLE - EXPERIMENTAL - RETURN RATIO
 ./build-sidetracking-config.sh --symbol AAPL.US-USD-RR --source AAPL.US-USD \
 --class generators.sidetracking.extensions.stocks.apple.AppleCorporateActionsStrategyRR \
 --output config.user/dukascopy/sidetracking/AAPL.US-USD-RR.yaml
@@ -169,6 +169,7 @@ TLS will be implemented as a minimum. Raw Public Key (RPK) Authentication will b
 I forgot to mention but this was implemented already a "few" commits back. Status-code 400 is now transient. That means when the ingestion encounters a 400 state, it will retry. This makes ingestion a bit more robust. Play with the number of `retries`, `jitter`, the `backoff_factor` and the `timeout` if you are having issues syncing up. Don't overdo it on the `rate_limit_rps` setting though.
 
 Preliminary conclusion, since 3 weekends in a row: 400 errors? it's likely maintenance. When you are in-sync and somehow use this for 24/7 trading purposes, monitor your BTC-1m-candles closely (in the weekend). I will provide that `is-stale` counter-part to `is-open` soon.
+
 
 
 
