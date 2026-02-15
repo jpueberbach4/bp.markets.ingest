@@ -324,7 +324,7 @@ Similarly, for futures, we apply a cumulative subtraction on each rollover date:
 |----------------------|----------------|
 | columns              | Standardizes adjustments across open, high, low, and close. This ensures the entire candle is shifted or scaled as a single unit, preventing "broken" candles (e.g., where a High could mathematically end up lower than a Close after an adjustment). |
 | value drift          | Notice the seg-div values decrease over time (e.g., 8.69 in 1988 vs 0.26 in 2026). This reflects the cumulative "debt" of dividends being removed as you move closer to the present. The further back you go in the time series, the larger the total subtraction applied to the historical data. |
-| from_date / to_date  | These define strict inclusive windows. Your SQL or Memory-Sink query must ensure no overlap in the date ranges, or the system will double-adjust prices, leading to significant data corruption and skewed backtesting results. |
+| from_date / to_date  | These define strict inclusive windows. Your code query must ensure no overlap in the date ranges, or the system will double-adjust prices, leading to significant data corruption and skewed backtesting results. |
 
 
 ## 6. Total Return Ratio (RR) Adjustment Output
@@ -397,7 +397,7 @@ Similarly to the stock logic, the rollover strategy calculates the ratio between
 |----------------------|----------------|
 | columns              | Standardizes adjustments across open, high, low, and close. This ensures the entire candle is scaled as a single unit, preserving the internal "shape" (wicks and body) of the price action. |
 | value drift          | In RR sets, the value often represents a cumulative multiplier. Notice the values trend toward 1.0 as they approach the present (e.g., 0.80 in 2014 vs 0.98 in 2026). This reflects the diminishing cumulative adjustment required as you get closer to the current unadjusted "anchor" price. |
-| from_date / to_date  | These define strict inclusive windows. Your SQL or Memory-Sink query must ensure no overlap in the date ranges. Because RR is multiplicative, an overlap would compound the adjustment exponentially, resulting in massive price distortions.
+| from_date / to_date  | These define strict inclusive windows. Your code must ensure no overlap in the date ranges. Because RR is multiplicative, an overlap would compound the adjustment exponentially, resulting in massive price distortions.
 
 **Note on Backtesting:** When using these RR adjusted sets, never use absolute dollar values in your logic. Because the price has been multiplied by a cumulative factor, a $1.00 move in 2015 might be represented as an $0.80 move in your dataset. Always use Percentages or Price Units to ensure your indicators produce consistent signals across the entire timeline.
 
