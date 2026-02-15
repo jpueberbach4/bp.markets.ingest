@@ -132,6 +132,8 @@ Sidetracked symbol (AAPL):
 
 **Note:** When you are building your own adjustment strategy for Stocks, it is important to grasp the concept of the 4 different dates related to dividends. You can read about them [here](https://www.dukascopy.com/swiss/english/marketwatch/calendars/dividends-calendar/).
 
+**Note:** There is a lot to tell on how to use backadjusted data and what to do and what not to do. I cannot compress all market knowledge into this project. I would be building my own financipedia then. For RR adjusted sets its important to know that you shouldnt use absolute values anywhere since prices have been multiplied by a factor. The candle bodies and wicks are physically "shrunk" or "expanded" by the multiplier. Price absolutes are distorted. So careful with if body.size > N then do this, or else do that. Also be careful with the ATR.
+
 ## **Server kindness**
 
 Re-iterating to be nice to the backend servers. After your initial sync, you can slow down your requests. Even when updating every minute (when you really need that). Implement a spreading/limit when in-sync.
