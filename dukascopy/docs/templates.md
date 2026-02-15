@@ -287,7 +287,7 @@ Note the profiling section. It is VERY good practice to profile your code in ord
 
 ### 6. Another example: major pivot finder to identify possible swing highs/lows
 
-**WARNING: MAJOR LOOKAHEAD BIAS. BUT HELPFUL FOR ML.**
+**WARNING: MAJOR LOOKAHEAD BIAS. BUT HELPFUL FOR ML. I USED TO MARK BOTTOMS MANUALLY. NO MORE**
 
 ```python
 import polars as pl
