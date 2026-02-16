@@ -23,7 +23,7 @@ def position_args(args: List[str]) -> Dict[str, Any]:
     return {}
 
 def warmup_count(options: Dict[str, Any]):
-    return 0
+    return 500
 
 def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     from util.api import get_data
