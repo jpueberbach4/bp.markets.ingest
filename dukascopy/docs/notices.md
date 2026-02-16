@@ -1,5 +1,7 @@
 Market research- and analysis tool, feature-engineering, but you can do so much more with it, if you are a bit "handy".
 
+Taking it a bit easy today. Bit of playing with this tool and rest. Bit carnaval etc.
+
 ## **Bugs**
 
 There were a few bugs when using the bootstrap API, related to is-open and drift.
