@@ -21,7 +21,10 @@
     <div class="main-container">
         <div class="sidebar">
             <div class="control-group">
-                <label>Symbol</label>
+                <label onclick="copyToClipboard(document.getElementById('symbolSelect').value)" style="cursor: pointer; text-decoration: underline dotted;" 
+                    title="Click to copy current symbol to clipboard"
+                    id="symbolLabel"
+                >SYMBOL</label>
                 <select id="symbolSelect" onchange="updateTimeframeOptions(); resetAndLoad(true);"></select>
             </div>
             <div class="control-group">
