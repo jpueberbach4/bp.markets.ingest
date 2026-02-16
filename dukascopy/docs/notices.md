@@ -49,6 +49,8 @@ This is the result of this weekend's work-ex. Panama RR and Panama (you can see 
 
 ![Example](../images/result-weekend-work.png)
 
+I am still building indicators for my "ML-idea". When a new "implementation-method" is done, i will share those indicators. 
+
 ## **Panama config building available - Regular Panama and the Return Ratio method**
 
 For more details on this, see [here](adjustments.md). The document describes how to implement your own adjustment strategies. You can put these custom strategies inside of your `custom.user` directory (any path). It works for symbolic links as well.
