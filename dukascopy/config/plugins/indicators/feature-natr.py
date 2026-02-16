@@ -38,12 +38,8 @@ def warmup_count(options: Dict[str, Any]):
     return int(options.get('period', 50))
 
 def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
-    """
-    Calculates Normalized ATR (NATR) and an optional Rolling Z-Score of NATR.
-    Returns only the newly computed columns.
-    """
     window = int(options.get("window", 14))
-    zscore_window = int(options.get("zscore_window", 0)) 
+    zscore_window = int(options.get("zscore-window", 0)) 
     
     prev_close = pl.col("close").shift(1)
     
@@ -64,10 +60,10 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         safe_std = pl.when(rolling_std == 0.0).then(1e-9).otherwise(rolling_std)
         
         ml_feature = (natr - rolling_mean) / safe_std
-        col_name = f"atr_zscore_{window}_{zscore_window}"
+        col_name = f"atr_zscore"
     else:
         ml_feature = natr
-        col_name = f"natr_{window}"
+        col_name = f"natr"
         
     return df.select([
         ml_feature.alias(col_name)
