@@ -1,5 +1,12 @@
     const MS_PER_DAY = 24 * 60 * 60 * 1000;
-    
+
+    const tooltip = document.createElement('div');
+    tooltip.id = 'indicator-tooltip';
+    document.body.appendChild(tooltip);
+
+    let hoverTimer;    
+
+
     window.__callbackList = (res) => {
         if (res && res.status == "failure") {
             alert("There was a failure, check your service console: "+res.exception)
@@ -13,6 +20,71 @@
     };
 
     window.__callbackIndicators = (res) => {
+        if (res && res.status == "failure") {
+            alert("There was a failure, check your service console: " + res.exception);
+            return;
+        }
+        indicatorMeta = res.result;
+        const select = document.getElementById('indicatorSelect');
+        
+       select.innerHTML = Object.keys(indicatorMeta)
+            .map(i => `<option value="${i}">${i.toUpperCase()}</option>`)
+            .join('');
+            
+        renderParams();
+
+        select.addEventListener('mouseenter', startHoverTimer);
+        select.addEventListener('mouseleave', hideTooltip);
+        select.addEventListener('change', hideTooltip); // Hide if user clicks to change
+    };
+
+    function startHoverTimer(e) {
+        const select = e.target;
+        const selectedKey = select.value;
+        const data = indicatorMeta[selectedKey];
+
+        if (!data) return;
+
+        hoverTimer = setTimeout(() => {
+            showTooltip(e, data);
+        }, 800);
+    }
+
+    function showTooltip(e, data) {
+        const select = e.target;
+        const rect = select.getBoundingClientRect();
+
+        let metaHtml = '';
+
+        const formattedDescription = data.description.replace(/\n/g, '<br>');
+
+        if (data.meta) {
+            metaHtml = Object.entries(data.meta)
+                .map(([key, val]) => `<span class="meta-tag">${key}: ${val}</span>`)
+                .join('');
+        }
+
+        tooltip.innerHTML = `
+            <div style="margin-bottom:8px;"><b>${data.name.toUpperCase()}</b></div>
+            <div>${formattedDescription}</div>
+            <div style="margin-top:5px; font-size:11px; color:#aaa;">Warmup: ${data.warmup} bars</div>
+            <div style="border-top: 1px solid #444; margin-top:10px; padding-top:2px;">
+                ${metaHtml}
+            </div>
+        `;
+
+        // Position the tooltip to the right of the sidebar
+        tooltip.style.left = (rect.right + 10) + 'px';
+        tooltip.style.top = rect.top + 'px';
+        tooltip.style.display = 'block';
+    }
+
+    function hideTooltip() {
+        clearTimeout(hoverTimer);
+        tooltip.style.display = 'none';
+    }
+
+    window.__callbackIndicatorsXX = (res) => {
         if (res && res.status == "failure") {
             alert("There was a failure, check your service console: "+res.exception)
             return

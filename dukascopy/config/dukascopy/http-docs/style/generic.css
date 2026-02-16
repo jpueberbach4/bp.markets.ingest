@@ -184,3 +184,33 @@ div[id^="tv-attr-logo"],
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+
+#indicator-tooltip {
+    position: absolute;
+    z-index: 10000;
+    background: #25282e;
+    color: #e0e0e0;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    max-width: 300px;
+    font-size: 13px;
+    line-height: 1.4;
+    pointer-events: none; /* Prevents the tooltip from flickering when mouse moves over it */
+    display: none;
+}
+
+#indicator-tooltip b { color: var(--accent-blue, #4a90e2); }
+#indicator-tooltip .meta-tag {
+    display: inline-block;
+    background: #3a3f47;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    margin-right: 5px;
+    margin-top: 8px;
+    text-transform: uppercase;
+    font-weight: bold;
+}
