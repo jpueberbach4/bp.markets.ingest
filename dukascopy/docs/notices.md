@@ -58,8 +58,11 @@ The biggest benefits of this "platform" are
 - ingest, normalize, align, continuous price data that aligns with market reality
 - being able to quickly prototype indicators, cross-tf, cross-asset in a pretty easy, straighforward, way
 - and this is for me one of the most important ones; have one central location to build feature sets to prevent "feature creep" for ML
+- easy querying/visualization eg UI, API's
 
-The rest is mostly nice-to-have. When something is blocking for one of the three above -> immediate fix.
++ Seamless integrated
+
+The rest is mostly nice-to-have. When something is blocking for one of the four above -> immediate fix.
 
 ## **Panama config building available - Regular Panama and the Return Ratio method**
 
