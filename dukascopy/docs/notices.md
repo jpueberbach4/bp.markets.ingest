@@ -43,6 +43,7 @@ New/Updated documentation:
 
 [Adjustments](adjustments.md)
 [Templates](templates.md)
+[Code examples](../config/plugins/indicators/)
 
 ## **Panama config building available - Regular Panama and the Return Ratio method**
 
