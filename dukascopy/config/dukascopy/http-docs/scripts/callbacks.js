@@ -106,7 +106,7 @@
 
         tooltip.innerHTML = `
             <div style="margin-bottom:6px; font-weight:bold; color:white;">${data.name.toUpperCase()}</div>
-            <div style="font-size:12px; line-height:1.4;">${formattedDescription}</div>
+            <div style="font-size:14px; line-height:1.4;">${formattedDescription}</div>
             <div style="margin-top:8px; font-size:11px; color:#777;">Warmup: ${data.warmup} bars</div>
             <div style="margin-top:4px;">${metaHtml}</div>
         `;
