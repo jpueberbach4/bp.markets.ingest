@@ -3,15 +3,9 @@ from typing import List, Dict, Any
 
 def description() -> str:
     return (
-        "ATR normalized for Machine Learning"
-        ""
-        "Tree-Based Models (XGBoost, Random Forest, LightGBM): Use standard NATR (zscore_window = 0). "
-        "Decision trees do not care about the scale or distribution of the feature, they only care "
-        "about rank ordering. NATR successfully strips out the absolute price dependency."
-        ""
-        "Neural Networks, SVMs, or Linear Models: Use the Rolling Z-Score (zscore_window = 50 or 100). "
-        "These algorithms calculate gradients and distance metrics, requiring inputs to be strictly "
-        "standardized (normally distributed around 0)."
+        "ML-Ready Normalized ATR (NATR). Measures volatility relative to price.\n"
+        " • Standard NATR (zscore-window=0): Volatility as % of Close. Best for Tree-Based models (XGBoost, RF) which handle raw scaling well.\n"
+        " • Z-Score NATR (zscore-window>0): Rolling Z-Score of NATR. Best for Neural Networks/Linear Models requiring strictly standardized inputs (mean 0, std 1)."
     )
 
 def meta() -> Dict:
@@ -63,7 +57,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         col_name = f"atr_zscore"
     else:
         ml_feature = natr
-        col_name = f"natr"
+        col_name = f"atr_norm"
         
     return df.select([
         ml_feature.alias(col_name)
