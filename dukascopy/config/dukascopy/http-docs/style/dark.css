@@ -142,3 +142,34 @@ body.dark-theme #export-modal .copy-btn {
     background-color: #363c4e !important;
     color: #d1d4dc !important;
 }
+
+body.dark-theme .custom-select-trigger {
+    background-color: #1e222d !important;
+    color: #d1d4dc !important;
+    border: 1px solid #363c4e !important;
+}
+
+body.dark-theme .arrow {
+    color: #b2b5be !important;
+}
+
+body.dark-theme .custom-options {
+    background-color: #1e222d !important;
+    border: 1px solid #363c4e !important;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.6) !important;
+}
+
+body.dark-theme .option-item {
+    color: #d1d4dc !important;
+    border-bottom: 1px solid #2a2e39 !important;
+}
+
+body.dark-theme .option-item:hover {
+    background-color: #2a2e39 !important;
+    color: #2962ff !important;
+}
+
+body.dark-theme .option-item.selected {
+    background-color: #2962ff !important;
+    color: #ffffff !important;
+}

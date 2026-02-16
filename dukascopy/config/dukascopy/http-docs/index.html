@@ -32,8 +32,18 @@
             <hr style="border:0; border-top:1px solid #eee; margin: 15px 0;">
 
             <div class="control-group">
-                <label>Add Indicator</label>
-                <select id="indicatorSelect" onchange="renderParams()"></select>
+                <label>INDICATOR</label>
+                
+                <div class="custom-select-wrapper" id="indicatorWrapper">
+                    <div class="custom-select-trigger" id="indicatorTrigger">
+                        <span id="indicatorDisplay">LOADING...</span>
+                        <div class="arrow">▼</div>
+                    </div>
+                    
+                    <div class="custom-options" id="indicatorList"></div>
+                </div>
+
+                <input type="hidden" id="indicatorSelect" value="">
                 <div id="params" class="param-box"></div>
                 <button class="add-btn" onclick="addToChain()">+ Add to Chart</button>
             </div>

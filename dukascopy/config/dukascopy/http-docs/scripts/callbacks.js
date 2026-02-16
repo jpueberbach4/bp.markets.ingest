@@ -21,59 +21,96 @@
 
     window.__callbackIndicators = (res) => {
         if (res && res.status == "failure") {
-            alert("There was a failure, check your service console: " + res.exception);
+            alert("Failure: " + res.exception);
             return;
         }
         indicatorMeta = res.result;
-        const select = document.getElementById('indicatorSelect');
-        
-       select.innerHTML = Object.keys(indicatorMeta)
-            .map(i => `<option value="${i}">${i.toUpperCase()}</option>`)
-            .join('');
-            
-        renderParams();
 
-        select.addEventListener('mouseenter', startHoverTimer);
-        select.addEventListener('mouseleave', hideTooltip);
-        select.addEventListener('change', hideTooltip); // Hide if user clicks to change
+        const listContainer = document.getElementById('indicatorList');
+        const display = document.getElementById('indicatorDisplay');
+        const trigger = document.getElementById('indicatorTrigger');
+        const hiddenInput = document.getElementById('indicatorSelect');
+        
+        listContainer.innerHTML = Object.keys(indicatorMeta).map(i => 
+            `<div class="option-item" data-value="${i}">${i.toUpperCase()}</div>`
+        ).join('');
+
+        const firstKey = Object.keys(indicatorMeta)[0];
+        if (firstKey) {
+            selectItem(firstKey);
+        }
+
+        trigger.onclick = (e) => {
+            e.stopPropagation(); 
+            listContainer.classList.toggle('open');
+            hideTooltip();
+        };
+
+        trigger.addEventListener('mouseenter', (e) => {
+            const currentKey = hiddenInput.value;
+            if (currentKey && indicatorMeta[currentKey]) {
+                clearTimeout(hoverTimer);
+                hoverTimer = setTimeout(() => showTooltip(e, indicatorMeta[currentKey]), 500);
+            }
+        });
+
+        trigger.addEventListener('mouseleave', hideTooltip);
+
+        window.addEventListener('click', () => {
+            listContainer.classList.remove('open');
+        });
+
+        document.querySelectorAll('.option-item').forEach(item => {
+            item.addEventListener('mouseenter', (e) => {
+                const key = e.target.getAttribute('data-value');
+                if (indicatorMeta[key]) {
+                    clearTimeout(hoverTimer);
+                    hoverTimer = setTimeout(() => showTooltip(e, indicatorMeta[key]), 500);
+                }
+            });
+
+            item.addEventListener('mouseleave', hideTooltip);
+
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const key = e.target.getAttribute('data-value');
+                selectItem(key);
+                listContainer.classList.remove('open');
+                hideTooltip();
+            });
+        });
+
+        function selectItem(key) {
+            display.innerText = key.toUpperCase();
+            hiddenInput.value = key;
+            renderParams();
+
+            document.querySelectorAll('.option-item').forEach(el => {
+                el.classList.remove('selected');
+                if (el.getAttribute('data-value') === key) el.classList.add('selected');
+            });
+        }
     };
 
-    function startHoverTimer(e) {
-        const select = e.target;
-        const selectedKey = select.value;
-        const data = indicatorMeta[selectedKey];
-
-        if (!data) return;
-
-        hoverTimer = setTimeout(() => {
-            showTooltip(e, data);
-        }, 800);
-    }
-
     function showTooltip(e, data) {
-        const select = e.target;
-        const rect = select.getBoundingClientRect();
-
-        let metaHtml = '';
-
+        const trigger = document.getElementById('indicatorTrigger');
+        const rect = trigger.getBoundingClientRect();
         const formattedDescription = data.description.replace(/\n/g, '<br>');
 
+        let metaHtml = '';
         if (data.meta) {
             metaHtml = Object.entries(data.meta)
-                .map(([key, val]) => `<span class="meta-tag">${key}: ${val}</span>`)
+                .map(([key, val]) => `<span class="meta-tag"><b>${key}</b>: ${val}</span>`)
                 .join('');
         }
 
         tooltip.innerHTML = `
-            <div style="margin-bottom:8px;"><b>${data.name.toUpperCase()}</b></div>
-            <div>${formattedDescription}</div>
-            <div style="margin-top:5px; font-size:11px; color:#aaa;">Warmup: ${data.warmup} bars</div>
-            <div style="border-top: 1px solid #444; margin-top:10px; padding-top:2px;">
-                ${metaHtml}
-            </div>
+            <div style="margin-bottom:6px; font-weight:bold; color:white;">${data.name.toUpperCase()}</div>
+            <div style="font-size:12px; line-height:1.4;">${formattedDescription}</div>
+            <div style="margin-top:8px; font-size:11px; color:#777;">Warmup: ${data.warmup} bars</div>
+            <div style="margin-top:4px;">${metaHtml}</div>
         `;
 
-        // Position the tooltip to the right of the sidebar
         tooltip.style.left = (rect.right + 10) + 'px';
         tooltip.style.top = rect.top + 'px';
         tooltip.style.display = 'block';

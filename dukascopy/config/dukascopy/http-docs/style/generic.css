@@ -185,32 +185,110 @@ div[id^="tv-attr-logo"],
     100% { transform: rotate(360deg); }
 }
 
-
 #indicator-tooltip {
-    position: absolute;
+    position: fixed;
     z-index: 10000;
-    background: #25282e;
-    color: #e0e0e0;
-    padding: 12px;
-    border-radius: 6px;
-    border: 1px solid #444;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    max-width: 300px;
-    font-size: 13px;
-    line-height: 1.4;
-    pointer-events: none; /* Prevents the tooltip from flickering when mouse moves over it */
+    background: #1e222d;
+    color: #b2b5be;
+    padding: 15px;
+    border: 1px solid #434651;
+    border-radius: 4px;
+    width: 280px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    pointer-events: none;
     display: none;
+    font-size: 13px;
+    line-height: 1.5;
 }
 
-#indicator-tooltip b { color: var(--accent-blue, #4a90e2); }
-#indicator-tooltip .meta-tag {
-    display: inline-block;
-    background: #3a3f47;
-    padding: 2px 6px;
-    border-radius: 3px;
+#indicator-tooltip b { 
+    color: #f0f3fa; 
+    font-weight: 600;
     font-size: 10px;
-    margin-right: 5px;
-    margin-top: 8px;
-    text-transform: uppercase;
-    font-weight: bold;
+    display: block; 
+    margin-bottom: 4px;
+}
+
+.meta-tag {
+    display: inline-flex;       
+    align-items: center;        
+    white-space: nowrap;        
+    
+    background: #2a2e39;
+    color: #d1d4dc;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    margin: 6px 6px 0 0;        
+    border: 1px solid #363a45;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#indicator-tooltip .meta-tag b {
+    display: inline;
+    margin: 0;
+    padding-right: 4px; 
+    font-weight: 700;     
+    color: #f0f3fa;       
+    font-size: inherit;   
+}
+
+.custom-select-wrapper {
+    position: relative;
+    user-select: none;
+    width: 100%;
+}
+
+.custom-select-trigger {
+    background: #ffffff;
+    color: #000000;
+    padding: 8px 10px;
+    font-size: 13px;
+    border: 1px solid #e0e3eb;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.custom-select-trigger:hover {
+    border-color: #4a90e2;
+}
+
+.arrow { font-size: 10px; color: #000000; }
+
+.custom-options {
+    position: absolute;
+    top: 100%; 
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 1px solid #ffffff;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    z-index: 999;
+    max-height: 300px;
+    overflow-y: auto;
+    display: none; 
+    box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+}
+
+.custom-options.open {
+    display: block;
+}
+
+.option-item {
+    padding: 8px 10px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #000000;
+    border-bottom: 1px solid #ffffff;
+}
+
+.option-item:hover {
+    background: #0078D7;
+    color: #ffffff;
 }
