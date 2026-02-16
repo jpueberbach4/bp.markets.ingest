@@ -21,8 +21,8 @@ def meta() -> Dict:
 def position_args(args: List[str]) -> Dict[str, Any]:
     return {
         "window": args[0] if len(args) > 0 else "20",
-        "mode": args[1] if len(args) > 1 else "sma",
-        "target-col": args[2] if len(args) > 2 else "close",
+        "target-col": args[1] if len(args) > 1 else "close",
+        "mode": args[2] if len(args) > 2 else "sma",
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
