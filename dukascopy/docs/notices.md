@@ -2,7 +2,7 @@ Market research- and analysis tool, feature-engineering, but you can do so much 
 
 Taking it a bit easy today. Bit of playing with this tool and rest. Bit carnaval etc.
 
-## **Perhaps small feature but will easy "life" later**
+## **Perhaps small feature but will ease "life" later**
 
 I have added an overlay to the HTML interface to display indicator information when you hover your pointer over the indicator select-box. To install this feature, either copy `config/dukascopy/http-docs/style/generic.css` and `config/dukascopy/http-docs/scripts/callback.js` to your `config.user/dukascopy/http-docs/style` and `config.user/dukascopy/http-docs/scripts` directory or, when still on default config, `./setup-dukascopy.sh` (note that you will need to re-enable sidetracking in `config.user.yaml` and need to review the downloader settings when you do this).
 
