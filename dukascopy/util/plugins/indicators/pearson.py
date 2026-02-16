@@ -3,11 +3,9 @@ from typing import List, Dict, Any
 
 def description() -> str:
     return (
-        "Calculates the Rolling Pearson Correlation between the current pair and the Dollar Index (DXY). "
-        "Values oscillate between +1.0 (perfectly synced) and -1.0 (perfectly inverse). "
-        "Unlike percentage change lines, this statistical measure is invariant to window anchoring, "
-        "providing a stable view of asset coupling without boundary jumps. "
-        "Note: Requires DOLLAR.IDX-USD data. DXY history prior to 2019 may be limited or unavailable."
+        "Calculates the Rolling Pearson Correlation between the current asset and a benchmark (target) asset.\n"
+        "Values oscillate between +1.0 (perfectly synced) and -1.0 (perfectly inverse). \n"
+        "When data is unavailable for a historic period on one of the assets it displays 0.0\n"
     )
 
 def meta() -> Dict:
@@ -20,7 +18,7 @@ def meta() -> Dict:
     }
 
 def position_args(args: List[str]) -> Dict[str, Any]:
-    return {}
+    return {"benchmark": args[0] if len(args) > 0 else "DOLLAR.IDX-USD"}
 
 def warmup_count(options: Dict[str, Any]):
     return 500
@@ -29,7 +27,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     from util.api import get_data
     import polars as pl
 
-    benchmark = "DOLLAR.IDX-USD"
+    benchmark = options.get("benchmark", "DOLLAR.IDX-USD")
     tf = df["timeframe"].item(0)
     time_min, time_max = df["time_ms"][0], df["time_ms"][-1]
     
