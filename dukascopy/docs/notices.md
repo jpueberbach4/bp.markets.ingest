@@ -37,6 +37,11 @@ I’m currently automating integration tests to ensure this class of issues is c
 
 Busy weekend, but progress is solid. I’ve been doing a lot of indicator experiments lately — so far I can do everything I want. **No walls encountered**.
 
+New/Updated documentation:
+
+[Adjustments](adjustments.md)
+[Templates](templates.md)
+
 ## **Panama config building available - Regular Panama and the Return Ratio method**
 
 For more details on this, see [here](adjustments.md). The document describes how to implement your own adjustment strategies. You can put these custom strategies inside of your `custom.user` directory (any path). It works for symbolic links as well.
