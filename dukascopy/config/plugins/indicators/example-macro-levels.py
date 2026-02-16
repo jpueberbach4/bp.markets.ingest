@@ -3,8 +3,11 @@ from typing import List, Dict, Any
 import time
 
 def description() -> str:
-    return "Force-fills all rows with static 10Y macro levels using explicit repetition."
-
+    return (
+        "N-Year High-Power Macro Levels. Filters for structural pivots with high touch frequency "
+        "and enforces a minimum distance between lines to ensure only distinct major levels are shown."
+        "Play with the lookback-in-years. Sometimes 0.8 is a nice value for the H4 chart. Eg for EUR-USD."
+    )
 def meta() -> Dict:
     return {
         "author": "Gemini",
@@ -28,9 +31,9 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     symbol = df["symbol"].item(0)
     df_len = len(df)
     
-    num_years = int(options.get('lookback-in-years', 7))
+    num_years = float(options.get('lookback-in-years', 7))
     now_ms = int(time.time() * 1000)
-    start_ms = now_ms - (num_years * 365 * 24 * 60 * 60 * 1000)
+    start_ms = now_ms - int(num_years * 365 * 24 * 60 * 60 * 1000)
 
     daily_hist = get_data(
         symbol=symbol,
@@ -48,13 +51,29 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     d_lows = daily_hist["low"].to_numpy()
     d_highs = daily_hist["high"].to_numpy()
     
+    # 0.5 years (6 months) -> Window 5 (Weekly pivots)
+    # 1-3 years -> Window 10-15 (Bi-weekly pivots)
+    # >3 years -> Window 30 (Monthly pivots - original setting)
+    if num_years <= 0.6:
+        window = 5
+    elif num_years <= 2.0:
+        window = 10
+    elif num_years <= 5.0:
+        window = 20
+    else:
+        window = 30
+        
     pivots = []
-    window = 30 
-    for i in range(window, len(d_lows) - window):
-        if d_lows[i] == np.min(d_lows[i - window : i + window + 1]):
-            pivots.append(d_lows[i])
-        if d_highs[i] == np.max(d_highs[i - window : i + window + 1]):
-            pivots.append(d_highs[i])
+    
+    if len(d_lows) > (window * 2):
+        for i in range(window, len(d_lows) - window):
+            if d_lows[i] == np.min(d_lows[i - window : i + window + 1]):
+                pivots.append(d_lows[i])
+            if d_highs[i] == np.max(d_highs[i - window : i + window + 1]):
+                pivots.append(d_highs[i])
+    else:
+        pivots.append(np.min(d_lows))
+        pivots.append(np.max(d_highs))
 
     precision = 2 if "JPY" in symbol else 3
     counts = {}
@@ -82,11 +101,8 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
 
     final_levels = sorted(t3a + t7b, reverse=True)
 
-    # Drop 0.0 levels (no time to debug fully, so just drop. 
-    # affects scaling of chart otherwise and a level 0.0 is not very meaningful)
     active_levels = [lvl for lvl in final_levels if lvl > 0]
 
-    # Dynamically create columns only for the levels we actually found
     return df.select([
         pl.repeat(active_levels[i], df_len).alias(f"macro_lvl_{i+1}") 
         for i in range(len(active_levels))
