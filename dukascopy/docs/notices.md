@@ -2,6 +2,8 @@ Market research- and analysis tool, feature-engineering, but you can do so much 
 
 Taking it a bit easy today. Bit of playing with this tool and rest. Bit carnaval etc.
 
+Do not star this project. Keep it underground. This tool is meant for a specific category of users, users that normally dont star anyways. It is best to limit "virality" because of external dependency on a single datasource. Thank you.
+
 ## **Bugs**
 
 There were a few bugs when using the bootstrap API, related to is-open and drift.
