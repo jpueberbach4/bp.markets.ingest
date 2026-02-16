@@ -26,10 +26,8 @@ def position_args(args: List[str]) -> Dict[str, Any]:
 def warmup_count(options: Dict[str, Any]) -> int:
     window = int(options.get("window", 14))
     zscore_window = int(options.get("zscore-window", 0))
-    return window + zscore_window + 1
-
-def warmup_count(options: Dict[str, Any]):
-    return int(options.get('period', 50))
+    stabilization_period = window * 3
+    return stabilization_period + zscore_window
 
 def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     window = int(options.get("window", 14))
