@@ -45,6 +45,10 @@ New/Updated documentation:
 [Templates](templates.md)
 [Code examples](../config/plugins/indicators/)
 
+This is the result of this weekend's work-ex. Panama RR and Panama (you can see these screenshots below).
+
+![Example](../images/result-weekend-work.png)
+
 ## **Panama config building available - Regular Panama and the Return Ratio method**
 
 For more details on this, see [here](adjustments.md). The document describes how to implement your own adjustment strategies. You can put these custom strategies inside of your `custom.user` directory (any path). It works for symbolic links as well.
