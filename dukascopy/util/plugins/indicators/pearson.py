@@ -3,9 +3,9 @@ from typing import List, Dict, Any
 
 def description() -> str:
     return (
-        "Calculates the Rolling Pearson Correlation between the current asset and a benchmark (target) asset.\n"
-        "Values oscillate between +1.0 (perfectly synced) and -1.0 (perfectly inverse). \n"
-        "When data is unavailable for a historic period on one of the assets it displays 0.0\n"
+        "Calculates the Rolling Pearson Correlation between the current asset and a benchmark (target) asset."
+        "Values oscillate between +1.0 (perfectly synced) and -1.0 (perfectly inverse)."
+        "When data is unavailable for a historic period on one of the assets it displays 0.0"
     )
 
 def meta() -> Dict:
