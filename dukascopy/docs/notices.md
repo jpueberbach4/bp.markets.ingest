@@ -10,6 +10,8 @@ I have added an overlay to the HTML interface to display indicator information w
 
 When you are going to use, or plan to use, this for feature engineering for ML then this will help you.
 
+Note: if you are wondering why AAPL does not update. It's Donald's Presidents day.
+
 ## **Bugs**
 
 There were a few bugs when using the bootstrap API, related to is-open and drift.
