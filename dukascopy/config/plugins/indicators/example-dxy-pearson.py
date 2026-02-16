@@ -50,7 +50,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         df.lazy()
         .select([
             pl.col("time_ms").cast(pl.UInt64),
-            pl.col("close").alias("base_close")
+            pl.col("close").cast(pl.Float64).alias("base_close")
         ])
         .sort("time_ms")
         .join_asof(dxy_lazy, on="time_ms", strategy="backward")
@@ -63,7 +63,10 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
                 pl.col("base_ret"), 
                 pl.col("dxy_ret"), 
                 window_size=30
-            ).fill_null(0.0).alias("correlation")
+            )
+            .fill_null(0.0)
+            .round(6)
+            .alias("correlation")
         ])
         .collect(streaming=True)
     )
