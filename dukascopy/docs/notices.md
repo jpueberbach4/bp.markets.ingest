@@ -6,7 +6,11 @@ Taking it a bit easy today. Bit of playing with this tool and rest. Bit carnaval
 
 I have added an overlay to the HTML interface to display indicator information when you hover your pointer over the indicator select-box. To install this feature, either copy `config/dukascopy/http-docs/index.html`, `config/dukascopy/http-docs/style/*.css` and `config/dukascopy/http-docs/scripts/callback.js` to your `config.user/dukascopy/http-docs/`, `config.user/dukascopy/http-docs/style` and `config.user/dukascopy/http-docs/scripts` directory or, when still on default config, `./setup-dukascopy.sh` (note that you will need to re-enable sidetracking in `config.user.yaml` and need to review the downloader settings when you do this).
 
+After update:
+
 ![Screenshot](../images/feature-overlay-display-indicator-info.png)
+
+**Update:** Something not obvious, but its there in the new interface. Eg if you need to quickly copy the symbol-name to the clipboard, click the SYMBOL-label, just above the symbol select box. You will see a "copied!" just above the "marketdata by dukascopy" label when succes.
 
 When you are going to use, or plan to use, this for feature engineering for ML then this will help you.
 
