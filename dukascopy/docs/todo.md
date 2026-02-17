@@ -36,7 +36,7 @@ Quality:
   - [ ] More unit-tests NOW - in progress
   - [x] Find solution for UVLOOP WSL2 watchfiles CPU 100pct issue. Optionally, configurable.
   - [x] The panama and stock-split fixes
-  - [ ] Partial rebuilds eg `./rebuild-full.sh --symbol BRENT.CMD-USD-PANAMA` (plus their sources)
+  - [x] Partial rebuilds eg `./rebuild-full.sh --symbol BRENT.CMD-USD-PANAMA` (plus their sources)
   - [ ] Third indicator execution path: CUDA/Rapids. I need to know this for ML. Can I gain with it?
 
 Note: UVLOOP WSL2 fix was implemented through a config.user.yaml setting.

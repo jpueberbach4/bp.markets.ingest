@@ -8,6 +8,48 @@ The system supports three primary adjustment methodologies:
 2.  **Standard Corporate Actions:** Hybrid adjustment (Subtractive Dividends, Multiplicative splits).
 3.  **Total Return (Ratio):** Pure Multiplicative adjustment (Ratio-based Dividends to prevent negative prices).
 
+Use te Dukascopy Panama Adjustment for the following symbols:
+
+```sh
+BRENT.CMD-USD
+BUND.TR-EUR
+COCOA.CMD-USD
+COFFEE.CMD-USX
+COPPER.CMD-USD
+COTTON.CMD-USX
+DIESEL.CMD-USD
+DOLLAR.IDX-USD
+GAS.CMD-USD
+IND.IDX-USD
+LIGHT.CMD-USD
+OJUICE.CMD-USX
+PLN.IDX-PLN
+SOA.IDX-ZAR
+SOYBEAN.CMD-USX
+SUGAR.CMD-USD
+UKGILT.TR-GBP
+USTBOND.TR-USD
+VOL.IDX-USD
+XPD.CMD-USD
+XPT.CMD-USD
+```
+
+Example:
+
+# BRENT EXAMPLE - NORMAL PANAMA (NEGATIVE PRICES)
+./build-sidetracking-config.sh --symbol BRENT.CMD-USD-PANAMA --source BRENT.CMD-USD \
+--class generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategy \
+--output config.user/dukascopy/sidetracking/BRENT.CMD-USD-PANAMA.yaml
+
+# OR
+
+# BRENT EXAMPLE - RETURN RATIO (NO NEGATIVE PRICES)
+./build-sidetracking-config.sh --symbol BRENT.CMD-USD-RR --source BRENT.CMD-USD \
+--class generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategyRR \
+--output config.user/dukascopy/sidetracking/BRENT.CMD-USD-RR.yaml
+
+`./rebuild.sh --symbol BRENT.CMD-USD`
+
 ---
 
 ## 1. The Interface: `IAdjustmentStrategy`
