@@ -3,11 +3,8 @@ from typing import List, Dict, Any
 
 def description() -> str:
     return (
-            "Current pair vs Dollar Index (DXY) Comparison. Normalizes both to % change to spot divergences."
-            "Note: Requires DOLLAR.IDX-USD to be configured."
-            "Note: the DOLLAR index doesnt have the same history as EUR-USD. Meaning that far in history you"
-            "wont see the DXY line. Eg DOLLAR.IDX-USD starts from 2017 and EUR-USD starts from 2005. Data-gaps "
-            "like this we cant fix, so we display a flat line for DXY. Provider doesnt have more history."
+            "Current pair vs Dollar Index (DXY) Comparison. Normalizes both to % change to spot divergences.\n\n"
+            "Note: Requires DOLLAR.IDX-USD to be configured. Example for demonstration purposes."
     )
 
 def meta() -> Dict:
