@@ -36,17 +36,20 @@ XPT.CMD-USD
 
 Example:
 
-# BRENT EXAMPLE - NORMAL PANAMA (NEGATIVE PRICES)
+BRENT EXAMPLE - NORMAL PANAMA (NEGATIVE PRICES)
+```sh
 ./build-sidetracking-config.sh --symbol BRENT.CMD-USD-PANAMA --source BRENT.CMD-USD \
 --class generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategy \
 --output config.user/dukascopy/sidetracking/BRENT.CMD-USD-PANAMA.yaml
+```
 
-# OR
-
-# BRENT EXAMPLE - RETURN RATIO (NO NEGATIVE PRICES)
+BRENT EXAMPLE - RETURN RATIO (NO NEGATIVE PRICES)
+```sh
 ./build-sidetracking-config.sh --symbol BRENT.CMD-USD-RR --source BRENT.CMD-USD \
 --class generators.sidetracking.extensions.dukascopy.DukascopyPanamaStrategyRR \
 --output config.user/dukascopy/sidetracking/BRENT.CMD-USD-RR.yaml
+```
+
 
 `./rebuild.sh --symbol BRENT.CMD-USD`
 
