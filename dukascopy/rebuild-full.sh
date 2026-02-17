@@ -32,6 +32,10 @@ mkdir -p "$(pwd)/data/locks"
 exec 200>"$(pwd)/data/locks/run.lock"
 flock -x 200  
 
+echo "Stopping services...."
+./service.sh stop > /dev/null 2>&1
+echo "Done."
+
 # Targeted or Global Deletion
 TARGET_DIRS=("./data/transform" "./data/aggregate" "./data/resample" "./data/temp")
 
@@ -63,5 +67,5 @@ echo "Done."
 exec 200>&-
 
 echo "Restarting services...."
-./service.sh restart
+./service.sh restart > /dev/null 2>&1
 echo "Done."
