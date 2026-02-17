@@ -36,13 +36,12 @@ function copyApiCall() {
     const symbol = getCurrentSymbol();
     const timeframe = getCurrentTimeframe();
     const leftTs = getVisibleTimestampLeft() * 1000; 
-    const indicatorList = chain.length ? `[${chain.map(i => `"${i.name}_${i.params.join('_')}"`).join(',')}]` : "[]";
+    const indicatorList = chain.length 
+    ? `[${chain.map(i => `"${i.name}${i.params.filter(p => p !== "").length ? '_' + i.params.filter(p => p !== "").join('_') : ''}"`).join(',')}]` 
+    : "[]";
     const apiCallString = `get_data('${symbol}', '${timeframe}', after_ms=${leftTs}, limit=1000, order="asc", indicators=${indicatorList}, options={**options, "return_polars": True})`;
     copyToClipboard(apiCallString);
 }
-
-
-    
 
 function getDataUri(direction, referenceTs, limit = 1000, type = "JSONP"){
     const sym = document.getElementById('symbolSelect').value;
