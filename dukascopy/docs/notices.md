@@ -6,7 +6,7 @@ New/Updated documentation:
 [Templates](templates.md)
 [Code examples](../config/plugins/indicators/)
 
-It is now possible to only rebuild a multiple symbols and its aliasses:
+It is now possible to only rebuild specific symbols and its aliasses:
 
 `./rebuild-full.sh --symbol BRENT.CMD-USD --symbol AAPL.US-USD`
 
