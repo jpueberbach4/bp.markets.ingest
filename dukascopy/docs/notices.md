@@ -1,3 +1,7 @@
+# ML
+
+Applying machine learning to markets is harder than it looks. Achieving precision above 0.51—barely better than a coin flip—while maintaining low recall is already challenging. Finding real alpha is not easy. What’s needed is a system that automatically ingests all available indicators and runs overnight, exhaustively testing every possible combination. It has to turn over every rock. This is hard work—there are no easy wins.
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
