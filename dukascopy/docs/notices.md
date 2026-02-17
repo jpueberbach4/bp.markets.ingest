@@ -10,6 +10,10 @@ It is now possible to only rebuild specific symbols and its aliasses:
 
 `./rebuild-full.sh --symbol BRENT.CMD-USD --symbol AAPL.US-USD`
 
+Also, if dealing with illiquid assets that need regular "backfill" maintenance, the `rebuild-weekly.sh` now follows same syntax:
+
+`./rebuild-weekly.sh --symbol ETH-USD`
+
 **Note:** Make sure that any adjusted sets are always prefixed with SYMBOL eg `BRENT.CMD-USD-RR`.
 
 For rebuilding backadjusted sets you need to specify its origin (source) symbol.
