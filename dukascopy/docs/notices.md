@@ -1,40 +1,64 @@
-Market research- and analysis tool, feature-engineering, but you can do so much more with it, if you are a bit "handy".
+# 🚀 Release Update: Developer UX & Surgical Maintenance
 
-## Interface
+This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
 
-A few improvements have been applied to the interface to improve developer UX a bit. It is now possible to see what an indicator does by hovering over it on the indicator selectbox. Plus, i have added an `Copy API` button to quickly translate what you see on screen into an internal API call. So you can select your features and when complete, directly translate it to an API call. Also you can copy the current symbol quickly to clipboard by clicking on the "symbol" label, just above the symbol selector. This speedsup correlation studies or configuring indicators where you need to input a benchmark symbol-eg pearson.
+---
 
-You need to copy over the `config/dukascopy/http-docs` to your `config.user/dukascopy/http-docs` directory if you want these latest additions.
+## 🖥️ Interface & DX Improvements
 
-Example `Copi API` output:
+We have applied several targeted improvements to the web interface to streamline the developer experience (DX) and speed up cross-asset configuration:
+
+* **Indicator Tooltips:** You can now hover over any indicator in the selection box to see its specific description and parameter requirements.
+* **`Copy API` Button:** A new utility to instantly translate your current chart state (Symbol, Timeframe, visible window, and active indicators) into a ready-to-use internal Python API call.
+* **Quick Symbol Copy:** Clicking the "Symbol" label directly above the selector now copies the symbol name to your clipboard. This is designed to speed up correlation studies or the configuration of benchmark indicators (e.g., Pearson correlation).
+
+> [!IMPORTANT]
+> To enable these features, you must copy the latest files from `config/dukascopy/http-docs` to your `config.user/dukascopy/http-docs` directory.
+
+### Example `Copy API` Output
+The following string is generated based on your current viewport and indicator stack:
 
 ```python
-get_data('AAPL.US-USD', '1h', after_ms=1767362400000, limit=1000, order="asc", \
-  indicators=["aroon_14","bbands_20_2.0","feature-mad_20_close_sma","feature-nprice_14_close_log", \
-    "feature-natr_14_0","feature-vzscore_20_log"], options={**options, "return_polars": True})
+get_data('AAPL.US-USD', '1h', after_ms=1767362400000, limit=1000, order="asc",
+  indicators=["aroon_14","bbands_20_2.0","feature-mad_20_close_sma",
+              "feature-nprice_14_close_log","feature-natr_14_0","feature-vzscore_20_log"], 
+  options={**options, "return_polars": True})
 ```
 
-## Various
+## 🛠️ Surgical Maintenance Tools
 
-New/Updated documentation:
+The rebuild logic has been optimized to support targeted operations. This allows you to repair or update specific instruments without performing a "scorched-earth" rebuild of the entire data warehouse.
 
-[Adjustments](adjustments.md)
-[Templates](templates.md)
-[Code examples](../config/plugins/indicators/)
+### 1. Targeted Full Rebuilds
+You can now rebuild specific symbols and their associated aliases (Sidetracked/Adjusted sets) across all layers (**transform**, **aggregate**, **resample**):
 
-It is now possible to only rebuild specific symbols and its aliasses:
+**Bash**
+```bash
+./rebuild-full.sh --symbol BRENT.CMD-USD --symbol AAPL.US-USD
+```
 
-`./rebuild-full.sh --symbol BRENT.CMD-USD --symbol AAPL.US-USD`
+You can also use this when you have just added a new symbol `./rebuild-full.sh --symbol NEWSYMBOL`.
 
-Also, if dealing with illiquid assets that need regular "backfill" maintenance, the `rebuild-weekly.sh` now follows same syntax:
+### 2. Targeted Weekly "Safety-Net"
+For instruments dealing with illiquid data or those requiring regular backfill maintenance (where brokers often retroactively change the last few days of data), `rebuild-weekly.sh` now supports the same targeted syntax:
 
-`./rebuild-weekly.sh --symbol ETH-USD`
+**Bash**
+```bash
+./rebuild-weekly.sh --symbol ETH-USD
+```
 
-**Note:** Make sure that any adjusted sets are always prefixed with SYMBOL eg `BRENT.CMD-USD-RR`.
+### ⚠️ Important Notes
 
-For rebuilding backadjusted sets you need to specify its origin (source) symbol.
+* **Back-Adjusted Sets:** When rebuilding adjusted sets (e.g., `BRENT.CMD-USD-PANAMA`), ensure you specify the origin (source) symbol.
+* **Naming:** Always ensure adjusted sets are prefixed with the original symbol (e.g., `SYMBOL-RR`).
+* **Performance:** A targeted rebuild of a symbol with two aliases takes approximately **25 seconds**. Most of this time is spent scanning for missing data to ensure integrity, but I/O is strictly limited to the specified instruments.
 
-A rebuild of one symbol with 2 aliasses takes about 25 seconds, depending on your hardware. Most of the time goes to scanning what is missing but I will optimize this in the future.
+---
 
-PS. You can also use this when you have just added a new symbol `./rebuild-full.sh --symbol NEWSYMBOL`.
+### 📚 New & Updated Documentation
 
+We have added several deep-dive guides to help you leverage the latest performance and adjustment features:
+
+* **[Adjustments.md](adjustments.md)** – Implementation guide for Panama rolls, Dividends, and Multiplicative splits.
+* **[Templates.md](templates.md)** – Guidelines for "God-tier" indicator performance using Polars/Rust to bypass the Python GIL.
+* **[Code Examples](../config/plugins/indicators/)** – Direct reference for plugin and indicator development.
