@@ -16,3 +16,5 @@ For rebuilding backadjusted sets you need to specify its origin (source) symbol.
 
 A rebuild of one symbol with 2 aliasses takes about 25 seconds, depending on your hardware. Most of the time goes to scanning what is missing but I will optimize this in the future.
 
+PS. You can also use this when you have just added a new symbol `./rebuild-full.sh --symbol NEWSYMBOL`.
+
