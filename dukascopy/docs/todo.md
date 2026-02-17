@@ -124,7 +124,9 @@ Cleanup:
 Rest
   - [x] Take a day off
   - [x] Take a second day off
-  - [ ] Take a third day off
+  - [x] Take a third day off
+  - [ ] Take a fourth day off
+  - [ ] Take a fifth day off
 
 
 I know Istio too. Seeing if it's beneficial to build adapters (but this is medium term).
