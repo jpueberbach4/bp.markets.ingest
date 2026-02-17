@@ -2,6 +2,17 @@
 
 Applying machine learning to markets is harder than it looks. Achieving precision above 0.51—barely better than a coin flip—while maintaining low recall is already challenging. Finding real alpha is not easy. What’s needed is a system that automatically ingests all available indicators and runs overnight, exhaustively testing every possible combination. It has to turn over every rock. This is hard work—there are no easy wins.
 
+```sh
+✅ Final Search Space: 66 indicators.
+🌟 NEW RECORD | Gen 000 | Test F1: 0.1961 | ['mcginley_14', 'ichimoku_9_26_52', 'stochastic_5_3_3', 'example-multi-tf-rsi_14_14_14']
+🌟 NEW RECORD | Gen 001 | Test F1: 0.3077 | ['camarilla-pivots', 'stc_10_23_50', 'ichimoku_9_26_52', 'chaikin_3_10']
+🌟 NEW RECORD | Gen 003 | Test F1: 0.3200 | ['stc_10_23_50', 'ichimoku_9_26_52', 'zscore_20', 'example-multi-tf-rsi_14_14_14']
+🌟 NEW RECORD | Gen 005 | Test F1: 0.3810 | ['camarilla-pivots', 'stc_10_23_50', 'ichimoku_9_26_52', 'supertrend_10_3.0']
+...
+```
+
+It’s running in a CUDA kernel to handle the parallel ANN pulses, but given the depth of the generations and the complexity of the combinations, this is an overnight burn. I'm letting the machine turn over every remaining rock to see if we can break the 0.50+ barrier.
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
