@@ -1,10 +1,28 @@
 #!/bin/bash
 
 # Parse Arguments
-SYMBOL_PREFIX=""
-if [[ "$1" == "--symbol" ]] && [[ -n "$2" ]]; then
-    SYMBOL_PREFIX="$2"
-    echo "Targeted mode: Recursively cleaning files starting with $SYMBOL_PREFIX..."
+SYMBOLS=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --symbol)
+            if [[ -n "$2" ]]; then
+                SYMBOLS+=("$2")
+                shift 2
+            else
+                echo "Error: --symbol requires an argument."
+                exit 1
+            fi
+            ;;
+        *)
+            # Ignore unknown arguments or handle them here
+            shift
+            ;;
+    esac
+done
+
+# Check mode
+if [ ${#SYMBOLS[@]} -gt 0 ]; then
+    echo "Targeted mode: Recursively cleaning files for: ${SYMBOLS[*]}"
 else
     echo "General mode: Cleaning all folders..."
 fi
@@ -19,15 +37,17 @@ TARGET_DIRS=("./data/transform" "./data/aggregate" "./data/resample" "./data/tem
 
 for dir in "${TARGET_DIRS[@]}"; do
     if [ -d "$dir" ]; then
-        if [ -n "$SYMBOL_PREFIX" ]; then
-            # Find and remove files/folders starting with prefix in any subfolder
-            # -name matches the prefix, -delete handles the removal
-            echo "Searching $dir for files starting with $SYMBOL_PREFIX..."
-            find "$dir" -name "${SYMBOL_PREFIX}*" -exec rm -rf {} +
+        if [ ${#SYMBOLS[@]} -gt 0 ]; then
+            for symbol in "${SYMBOLS[@]}"; do
+                echo "Searching $dir for files starting with $symbol..."
+                # Using -name with find to catch files in subdirectories
+                find "$dir" -name "${symbol}*" -exec rm -rf {} +
+            done
         else
             # Default behavior: remove the whole directory content
             echo "Deleting all contents of $dir..."
-            rm -rf "$dir"
+            # Using find -mindepth 1 to delete contents but keep the root folder
+            find "$dir" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
         fi
     fi
 done
@@ -42,6 +62,6 @@ echo "Done."
 # Release lock
 exec 200>&-
 
-Echo "Restarting services...."
+echo "Restarting services...."
 ./service.sh restart
 echo "Done."
