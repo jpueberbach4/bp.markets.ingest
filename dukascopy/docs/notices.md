@@ -23,6 +23,8 @@ I am training from 2018-2021 and validating using 2021-2023 as the out-of-sample
 
 I am new to this stuff but learning quite rapidly. The platform works great for setting up indicators quickly and feeding them, together with data, in a model 😎.
 
+I am going to break my GPU... its wayyyyy too hot.
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
