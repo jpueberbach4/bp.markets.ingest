@@ -3,9 +3,10 @@ from typing import List, Dict, Any
 
 def description() -> str:
     return (
-        "Quadruple RSI Panel: Displays Current TF, 4H, 1D and 1W RSI in a single panel. "
+        "Triple RSI Panel: Displays Current, 4H, and 1D RSI in a single panel. "
         "Uses data-relative 'is_open' filtering to prevent repainting on the live-edge.\n"
-        "Note: Optionally you can use an other symbol to benchmark against.\n"
+        "Note: Optionally you can use an other symbol to benchmark against. eg DOLLAR.IDX-USD for EUR-USD.\n"
+        "Note: The \"normal-rsi\" is the actual live value. The open-canle value."
     )
 
 def meta() -> Dict:
@@ -45,6 +46,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         pr = cProfile.Profile()
         pr.enable()
 
+    symbol = options.get("benchmark", "DOLLAR.IDX-USD")
     # Read RSI period from options, defaulting to 14 if not provided
     rsi_period = int(options.get("period", 14))
     rsi_period_4h = int(options.get("period-4h", 14))
@@ -55,16 +57,9 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     rsi_col = f"rsi_{rsi_period}"
     rsi_col_4h = f"rsi_{rsi_period_4h}"
     rsi_col_1d = f"rsi_{rsi_period_1d}"
-    rsi_col_1W = f"rsi_{rsi_period_1d}"
-
-    # Create a lightweight DataFrame with only timestamps
-    # This becomes the "reference timeline" for all joins
-    ldf = df.select([
-        pl.col("time_ms").cast(pl.UInt64)
-    ])
+    rsi_col_1W = f"rsi_{rsi_period_1W}"
 
     # Extract static metadata (assumed constant across all rows)
-    symbol = df["symbol"].item(0)
     tf = df["timeframe"].item(0)
 
     # Determine the time range we need indicator data for
