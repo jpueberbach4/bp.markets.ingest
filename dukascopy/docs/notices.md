@@ -25,6 +25,8 @@ I am new to this stuff but learning quite rapidly. The platform works great for 
 
 I am going to break my GPU... its wayyyyy too hot.
 
+**Update** Moral of the GPU endeavor: my system is currently fighting for its life. No, even with a new laptop and a great GPU, this training stuff heats up stuff so much... that it throttles the GPU to less than 10 percent. Effectively killing any benefit. I should rather use a 1995 calculator........
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
