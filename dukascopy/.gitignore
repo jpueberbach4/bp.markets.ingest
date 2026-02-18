@@ -13,7 +13,6 @@ crypto.user.txt
 dukascopy.db
 etl/tests/*
 config.user/*
-ml/*
 flight/*
 *.parquet
 *.csv
