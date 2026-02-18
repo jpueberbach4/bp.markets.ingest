@@ -5,6 +5,7 @@ import numpy as np
 import sys
 import os
 
+# Ensure we can import IndicatorIngestor
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from ingest import IndicatorIngestor
 
@@ -30,16 +31,17 @@ def validate(checkpoint_path):
     print(f"📂 Loading Checkpoint: {checkpoint_path}")
     cp = torch.load(checkpoint_path, map_location=DEVICE)
     
-    genes = cp['genes']
+    genes = cp['genes'] # These are now full column names (e.g., 'atrp_14')
     weights = cp['state_dict']
     
     print(f"🧬 Model Genes: {genes}")
 
-    # Fetch Universe
+    # 1. Fetch Universe (Now returns 3 values)
     ingestor = IndicatorIngestor(CONFIG)
-    feature_df, target_series = ingestor.get_data()
+    # The third value is our flat_universe (list of column names)
+    feature_df, target_series, flat_universe = ingestor.get_data()
     
-    # Reactor Preprocessing (Bit-Perfect Mirror)
+    # 2. Reactor Preprocessing (Bit-Perfect Mirror)
     vals = feature_df.values.astype(np.float32)
     vals = np.nan_to_num(vals, nan=0.0, posinf=0.0, neginf=0.0)
     
@@ -53,33 +55,29 @@ def validate(checkpoint_path):
     vals = np.clip(vals, -5.0, 5.0)
     vals = np.nan_to_num(vals, nan=0.0)
     
+    # Padding logic for safety
     padding_col = np.zeros((vals.shape[0], 1), dtype=np.float32)
     lake_np = np.hstack([vals, padding_col])
     pad_idx = lake_np.shape[1] - 1
     
-    # Mapping
+    # 3. FLAT MAPPING (The Fix)
+    # We map the gene names directly to their index in the dataframe columns
     col_names = list(feature_df.columns)
-    ind_map = {col.split('___')[0]: [] for col in col_names}
-    for i, col in enumerate(col_names):
-        ind_map[col.split('___')[0]].append(i)
-        
-    # Extract Columns for Genes
+    
     selected_indices = []
     for gene in genes:
-        if gene in ind_map:
-            indices = ind_map[gene][:CONFIG['MAX_COLS_PER_IND']]
-            while len(indices) < CONFIG['MAX_COLS_PER_IND']:
-                indices.append(pad_idx)
-            selected_indices.extend(indices)
+        if gene in col_names:
+            selected_indices.append(col_names.index(gene))
         else:
-            selected_indices.extend([pad_idx] * CONFIG['MAX_COLS_PER_IND'])
+            print(f"⚠️ Gene '{gene}' not found in current harvest. Using padding.")
+            selected_indices.append(pad_idx)
             
-    # X_test extraction (matching Reactor.y_test logic)
+    # 4. X_test extraction (matching Reactor.y_test logic)
     X_test_raw = lake_np[split_idx:, selected_indices]
     X_tensor = torch.tensor(X_test_raw, device=DEVICE).float().unsqueeze(0)
     Y_test_raw = target_series.values[split_idx:]
 
-    # Forward Pass
+    # 5. Forward Pass
     with torch.no_grad():
         W1, B1 = weights['W1'].to(DEVICE), weights['B1'].to(DEVICE)
         W2, B2 = weights['W2'].to(DEVICE), weights['B2'].to(DEVICE)
@@ -87,11 +85,12 @@ def validate(checkpoint_path):
         
         print(f"🧠 Brain Input: {W1.shape[0]} | Test Samples: {X_test_raw.shape[0]} | Threshold: {threshold:.4f}")
 
+        # Batch Matrix Multiplication
         H1 = F.leaky_relu(torch.bmm(X_tensor, W1.unsqueeze(0)) + B1, 0.1)
         logits = torch.bmm(H1, W2.unsqueeze(0)) + B2
         preds = (torch.sigmoid(logits) > threshold).float()
 
-    # Report Generation (TEST SET ONLY)
+    # 6. Report Generation (TEST SET ONLY)
     if isinstance(target_series.index[0], (int, np.integer)):
         full_times = pd.date_range(start=CONFIG['START_DATE'], periods=len(target_series), freq='4H')
     else:
@@ -130,9 +129,9 @@ def validate(checkpoint_path):
     final_prec = total_tp / (total_tp + total_fp) if (total_tp + total_fp) > 0 else 0.0
     
     print("-" * 80)
-    print(f"TOTALS     | {total_sigs:<5} | {total_tp:<4} | {total_fp:<4} | {final_prec:7.2%}")
+    print(f"TOTALS     | {total_sigs:<5} | {total_tp:<4} | {total_fp:<4} | {final_prec:7.2%}")
     print("="*80)
 
 if __name__ == "__main__":
-    target = sys.argv[1] if len(sys.argv) > 1 else "best_model_gen_8.pt"
+    target = sys.argv[1] if len(sys.argv) > 1 else "best_model_gen_0.pt"
     validate(target)

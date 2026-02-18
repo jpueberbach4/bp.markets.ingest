@@ -52,7 +52,9 @@ def run():
             f.write("timestamp,gen,f1,prec,rec,sigs,genes\n")
 
     ingestor = IndicatorIngestor(CONFIG)
-    feats, targets = ingestor.get_data()
+    feats, targets, flat_universe = ingestor.get_data() 
+    
+    # Pass the features and targets to the reactor as before
     reactor = PersistentReactor(feats, targets, CONFIG, DEVICE)
     
     best_ever = 0.0

@@ -26,17 +26,11 @@ class PersistentReactor:
         self.pad_idx = self.lake.shape[1] - 1  # index of padding column
         
         self.col_names = list(feature_df.columns)  # store column names
-        ind_map = {col.split('___')[0]: [] for col in self.col_names}  # map indicator name -> columns
-        for i, col in enumerate(self.col_names):
-            ind_map[col.split('___')[0]].append(i)  # append column index to indicator
-        
-        self.unique_inds = list(ind_map.keys())  # list of indicators
-        self.num_indicators = len(self.unique_inds)  # number of unique indicators
-        
-        decoder_np = np.full((self.num_indicators, config['MAX_COLS_PER_IND']), self.pad_idx, dtype=np.int32)  # fill decoder with padding
-        for i, ind in enumerate(self.unique_inds):
-            c = ind_map[ind][:config['MAX_COLS_PER_IND']]  # take first few columns for indicator
-            decoder_np[i, :len(c)] = c  # store them in decoder
+
+        self.unique_inds = self.col_names 
+        self.num_indicators = len(self.unique_inds)
+
+        decoder_np = np.arange(self.num_indicators, dtype=np.int32).reshape(-1, 1)
         self.decoder = torch.tensor(decoder_np, device=device, dtype=torch.long)  # make decoder a torch tensor
         
         y_raw = torch.tensor(target_series.values, device=device).float().view(1, -1, 1)  # target values
@@ -44,7 +38,7 @@ class PersistentReactor:
         self.y_test = y_raw[:, self.split:, :]  # test target
 
         hidden = 128  # number of hidden neurons
-        self.pop_W1 = (torch.randn(config['POP_SIZE'], config['TOTAL_INPUTS'], hidden, device=device) * 0.01)  # input->hidden weights
+        self.pop_W1 = (torch.randn(config['POP_SIZE'], config['GENE_COUNT'], hidden, device=device) * 0.01)
         self.pop_W2 = (torch.randn(config['POP_SIZE'], hidden, 1, device=device) * 0.01)  # hidden->output weights
         self.pop_B1 = torch.zeros(config['POP_SIZE'], 1, hidden, device=device)  # hidden biases
         self.pop_B2 = torch.full((config['POP_SIZE'], 1, 1), -0.5, device=device)  # output biases
