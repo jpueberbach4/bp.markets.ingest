@@ -15,6 +15,8 @@ It’s running in a CUDA kernel to handle the parallel ANN pulses, but given the
 
 I will share the rock-turnover script if it actually found something so you can use it to see if your custom indicators actually gives you an alpha edge. This script is currently using 16 custom indicators which are not in the repo. 81 now in total.
 
+**Update**: Don't know what happened. System did shut down. Windows updates were off. Power plan is never sleep. System went into sleep says eventlog. All windows closed. WSL shutdown. Remarkable. Re-running run.
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
