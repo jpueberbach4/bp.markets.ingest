@@ -15,6 +15,12 @@ BLACKLISTED_INDICATORS = [
     # "talib*"  <-- Keep TA-Lib unless you have a custom 122-feature set.
 ]
 
+FORCED_INDICATORS = [
+    "example-multi-tf-rsi_EUR-USD_14_14_14_14",
+    "example-multi-tf-rsi_DOLLAR.IDX-USD_14_14_14_14",
+    "example-multi-tf-rsi_XAU-USD_14_14_14_14"
+]
+
 NUM_GENES = 6
 CHUNK_MULT = 4
 
@@ -34,7 +40,7 @@ CONFIG = {
     'EPOCHS': 20,                  
     'LEARNING_RATE': 0.001,        
     'WEIGHT_MUTATION_RATE': 0.1,
-    'FORCED_INDICATORS': [],
+    'FORCED_INDICATORS': FORCED_INDICATORS,
     'BLACKLISTED_INDICATORS': BLACKLISTED_INDICATORS
 }
 
