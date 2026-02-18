@@ -17,6 +17,12 @@ I will share the rock-turnover script if it actually found something so you can 
 
 **Update**: Don't know what happened. System did shut down. Windows updates were off. Power plan is never sleep. System went into sleep says eventlog. All windows closed. WSL shutdown. Remarkable. Re-running run.
 
+**Update**: Preliminary conclusion. Having ML look at multiple timeframes and assets increases precision of finding tops and bottoms quite dramatically. I have a recall of 100% with a precision of 52%. This means the model successfully identified every single major top and bottom, but it also generated 'false alarms' for 48% of its total signals. 
+
+I am training from 2018-2021 and validating using 2021-2023 as the out-of-sample period. Using the `example-pivot-finder` to find the mathematical relationships. Currently using a 4 indicator approach to prevent overfitting and using Genetical Evolution (working with generations) to streamline the model.
+
+I am new to this stuff but learning quite rapidly. The platform works great for setting up indicators quickly and feeding them, together with data, in a model 😎.
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
