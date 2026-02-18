@@ -6,6 +6,8 @@ Applying machine learning to markets is harder than it looks. Achieving precisio
 
 I’ve shared a version of this gene-training approach. It’s far from finished, but it might give an idea of how to brute-force gene detection for pivot finding. I’m currently training a model, and I’m new to this, so I don’t know what the results will be. Earlier experiments (see above) were promising, but of course, past results don’t guarantee future outcomes - It's a first try to build an Alpha Factory—a systematic search for features that have a statistical edge, where the features are for 10% self-invented (not included).
 
+PS: if you have a fast GPU and a cool room, try it with your custom indicators. It will take a while to complete... but you never know what it will find underneath those rocks. I have taken the system inside but i can barely put my hand on it (bottom). That hot it gets. Wonder how long it will survice this. 
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
