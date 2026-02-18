@@ -3,9 +3,9 @@ from typing import List, Dict, Any
 
 def description() -> str:
     return (
-        "Triple RSI Panel: Displays Current, 4H, and 1D RSI in a single panel. "
-        "Uses data-relative 'is_open' filtering to prevent repainting on the live-edge."
-        "Note: the \"normal-rsi\" is the actual live value. The open-canle value."
+        "Quadruple RSI Panel: Displays Current TF, 4H, 1D and 1W RSI in a single panel. "
+        "Uses data-relative 'is_open' filtering to prevent repainting on the live-edge.\n"
+        "Note: Optionally you can use an other symbol to benchmark against.\n"
     )
 
 def meta() -> Dict:
@@ -25,9 +25,11 @@ def warmup_count(options: Dict[str, Any]) -> int:
 
 def position_args(args: List[str]) -> Dict[str, Any]:
     return {
-        "period": args[0] if len(args) > 0 else "14",
-        "period-4h": args[0] if len(args) > 0 else "14",
-        "period-1d": args[0] if len(args) > 0 else "14",
+        "benchmark": args[0] if len(args) > 0 else "{symbol}",
+        "period": args[1] if len(args) > 1 else "14",
+        "period-4h": args[2] if len(args) > 2 else "14",
+        "period-1d": args[3] if len(args) > 3 else "14",
+        "period-1W": args[4] if len(args) > 4 else "14",
     }
 
 def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
@@ -47,11 +49,13 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     rsi_period = int(options.get("period", 14))
     rsi_period_4h = int(options.get("period-4h", 14))
     rsi_period_1d = int(options.get("period-1d", 14))
+    rsi_period_1W = int(options.get("period-1W", 14))
 
     # Build the column name used by the indicator API (e.g. "rsi_14")
     rsi_col = f"rsi_{rsi_period}"
     rsi_col_4h = f"rsi_{rsi_period_4h}"
     rsi_col_1d = f"rsi_{rsi_period_1d}"
+    rsi_col_1W = f"rsi_{rsi_period_1d}"
 
     # Create a lightweight DataFrame with only timestamps
     # This becomes the "reference timeline" for all joins
@@ -77,7 +81,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     # Force API to return Polars DataFrames
     api_opts = {**options, "return_polars": True}
 
-    warmup_ms = 86400000 * 5 # cover weekends + safety value
+    warmup_ms = 86400000 * 15 # cover weekends + safety value
 
     def fetch_indicator_data(target_tf, alias, rsi_ind):
         # Fetch RSI + is-open flags for a given timeframe
@@ -105,15 +109,17 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         )
 
     # Fetch RSI data for three timeframes in parallel to save time
-    with ThreadPoolExecutor(max_workers=3) as executor:
+    with ThreadPoolExecutor(max_workers=4) as executor:
         f_current = executor.submit(fetch_indicator_data, tf, "rsi", rsi_col)
         f_4h = executor.submit(fetch_indicator_data, "4h", "rsi4h", rsi_col_4h)
         f_1d = executor.submit(fetch_indicator_data, "1d", "rsi1d", rsi_col_1d)
+        f_1W = executor.submit(fetch_indicator_data, "1W", "rsi1W", rsi_col_1W)
 
         # Wait for all fetches to finish
         lazy_current = f_current.result()
         lazy_4h = f_4h.result()
         lazy_1d = f_1d.result()
+        lazy_1W = f_1W.result()
 
     # Make a flat timeline to join into
     timeline = df.select([pl.col("time_ms").cast(pl.UInt64)]).lazy()
@@ -124,7 +130,8 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         .join_asof(lazy_current, on="time_ms", strategy="backward")
         .join_asof(lazy_4h, on="time_ms", strategy="backward")
         .join_asof(lazy_1d, on="time_ms", strategy="backward")
-        .select(["rsi", "rsi4h", "rsi1d"])
+        .join_asof(lazy_1W, on="time_ms", strategy="backward")
+        .select(["rsi", "rsi4h", "rsi1d", "rsi1W"])
         .collect(streaming=True)
     )
 
