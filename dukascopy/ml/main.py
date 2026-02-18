@@ -21,7 +21,7 @@ FORCED_INDICATORS = [
     "example-multi-tf-rsi_XAU-USD_14_14_14_14"
 ]
 
-NUM_GENES = 6
+NUM_GENES = 12
 CHUNK_MULT = 4
 
 CONFIG = {
@@ -53,7 +53,7 @@ def run():
 
     ingestor = IndicatorIngestor(CONFIG)
     feats, targets, flat_universe = ingestor.get_data() 
-    
+
     # Pass the features and targets to the reactor as before
     reactor = PersistentReactor(feats, targets, CONFIG, DEVICE)
     
