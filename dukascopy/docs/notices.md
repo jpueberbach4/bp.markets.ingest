@@ -2,30 +2,9 @@
 
 Applying machine learning to markets is harder than it looks. Achieving precision above 0.51—barely better than a coin flip—while maintaining low recall is already challenging. Finding real alpha is not easy. What’s needed is a system that automatically ingests all available indicators and runs overnight, exhaustively testing every possible combination. It has to turn over every rock. This is hard work—there are no easy wins.
 
-```sh
-✅ Final Search Space: 81 indicators.
-🌟 NEW RECORD | Gen 000 | Test F1: 0.1961 | ['mcginley_14', 'ichimoku_9_26_52',...]
-🌟 NEW RECORD | Gen 001 | Test F1: 0.3077 | ['camarilla-pivots', 'stc_10_23_50',...]
-🌟 NEW RECORD | Gen 003 | Test F1: 0.3200 | ['stc_10_23_50', 'ichimoku_9_26_52',...]
-🌟 NEW RECORD | Gen 005 | Test F1: 0.3810 | ['camarilla-pivots', 'stc_10_23_50',...]
-...
-```
+**Update** Moral of the GPU endeavor: my system is currently fighting for its life. No, even with a new laptop and a great GPU, this training stuff heats up stuff so much... that it throttles the GPU to less than 10 percent. Found a solution, but drastic: put the system outside under an "afdak". Linking it over the network. 
 
-It’s running in a CUDA kernel to handle the parallel ANN pulses, but given the depth of the generations and the complexity of the combinations, this is an overnight burn. I'm letting the machine turn over every remaining rock to see if we can break the 0.50+ barrier.
-
-I will share the rock-turnover script if it actually found something so you can use it to see if your custom indicators actually gives you an alpha edge. This script is currently using 16 custom indicators which are not in the repo. 81 now in total.
-
-**Update**: Don't know what happened. System did shut down. Windows updates were off. Power plan is never sleep. System went into sleep says eventlog. All windows closed. WSL shutdown. Remarkable. Re-running run.
-
-**Update**: Preliminary conclusion. Having ML look at multiple timeframes and assets increases precision of finding tops and bottoms quite dramatically. I have a recall of 100% with a precision of 52%. This means the model successfully identified every single major top and bottom, but it also generated 'false alarms' for 48% of its total signals. 
-
-I am training from 2018-2021 and validating using 2021-2023 as the out-of-sample period. Using the `example-pivot-finder` to find the mathematical relationships. Currently using a 4 indicator approach to prevent overfitting and using Genetical Evolution (working with generations) to streamline the model.
-
-I am new to this stuff but learning quite rapidly. The platform works great for setting up indicators quickly and feeding them, together with data, in a model 😎.
-
-I am going to break my GPU... its wayyyyy too hot.
-
-**Update** Moral of the GPU endeavor: my system is currently fighting for its life. No, even with a new laptop and a great GPU, this training stuff heats up stuff so much... that it throttles the GPU to less than 10 percent. Effectively killing any benefit. I should rather use a 1995 calculator........
+I’ve shared a version of this gene-training approach. It’s far from finished, but it might give an idea of how to brute-force gene detection for pivot finding. I’m currently training a model, and I’m new to this, so I don’t know what the results will be. Earlier experiments (see above) were promising, but of course, past results don’t guarantee future outcomes - It's a first try to build an Alpha Factory—a systematic search for features that have a statistical edge, where the features are for 10% self-invented (not included).
 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 

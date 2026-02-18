@@ -29,7 +29,7 @@ CONFIG = {
     'SYMBOL': "EUR-USD",
     'TIMEFRAME': "4h",
     'TARGET_INDICATOR': "example-pivot-finder",
-    'START_DATE': "2018-01-01",
+    'START_DATE': "2019-01-01",
     'END_DATE': "2023-01-01",
     'LOG_FILE': "alpha_factory_detailed_results.csv",
     'POP_SIZE': 4096,
