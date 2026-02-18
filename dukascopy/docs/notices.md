@@ -8,6 +8,8 @@ I’ve shared a version of this gene-training approach. It’s far from finished
 
 PS: if you have a fast GPU and a cool room, try it with your custom indicators. It will take a while to complete... but you never know what it will find underneath those rocks. I have taken the system inside but i can barely put my hand on it (bottom). That hot it gets. Wonder how long it will survice this. 
 
+Reminds me of the bit/altcoin mining era. Instead of coins we mine profitable features.
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
@@ -72,3 +74,4 @@ We have added several deep-dive guides to help you leverage the latest performan
 * **[Adjustments.md](adjustments.md)** – Implementation guide for Panama rolls, Dividends, and Multiplicative splits.
 * **[Templates.md](templates.md)** – Guidelines for "God-tier" indicator performance using Polars/Rust to bypass the Python GIL.
 * **[Code Examples](../config/plugins/indicators/)** – Direct reference for plugin and indicator development.
+
