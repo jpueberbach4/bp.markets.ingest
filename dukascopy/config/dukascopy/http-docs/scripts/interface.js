@@ -16,8 +16,21 @@ let mainChart, candleSeries, volumeSeries;
 let overlaySeriesMap = {}; 
 let panelCharts = {};
 
-/* main container */
 const mainContainer = document.getElementById('main-chart-container');
+
+// Helper to format the "Base" part (e.g. example_14_EUR-USD -> example(14) [EUR-USD])
+function formatBaseIndicatorTitle(baseKey) {
+    const segments = baseKey.split('_');
+    const name = segments[0];
+
+    const params = segments.slice(1).filter(s => !isNaN(s) && s.trim() !== "");
+    const context = segments.slice(1).filter(s => isNaN(s) && s.trim() !== "");
+    
+    const settings = params.length > 0 ? `(${params.join(',')})` : '';
+    const contextStr = context.length > 0 ? ` [${context.join(' ')}]` : '';
+    
+    return `${name}${settings}${contextStr}`;
+}
 
 function addToChain() {
     const indKey = document.getElementById('indicatorSelect').value;
@@ -73,7 +86,7 @@ function clearOnUpdate() {
     });
 }
 
-function createPanel(id) {
+function createPanel(id, displayTitle) {
     const container = document.getElementById('panel-container');
     const div = document.createElement('div');
     div.className = 'indicator-panel';
@@ -84,7 +97,7 @@ function createPanel(id) {
     const titleDiv = document.createElement('div');
     titleDiv.className = 'panel-title';
     titleDiv.id = `title-${id}`;
-    titleDiv.innerText = getTitleString(id.toUpperCase());
+    titleDiv.innerText = displayTitle || id.toUpperCase();
     div.appendChild(titleDiv);
 
     container.appendChild(div);
@@ -183,19 +196,19 @@ function initCharts() {
         
         if (masterPoint.indicators) {
             Object.entries(masterPoint.indicators).forEach(([fullKey, val]) => {
-                    const parts = fullKey.split('_');
-                    const name = parts[0];
-                    const suffix = parts[parts.length - 1];
-                    
-                    const params = parts.slice(1, -1).filter(p => !isNaN(p) && p !== "");
-                    
-                    const settings = params.length > 0 ? `(${params.join(',')})` : '';
-                    const color = getSeriesColor(fullKey);
+                const parts = fullKey.split('__');
+                const basePart = parts[0];
+                const suffix = parts.length > 1 ? parts[1] : '';
+                
+                // For legend: "Name(Params) [Context] Suffix"
+                const baseTitle = formatBaseIndicatorTitle(basePart);
+                const displayTitle = suffix ? `${baseTitle} ${suffix}` : baseTitle;
+                const color = getSeriesColor(fullKey);
 
-                    html += `<div class="legend-item">
-                        <span>${name}${settings} ${suffix}</span>
-                        <b style="color:${color}">${Number(val).toFixed(5)}</b>
-                    </div>`;
+                html += `<div class="legend-item">
+                    <span>${displayTitle}</span>
+                    <b style="color:${color}">${Number(val).toFixed(5)}</b>
+                </div>`;
             });
         }
         legend.innerHTML = html;
@@ -308,7 +321,11 @@ function updateChartUI(cols = [], requestDirection) {
 
         const mainParts = col.split('__');
         const basePart = mainParts[0]; 
-        const displayTitle = (mainParts.length > 1) ? mainParts[1] : basePart.split('_')[0];
+        const suffix = mainParts.length > 1 ? mainParts[1] : null;
+        
+        const panelTitle = formatBaseIndicatorTitle(basePart);
+        const seriesTitle = suffix || panelTitle;
+
         const targetPanel = (meta.meta && meta.meta.panel === 1) ? 1 : 0;
         const currentColor = getSeriesColor(col); 
 
@@ -321,7 +338,7 @@ function updateChartUI(cols = [], requestDirection) {
             }
             overlaySeriesMap[col].applyOptions({
                 color: currentColor,
-                title: displayTitle
+                title: seriesTitle // Overlay just needs the simple title or full if no suffix
             });
             
             overlaySeriesMap[col].setData(masterData.map(d => ({ 
@@ -330,7 +347,14 @@ function updateChartUI(cols = [], requestDirection) {
 
         } else {
             const panelKey = basePart;
-            if (!panelCharts[panelKey]) createPanel(panelKey);
+            if (!panelCharts[panelKey]) {
+                createPanel(panelKey, panelTitle);
+            } else {
+                // Ensure title is updated if panel exists
+                const titleEl = document.getElementById(`title-${panelKey}`);
+                if (titleEl) titleEl.innerText = panelTitle;
+            }
+            
             const pObj = panelCharts[panelKey];
 
             if (!pObj.series[col]) {
@@ -345,7 +369,7 @@ function updateChartUI(cols = [], requestDirection) {
             
             pObj.series[col].applyOptions({
                 color: currentColor,
-                title: displayTitle
+                title: seriesTitle // Panel series gets just the suffix (e.g., 'rsi')
             });
 
             const seriesData = masterData.map(d => {
@@ -384,4 +408,3 @@ function updateTimeframeOptions() {
         }
     }
 }
-
