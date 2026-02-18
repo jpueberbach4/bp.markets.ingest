@@ -83,6 +83,22 @@ def run():
             
             with open(CONFIG['LOG_FILE'], "a") as f:
                 f.write(f"{datetime.now()},{gen},{best_ever:.4f},{cur_p:.4f},{cur_r:.4f},{cur_s},{'|'.join(gn)}\n")
+
+            checkpoint = {
+                'gen': gen,
+                'f1': best_ever,
+                'genes': gn,
+                'state_dict': {
+                    'W1': reactor.pop_W1[best_idx].cpu(),
+                    'W2': reactor.pop_W2[best_idx].cpu(),
+                    'B1': reactor.pop_B1[best_idx].cpu(),
+                    'B2': reactor.pop_B2[best_idx].cpu(),
+                    'threshold': reactor.thresholds[best_idx].cpu()
+                }
+            }
+            torch.save(checkpoint, f"best_model_gen_{gen}.pt")
+            print(f"   💾 Checkpoint saved: best_model_gen_{gen}.pt")
+
         else:
             print(f"🚜 {gen:<4} | Best: {best_val.item():.4f} | Avg: {avg_f1:.4f} | MaxSig: {max_sigs:<4} | FPS: {fps:.1f}")
 
