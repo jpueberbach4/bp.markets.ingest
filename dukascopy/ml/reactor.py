@@ -70,6 +70,9 @@ class PersistentReactor:
 
         with torch.cuda.stream(self.stream):
             for idx, chunk_cols in enumerate(col_chunks):
+                # STATUS PRINT: Heartbeat for the chunk loop
+                print(f"  ⚡ GPU Reactor: Processing Chunk {idx+1}/{len(col_chunks)}...", end="\r")
+                
                 start_i = idx * self.config['GPU_CHUNK']
                 p_size = chunk_cols.size(0)
                 
@@ -129,6 +132,8 @@ class PersistentReactor:
         keep_count = pop_size // 10
         elites = idx[:keep_count]
         
+        print(f"  🧬 Evolution: Preserving {keep_count} elites...")
+        
         # This index map dictates which parents the next generation is born from
         repeats = elites.repeat((pop_size // keep_count) + 1)[:pop_size]
         
@@ -141,30 +146,27 @@ class PersistentReactor:
 
         # Proper Weight Inheritance & Rank-Aware Reset
         for param in [self.pop_W1, self.pop_W2, self.pop_B1, self.pop_B2]:
-            # Inherit parent weights AND apply mutation
-            # This restores the Lamarckian link between genes and trained weights
             parent_weights = param[repeats]
             noise = (torch.randn_like(parent_weights) * rate).to(self.dtype)
             param.copy_(parent_weights + noise)
             
-            # Darwinian Reset (Now correctly applied to the bottom 50% of offspring)
-            # The top 50% are clones/mutations of elites; the bottom are fresh starts
             if param.dim() == 3: # Weights
-                # Re-initialize using He initialization logic for the reset portion
                 fan_in = param.shape[1]
                 std = np.sqrt(2 / fan_in)
                 param[reset_threshold:].copy_((torch.randn_like(param[reset_threshold:]) * std).to(self.dtype))
             else: # Biases
                 param[reset_threshold:].zero_()
 
+        print(f"  🧪 Mutating: {pop_size - keep_count} individuals...")
+
         # Threshold Evolution (Elite Protected)
-        # top keep_count are protected from drift
         thresh_noise = (torch.randn_like(self.thresholds) * 0.05)
         thresh_noise[:keep_count] = 0 
         self.thresholds.add_(thresh_noise).clamp_(0.01, 0.99)
 
         # Gene Mutation (Indicator Swap)
-        # Protect elites from losing their indicator combinations
         mut_mask = torch.rand(self.population.shape, device=self.device) < 0.1
         mut_mask[:keep_count] = False 
         self.population[mut_mask] = torch.randint(0, self.num_indicators, (mut_mask.sum(),), device=self.device)
+
+        print(f"  ✅ Evolution Complete. Ready for next Gen.")
