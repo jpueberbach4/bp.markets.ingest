@@ -1,9 +1,9 @@
-import os, time, torch
+import os, time, torch, threading
 from datetime import datetime
 from ingest import IndicatorIngestor
-from reactor import PersistentReactor
+from reactor import PersistentReactor, log_queue, async_sink_worker 
 
-# Cleaned up Blacklist
+# CONFIGURATION
 BLACKLISTED_INDICATORS = [
     'zigzag*', 'swing-points*', 'fractaldimension*', 'kalman*', 
     'open', 'high', 'low', 'close', 'volume', 
@@ -12,7 +12,6 @@ BLACKLISTED_INDICATORS = [
     "*example-pivot-finder*", 
     "*elliot*", 
     "feature*"
-    # "talib*"  <-- Keep TA-Lib unless you have a custom 122-feature set.
 ]
 
 FORCED_INDICATORS = [
@@ -47,6 +46,15 @@ CONFIG = {
 DEVICE = torch.device("cuda")
 
 def run():
+    # Initialize the Sink Thread
+    # It consumes the log_queue defined in reactor.py
+    sink_thread = threading.Thread(target=async_sink_worker, daemon=True)
+    sink_thread.start()
+
+    # Setup folders
+    os.makedirs("checkpoints", exist_ok=True)
+    os.makedirs("logs", exist_ok=True)
+
     if not os.path.exists(CONFIG['LOG_FILE']):
         with open(CONFIG['LOG_FILE'], "w") as f: 
             f.write("timestamp,gen,f1,prec,rec,sigs,genes\n")
@@ -54,7 +62,6 @@ def run():
     ingestor = IndicatorIngestor(CONFIG)
     feats, targets, flat_universe = ingestor.get_data() 
 
-    # Pass the features and targets to the reactor as before
     reactor = PersistentReactor(feats, targets, CONFIG, DEVICE)
     
     best_ever = 0.0
@@ -62,58 +69,59 @@ def run():
     print(f"{'GEN':<6} | {'F1':<8} | {'PREC':<8} | {'REC':<8} | {'SIGS':<6} | {'FPS':<6}")
     print("-" * 85)
 
-    for gen in range(100000):
-        t0 = time.time()
-        res = reactor.run_generation()
-        
-        # Stability: Ensure we actually have results before processing
-        if len(res['f1']) == 0:
-            print(f"⚠️ GEN {gen} produced no results. Check GPU/Heat.")
-            continue
+    try:
+        for gen in range(100000):
+            t0 = time.time()
+            
+            res = reactor.run_generation()
+            
+            if len(res['f1']) == 0:
+                print(f"⚠️ GEN {gen} produced no results.")
+                continue
 
-        best_val, best_idx = torch.max(res['f1'], 0)
-        max_sigs = int(res['sigs'].max().item())
-        avg_f1 = res['f1'].mean().item()
-        fps = CONFIG['POP_SIZE'] / (time.time() - t0)
-        
-        if best_val > best_ever:
-            best_ever = best_val.item()
+            best_val, best_idx = torch.max(res['f1'], 0)
+            max_sigs = int(res['sigs'].max().item())
+            avg_f1 = res['f1'].mean().item()
+            fps = CONFIG['POP_SIZE'] / (time.time() - t0)
             
-            # Use .get() or check keys to prevent KeyError: 'prec'
-            cur_p = res['prec'][best_idx].item() if 'prec' in res else 0.0
-            cur_r = res['rec'][best_idx].item() if 'rec' in res else 0.0
-            cur_s = int(res['sigs'][best_idx].item())
-            
-            gn = [reactor.unique_inds[g] for g in reactor.population[best_idx]]
-            
-            print(f"\n🌟 {gen:<4} | {best_ever:.4f} | {cur_p:.4f} | {cur_r:.4f} | {cur_s:<6} | {fps:.1f}")
-            print(f"   └─ Genes: {gn}")
-            
-            with open(CONFIG['LOG_FILE'], "a") as f:
-                f.write(f"{datetime.now()},{gen},{best_ever:.4f},{cur_p:.4f},{cur_r:.4f},{cur_s},{'|'.join(gn)}\n")
+            if best_val > best_ever:
+                best_ever = best_val.item()
+                cur_p = res['prec'][best_idx].item()
+                cur_r = res['rec'][best_idx].item()
+                cur_s = int(res['sigs'][best_idx].item())
+                gn = [reactor.unique_inds[g] for g in reactor.population[best_idx]]
+                
+                print(f"\n🌟 {gen:<4} | {best_ever:.4f} | {cur_p:.4f} | {cur_r:.4f} | {cur_s:<6} | {fps:.1f}")
+                print(f"   └─ Genes: {gn}")
+                
+                log_entry = f"{datetime.now()},{gen},{best_ever:.4f},{cur_p:.4f},{cur_r:.4f},{cur_s},{'|'.join(gn)}"
+                log_queue.put(("evolution.log", log_entry, False))
 
-            checkpoint = {
-                'gen': gen,
-                'f1': best_ever,
-                'genes': gn,
-                'state_dict': {
-                    'W1': reactor.pop_W1[best_idx].cpu(),
-                    'W2': reactor.pop_W2[best_idx].cpu(),
-                    'B1': reactor.pop_B1[best_idx].cpu(),
-                    'B2': reactor.pop_B2[best_idx].cpu(),
-                    'threshold': reactor.thresholds[best_idx].cpu()
+                checkpoint = {
+                    'gen': gen, 'f1': best_ever, 'genes': gn,
+                    'state_dict': {
+                        'W1': reactor.pop_W1[best_idx].cpu(),
+                        'W2': reactor.pop_W2[best_idx].cpu(),
+                        'B1': reactor.pop_B1[best_idx].cpu(),
+                        'B2': reactor.pop_B2[best_idx].cpu(),
+                        'threshold': reactor.thresholds[best_idx].cpu()
+                    }
                 }
-            }
-            torch.save(checkpoint, f"best_model_gen_{gen}.pt")
-            print(f"   💾 Checkpoint saved: best_model_gen_{gen}.pt")
+                log_queue.put((f"best_model_gen_{gen}.pt", checkpoint, True))
 
-        else:
-            print(f"🚜 {gen:<4} | Best: {best_val.item():.4f} | Avg: {avg_f1:.4f} | MaxSig: {max_sigs:<4} | FPS: {fps:.1f}")
+            else:
+                print(f"🚜 {gen:<4} | Best: {best_val.item():.4f} | Avg: {avg_f1:.4f} | MaxSig: {max_sigs:<4} | FPS: {fps:.1f}")
 
-        reactor.evolve(res['f1'])
-        
-        # Laptop Survival Pause
-        time.sleep(2)
+            reactor.evolve(res['f1'].to(DEVICE))
+            
+            # Brief pause
+            time.sleep(1.5)
+
+    except KeyboardInterrupt:
+        print("\n[!] Shutdown Signal Received. Cleaning up...")
+        log_queue.put(None)
+        sink_thread.join(timeout=5) 
+        print("Reactor Off. Fly safe.")
 
 if __name__ == "__main__":
     run()
