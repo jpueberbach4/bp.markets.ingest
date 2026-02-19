@@ -21,6 +21,8 @@ I want to thank the authors of [this page](https://e-forex.net/machine-learning-
 
 PS: i will try to `bake-in` resumability and internal get_data-currently its using http api-in these scripts. Abstracting it for better walkforward analysis. Wonder how gen 500 would have looked like. Theory is i can jumpstart gene 0 with the genes found in the 226 run. I will add updates. First i need to handle the "system-issue". Later.
 
+Note: the scripts are first version. It is very aggressive on evolutionary "selection". It keeps the top 10% and eliminates the rest. The script needs further tuning and solid forward testing. I will do these updates asap. Likely weekend work. Setting up a new system. Stay tuned.
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
