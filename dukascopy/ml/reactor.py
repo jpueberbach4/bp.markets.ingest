@@ -13,8 +13,7 @@ class FocalLoss(nn.Module):
     def forward(self, inputs, targets):
         BCE_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction='none')
         pt = torch.exp(-BCE_loss)
-        F_loss = self.alpha * (1 - pt)**self.gamma * BCE_loss
-        return F_loss.mean()
+        return (self.alpha * (1 - pt)**self.gamma * BCE_loss).mean()
 
 class PersistentReactor:
     def __init__(self, feature_df, target_series, config, device):
@@ -51,7 +50,9 @@ class PersistentReactor:
         self.population = torch.stack(indices).to(device)
         self.thresholds = torch.full((config["POP_SIZE"],), 0.5, device=device)
         
-        self.gene_history = torch.zeros(self.num_indicators, device=device)
+        # FIX: Track Gene Vitality (Performance vs Age)
+        self.gene_scores = torch.zeros(self.num_indicators, device=device)
+        self.gene_usage = torch.zeros(self.num_indicators, device=device)
 
     def _forward(self, x, w1, b1, w2, b2):
         h1 = F.leaky_relu(torch.bmm(x, w1) + b1, 0.1)
@@ -85,11 +86,9 @@ class PersistentReactor:
             for epoch in range(self.config["EPOCHS"]):
                 optimizer.zero_grad()
                 logits = self._forward(x_train, w1, b1, w2, b2)
-                
-                # Sparsity constraint to lower MaxSig
-                sparsity_loss = torch.mean(torch.sigmoid(logits)) * 0.015 
-                loss = criterion(logits, y_train) + sparsity_loss
-                
+                # Strict Sparsity: Punish high activation to keep MaxSig low
+                sparsity = torch.mean(torch.sigmoid(logits)) * 0.02 
+                loss = criterion(logits, y_train) + sparsity
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_([w1, b1, w2, b2], 1.0)
                 optimizer.step()
@@ -108,12 +107,12 @@ class PersistentReactor:
                 self.pop_W2[i:end_i].copy_(w2)
                 self.pop_B2[i:end_i].copy_(b2)
 
-                val_probs = torch.sigmoid(self._forward(x_val, w1, b1, w2, b2))
+                val_p = torch.sigmoid(self._forward(x_val, w1, b1, w2, b2))
                 bt = torch.full((actual_chunk_size,), 0.5, device=self.device)
                 mf1 = torch.zeros(actual_chunk_size, device=self.device)
 
-                for t in np.linspace(0.4, 0.98, 60): # Shifted threshold up for higher precision
-                    p = (val_probs > t).float()
+                for t in np.linspace(0.5, 0.99, 50): # Higher start for threshold
+                    p = (val_p > t).float()
                     tp = (p * y_val).sum(1)
                     fp = (p * (1 - y_val)).sum(1)
                     fn = ((1 - p) * y_val).sum(1)
@@ -124,12 +123,14 @@ class PersistentReactor:
                 self.thresholds[i:end_i].copy_(bt)
                 
                 x_test = self.lake[self.split_test:, indices].permute(1, 0, 2)
-                test_p = torch.sigmoid(self._forward(x_test, w1, b1, w2, b2))
-                fin_p = (test_p > bt.view(-1, 1, 1)).float()
+                test_probs = torch.sigmoid(self._forward(x_test, w1, b1, w2, b2))
+                fin_p = (test_probs > bt.view(-1, 1, 1)).float()
 
-                tp_t = (fin_p * self.y_test.expand(actual_chunk_size, -1, -1)).sum(1).view(-1)
-                fp_t = (fin_p * (1 - self.y_test.expand(actual_chunk_size, -1, -1))).sum(1).view(-1)
-                fn_t = ((1 - fin_p) * self.y_test.expand(actual_chunk_size, -1, -1)).sum(1).view(-1)
+                # Metrics calc
+                y_exp = self.y_test.expand(actual_chunk_size, -1, -1)
+                tp_t = (fin_p * y_exp).sum(1).view(-1)
+                fp_t = (fin_p * (1 - y_exp)).sum(1).view(-1)
+                fn_t = ((1 - fin_p) * y_exp).sum(1).view(-1)
 
                 f1_s = (2 * tp_t) / (2 * tp_t + fp_t + fn_t + 1e-6)
                 metrics["f1"].append(f1_s)
@@ -137,18 +138,15 @@ class PersistentReactor:
                 metrics["rec"].append(tp_t / (tp_t + fn_t + 1e-6))
                 metrics["sigs"].append(fin_p.sum(1).view(-1))
                 
-                for idx_chunk in range(actual_chunk_size):
-                    self.gene_history[indices[idx_chunk]] += f1_s[idx_chunk]
+                # Update Vitality
+                for idx_c in range(actual_chunk_size):
+                    self.gene_scores[indices[idx_c]] += f1_s[idx_c]
+                    self.gene_usage[indices[idx_c]] += 1
 
         return {k: torch.cat(v) for k, v in metrics.items()}
 
     def evolve(self, fitness_scores):
-        """
-        V4.5: Tournament Selection + Unique Gene Enforcement.
-        """
         pop_size = self.config["POP_SIZE"]
-        
-        # 1. Preserve Elites (Top 5%)
         idx = torch.argsort(fitness_scores, descending=True)
         keep = max(2, pop_size // 20)
         elites_idx = idx[:keep]
@@ -157,46 +155,35 @@ class PersistentReactor:
         new_w1 = self.pop_W1.clone()
         new_w2 = self.pop_W2.clone()
 
-        # 2. Tournament for the rest
-        tournament_size = 4
+        # Tournament
         for i in range(keep, pop_size):
-            # Fight for Parent 1
-            t_idx = torch.randint(0, pop_size, (tournament_size,))
-            p1 = t_idx[torch.argmax(fitness_scores[t_idx])]
+            t1 = torch.randint(0, pop_size, (4,))
+            p1 = t1[torch.argmax(fitness_scores[t1])]
+            t2 = torch.randint(0, pop_size, (4,))
+            p2 = t2[torch.argmax(fitness_scores[t2])]
             
-            # Fight for Parent 2
-            t_idx = torch.randint(0, pop_size, (tournament_size,))
-            p2 = t_idx[torch.argmax(fitness_scores[t_idx])]
-            
-            # Genetic Transfer
             new_pop[i] = self.population[p1]
-            new_w1[i] = self.pop_W1[p1]
-            new_w2[i] = self.pop_W2[p1]
+            new_w1[i], new_w2[i] = self.pop_W1[p1], self.pop_W2[p1]
             
-            if torch.rand(1).item() < 0.6: # Crossover
+            if torch.rand(1).item() < 0.6:
                 cut = torch.randint(1, self.config["GENE_COUNT"], (1,)).item()
-                head = new_pop[i, :cut]
-                tail = self.population[p2, cut:]
-                
-                # Deduplicate crossover
-                for g_idx in range(len(tail)):
-                    if tail[g_idx] in head:
-                        tail[g_idx] = torch.randint(0, self.num_indicators, (1,))
-                
+                head, tail = new_pop[i, :cut], self.population[p2, cut:].clone()
+                for g in range(len(tail)):
+                    if tail[g] in head: tail[g] = torch.randint(0, self.num_indicators, (1,))
                 new_pop[i, cut:] = tail
                 new_w1[i, cut:] = self.pop_W1[p2, cut:]
 
-        # 3. Mutation using global gene history
-        rate = self.config["WEIGHT_MUTATION_RATE"]
+        # Mutation with Gene Pruning
+        avg_f1 = fitness_scores.mean()
         for i in range(keep, pop_size):
-            new_w1[i] += torch.randn_like(new_w1[i]) * rate
-            new_w2[i] += torch.randn_like(new_w2[i]) * rate
+            new_w1[i] += torch.randn_like(new_w1[i]) * self.config["WEIGHT_MUTATION_RATE"]
+            new_w2[i] += torch.randn_like(new_w2[i]) * self.config["WEIGHT_MUTATION_RATE"]
             
             if torch.rand(1).item() < 0.3:
                 m_idx = torch.randint(0, self.config["GENE_COUNT"], (1,))
-                # Weighted random selection based on past performance
-                gene_weights = self.gene_history + 1e-3
-                candidate = torch.multinomial(gene_weights, 1)
+                # Weighted selection: High total score vs low usage (exploration)
+                vitality = (self.gene_scores + 0.1) / (self.gene_usage + 1.0)
+                candidate = torch.multinomial(vitality, 1)
                 if candidate not in new_pop[i]:
                     new_pop[i, m_idx] = candidate
 

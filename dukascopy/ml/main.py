@@ -113,7 +113,7 @@ def run():
         reactor.evolve(res['f1'])
         
         # Laptop Survival Pause
-        time.sleep(5.0)
+        time.sleep(3)
 
 if __name__ == "__main__":
     run()
