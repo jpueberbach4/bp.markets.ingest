@@ -4,7 +4,11 @@
 
 I am finding some very interesting combinations. Will stresstest them. 
 
+```sh
+gen, F1, prec, recall, signals, fps
 🌟 94   | 0.6087 | 0.8750 | 0.4667 | 8      | 492.8 | ....
+```
+
 
 - Weights learned on 80% of a random window.
 - Thresholds tuned on 20% of a random window.
