@@ -17,3 +17,5 @@ flight/*
 *.parquet
 *.csv
 *.pkl
+*.pt
+*.joblib
