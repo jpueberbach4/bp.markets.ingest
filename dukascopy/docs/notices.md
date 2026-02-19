@@ -17,6 +17,8 @@ I will give one tip: use gold and dollar index in various ways against the EUR-U
 
 If you use the scripts: enjoy and make sure your system is safe! Laptops are not build for this stuff.
 
+I want to thank the authors of [this page](https://e-forex.net/machine-learning-in-fx-trading-beyond-the-hype-and-some-useful-algos) for giving me guidance. 
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
