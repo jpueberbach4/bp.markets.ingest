@@ -1,5 +1,7 @@
 # ML
 
+**Important:** This is a research project focusing on biometric feature discovery rather than public price action; it treats the GPU as a reactor to mine high-order, non-linear confluences that remain invisible to standard arbitrage. By discarding raw OHLCV data in favor of an evolved genomic population of indicators, the system generates unique "Genesis Blocks" of alpha that are statistically anchored to market physics.
+
 The first run was very succesful but it broke my system. Laptops cannot handle long runs of the ML/* scripts. Don't use it on your laptop.
 
 Just to give an indication - best run was evolution 226 (then it died):
