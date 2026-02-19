@@ -31,6 +31,8 @@ I will add a dashboard which you can query via localhost:8000, or whatever DNS n
 
 If you look closely at the code, you see that i dump OHLCV completely and train on pure indicators (genes) only. This is harder to arbitrage away. Just in case. We are not looking at the scoreboard but at the biometrics instead.
 
+So, if you have a custom set of indicators, the gen population discovers as statistically relevant, nobody can replicate it because they dont have your custom feature set.
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
