@@ -2,7 +2,7 @@
 
 The first run was very succesful but it broke my system. Laptops cannot handle long runs of the ML/* scripts. Don't use it on your laptop.
 
-Just to give an indication - best run was run evolution 96:
+Just to give an indication - best run was evolution 96:
 
 ```sh
 timestamp,gen,f1,prec,rec,sigs,genes
@@ -11,9 +11,7 @@ timestamp,gen,f1,prec,rec,sigs,genes
 
 Precision 75% with a 53% recall. I will continue this in the cloud.
 
-Reminds me of the bit/altcoin mining era. Instead of coins we mine profitable features.
-
-Edit: Yes. This is worth it chasing further, optimize it.
+Reminds me of the bit/altcoin mining era. Instead of coins we mine profitable features. But,... back then we had massive cooling and videocards with dual GPU's.
 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
