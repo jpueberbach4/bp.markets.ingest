@@ -19,7 +19,7 @@ If you use the scripts: enjoy and make sure your system is safe! Laptops are not
 
 I want to thank the authors of [this page](https://e-forex.net/machine-learning-in-fx-trading-beyond-the-hype-and-some-useful-algos) for giving me guidance. 
 
-PS: i will try to `bake-in` resumability in these scripts. Wonder how gen 500 would have looked like. Theory is i can jumpstart gene 0 with the genes found in the 226 run. I will add updates. First i need to handle the "system-issue". Later.
+PS: i will try to `bake-in` resumability and internal get_data-currently its using http api-in these scripts. Abstracting it for better walkforward analysis. Wonder how gen 500 would have looked like. Theory is i can jumpstart gene 0 with the genes found in the 226 run. I will add updates. First i need to handle the "system-issue". Later.
 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
