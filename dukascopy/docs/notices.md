@@ -19,6 +19,8 @@ If you use the scripts: enjoy and make sure your system is safe! Laptops are not
 
 I want to thank the authors of [this page](https://e-forex.net/machine-learning-in-fx-trading-beyond-the-hype-and-some-useful-algos) for giving me guidance. 
 
+PS: i will try to `bake-in` resumability in these scripts. Wonder how gen 500 would have looked like.
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
