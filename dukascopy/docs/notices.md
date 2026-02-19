@@ -27,6 +27,8 @@ Note: i will make this laptop safe. Have it monitor GPU temperature and have it 
 
 BTW this is not my first hardware destruction. I destroyed at least 4 HD 7990's.
 
+I will add a dashboard which you can query via localhost:8000, or whatever DNS name your stuff runs on, to have a realtime look at the feature-discovery process and GPU stats. Like in the old days.
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
