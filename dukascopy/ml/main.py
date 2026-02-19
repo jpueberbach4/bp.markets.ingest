@@ -11,6 +11,8 @@ BLACKLISTED_INDICATORS = [
     'sma*', 'midpoint*', 'drift*', 
     "*example-pivot-finder*", 
     "*elliot*", 
+    "*macro*",
+    "*fibonacci*",
     "feature*"
 ]
 
@@ -20,7 +22,7 @@ FORCED_INDICATORS = [
     "example-multi-tf-rsi_XAU-USD_14_14_14_14"
 ]
 
-NUM_GENES = 12
+NUM_GENES = 16
 CHUNK_MULT = 4
 
 CONFIG = {
@@ -31,7 +33,7 @@ CONFIG = {
     'START_DATE': "2019-01-01",
     'END_DATE': "2023-01-01",
     'LOG_FILE': "alpha_factory_detailed_results.csv",
-    'POP_SIZE': 4096,
+    'POP_SIZE': 3800,
     'GPU_CHUNK': 64 * CHUNK_MULT,               
     'GENE_COUNT': NUM_GENES,
     'MAX_COLS_PER_IND': 1,
@@ -115,7 +117,7 @@ def run():
             reactor.evolve(res['f1'].to(DEVICE))
             
             # Brief pause
-            time.sleep(1.5)
+            #time.sleep(0.5)
 
     except KeyboardInterrupt:
         print("\n[!] Shutdown Signal Received. Cleaning up...")

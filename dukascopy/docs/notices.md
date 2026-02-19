@@ -2,36 +2,15 @@
 
 **Important:** This is a research project focusing on biometric feature discovery rather than public price action; it treats the GPU as a reactor to mine high-order, non-linear confluences that remain invisible to standard arbitrage. By discarding raw OHLCV data in favor of an evolved genomic population of indicators, the system generates unique "Genesis Blocks" of alpha that are statistically anchored to market physics.
 
-The first run was very succesful but my laptop couldnt handle the long-run. Laptops cannot handle long runs of the ML/* scripts. Don't use it on your laptop.
+I am finding some very interesting combinations. Will stresstest them. 
 
-Just to give an indication - best run was evolution 226:
+🌟 94   | 0.6087 | 0.8750 | 0.4667 | 8      | 492.8 | ....
 
-```sh
-timestamp,gen,f1,prec,rec,sigs,genes
-2026-02-19 01:25:16.180519,226,0.6250,0.7500,0.5357,20,...
-```
+- Weights learned on 80% of a random window.
+- Thresholds tuned on 20% of a random window.
+- Final Score (The 87.5% Precision) calculated on the 10% Master Holdout (Blind test data).
 
-Precision 75% with a 53% recall. I have checked the genes and none of them have lookahead bias. I will continue this in the cloud.
-
-Reminds me of the bit/altcoin mining era. Instead of coins we mine profitable features. But,... back then we had massive cooling and videocards with dual GPU's.
-
-I will give one tip: use gold and dollar index in various ways against the EUR-USD. I cannot share it all because yeah, this seems to give a real alpha edge. Still need to check it but this is extremely promising.
-
-If you use the scripts: enjoy and make sure your system is safe! Proper cooling etc.
-
-I want to thank the authors of [this page](https://e-forex.net/machine-learning-in-fx-trading-beyond-the-hype-and-some-useful-algos) for giving me guidance. 
-
-Note: the scripts are first version. It is very aggressive on evolutionary "selection". It keeps the top 10% and eliminates the rest. The script needs further tuning and solid forward testing. I will do these updates asap. Likely weekend work. Setting up a new system. Stay tuned.
-
-I will add a dashboard which you can query via localhost:8000, or whatever DNS name your stuff runs on, to have a realtime look at the feature-discovery process and GPU stats. Like in the old days.
-
-If you look closely at the code, you see that i dump OHLCV completely and train on pure indicators (genes) only. This is harder to arbitrage away. Just in case. We are not looking at the scoreboard but at the biometrics instead.
-
-So, if you have a custom set of indicators, the gen population discovers as statistically relevant, nobody can replicate it because they dont have your custom feature set.
-
-Eg. everyone sees a head and shoulders pattern on the chart. you don't want to see what everyone sees. you want to see the hidden stuff that nobody knows but is reliable. you are basically generating genesis blocks that is only for you.
-
-I will describe this setup in extreme detail to make it fully understandable on how it works, what can be done with it and how you should feed it and most importantly test it using various approaches. Walk-forward, OOS etc. I am currently recovering from a systems issue but almost there.
+It didnt even stop there... 
 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
