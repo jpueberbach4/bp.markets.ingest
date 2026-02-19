@@ -1,12 +1,15 @@
 # ML
 
-Applying machine learning to markets is harder than it looks. Achieving precision above 0.51—barely better than a coin flip—while maintaining low recall is already challenging. Finding real alpha is not easy. What’s needed is a system that automatically ingests all available indicators and runs overnight, exhaustively testing every possible combination. It has to turn over every rock. This is hard work—there are no easy wins.
+The first run was very succesful but it broke my system. Laptops cannot handle long runs of the ML/* scripts. Don't use it on your laptop.
 
-**Update** Moral of the GPU endeavor: my system is currently fighting for its life. No, even with a new laptop and a great GPU, this training stuff heats up stuff so much... that it throttles the GPU to less than 10 percent. Found a solution, but drastic: put the system outside under an "afdak". Linking it over the network. 
+Just to give an indication - best run was run evolution 96:
 
-I’ve shared a version of this gene-training approach. It’s far from finished, but it might give an idea of how to brute-force gene detection for pivot finding. I’m currently training a model, and I’m new to this, so I don’t know what the results will be. Earlier experiments (see above) were promising, but of course, past results don’t guarantee future outcomes - It's a first try to build an Alpha Factory—a systematic search for features that have a statistical edge, where the features are for 10% self-invented (not included).
+```sh
+timestamp,gen,f1,prec,rec,sigs,genes
+2026-02-19 01:25:16.180519,226,0.6250,0.7500,0.5357,20,...
+```
 
-PS: if you have a fast GPU and a cool room, try it with your custom indicators. It will take a while to complete... but you never know what it will find underneath those rocks. I have taken the system inside but i can barely put my hand on it (bottom). That hot it gets. Wonder how long it will survice this. 
+Precision 75% with a 53% recall. I will continue this in the cloud.
 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
