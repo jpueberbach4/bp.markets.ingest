@@ -5,30 +5,29 @@ import torch.nn.functional as F
 import numpy as np
 import threading
 import queue
+import time
 
-# This queue allows the GPU to keep moving while the CPU handles the "Sink" (disk/logs)
-log_queue = queue.Queue()
+log_queue = queue.Queue(maxsize=100) 
 
 def async_sink_worker():
-    """Worker thread to handle disk I/O without blocking the GPU."""
+    """Consumes metrics and model states to free up the Main Thread."""
     while True:
         item = log_queue.get()
         if item is None: break
-        msg, model_data = item
-        # Save model or log message
-        if model_data:
-            torch.save(model_data, f"checkpoints/{msg}")
+        filename, data, is_model = item
+        if is_model:
+            torch.save(data, f"checkpoints/{filename}")
         else:
-            print(msg)
+            with open("logs/evolution.log", "a") as f:
+                f.write(f"{data}\n")
         log_queue.task_done()
 
-# Start the sink thread
 sink_thread = threading.Thread(target=async_sink_worker, daemon=True)
 sink_thread.start()
 
 class FocalLoss(nn.Module):
     def __init__(self, alpha=0.2, gamma=2.5):
-        super(FocalLoss, self).__init__()
+        super().__init__()
         self.alpha = alpha
         self.gamma = gamma
 
@@ -41,20 +40,17 @@ class PersistentReactor:
     def __init__(self, feature_df, target_series, config, device):
         self.config = config
         self.device = device
-        self.dtype = torch.float32
         self.unique_inds = feature_df.columns.tolist()
 
-        y_vals = target_series.values.astype(np.float32)
-        vals = feature_df.values.astype(np.float32)
-        vals = np.nan_to_num(vals, nan=0.0, posinf=0.0, neginf=0.0)
-        
-        self.lake = torch.tensor(vals, device=device, dtype=self.dtype)
-        self.y_all = torch.tensor(y_vals, device=device, dtype=self.dtype).view(1, -1, 1)
+        # Pre-process Lake
+        vals = np.nan_to_num(feature_df.values.astype(np.float32))
+        self.lake = torch.tensor(vals, device=device)
+        self.y_all = torch.tensor(target_series.values.astype(np.float32), device=device).view(1, -1, 1)
 
         self.num_indicators = len(self.unique_inds)
         self.hidden_dim = 128
 
-        # Population
+        # GPU Populations
         self.pop_W1 = torch.randn(config["POP_SIZE"], config["GENE_COUNT"], self.hidden_dim, device=device) * 0.02
         self.pop_B1 = torch.zeros(config["POP_SIZE"], 1, self.hidden_dim, device=device)
         self.pop_W2 = torch.randn(config["POP_SIZE"], self.hidden_dim, 1, device=device) * 0.02
@@ -62,8 +58,9 @@ class PersistentReactor:
 
         indices = [torch.randperm(self.num_indicators)[:config["GENE_COUNT"]] for _ in range(config["POP_SIZE"])]
         self.population = torch.stack(indices).to(device)
-        self.thresholds = torch.full((config["POP_SIZE"],), 0.5, device=device)
+        self.thresholds = torch.full((config["POP_SIZE"],), 0.7, device=device) # Precision bias
         
+        # Vitality Stats
         self.gene_scores = torch.zeros(self.num_indicators, device=device)
         self.gene_usage = torch.zeros(self.num_indicators, device=device)
 
@@ -72,34 +69,46 @@ class PersistentReactor:
         return torch.bmm(h1, w2) + b2
 
     def run_generation(self):
+        """
+        V4.9: ROLLING WALK-FORWARD
+        Each batch of individuals gets a randomized 80% history window.
+        The last 10% of the ENTIRE lake is strictly held for the final OOS score.
+        """
         pop_size = self.config["POP_SIZE"]
         chunk_size = self.config["GPU_CHUNK"]
         metrics = {"f1": [], "prec": [], "rec": [], "sigs": []}
         criterion = FocalLoss()
-
-        # Fixed Windows to avoid logic hangs
+        
         total_len = len(self.lake)
-        end_idx = int(total_len * 0.8)
-        split_train = int(end_idx * 0.75)
+        master_oos_start = int(total_len * 0.9) # Absolute holdout
 
         for i in range(0, pop_size, chunk_size):
             end_i = min(i + chunk_size, pop_size)
-            actual_chunk_size = end_i - i
+            curr_chunk = end_i - i
             indices = self.population[i:end_i]
 
-            x_train = self.lake[:split_train, indices].permute(1, 0, 2)
-            y_train = self.y_all[:, :split_train, :].expand(actual_chunk_size, -1, -1)
-            x_val = self.lake[split_train:end_idx, indices].permute(1, 0, 2)
-            y_val = self.y_all[:, split_train:end_idx, :].expand(actual_chunk_size, -1, -1)
+            # We pick a window that ends somewhere before the master OOS
+            window_end = torch.randint(int(total_len * 0.5), master_oos_start, (1,)).item()
+            window_start = max(0, window_end - int(total_len * 0.4)) # 40% window size
+            train_split = window_start + int((window_end - window_start) * 0.8)
 
-            w1, b1 = self.pop_W1[i:end_i].detach().requires_grad_(True), self.pop_B1[i:end_i].detach().requires_grad_(True)
-            w2, b2 = self.pop_W2[i:end_i].detach().requires_grad_(True), self.pop_B2[i:end_i].detach().requires_grad_(True)
-            
+            # Slice
+            x_train = self.lake[window_start:train_split, indices].permute(1, 0, 2)
+            y_train = self.y_all[:, window_start:train_split, :].expand(curr_chunk, -1, -1)
+            x_val = self.lake[train_split:window_end, indices].permute(1, 0, 2)
+            y_val = self.y_all[:, train_split:window_end, :].expand(curr_chunk, -1, -1)
+
+            # Optimization Path
+            w1 = self.pop_W1[i:end_i].detach().requires_grad_(True)
+            b1 = self.pop_B1[i:end_i].detach().requires_grad_(True)
+            w2 = self.pop_W2[i:end_i].detach().requires_grad_(True)
+            b2 = self.pop_B2[i:end_i].detach().requires_grad_(True)
             optimizer = optim.Adam([w1, b1, w2, b2], lr=self.config["LEARNING_RATE"])
             
-            for epoch in range(self.config["EPOCHS"]):
+            for _ in range(self.config["EPOCHS"]):
                 optimizer.zero_grad()
                 logits = self._forward(x_train, w1, b1, w2, b2)
+                # Sparsity constraint + Focal Loss
                 loss = criterion(logits, y_train) + (torch.mean(torch.sigmoid(logits)) * 0.02)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_([w1, b1, w2, b2], 1.0)
@@ -109,11 +118,11 @@ class PersistentReactor:
                 self.pop_W1[i:end_i].copy_(w1)
                 self.pop_W2[i:end_i].copy_(w2)
 
-                # Threshold search - Use a tighter grid to prevent hang
+                # Threshold Tuning on the Validation Slice
                 val_probs = torch.sigmoid(self._forward(x_val, w1, b1, w2, b2))
-                bt, mf1 = torch.full((actual_chunk_size,), 0.6, device=self.device), torch.zeros(actual_chunk_size, device=self.device)
+                bt, mf1 = torch.full((curr_chunk,), 0.7, device=self.device), torch.zeros(curr_chunk, device=self.device)
                 
-                for t in np.linspace(0.6, 0.95, 35):
+                for t in np.linspace(0.6, 0.95, 30):
                     p = (val_probs > t).float()
                     tp = (p * y_val).sum(1)
                     fp = (p * (1 - y_val)).sum(1)
@@ -124,24 +133,31 @@ class PersistentReactor:
                 
                 self.thresholds[i:end_i].copy_(bt)
 
-                # OOS Test
-                x_test = self.lake[end_idx:, indices].permute(1, 0, 2)
-                y_test = self.y_all[:, end_idx:, :].expand(actual_chunk_size, -1, -1)
-                test_p = torch.sigmoid(self._forward(x_test, w1, b1, w2, b2))
-                fin_p = (test_p > bt.view(-1, 1, 1)).float()
+                # Final Out-of-Sample (The Master Holdout)
+                x_test = self.lake[master_oos_start:, indices].permute(1, 0, 2)
+                y_test = self.y_all[:, master_oos_start:, :].expand(curr_chunk, -1, -1)
+                test_logits = self._forward(x_test, w1, b1, w2, b2)
+                test_p = (torch.sigmoid(test_logits) > bt.view(-1, 1, 1)).float()
 
-                tp_t = (fin_p * y_test).sum(1).view(-1)
-                fp_t = (fin_p * (1 - y_test)).sum(1).view(-1)
-                fn_t = ((1 - fin_p) * y_test).sum(1).view(-1)
+                tp_t = (test_p * y_test).sum(1).view(-1)
+                fp_t = (test_p * (1 - y_test)).sum(1).view(-1)
+                fn_t = ((1 - test_p) * y_test).sum(1).view(-1)
 
                 f1_s = (2 * tp_t) / (2 * tp_t + fp_t + fn_t + 1e-6)
+                
+                # Update Vitality Metrics
+                for idx_c in range(curr_chunk):
+                    self.gene_scores[indices[idx_c]] += f1_s[idx_c]
+                    self.gene_usage[indices[idx_c]] += 1
+
+                # Ship metrics to CPU immediately to prevent VRAM accumulation
                 metrics["f1"].append(f1_s.cpu())
                 metrics["prec"].append((tp_t / (tp_t + fp_t + 1e-6)).cpu())
                 metrics["rec"].append((tp_t / (tp_t + fn_t + 1e-6)).cpu())
-                metrics["sigs"].append(fin_p.sum(1).view(-1).cpu())
-                
-                # Cleanup to free VRAM
-                del x_train, y_train, x_val, y_val, x_test, y_test, val_probs, test_p
+                metrics["sigs"].append(test_p.sum(1).view(-1).cpu())
+
+                # Force VRAM Flush
+                del x_train, y_train, x_val, y_val, x_test, y_test, val_probs, test_logits, test_p
                 torch.cuda.empty_cache()
 
         return {k: torch.cat(v) for k, v in metrics.items()}
