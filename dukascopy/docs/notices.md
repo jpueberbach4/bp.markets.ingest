@@ -13,6 +13,10 @@ Precision 75% with a 53% recall. I will continue this in the cloud.
 
 Reminds me of the bit/altcoin mining era. Instead of coins we mine profitable features. But,... back then we had massive cooling and videocards with dual GPU's.
 
+I will give one tip: use gold and dollar index in various ways against the EUR-USD. I cannot share it all because yeah, this seems to give a real alpha edge. Still need to check it but this is extremely promising.
+
+If you use the scripts: enjoy and make sure your system is safe! Laptops are not build for this stuff.
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
