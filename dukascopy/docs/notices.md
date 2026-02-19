@@ -25,6 +25,8 @@ Note: the scripts are first version. It is very aggressive on evolutionary "sele
 
 Note: i will make this laptop safe. Have it monitor GPU temperature and have it pause on dangerous levels and continue when it drops below safety-thresholds. Tbh i like this stuff. It brings back good memories from "back then".
 
+BTW this is not my first hardware destruction. I destroyed at least 4 HD 7990's.
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
