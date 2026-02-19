@@ -31,6 +31,8 @@ So, if you have a custom set of indicators, the gen population discovers as stat
 
 Eg. everyone sees a head and shoulders pattern on the chart. you don't want to see what everyone sees. you want to see the hidden stuff that nobody knows but is reliable. you are basically generating genesis blocks that is only for you.
 
+I will describe this setup in extreme detail to make it fully understandable on how it works, what can be done with it and how you should feed it and most importantly test it using various approaches. Walk-forward, OOS etc. I am currently recovering from a systems issue but almost there.
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
