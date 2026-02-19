@@ -2,9 +2,9 @@
 
 **Important:** This is a research project focusing on biometric feature discovery rather than public price action; it treats the GPU as a reactor to mine high-order, non-linear confluences that remain invisible to standard arbitrage. By discarding raw OHLCV data in favor of an evolved genomic population of indicators, the system generates unique "Genesis Blocks" of alpha that are statistically anchored to market physics.
 
-The first run was very succesful but it broke my system. Laptops cannot handle long runs of the ML/* scripts. Don't use it on your laptop.
+The first run was very succesful but my laptop couldnt handle the long-run. Laptops cannot handle long runs of the ML/* scripts. Don't use it on your laptop.
 
-Just to give an indication - best run was evolution 226 (then it died):
+Just to give an indication - best run was evolution 226:
 
 ```sh
 timestamp,gen,f1,prec,rec,sigs,genes
@@ -17,17 +17,11 @@ Reminds me of the bit/altcoin mining era. Instead of coins we mine profitable fe
 
 I will give one tip: use gold and dollar index in various ways against the EUR-USD. I cannot share it all because yeah, this seems to give a real alpha edge. Still need to check it but this is extremely promising.
 
-If you use the scripts: enjoy and make sure your system is safe! Laptops are not build for this stuff.
+If you use the scripts: enjoy and make sure your system is safe! Proper cooling etc.
 
 I want to thank the authors of [this page](https://e-forex.net/machine-learning-in-fx-trading-beyond-the-hype-and-some-useful-algos) for giving me guidance. 
 
-PS: i will try to `bake-in` resumability and internal get_data-currently its using http api-in these scripts. Abstracting it for better walkforward analysis. Wonder how gen 500 would have looked like. Theory is i can jumpstart gene 0 with the genes found in the 226 run. I will add updates. First i need to handle the "system-issue". Later.
-
 Note: the scripts are first version. It is very aggressive on evolutionary "selection". It keeps the top 10% and eliminates the rest. The script needs further tuning and solid forward testing. I will do these updates asap. Likely weekend work. Setting up a new system. Stay tuned.
-
-Note: i will make this laptop safe. Have it monitor GPU temperature and have it pause on dangerous levels and continue when it drops below safety-thresholds. Tbh i like this stuff. It brings back good memories from "back then".
-
-BTW this is not my first hardware destruction. I destroyed at least 4 HD 7990's.
 
 I will add a dashboard which you can query via localhost:8000, or whatever DNS name your stuff runs on, to have a realtime look at the feature-discovery process and GPU stats. Like in the old days.
 
