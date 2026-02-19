@@ -9,7 +9,7 @@ timestamp,gen,f1,prec,rec,sigs,genes
 2026-02-19 01:25:16.180519,226,0.6250,0.7500,0.5357,20,...
 ```
 
-Precision 75% with a 53% recall. I will continue this in the cloud.
+Precision 75% with a 53% recall. I have checked the genes and none of them have lookahead bias. I will continue this in the cloud.
 
 Reminds me of the bit/altcoin mining era. Instead of coins we mine profitable features. But,... back then we had massive cooling and videocards with dual GPU's.
 
