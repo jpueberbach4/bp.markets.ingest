@@ -33,6 +33,8 @@ If you look closely at the code, you see that i dump OHLCV completely and train 
 
 So, if you have a custom set of indicators, the gen population discovers as statistically relevant, nobody can replicate it because they dont have your custom feature set.
 
+Eg. everyone sees a head and shoulders pattern on the chart. you don't want to see what everyone sees. you want to see the hidden stuff that nobody knows but is reliable. you are basically generating genesis blocks that is only for you.
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
