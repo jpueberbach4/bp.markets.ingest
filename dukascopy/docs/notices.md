@@ -2,7 +2,7 @@
 
 The first run was very succesful but it broke my system. Laptops cannot handle long runs of the ML/* scripts. Don't use it on your laptop.
 
-Just to give an indication - best run was evolution 226:
+Just to give an indication - best run was evolution 226 (then it died):
 
 ```sh
 timestamp,gen,f1,prec,rec,sigs,genes
