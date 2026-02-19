@@ -1,409 +1,215 @@
 import torch
+import torch.nn as nn
+import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
-import time
-
+import pandas as pd
 
 class PersistentReactor:
-    """Population-based neural reactor with evolutionary feature selection.
-
-    This class maintains a population of small neural networks, each operating
-    on a selected subset of input indicators ("genes"). Networks are trained
-    via gradient descent and evolved via selection and mutation based on
-    performance metrics (F1 score).
-
-    Attributes:
-        config (dict): Configuration dictionary controlling population size,
-            learning rate, mutation rate, epochs, etc.
-        device (torch.device): CUDA or CPU device.
-        dtype (torch.dtype): Floating point precision used throughout.
-        stream (torch.cuda.Stream): Dedicated CUDA stream for async execution.
-        lake (torch.Tensor): Normalized full feature matrix [T, F].
-        population (torch.Tensor): Feature indices for each genome
-            [POP_SIZE, GENE_COUNT].
-        thresholds (torch.Tensor): Per-genome decision thresholds.
-    """
+    """Persistent Reactor implementing evolutionary neural networks for sequence prediction."""
 
     def __init__(self, feature_df, target_series, config, device):
-        """Initializes data, population, and model parameters.
+        """Initializes the reactor with data, population, and architecture.
 
         Args:
-            feature_df (pd.DataFrame): Input feature dataframe [T, F].
-            target_series (pd.Series): Binary target series [T].
-            config (dict): Hyperparameter and evolution configuration.
-            device (torch.device): Device on which all tensors are allocated.
+            feature_df (pd.DataFrame): Input features.
+            target_series (pd.Series): Target labels.
+            config (dict): Configuration dictionary including population size, genes, and hyperparameters.
+            device (torch.device): Device to run computations on.
         """
         self.config = config
         self.device = device
         self.dtype = torch.float32
-
-        # Dedicated CUDA stream to overlap compute and memory operations
         self.stream = torch.cuda.Stream()
+        self.unique_inds = feature_df.columns.tolist()
 
-        # Positive class weighting to counter heavy class imbalance
-        self.pos_weight = torch.tensor(200.0, device=device)
+        # Convert target to float32 tensor and define train/val/test splits
+        y_vals = target_series.values.astype(np.float32)
+        self.total_len = len(y_vals)
+        self.split_val = int(self.total_len * 0.6)
+        self.split_test = int(self.total_len * 0.8)
 
-        # Convert feature dataframe to float32 numpy array
+        # Convert features to float32 and normalize
         vals = feature_df.values.astype(np.float32)
-
-        # Replace NaNs and infinities with zeros
         vals = np.nan_to_num(vals, nan=0.0, posinf=0.0, neginf=0.0)
-
-        # Train / test split index
-        self.split = int(len(vals) * 0.8)
-
-        # Compute normalization statistics on training subset only
-        train_subset = vals[:self.split, :]
-        mu = np.mean(train_subset, axis=0)
-        sigma = np.std(train_subset, axis=0)
-
-        # Z-score normalization with numerical stability
-        vals = (vals - mu) / (sigma + 1e-6)
-
-        # Clip extreme values to stabilize training
-        vals = np.clip(vals, -5.0, 5.0)
-
-        # Final NaN cleanup after normalization
-        vals = np.nan_to_num(vals, nan=0.0)
-
-        # Store normalized features as a GPU tensor
+        mu = np.mean(vals[:self.split_val, :], axis=0)
+        sigma = np.std(vals[:self.split_val, :], axis=0) + 1e-6
+        vals = np.clip((vals - mu) / sigma, -5.0, 5.0)
         self.lake = torch.tensor(vals, device=device, dtype=self.dtype)
 
-        # Metadata for feature indexing
-        self.col_names = list(feature_df.columns)
-        self.unique_inds = self.col_names
+        # Prepare target tensors for train/val/test
+        y_tensor = torch.tensor(y_vals, device=device, dtype=self.dtype).view(1, -1, 1)
+        self.y_train = y_tensor[:, :self.split_val, :]
+        self.y_val = y_tensor[:, self.split_val:self.split_test, :]
+        self.y_test = y_tensor[:, self.split_test:, :]
+
+        # Compute class balancing weight
+        pos_count = (self.y_train > 0.5).sum().item()
+        neg_count = (self.y_train < 0.5).sum().item()
+        self.pos_weight = torch.tensor([neg_count / (pos_count + 1e-6)], device=device)
+
+        # Network architecture
         self.num_indicators = len(self.unique_inds)
+        self.hidden_dim = 128
 
-        # Prepare target tensor [1, T, 1] for broadcasting
-        y_raw = (
-            torch.tensor(target_series.values, device=device)
-            .float()
-            .view(1, -1, 1)
-        )
+        # Initialize population weights and biases
+        self.pop_W1 = torch.randn(config["POP_SIZE"], config["GENE_COUNT"], self.hidden_dim, device=device) * 0.02
+        self.pop_B1 = torch.zeros(config["POP_SIZE"], 1, self.hidden_dim, device=device)
+        self.pop_W2 = torch.randn(config["POP_SIZE"], self.hidden_dim, 1, device=device) * 0.02
+        self.pop_B2 = torch.zeros(config["POP_SIZE"], 1, 1, device=device)
 
-        # Split targets into train and test
-        self.y_train = y_raw[:, :self.split, :]
-        self.y_test = y_raw[:, self.split:, :]
+        # Initialize genetic population (feature indices) and thresholds
+        indices = [torch.randperm(self.num_indicators)[:config["GENE_COUNT"]] for _ in range(config["POP_SIZE"])]
+        self.population = torch.stack(indices).to(device)
+        self.thresholds = torch.full((config["POP_SIZE"],), 0.5, device=device)
 
-        # Hidden layer width for all population members
-        hidden = 128
-
-        # Population weights and biases
-        self.pop_W1 = (
-            torch.randn(
-                config["POP_SIZE"],
-                config["GENE_COUNT"],
-                hidden,
-                device=device,
-            )
-            * 0.01
-        )
-        self.pop_W2 = (
-            torch.randn(
-                config["POP_SIZE"],
-                hidden,
-                1,
-                device=device,
-            )
-            * 0.01
-        )
-        self.pop_B1 = torch.zeros(
-            config["POP_SIZE"], 1, hidden, device=device
-        )
-        self.pop_B2 = torch.full(
-            (config["POP_SIZE"], 1, 1), -0.5, device=device
-        )
-
-        # Randomly initialize feature subsets (genes) per genome
-        pop_indices = []
-        for _ in range(config["POP_SIZE"]):
-            pop_indices.append(
-                torch.randperm(self.num_indicators)[
-                    : config["GENE_COUNT"]
-                ]
-            )
-        self.population = torch.stack(pop_indices).to(device)
-
-        # Initial classification thresholds per genome
-        self.thresholds = torch.full(
-            (config["POP_SIZE"],),
-            0.1,
-            device=device,
-            dtype=self.dtype,
-        )
-
-    def run_generation(self, do_profile=False):
-        """Runs one full training + evaluation generation.
-
-        Each genome is trained on its selected feature subset using
-        manual backpropagation. Performance metrics are computed on
-        the held-out test set.
+    def _forward(self, x, w1, b1, w2, b2):
+        """Performs forward pass of a mini-network.
 
         Args:
-            do_profile (bool): If True, prints GPU memory usage per chunk.
+            x (torch.Tensor): Input tensor of shape (batch, seq_len, features).
+            w1 (torch.Tensor): First layer weights.
+            b1 (torch.Tensor): First layer biases.
+            w2 (torch.Tensor): Second layer weights.
+            b2 (torch.Tensor): Second layer biases.
 
         Returns:
-            dict[str, torch.Tensor]: Flattened tensors of metrics:
-                - 'f1': F1 score per genome
-                - 'prec': precision per genome
-                - 'rec': recall per genome
-                - 'sigs': number of positive signals per genome
+            torch.Tensor: Output logits of shape (batch, seq_len, 1).
         """
-        metrics = {"f1": [], "prec": [], "rec": [], "sigs": []}
-        lr = self.config["LEARNING_RATE"]
+        h1 = F.leaky_relu(torch.bmm(x, w1) + b1, 0.1)  # First hidden layer with LeakyReLU
+        return torch.bmm(h1, w2) + b2  # Output layer
 
-        # Split population into GPU-friendly chunks
-        col_chunks = torch.split(
-            self.population, self.config["GPU_CHUNK"]
-        )
-        n_chunks = len(col_chunks)
+    def run_generation(self):
+        """Runs one generation of training for all networks in the population.
 
-        # Execute training asynchronously on a dedicated CUDA stream
-        with torch.cuda.stream(self.stream):
-            for idx, chunk_cols in enumerate(col_chunks):
-                if do_profile:
-                    vram = (
-                        torch.cuda.memory_allocated(self.device)
-                        / 1024**3
-                    )
-                    print(
-                        f"  ⚡ [Chunk {idx+1:02d}/{n_chunks}] "
-                        f"VRAM: {vram:.2f}GB",
-                        end="\r",
-                    )
+        Uses GPU chunking, validation-based early stopping, and updates thresholds.
 
-                # Determine population slice indices
-                start_i = idx * self.config["GPU_CHUNK"]
-                p_size = chunk_cols.size(0)
-
-                # Clone weights for isolated training
-                W1 = (
-                    self.pop_W1[start_i : start_i + p_size]
-                    .detach()
-                    .clone()
-                )
-                W2 = (
-                    self.pop_W2[start_i : start_i + p_size]
-                    .detach()
-                    .clone()
-                )
-                B1 = (
-                    self.pop_B1[start_i : start_i + p_size]
-                    .detach()
-                    .clone()
-                )
-                B2 = (
-                    self.pop_B2[start_i : start_i + p_size]
-                    .detach()
-                    .clone()
-                )
-
-                # Gather feature subsets and align dimensions
-                X_batch = self.lake[: self.split, chunk_cols].permute(
-                    1, 0, 2
-                )
-                Y_batch = self.y_train.expand(p_size, -1, -1)
-
-                # Gradient descent loop
-                for epoch in range(self.config["EPOCHS"]):
-                    # Forward pass: hidden layer
-                    Z1 = torch.bmm(X_batch, W1) + B1
-                    H1 = F.leaky_relu(Z1, 0.1)
-
-                    # Output logits with clamping for numerical stability
-                    logits = torch.bmm(H1, W2) + B2
-                    logits = torch.clamp(logits, -15.0, 15.0)
-
-                    # Abort on numerical failure
-                    if torch.isnan(logits).any():
-                        W1.fill_(0.0)
-                        W2.fill_(0.0)
-                        break
-
-                    # Sigmoid predictions
-                    pred = torch.sigmoid(logits)
-
-                    # Output gradient with class reweighting
-                    d_out = pred - Y_batch
-                    d_out = torch.where(
-                        Y_batch > 0.5,
-                        d_out * self.pos_weight,
-                        d_out,
-                    )
-
-                    # Gradient norm clipping
-                    gnorm = torch.norm(
-                        d_out, dim=(1, 2), keepdim=True
-                    )
-                    d_out = torch.where(
-                        gnorm > 1.0,
-                        d_out / (gnorm + 1e-6),
-                        d_out,
-                    )
-
-                    # Backprop into output layer
-                    W2.sub_(
-                        torch.bmm(H1.transpose(1, 2), d_out)
-                        * lr
-                    )
-                    B2.sub_(
-                        d_out.sum(dim=1, keepdim=True) * lr
-                    )
-
-                    # Backprop into hidden layer
-                    d_h1 = torch.bmm(
-                        d_out, W2.transpose(1, 2)
-                    ) * torch.where(Z1 > 0, 1.0, 0.1)
-
-                    W1.sub_(
-                        torch.bmm(
-                            X_batch.transpose(1, 2), d_h1
-                        )
-                        * lr
-                    )
-                    B1.sub_(
-                        d_h1.sum(dim=1, keepdim=True) * lr
-                    )
-
-                # Write trained parameters back to population
-                self.pop_W1[start_i : start_i + p_size].copy_(W1)
-                self.pop_W2[start_i : start_i + p_size].copy_(W2)
-                self.pop_B1[start_i : start_i + p_size].copy_(B1)
-                self.pop_B2[start_i : start_i + p_size].copy_(B2)
-
-                # Evaluation phase (no gradients)
-                with torch.no_grad():
-                    X_test = self.lake[
-                        self.split :, chunk_cols
-                    ].permute(1, 0, 2)
-
-                    logits_test = (
-                        torch.bmm(
-                            F.leaky_relu(
-                                torch.bmm(X_test, W1) + B1,
-                                0.1,
-                            ),
-                            W2,
-                        )
-                        + B2
-                    )
-
-                    preds = (
-                        torch.sigmoid(logits_test)
-                        > self.thresholds[
-                            start_i : start_i + p_size
-                        ].view(-1, 1, 1)
-                    ).float()
-
-                    Y_test = self.y_test.expand(p_size, -1, -1)
-
-                    # Confusion matrix components
-                    tp = (preds * Y_test).sum(1)
-                    fp = (preds * (1 - Y_test)).sum(1)
-                    fn = ((1 - preds) * Y_test).sum(1)
-
-                    # Metrics
-                    metrics["f1"].append(
-                        (2 * tp)
-                        / (2 * tp + fp + fn + 1e-6)
-                    )
-                    metrics["prec"].append(
-                        tp / (tp + fp + 1e-6)
-                    )
-                    metrics["rec"].append(
-                        tp / (tp + fn + 1e-6)
-                    )
-                    metrics["sigs"].append(preds.sum(1))
-
-        # Synchronize default stream with custom stream
-        torch.cuda.current_stream().wait_stream(self.stream)
-
-        # Concatenate chunked metrics
-        return {
-            k: torch.cat(v).view(-1) for k, v in metrics.items()
-        }
-
-    def evolve(self, f1_scores):
-        """Evolves the population based on F1 fitness.
-
-        Top-performing genomes are retained and replicated. Weights,
-        thresholds, and feature selections are mutated to introduce
-        variation.
-
-        Args:
-            f1_scores (torch.Tensor): F1 score per genome [POP_SIZE].
+        Returns:
+            dict: Dictionary of evaluation metrics containing 'f1', 'prec', 'rec', 'sigs'.
         """
         pop_size = self.config["POP_SIZE"]
+        chunk_size = self.config["GPU_CHUNK"]
+        metrics = {"f1": [], "prec": [], "rec": [], "sigs": []}
 
-        # Rank genomes by fitness
-        idx = torch.argsort(f1_scores, descending=True)
+        for i in range(0, pop_size, chunk_size):
+            end_i = min(i + chunk_size, pop_size)
+            actual_chunk_size = end_i - i
 
-        # Elitism: keep top 10%
-        keep = pop_size // 10
+            # Select features for this chunk
+            indices = self.population[i:end_i]
+            x_train = self.lake[:self.split_val, indices].permute(1, 0, 2)
+            y_train = self.y_train.expand(actual_chunk_size, -1, -1)
 
-        # Repeat elites to refill population
-        repeats = idx[:keep].repeat(
-            (pop_size // keep) + 1
-        )[:pop_size]
+            x_val = self.lake[self.split_val:self.split_test, indices].permute(1, 0, 2)
+            y_val = self.y_val.expand(actual_chunk_size, -1, -1)
 
-        # Copy elite genomes
-        self.population.copy_(self.population[repeats])
-        self.thresholds.copy_(self.thresholds[repeats])
+            # Initialize weights for gradient descent
+            w1 = self.pop_W1[i:end_i].detach().requires_grad_(True)
+            b1 = self.pop_B1[i:end_i].detach().requires_grad_(True)
+            w2 = self.pop_W2[i:end_i].detach().requires_grad_(True)
+            b2 = self.pop_B2[i:end_i].detach().requires_grad_(True)
 
-        # Mutate thresholds
-        self.thresholds.add_(
-            torch.randn_like(self.thresholds) * 0.01
-        )
-        self.thresholds.clamp_(0.01, 0.99)
+            optimizer = optim.Adam([w1, b1, w2, b2], lr=self.config["LEARNING_RATE"])
+            scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3)
+            criterion = nn.BCEWithLogitsLoss(pos_weight=self.pos_weight)
 
-        # Mutate weights and biases
-        rate = self.config["WEIGHT_MUTATION_RATE"]
-        for name, p in [
-            ("W1", self.pop_W1),
-            ("W2", self.pop_W2),
-            ("B1", self.pop_B1),
-            ("B2", self.pop_B2),
-        ]:
-            mutation_scale = (
-                rate * 0.1 if "B" in name else rate
-            )
-            p.copy_(
-                p[repeats]
-                + torch.randn_like(p) * mutation_scale
-            )
+            best_val_loss = float('inf')
+            patience_counter = 0
 
-        # Feature (gene) mutation for non-elites
+            # Training loop with early stopping
+            for epoch in range(self.config["EPOCHS"]):
+                optimizer.zero_grad()
+                logits_train = self._forward(x_train, w1, b1, w2, b2)
+                loss_train = criterion(logits_train, y_train)
+                loss_train.backward()
+                torch.nn.utils.clip_grad_norm_([w1, b1, w2, b2], 1.0)
+                optimizer.step()
+
+                with torch.no_grad():
+                    logits_val = self._forward(x_val, w1, b1, w2, b2)
+                    loss_val = criterion(logits_val, y_val).item()
+
+                scheduler.step(loss_val)
+
+                # Early stopping check
+                if loss_val < best_val_loss - 1e-4:
+                    best_val_loss = loss_val
+                    patience_counter = 0
+                else:
+                    patience_counter += 1
+
+                if patience_counter >= 7:
+                    break
+
+            # Update population with trained weights
+            with torch.no_grad():
+                self.pop_W1[i:end_i].copy_(w1)
+                self.pop_B1[i:end_i].copy_(b1)
+                self.pop_W2[i:end_i].copy_(w2)
+                self.pop_B2[i:end_i].copy_(b2)
+
+                # Determine best threshold for validation set
+                val_probs = torch.sigmoid(self._forward(x_val, w1, b1, w2, b2))
+                best_t = torch.full((actual_chunk_size,), 0.5, device=self.device)
+                max_f1_val = torch.zeros(actual_chunk_size, device=self.device)
+
+                for t in np.linspace(0.01, 0.99, 50):
+                    p = (val_probs > t).float()
+                    tp = (p * y_val).sum(1)
+                    fp = (p * (1 - y_val)).sum(1)
+                    fn = ((1 - p) * y_val).sum(1)
+                    f1 = (2 * tp) / (2 * tp + fp + fn + 1e-6)
+                    mask = f1.view(-1) > max_f1_val
+                    max_f1_val[mask], best_t[mask] = f1.view(-1)[mask], t
+
+                self.thresholds[i:end_i].copy_(best_t)
+
+                # Evaluate test set metrics
+                x_test = self.lake[self.split_test:, indices].permute(1, 0, 2)
+                y_test = self.y_test.expand(actual_chunk_size, -1, -1)
+                test_probs = torch.sigmoid(self._forward(x_test, w1, b1, w2, b2))
+                final_p = (test_probs > best_t.view(-1, 1, 1)).float()
+
+                tp_t = (final_p * y_test).sum(1).view(-1)
+                fp_t = (final_p * (1 - y_test)).sum(1).view(-1)
+                fn_t = ((1 - final_p) * y_test).sum(1).view(-1)
+
+                metrics["f1"].append((2 * tp_t) / (2 * tp_t + fp_t + fn_t + 1e-6))
+                metrics["prec"].append(tp_t / (tp_t + fp_t + 1e-6))
+                metrics["rec"].append(tp_t / (tp_t + fn_t + 1e-6))
+                metrics["sigs"].append(final_p.sum(1).view(-1))
+
+        return {k: torch.cat(v) for k, v in metrics.items()}
+
+    def evolve(self, fitness_scores):
+        """Performs evolutionary step: selection, crossover, and mutation.
+
+        Args:
+            fitness_scores (torch.Tensor): Fitness scores for the current population.
+        """
+        pop_size = self.config["POP_SIZE"]
+        idx = torch.argsort(fitness_scores, descending=True)
+        keep = max(2, pop_size // 10)
+        elites_idx = idx[:keep]
+
+        # Crossover for the remaining population
         for i in range(keep, pop_size):
-            mut_mask = (
-                torch.rand(
-                    self.config["GENE_COUNT"],
-                    device=self.device,
-                )
-                < 0.1
-            )
-            if mut_mask.any():
-                current_genes = self.population[i].tolist()
+            p1, p2 = elites_idx[torch.randint(0, keep, (2,))]
+            self.population[i] = self.population[p1]
+            self.pop_W1[i] = self.pop_W1[p1]
+            self.pop_W2[i] = self.pop_W2[p1]
 
-                # Candidate features not currently selected
-                available_pool = np.setdiff1d(
-                    np.arange(self.num_indicators),
-                    current_genes,
-                )
+            if torch.rand(1).item() < 0.5:
+                cut = torch.randint(1, self.config["GENE_COUNT"], (1,)).item()
+                self.population[i, cut:] = self.population[p2, cut:]
+                self.pop_W1[i, cut:] = self.pop_W1[p2, cut:]
 
-                if len(available_pool) > 0:
-                    num_to_replace = mut_mask.sum().item()
-                    new_picks = np.random.choice(
-                        available_pool,
-                        min(
-                            len(available_pool),
-                            int(num_to_replace),
-                        ),
-                        replace=False,
-                    )
-                    mut_indices = torch.where(mut_mask)[0]
-                    for m_idx, g_val in zip(
-                        mut_indices, new_picks
-                    ):
-                        self.population[i, m_idx] = int(
-                            g_val
-                        )
+        # Mutation
+        rate = self.config["WEIGHT_MUTATION_RATE"]
+        for i in range(keep, pop_size):
+            self.pop_W1[i] += torch.randn_like(self.pop_W1[i]) * rate
+            self.pop_W2[i] += torch.randn_like(self.pop_W2[i]) * rate
+
+            if torch.rand(1).item() < 0.3:
+                mut_idx = torch.randint(0, self.config["GENE_COUNT"], (1,))
+                self.population[i, mut_idx] = torch.randint(0, self.num_indicators, (1,))
