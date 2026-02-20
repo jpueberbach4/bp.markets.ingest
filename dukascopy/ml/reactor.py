@@ -9,8 +9,8 @@ import os
 import fnmatch
 from itertools import combinations
 
-# VERSION 5.7.5 - FORCED GENES WERE BRED OUT. FIX
-# Fix: Forced Gene Drift, Elitism ordering, and probabilistic backfill.
+# VERSION 5.8.0 - KINETIC START
+# Fixes: Low signal frequency, slow convergence, and weight starvation.
 
 log_queue = queue.Queue(maxsize=100)
 
@@ -60,7 +60,7 @@ class PersistentReactor:
         self.num_indicators = len(self.unique_inds)
         self.hidden_dim = config.get("HIDDEN_DIM", 128)
         
-        # 1. Resolve Forced Genes
+        # Resolve Forced Genes
         raw_forced = self.config.get("FORCED_GENES", [])
         resolved_indices = []
         for pattern in raw_forced:
@@ -74,7 +74,7 @@ class PersistentReactor:
 
         p_size, g_count = config["POP_SIZE"], config["GENE_COUNT"]
         
-        # 2. Build Initial Population
+        # Build Initial Population
         indices_list = []
         for _ in range(p_size):
             free_slots = g_count - self.num_forced
@@ -85,9 +85,10 @@ class PersistentReactor:
         self.population = torch.stack(indices_list).to(device).long()
         self.thresholds = torch.full((p_size,), 0.7, device=device) 
 
-        self.pop_W1 = torch.randn(p_size, g_count, self.hidden_dim, device=device) * 0.02
+        # JUMPSTART: Increased variance (0.15) so signals actually fire in Gen 0
+        self.pop_W1 = torch.randn(p_size, g_count, self.hidden_dim, device=device) * 0.15
         self.pop_B1 = torch.zeros(p_size, 1, self.hidden_dim, device=device)
-        self.pop_W2 = torch.randn(p_size, self.hidden_dim, 1, device=device) * 0.02
+        self.pop_W2 = torch.randn(p_size, self.hidden_dim, 1, device=device) * 0.15
         self.pop_B2 = torch.zeros(p_size, 1, 1, device=device)
         
         self.gene_scores = torch.zeros(self.num_indicators, device=device)
@@ -133,6 +134,7 @@ class PersistentReactor:
             for _ in range(self.config["EPOCHS"]):
                 optimizer.zero_grad()
                 logits = self._forward(x_train, w1, b1, w2, b2)
+                # Added Mean Signal penalty to prevent "always-on" models
                 loss = criterion(logits, y_train) + (torch.mean(torch.sigmoid(logits)) * 0.5)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_([w1, b1, w2, b2], 1.0)
@@ -145,12 +147,14 @@ class PersistentReactor:
                 val_probs = torch.sigmoid(self._forward(x_val, w1, b1, w2, b2))
                 bt, mf1 = torch.full((curr_chunk,), 0.7, device=self.device), torch.zeros(curr_chunk, device=self.device)
                 
-                for t in np.linspace(0.6, 0.95, 80):
+                # WIDER GRID: Starting at 0.45 to allow "early bloomers" to survive
+                for t in np.linspace(0.45, 0.90, 80):
                     p = (val_probs > t).float()
                     sigs = p.sum(1) + 1e-6
                     tp, fp, fn = (p * y_val).sum(1), (p * (1 - y_val)).sum(1), ((1 - p) * y_val).sum(1)
                     f1 = (2 * tp) / (2 * tp + fp + fn + 1e-6)
-                    penalty = torch.log10(sigs.clamp(min=1.0, max=100.0))
+                    # Log penalty now allows more breathing room (up to 200 sigs)
+                    penalty = torch.log10(sigs.clamp(min=1.0, max=200.0))
                     f1_weighted = f1.view(-1) * penalty.view(-1)
                     mask = f1_weighted > mf1
                     mf1[mask], bt[mask] = f1_weighted[mask], t
@@ -180,7 +184,6 @@ class PersistentReactor:
 
     def evolve(self, fitness_scores):
         pop_size = self.config["POP_SIZE"]
-        # Sort based on OOS F1 Performance
         idx = torch.argsort(fitness_scores, descending=True)
         
         self.population = self.population[idx]
@@ -188,12 +191,12 @@ class PersistentReactor:
         self.pop_B1, self.pop_B2 = self.pop_B1[idx], self.pop_B2[idx]
         self.thresholds = self.thresholds[idx]
 
-        # Stagnation check
         fit_mean = torch.mean(fitness_scores)
         fit_std = torch.std(fitness_scores) + 1e-6
-        is_stagnant = ((fitness_scores[0] - fit_mean) / fit_std) < 1.2
+        is_stagnant = ((fitness_scores[0] - fit_mean) / fit_std) < 1.1
         
-        keep = max(2, pop_size // 15)
+        # Elitism: Increased to protect top 10%
+        keep = max(2, pop_size // 10)
         new_pop, new_w1, new_w2 = self.population.clone(), self.pop_W1.clone(), self.pop_W2.clone()
         vitality = (self.gene_scores + 0.1) / (self.gene_usage + 1.0)
         
@@ -201,21 +204,17 @@ class PersistentReactor:
             t1, t2 = torch.randint(0, pop_size, (4,)), torch.randint(0, pop_size, (4,))
             p1, p2 = t1[torch.argmax(fitness_scores[t1])], t2[torch.argmax(fitness_scores[t2])]
             
-            # Anchor Lock: Child inherits parent 1 initially
             new_pop[i] = self.population[p1].clone()
             new_w1[i], new_w2[i] = self.pop_W1[p1].clone(), self.pop_W2[p1].clone()
             
-            # Explicitly re-force the anchors into the child (Self-Correction)
             if self.num_forced > 0:
                 new_pop[i, :self.num_forced] = self.forced_indices
 
-            # Adaptive Crossover (Protecting the forced head)
             if torch.rand(1).item() < (0.85 if is_stagnant else 0.7):
                 cut = torch.randint(self.num_forced, self.config["GENE_COUNT"], (1,)).item()
                 head = new_pop[i, :cut]
                 tail = self.population[p2, cut:].clone()
                 
-                # Probabilistic backfill for tail collisions
                 v_probs = vitality.softmax(0)
                 for g in range(len(tail)):
                     if tail[g] in head:
@@ -227,8 +226,8 @@ class PersistentReactor:
                 new_pop[i, cut:] = tail
                 new_w1[i, cut:] = self.pop_W1[p2, cut:]
 
-        # Mutation with "Regime Shock"
-        mut_rate = self.config["WEIGHT_MUTATION_RATE"] * (4.0 if is_stagnant else 1.0)
+        # Mutation Shock: Stronger for weights to break local minima
+        mut_rate = self.config["WEIGHT_MUTATION_RATE"] * (5.0 if is_stagnant else 1.0)
         new_w1[keep:] += torch.randn_like(new_w1[keep:]) * mut_rate
         new_w2[keep:] += torch.randn_like(new_w2[keep:]) * mut_rate
 
@@ -236,7 +235,6 @@ class PersistentReactor:
         self.pop_W1.copy_(new_w1)
         self.pop_W2.copy_(new_w2)
 
-        # Integrity Guard
         for g_idx in range(pop_size):
             if len(torch.unique(self.population[g_idx])) != self.config["GENE_COUNT"]:
                 print(f"❌ GENOME COLLAPSE AT POP {g_idx}!")
