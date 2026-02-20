@@ -16,6 +16,10 @@ gen, F1, prec, recall, signals, fps
 
 It didnt even stop there...
 
+```sh
+2026-02-20 01:07:24.771731,304,0.6957,1.0000,0.5333,8,...
+```
+
 This is a different method of backtesting. Normally you have an idea and you test it. In this method you add your custom signal generators, feed it into an engine and have it evolve together with all indicators and have IT find a strategy for you, eg with a > 80 percent precision. This code has (attempted) protection against overfitting (using rolling windows,master holdout, precision bias) but i am still researching, optimizing and testing it. This part will become the cathedral of this project if tests checkout. This is (one of) the original idea(s) behind this project.
 
 I will stresstest the results soon. Also check if the generated strategies are market wide or symbol specific.
