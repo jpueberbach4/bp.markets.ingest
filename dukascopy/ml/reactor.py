@@ -5,23 +5,21 @@ import torch.nn.functional as F
 import numpy as np
 import threading
 import queue
-import time
 import os
+import fnmatch
 from itertools import combinations
 
-# Version 5.1 - Persistent Reactor: Specialized Directional Evolution + Atomic Scanner
-# Targets: Bottom-Only or Top-Only optimization via filtered Ingestion
+# VERSION 5.6 - THE GROUND TRUTH MONOLITH
+# Integrates: Vitality Decay, Z-Score Stagnation, Log-Penalty, and Thread-Safe Sinking.
 
-log_queue = queue.Queue(maxsize=100) 
-
-# Ensure checkpoint directory exists for the Async Sink
-if not os.path.exists('checkpoints'):
-    os.makedirs('checkpoints')
-if not os.path.exists('logs'):
-    os.makedirs('logs')
+log_queue = queue.Queue(maxsize=100)
 
 def async_sink_worker():
-    """Consumes metrics and model states to free up the Main Thread."""
+    """Consumes data from the queue to decouple I/O from the GPU Flight path."""
+    # Ensure directories exist so we don't crash on the first write
+    os.makedirs('checkpoints', exist_ok=True)
+    os.makedirs('logs', exist_ok=True)
+    
     while True:
         item = log_queue.get()
         if item is None: break
@@ -37,14 +35,14 @@ def async_sink_worker():
         finally:
             log_queue.task_done()
 
+# Start the background thread once
 sink_thread = threading.Thread(target=async_sink_worker, daemon=True)
 sink_thread.start()
 
 class FocalLoss(nn.Module):
     def __init__(self, alpha=0.8, gamma=2.5):
         super().__init__()
-        self.alpha = alpha
-        self.gamma = gamma
+        self.alpha, self.gamma = alpha, gamma
 
     def forward(self, inputs, targets):
         BCE_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction='none')
@@ -56,63 +54,82 @@ class PersistentReactor:
         self.config = config
         self.device = device
         self.unique_inds = feature_df.columns.tolist()
-
-        # Pre-process Lake (Z-scoring handled at ingest or here)
+        
+        # Ground Truth Ingestion
         vals = np.nan_to_num(feature_df.values.astype(np.float32))
         self.lake = torch.tensor(vals, device=device)
         self.y_all = torch.tensor(target_series.values.astype(np.float32), device=device).view(1, -1, 1)
 
         self.num_indicators = len(self.unique_inds)
-        self.hidden_dim = 128
+        self.hidden_dim = config.get("HIDDEN_DIM", 128)
+        
+        # Thesis Locking (Forced Genes)
+        raw_forced = self.config.get("FORCED_GENES", [])
+        resolved_forced_names = set()
+        for pattern in raw_forced:
+            for ind_name in self.unique_inds:
+                if fnmatch.fnmatch(ind_name.lower(), pattern.lower()):
+                    resolved_forced_names.add(ind_name)
+                    
+        self.forced_indices = [self.unique_inds.index(name) for name in resolved_forced_names]
+        self.num_forced = len(self.forced_indices)
+        self.available_pool = [i for i in range(self.num_indicators) if i not in self.forced_indices]
 
-        # GPU Populations
-        self.pop_W1 = torch.randn(config["POP_SIZE"], config["GENE_COUNT"], self.hidden_dim, device=device) * 0.02
-        self.pop_B1 = torch.zeros(config["POP_SIZE"], 1, self.hidden_dim, device=device)
-        self.pop_W2 = torch.randn(config["POP_SIZE"], self.hidden_dim, 1, device=device) * 0.02
-        self.pop_B2 = torch.zeros(config["POP_SIZE"], 1, 1, device=device)
+        # Weights Population
+        p_size, g_count = config["POP_SIZE"], config["GENE_COUNT"]
+        self.pop_W1 = torch.randn(p_size, g_count, self.hidden_dim, device=device) * 0.02
+        self.pop_B1 = torch.zeros(p_size, 1, self.hidden_dim, device=device)
+        self.pop_W2 = torch.randn(p_size, self.hidden_dim, 1, device=device) * 0.02
+        self.pop_B2 = torch.zeros(p_size, 1, 1, device=device)
 
-        indices = [torch.randperm(self.num_indicators)[:config["GENE_COUNT"]] for _ in range(config["POP_SIZE"])]
-        self.population = torch.stack(indices).to(device)
-        self.thresholds = torch.full((config["POP_SIZE"],), 0.7, device=device) 
+        # Build Pop
+        indices_list = []
+        for _ in range(p_size):
+            free_slots = g_count - self.num_forced
+            rand_idx = np.random.choice(self.available_pool, free_slots, replace=False)
+            indices_list.append(torch.cat([torch.tensor(self.forced_indices), torch.tensor(rand_idx)]))
+        
+        self.population = torch.stack(indices_list).to(device).long()
+        self.thresholds = torch.full((p_size,), 0.7, device=device) 
         
         # Vitality Stats
         self.gene_scores = torch.zeros(self.num_indicators, device=device)
         self.gene_usage = torch.zeros(self.num_indicators, device=device)
+        self.decay_factor = 0.95 
 
     def _forward(self, x, w1, b1, w2, b2):
         h1 = F.leaky_relu(torch.bmm(x, w1) + b1, 0.1)
         return torch.bmm(h1, w2) + b2
 
     def run_generation(self):
-        """
-        V5.0: DIRECTIONAL SPECIALIST ENGINE
-        Uses Rolling Walk-Forward with Master OOS Holdout.
-        """
         pop_size = self.config["POP_SIZE"]
         chunk_size = self.config["GPU_CHUNK"]
         metrics = {"f1": [], "prec": [], "rec": [], "sigs": []}
         criterion = FocalLoss()
         
         total_len = len(self.lake)
-        master_oos_start = int(total_len * 0.9) # Strict 10% holdout
+        master_oos_start = int(total_len * 0.9)
+
+        # Apply Regime Decay
+        self.gene_scores *= self.decay_factor
+        self.gene_usage *= self.decay_factor
 
         for i in range(0, pop_size, chunk_size):
             end_i = min(i + chunk_size, pop_size)
             curr_chunk = end_i - i
             indices = self.population[i:end_i]
 
-            # Randomized training windows to prevent overfitting to specific cycles
+            # Dynamic Training Windows
             window_end = torch.randint(int(total_len * 0.5), master_oos_start, (1,)).item()
             window_start = max(0, window_end - int(total_len * 0.4)) 
             train_split = window_start + int((window_end - window_start) * 0.8)
 
-            # Parallel Slicing for CUDA Chunk
             x_train = self.lake[window_start:train_split, indices].permute(1, 0, 2)
             y_train = self.y_all[:, window_start:train_split, :].expand(curr_chunk, -1, -1)
             x_val = self.lake[train_split:window_end, indices].permute(1, 0, 2)
             y_val = self.y_all[:, train_split:window_end, :].expand(curr_chunk, -1, -1)
 
-            # Optimizer Path (Adam on GPU)
+            # Optimization Loop
             w1 = self.pop_W1[i:end_i].detach().requires_grad_(True)
             b1 = self.pop_B1[i:end_i].detach().requires_grad_(True)
             w2 = self.pop_W2[i:end_i].detach().requires_grad_(True)
@@ -122,7 +139,6 @@ class PersistentReactor:
             for _ in range(self.config["EPOCHS"]):
                 optimizer.zero_grad()
                 logits = self._forward(x_train, w1, b1, w2, b2)
-                # Sparsity constraint + Focal Loss
                 loss = criterion(logits, y_train) + (torch.mean(torch.sigmoid(logits)) * 0.5)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_([w1, b1, w2, b2], 1.0)
@@ -132,46 +148,42 @@ class PersistentReactor:
                 self.pop_W1[i:end_i].copy_(w1)
                 self.pop_W2[i:end_i].copy_(w2)
 
-                # Dynamic Threshold Tuning (Searching for the 1.00 Precision sweet spot)
+                # Validation Search with Log-Penalty (Sniper Filter)
                 val_probs = torch.sigmoid(self._forward(x_val, w1, b1, w2, b2))
                 bt, mf1 = torch.full((curr_chunk,), 0.7, device=self.device), torch.zeros(curr_chunk, device=self.device)
                 
                 for t in np.linspace(0.6, 0.95, 30):
                     p = (val_probs > t).float()
-                    tp = (p * y_val).sum(1)
-                    fp = (p * (1 - y_val)).sum(1)
-                    fn = ((1 - p) * y_val).sum(1)
+                    sigs = p.sum(1) + 1e-6
+                    tp, fp, fn = (p * y_val).sum(1), (p * (1 - y_val)).sum(1), ((1 - p) * y_val).sum(1)
+                    
                     f1 = (2 * tp) / (2 * tp + fp + fn + 1e-6)
-                    mask = f1.view(-1) > mf1
-                    mf1[mask], bt[mask] = f1.view(-1)[mask], t
+                    penalty = torch.log10(sigs.clamp(min=1.0, max=10.0))
+                    f1_weighted = f1.view(-1) * penalty.view(-1)
+                    
+                    mask = f1_weighted > mf1
+                    mf1[mask], bt[mask] = f1_weighted[mask], t
                 
                 self.thresholds[i:end_i].copy_(bt)
 
-                # Evaluation on Master OOS
+                # Final OOS Test
                 x_test = self.lake[master_oos_start:, indices].permute(1, 0, 2)
                 y_test = self.y_all[:, master_oos_start:, :].expand(curr_chunk, -1, -1)
-                test_logits = self._forward(x_test, w1, b1, w2, b2)
-                test_p = (torch.sigmoid(test_logits) > bt.view(-1, 1, 1)).float()
+                test_p = (torch.sigmoid(self._forward(x_test, w1, b1, w2, b2)) > bt.view(-1, 1, 1)).float()
 
                 tp_t = (test_p * y_test).sum(1).view(-1)
                 fp_t = (test_p * (1 - y_test)).sum(1).view(-1)
                 fn_t = ((1 - test_p) * y_test).sum(1).view(-1)
-
                 f1_s = (2 * tp_t) / (2 * tp_t + fp_t + fn_t + 1e-6)
                 
-                # Update Vitality Metrics for genetic survival
                 for idx_c in range(curr_chunk):
                     self.gene_scores[indices[idx_c]] += f1_s[idx_c]
                     self.gene_usage[indices[idx_c]] += 1
 
-                # Async Ship to CPU
                 metrics["f1"].append(f1_s.cpu())
                 metrics["prec"].append((tp_t / (tp_t + fp_t + 1e-6)).cpu())
                 metrics["rec"].append((tp_t / (tp_t + fn_t + 1e-6)).cpu())
                 metrics["sigs"].append(test_p.sum(1).view(-1).cpu())
-
-                # Explicit VRAM Cleaning
-                del x_train, y_train, x_val, y_val, x_test, y_test, val_probs, test_logits, test_p
                 torch.cuda.empty_cache()
 
         return {k: torch.cat(v) for k, v in metrics.items()}
@@ -179,71 +191,49 @@ class PersistentReactor:
     def evolve(self, fitness_scores):
         pop_size = self.config["POP_SIZE"]
         idx = torch.argsort(fitness_scores, descending=True)
-        keep = max(2, pop_size // 20)
         
-        new_pop, new_w1, new_w2 = self.population.clone(), self.pop_W1.clone(), self.pop_W2.clone()
+        # RE-ORDER ALL CUDA TENSORS (Elitism Fix)
+        self.population = self.population[idx]
+        self.pop_W1, self.pop_W2 = self.pop_W1[idx], self.pop_W2[idx]
+        self.pop_B1, self.pop_B2 = self.pop_B1[idx], self.pop_B2[idx]
+        self.thresholds = self.thresholds[idx]
 
-        # Elitism & Tournament Selection
+        # Stagnation Logic
+        fit_mean = torch.mean(fitness_scores)
+        fit_std = torch.std(fitness_scores) + 1e-6
+        is_stagnant = ((fitness_scores[idx[0]] - fit_mean) / fit_std) < 1.5
+        
+        keep = max(2, pop_size // 20)
+        new_pop, new_w1, new_w2 = self.population.clone(), self.pop_W1.clone(), self.pop_W2.clone()
+        vitality = (self.gene_scores + 0.1) / (self.gene_usage + 1.0)
+        
         for i in range(keep, pop_size):
             t1, t2 = torch.randint(0, pop_size, (4,)), torch.randint(0, pop_size, (4,))
-            p1, p2 = t1[torch.argmax(fitness_scores[t1])], t2[torch.argmax(fitness_scores[t2])]
+            p1, p2 = t1[torch.argmax(fitness_scores[idx][t1])], t2[torch.argmax(fitness_scores[idx][t2])]
             
             new_pop[i] = self.population[p1]
             new_w1[i], new_w2[i] = self.pop_W1[p1], self.pop_W2[p1]
             
-            if torch.rand(1).item() < 0.6: # Structural Crossover
-                cut = torch.randint(1, self.config["GENE_COUNT"], (1,)).item()
+            # Adaptive Crossover
+            if torch.rand(1).item() < (0.85 if is_stagnant else 0.7):
+                cut = torch.randint(max(1, self.num_forced), self.config["GENE_COUNT"], (1,)).item()
                 head, tail = new_pop[i, :cut], self.population[p2, cut:].clone()
+                
                 for g in range(len(tail)):
-                    if tail[g] in head: tail[g] = torch.randint(0, self.num_indicators, (1,))
-                new_pop[i, cut:] = tail
-                new_w1[i, cut:] = self.pop_W1[p2, cut:]
+                    if tail[g] in head:
+                        candidates = torch.argsort(vitality, descending=True)[:100]
+                        found = False
+                        for cand in candidates:
+                            if cand not in head and cand not in tail:
+                                tail[g], found = cand, True; break
+                        if not found: 
+                            tail[g] = torch.tensor(np.random.choice(self.available_pool), device=self.device)
+                
+                new_pop[i, cut:], new_w1[i, cut:] = tail, self.pop_W1[p2, cut:]
 
-        # Vitality-weighted Mutation
-        vitality = (self.gene_scores + 0.1) / (self.gene_usage + 1.0)
-        for i in range(keep, pop_size):
-            new_w1[i] += torch.randn_like(new_w1[i]) * self.config["WEIGHT_MUTATION_RATE"]
-            new_w2[i] += torch.randn_like(new_w2[i]) * self.config["WEIGHT_MUTATION_RATE"]
-            if torch.rand(1).item() < 0.3:
-                m_idx = torch.randint(0, self.config["GENE_COUNT"], (1,))
-                candidate = torch.multinomial(vitality, 1)
-                if candidate not in new_pop[i]: 
-                    new_pop[i][m_idx] = candidate
+        # Mutation Shock
+        mut_rate = self.config["WEIGHT_MUTATION_RATE"] * (3.0 if is_stagnant else 1.0)
+        new_w1[keep:] += torch.randn_like(new_w1[keep:]) * mut_rate
+        new_w2[keep:] += torch.randn_like(new_w2[keep:]) * mut_rate
 
-        self.population.copy_(new_pop)
-        self.pop_W1.copy_(new_w1)
-        self.pop_W2.copy_(new_w2)
-
-    def run_atomic_scan(self, top_n_vitality=20, scan_size=6):
-        """
-        Brute-force verification to find the 'Atomic Core' of the directional signal.
-        Tests combinations of the most vital genes to see if high precision is structural.
-        """
-        vitality = (self.gene_scores + 0.1) / (self.gene_usage + 1.0)
-        top_indices = torch.argsort(vitality, descending=True)[:top_n_vitality].tolist()
-        target = self.y_all.view(-1)
-        
-        print(f"🔬 Starting Atomic Scan on top {top_n_vitality} genes...")
-        best_prec = 0
-        best_core = []
-
-        for combo in combinations(top_indices, scan_size):
-            # Intersection logic: Signal fires if all genes are 'active' (> 0.7 z-score/pattern)
-            signals = torch.all(self.lake[:, combo] > 0.7, dim=1).float()
-            
-            tp = (signals * target).sum().item()
-            fp = (signals * (1 - target)).sum().item()
-            
-            if tp + fp == 0: continue
-            prec = tp / (tp + fp)
-            
-            if prec > best_prec:
-                best_prec = prec
-                best_core = combo
-                if prec == 1.0: break # Found a perfect logical core
-
-        if best_core:
-            names = [self.unique_inds[i] for i in best_core]
-            print(f"✅ Atomic Core Found: Precision {best_prec:.4f} | Genes: {names}")
-            return names
-        return None
+        self.population.copy_(new_pop); self.pop_W1.copy_(new_w1); self.pop_W2.copy_(new_w2)

@@ -26,7 +26,9 @@ BLACKLISTED_INDICATORS = [
     'talib-linearreg_intercept*', 'talib-linearreg_angle*',
 
     # RAW PRICE REPRODUCTIONS (These are just OHLC re-packaged)
-    'talib-avgprice*', 'talib-medprice*', 'talib-typprice*', 'talib-wclprice*'
+    'talib-avgprice*', 'talib-medprice*', 'talib-typprice*', 'talib-wclprice*',
+
+    'talib*'
 ]
 
 FORCED_INDICATORS = [
@@ -35,14 +37,20 @@ FORCED_INDICATORS = [
     "example-multi-tf-rsi_XAU-USD_14_14_14_14"
 ]
 
-NUM_GENES = 10
+FORCED_GENES = [
+    'example-multi-tf-rsi_EUR-USD_14_14_14_14*',
+    'example-multi-tf-rsi_DOLLAR.IDX-USD_14_14_14_14*',
+    'example-multi-tf-rsi_XAU-USD_14_14_14_14*'
+]
+
+NUM_GENES = 20
 CHUNK_MULT = 4
 
 CONFIG = {
     'BASE_URL': "http://localhost:8000/ohlcv/1.1",
     'SYMBOL': "EUR-USD",
     'TIMEFRAME': "4h",
-    'TARGET_INDICATOR': "example-pivot-finder_50",
+    'TARGET_INDICATOR': "example-pivot-finder_50_bottoms",
     'START_DATE': "2021-01-01",
     'END_DATE': "2025-12-31",
     'LIMIT': 100000,
@@ -57,7 +65,7 @@ CONFIG = {
     'WEIGHT_MUTATION_RATE': 0.1,
     'FORCED_INDICATORS': FORCED_INDICATORS,
     'BLACKLISTED_INDICATORS': BLACKLISTED_INDICATORS,
-    'MODE': 'BOTTOM'
+    'FORCED_GENES': FORCED_GENES
 }
 
 DEVICE = torch.device("cuda")
