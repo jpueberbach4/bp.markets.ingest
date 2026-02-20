@@ -63,39 +63,54 @@ class PersistentReactor:
         self.num_indicators = len(self.unique_inds)
         self.hidden_dim = config.get("HIDDEN_DIM", 128)
         
-        # Thesis Locking (Forced Genes)
+        # Resolve Forced Genes (RSI Thesis)
         raw_forced = self.config.get("FORCED_GENES", [])
         resolved_forced_names = set()
         for pattern in raw_forced:
             for ind_name in self.unique_inds:
                 if fnmatch.fnmatch(ind_name.lower(), pattern.lower()):
                     resolved_forced_names.add(ind_name)
-                    
-        self.forced_indices = [self.unique_inds.index(name) for name in resolved_forced_names]
+
+        # Force unique indices to prevent redundant inputs
+        self.forced_indices = list(set([self.unique_inds.index(name) for name in resolved_forced_names]))
         self.num_forced = len(self.forced_indices)
         self.available_pool = [i for i in range(self.num_indicators) if i not in self.forced_indices]
 
-        # Weights Population
+        # Define Population Parameters
         p_size, g_count = config["POP_SIZE"], config["GENE_COUNT"]
+        
+        # Build Population (Ensuring absolute uniqueness per genome)
+        indices_list = []
+        for _ in range(p_size):
+            free_slots = g_count - self.num_forced
+            # Guard against pool exhaustion
+            pool = list(set(self.available_pool)) 
+            rand_idx = np.random.choice(pool, free_slots, replace=False)
+            
+            # Cat and Force Unique again as a final fail-safe
+            combined = torch.cat([torch.tensor(self.forced_indices), torch.tensor(rand_idx)])
+            unique_genome = torch.unique(combined) 
+            
+            # If unique check dropped a slot, backfill from pool
+            while len(unique_genome) < g_count:
+                extra = np.random.choice(pool, 1)
+                unique_genome = torch.unique(torch.cat([unique_genome, torch.tensor(extra)]))
+                
+            indices_list.append(unique_genome)
+
+        self.population = torch.stack(indices_list).to(device).long()
+        self.thresholds = torch.full((p_size,), 0.7, device=device) 
+
+        # Weights Population (Initialized AFTER p_size/g_count)
         self.pop_W1 = torch.randn(p_size, g_count, self.hidden_dim, device=device) * 0.02
         self.pop_B1 = torch.zeros(p_size, 1, self.hidden_dim, device=device)
         self.pop_W2 = torch.randn(p_size, self.hidden_dim, 1, device=device) * 0.02
         self.pop_B2 = torch.zeros(p_size, 1, 1, device=device)
-
-        # Build Pop
-        indices_list = []
-        for _ in range(p_size):
-            free_slots = g_count - self.num_forced
-            rand_idx = np.random.choice(self.available_pool, free_slots, replace=False)
-            indices_list.append(torch.cat([torch.tensor(self.forced_indices), torch.tensor(rand_idx)]))
-        
-        self.population = torch.stack(indices_list).to(device).long()
-        self.thresholds = torch.full((p_size,), 0.7, device=device) 
         
         # Vitality Stats
         self.gene_scores = torch.zeros(self.num_indicators, device=device)
         self.gene_usage = torch.zeros(self.num_indicators, device=device)
-        self.decay_factor = 0.95 
+        self.decay_factor = 0.95
 
     def _forward(self, x, w1, b1, w2, b2):
         h1 = F.leaky_relu(torch.bmm(x, w1) + b1, 0.1)
