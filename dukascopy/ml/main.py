@@ -5,15 +5,28 @@ from reactor import PersistentReactor, log_queue, async_sink_worker
 
 # CONFIGURATION
 BLACKLISTED_INDICATORS = [
+    # Original
     'zigzag*', 'swing-points*', 'fractaldimension*', 'kalman*', 
     'open', 'high', 'low', 'close', 'volume', 
     'is-open*', 'pivot*', 'camarilla-pivots*', 'psychlevels*', 
     'sma*', 'midpoint*', 'drift*', 
-    "*example-pivot-finder*", 
-    "*elliot*", 
-    "*macro*",
-    "*fibonacci*",
-    "feature*"
+    "*example-pivot-finder*", "*elliot*", "*macro*", "*fibonacci*", "feature*",
+
+    # MATH JUNK (Trig, logs, and arithmetic used for curve fitting)
+    'talib-cos*', 'talib-sin*', 'talib-tan*', 'talib-acos*', 'talib-asin*', 
+    'talib-atan*', 'talib-mult', 'talib-div', 'talib-add', 'talib-sub', 
+    'talib-sqrt', 'talib-exp', 'talib-ceil', 'talib-floor', 'talib-cosh', 
+    'talib-sinh', 'talib-tanh', 'talib-ln', 'talib-log10', 'talib-sqrt',
+
+    # CYCLES & SIGNAL PROCESSING (The GA uses these to find "phantom" cycles)
+    'talib-ht_dcperiod*', 'talib-ht_dcphase*', 'talib-ht_phasor*', 
+    'talib-ht_sine*', 'talib-ht_trendline*', 'talib-ht_trendmode*',
+
+    # LINEAR REGRESSION EXTRAS (Slope is okay, but intercept is purely price-location math)
+    'talib-linearreg_intercept*', 'talib-linearreg_angle*',
+
+    # RAW PRICE REPRODUCTIONS (These are just OHLC re-packaged)
+    'talib-avgprice*', 'talib-medprice*', 'talib-typprice*', 'talib-wclprice*'
 ]
 
 FORCED_INDICATORS = [
@@ -39,8 +52,8 @@ CONFIG = {
     'GENE_COUNT': NUM_GENES,
     'MAX_COLS_PER_IND': 1,
     'TOTAL_INPUTS': NUM_GENES,
-    'EPOCHS': 20,                  
-    'LEARNING_RATE': 0.001,        
+    'EPOCHS': 20,                   
+    'LEARNING_RATE': 0.001,         
     'WEIGHT_MUTATION_RATE': 0.1,
     'FORCED_INDICATORS': FORCED_INDICATORS,
     'BLACKLISTED_INDICATORS': BLACKLISTED_INDICATORS,
@@ -97,6 +110,11 @@ def run():
                 
                 print(f"\n🌟 {gen:<4} | {best_ever:.4f} | {cur_p:.4f} | {cur_r:.4f} | {cur_s:<6} | {fps:.1f}")
                 print(f"   └─ Genes: {gn}")
+                
+                # --- ATOMIC SCAN TRIGGER ---
+                if best_ever > 0.5:
+                    print(f"   🔬 Triggering Atomic 6-Gene Scan for Ground Truth...")
+                    reactor.run_atomic_scan(top_n_vitality=30, scan_size=8)
                 
                 log_entry = f"{datetime.now()},{gen},{best_ever:.4f},{cur_p:.4f},{cur_r:.4f},{cur_s},{'|'.join(gn)}"
                 log_queue.put(("evolution.log", log_entry, False))

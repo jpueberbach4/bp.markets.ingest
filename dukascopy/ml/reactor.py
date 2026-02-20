@@ -7,8 +7,9 @@ import threading
 import queue
 import time
 import os
+from itertools import combinations
 
-# Version 5.0 - Persistent Reactor: Specialized Directional Evolution
+# Version 5.1 - Persistent Reactor: Specialized Directional Evolution + Atomic Scanner
 # Targets: Bottom-Only or Top-Only optimization via filtered Ingestion
 
 log_queue = queue.Queue(maxsize=100) 
@@ -212,3 +213,37 @@ class PersistentReactor:
         self.population.copy_(new_pop)
         self.pop_W1.copy_(new_w1)
         self.pop_W2.copy_(new_w2)
+
+    def run_atomic_scan(self, top_n_vitality=20, scan_size=6):
+        """
+        Brute-force verification to find the 'Atomic Core' of the directional signal.
+        Tests combinations of the most vital genes to see if high precision is structural.
+        """
+        vitality = (self.gene_scores + 0.1) / (self.gene_usage + 1.0)
+        top_indices = torch.argsort(vitality, descending=True)[:top_n_vitality].tolist()
+        target = self.y_all.view(-1)
+        
+        print(f"🔬 Starting Atomic Scan on top {top_n_vitality} genes...")
+        best_prec = 0
+        best_core = []
+
+        for combo in combinations(top_indices, scan_size):
+            # Intersection logic: Signal fires if all genes are 'active' (> 0.7 z-score/pattern)
+            signals = torch.all(self.lake[:, combo] > 0.7, dim=1).float()
+            
+            tp = (signals * target).sum().item()
+            fp = (signals * (1 - target)).sum().item()
+            
+            if tp + fp == 0: continue
+            prec = tp / (tp + fp)
+            
+            if prec > best_prec:
+                best_prec = prec
+                best_core = combo
+                if prec == 1.0: break # Found a perfect logical core
+
+        if best_core:
+            names = [self.unique_inds[i] for i in best_core]
+            print(f"✅ Atomic Core Found: Precision {best_prec:.4f} | Genes: {names}")
+            return names
+        return None
