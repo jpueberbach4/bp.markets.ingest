@@ -18,11 +18,11 @@ It didnt even stop there...
 
 This is a different method of backtesting. Normally you have an idea and you test it. In this method you add your custom signal generators, feed it into an engine and have it evolve together with all indicators and have IT find a strategy for you, eg with a > 80 percent precision. This code has protection against overfitting etc. But i am still researching and optimizing it. This part will become the cathedral of this project. This is why the project has been created.
 
-I dont want to party just yet since its very much research phase stuff. I will stresstest the results soon. Also check if the generated strategies are market wide or symbol specific.
+I will stresstest the results soon. Also check if the generated strategies are market wide or symbol specific.
 
 Until stresstesting has been done and results are not verified: use with caution.
 
-It looks very promising and even cutting edge but it needs very thorough validation.
+It looks oke but it needs very thorough validation.
 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
@@ -88,6 +88,7 @@ We have added several deep-dive guides to help you leverage the latest performan
 * **[Adjustments.md](adjustments.md)** – Implementation guide for Panama rolls, Dividends, and Multiplicative splits.
 * **[Templates.md](templates.md)** – Guidelines for "God-tier" indicator performance using Polars/Rust to bypass the Python GIL.
 * **[Code Examples](../config/plugins/indicators/)** – Direct reference for plugin and indicator development.
+
 
 
 
