@@ -28,19 +28,30 @@ BLACKLISTED_INDICATORS = [
     # RAW PRICE REPRODUCTIONS (These are just OHLC re-packaged)
     'talib-avgprice*', 'talib-medprice*', 'talib-typprice*', 'talib-wclprice*',
 
-    'talib*'
+    'talib*',
+
+    "example-multi-tf-rsi*"
 ]
 
 FORCED_INDICATORS = [
     "example-multi-tf-rsi_EUR-USD_14_14_14_14",
     "example-multi-tf-rsi_DOLLAR.IDX-USD_14_14_14_14",
-    "example-multi-tf-rsi_XAU-USD_14_14_14_14"
+    "example-multi-tf-rsi_XAU-USD_14_14_14_14",
+    "talib-cdl2crows",
+    "talib-cdl3blackcrows",
+    "talib-cdl3inside", 
+    "talib-cdl3outside",
+    "talib-cdl3starsinsouth",
+    "talib-cdl3whitesoldiers"
 ]
 
 FORCED_GENES = [
-    'example-multi-tf-rsi_EUR-USD_14_14_14_14*',
-    'example-multi-tf-rsi_DOLLAR.IDX-USD_14_14_14_14*',
-    'example-multi-tf-rsi_XAU-USD_14_14_14_14*'
+    'example-multi-tf-rsi_EUR-USD_14_14_14_14__rsi1d',
+    'example-multi-tf-rsi_EUR-USD_14_14_14_14__rsi1W',
+    'example-multi-tf-rsi_DOLLAR.IDX-USD_14_14_14_14__rsi1d',
+    'example-multi-tf-rsi_DOLLAR.IDX-USD_14_14_14_14__rsi1W',
+    'example-multi-tf-rsi_XAU-USD_14_14_14_14__rsi1d',
+    'example-multi-tf-rsi_XAU-USD_14_14_14_14__rsi1W'
 ]
 
 NUM_GENES = 24

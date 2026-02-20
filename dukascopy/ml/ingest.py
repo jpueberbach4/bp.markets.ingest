@@ -75,6 +75,13 @@ class IndicatorIngestor:
 
         for col in list(master.columns):
             if col == target_col_name: continue
+            
+            # Check if this is a forced gene first
+            is_forced = any(f_gene in col for f_gene in self.config.get('FORCED_GENES', []))
+            
+            if is_forced:
+                continue # Protect this column
+                
             if any(fnmatch.fnmatch(col.lower(), p.lower()) for p in self.config['BLACKLISTED_INDICATORS']):
                 master = master.drop(columns=[col])
 
