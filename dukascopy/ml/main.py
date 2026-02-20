@@ -35,7 +35,7 @@ FORCED_INDICATORS = [
     "example-multi-tf-rsi_XAU-USD_14_14_14_14"
 ]
 
-NUM_GENES = 16
+NUM_GENES = 6
 CHUNK_MULT = 4
 
 CONFIG = {
@@ -112,9 +112,10 @@ def run():
                 print(f"   └─ Genes: {gn}")
                 
                 # --- ATOMIC SCAN TRIGGER ---
+                # Changed back to scan_size=6 and increased vitality pool to 40
                 if best_ever > 0.5:
                     print(f"   🔬 Triggering Atomic 6-Gene Scan for Ground Truth...")
-                    reactor.run_atomic_scan(top_n_vitality=30, scan_size=8)
+                    reactor.run_atomic_scan(top_n_vitality=40, scan_size=6)
                 
                 log_entry = f"{datetime.now()},{gen},{best_ever:.4f},{cur_p:.4f},{cur_r:.4f},{cur_s},{'|'.join(gn)}"
                 log_queue.put(("evolution.log", log_entry, False))
@@ -135,9 +136,6 @@ def run():
                 print(f"🚜 {gen:<4} | Best: {best_val.item():.4f} | Avg: {avg_f1:.4f} | MaxSig: {max_sigs:<4} | FPS: {fps:.1f}")
 
             reactor.evolve(res['f1'].to(DEVICE))
-            
-            # Brief pause
-            #time.sleep(0.5)
 
     except KeyboardInterrupt:
         print("\n[!] Shutdown Signal Received. Cleaning up...")
