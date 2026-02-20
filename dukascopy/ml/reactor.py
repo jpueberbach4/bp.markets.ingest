@@ -9,8 +9,8 @@ import os
 import fnmatch
 from itertools import combinations
 
-# VERSION 5.6 - THE GROUND TRUTH MONOLITH
-# Integrates: Vitality Decay, Z-Score Stagnation, Log-Penalty, and Thread-Safe Sinking.
+# VERSION 5.7.2 - "GETTING-THERE" VERSION. ALMOST.
+# LAZY VERSION.
 
 log_queue = queue.Queue(maxsize=100)
 
@@ -167,7 +167,8 @@ class PersistentReactor:
                 val_probs = torch.sigmoid(self._forward(x_val, w1, b1, w2, b2))
                 bt, mf1 = torch.full((curr_chunk,), 0.7, device=self.device), torch.zeros(curr_chunk, device=self.device)
                 
-                for t in np.linspace(0.6, 0.95, 30):
+                # NIT FIX: INCREASED GRID TO 80 POINTS FOR FINER RESOLUTION
+                for t in np.linspace(0.6, 0.95, 80):
                     p = (val_probs > t).float()
                     sigs = p.sum(1) + 1e-6
                     tp, fp, fn = (p * y_val).sum(1), (p * (1 - y_val)).sum(1), ((1 - p) * y_val).sum(1)
@@ -236,8 +237,11 @@ class PersistentReactor:
                 
                 for g in range(len(tail)):
                     if tail[g] in head:
-                        candidates = torch.argsort(vitality, descending=True)[:100]
+                        # NIT FIX: MULTINOMIAL WITH SOFTMAX FOR PROBABILISTIC BACKFILL
                         found = False
+                        v_probs = vitality.softmax(0)
+                        candidates = torch.multinomial(v_probs, min(100, len(v_probs)), replacement=False)
+                        
                         for cand in candidates:
                             if cand not in head and cand not in tail:
                                 tail[g], found = cand, True; break
@@ -252,3 +256,9 @@ class PersistentReactor:
         new_w2[keep:] += torch.randn_like(new_w2[keep:]) * mut_rate
 
         self.population.copy_(new_pop); self.pop_W1.copy_(new_w1); self.pop_W2.copy_(new_w2)
+        
+        # FINAL GOVERNOR CHECK: Halt on corruption
+        for g_idx in range(pop_size):
+            if len(torch.unique(self.population[g_idx])) != self.config["GENE_COUNT"]:
+                print(f"❌ CRITICAL GENOME CORRUPTION AT POP {g_idx}!")
+                import sys; sys.exit(1)

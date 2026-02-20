@@ -43,7 +43,7 @@ FORCED_GENES = [
     'example-multi-tf-rsi_XAU-USD_14_14_14_14*'
 ]
 
-NUM_GENES = 20
+NUM_GENES = 24
 CHUNK_MULT = 4
 
 CONFIG = {
