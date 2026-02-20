@@ -40,7 +40,7 @@ sink_thread = threading.Thread(target=async_sink_worker, daemon=True)
 sink_thread.start()
 
 class FocalLoss(nn.Module):
-    def __init__(self, alpha=0.2, gamma=2.5):
+    def __init__(self, alpha=0.8, gamma=2.5):
         super().__init__()
         self.alpha = alpha
         self.gamma = gamma
@@ -122,7 +122,7 @@ class PersistentReactor:
                 optimizer.zero_grad()
                 logits = self._forward(x_train, w1, b1, w2, b2)
                 # Sparsity constraint + Focal Loss
-                loss = criterion(logits, y_train) + (torch.mean(torch.sigmoid(logits)) * 0.02)
+                loss = criterion(logits, y_train) + (torch.mean(torch.sigmoid(logits)) * 0.5)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_([w1, b1, w2, b2], 1.0)
                 optimizer.step()
