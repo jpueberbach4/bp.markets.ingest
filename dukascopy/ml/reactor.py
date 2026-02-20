@@ -238,8 +238,6 @@ class PersistentReactor:
         h1 = F.leaky_relu(torch.bmm(x, w1) + b1, 0.1)
         return torch.bmm(h1, w2) + b2
 
-    
-
     def _apply_clustering_penalty(self, signals, f1_scores):
         """Penalizes models that fire multiple 'buy' signals too close together.
         
@@ -257,13 +255,30 @@ class PersistentReactor:
             torch.Tensor: The adjusted (penalized) fitness scores.
         """
         if signals.sum() == 0: return f1_scores
-        sig_tensor = signals.unsqueeze(1).float()
+        
+        # Capture original shape to handle tuning vs evaluation modes
+        # Tuning: [Batch, Time, 1] | Evaluation: [Batch, Time, 1]
+        orig_shape = signals.shape 
+        
+        # Reshape to [Batch, 1, Time] for Conv1d
+        sig_tensor = signals.view(orig_shape[0], 1, orig_shape[1])
+        
         kernel = torch.ones(1, 1, 5, device=self.device)
-        density = F.conv1d(sig_tensor, kernel, padding=2).squeeze(1)
-        cluster_violations = F.relu(density - 1.0) * signals
-        total_cluster_weight = cluster_violations.sum(dim=1)
+        
+        # Density tells us how many signals are in the 5-bar window
+        density = F.conv1d(sig_tensor.float(), kernel, padding=2)
+        
+        # We only penalize when density > 1 (more than one signal in 5 bars)
+        # We multiply by sig_tensor so we only penalize the actual signal bits
+        cluster_violations = F.relu(density - 1.0) * sig_tensor
+        
+        # Sum violations across time (dimension 2)
+        total_cluster_weight = cluster_violations.sum(dim=2).view(-1)
+        
         penalty_factor = torch.exp(-total_cluster_weight * 0.15) 
-        return f1_scores * penalty_factor
+        
+        # Reshape penalty to match f1_scores (usually [Batch] or [Batch, 1])
+        return f1_scores.view(-1) * penalty_factor
 
     def run_generation(self):
         """Executes one full cycle of training, tuning, and Out-Of-Sample validation.
@@ -349,13 +364,17 @@ class PersistentReactor:
                     
                     prec = tp / (tp + fp + 1e-8)
                     rec = tp / (tp + fn + 1e-8)
+
                     denom = prec + rec
                     
-                    f1_weighted = torch.where(denom > 0, (2 * (prec**prec_exp * rec)) / denom, torch.zeros_like(denom))
+                    # Ensure f1_weighted is 1D [Batch]
+                    f1_weighted = torch.where(denom > 0, (2 * (prec**prec_exp * rec)) / denom, torch.zeros_like(denom)).view(-1)
+                    
+                    # Apply penalty - now both are 1D vectors of size [Batch]
                     f1_weighted = self._apply_clustering_penalty(p, f1_weighted)
                     
-                    mask = f1_weighted.view(-1) > mf1
-                    mf1[mask] = f1_weighted.view(-1)[mask]
+                    mask = f1_weighted > mf1 # No .view(-1) needed here now
+                    mf1[mask] = f1_weighted[mask]
                     bt[mask] = t
                 
                 self.thresholds[i:end_i].copy_(bt)
