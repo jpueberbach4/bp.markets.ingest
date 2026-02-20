@@ -42,7 +42,7 @@ CONFIG = {
     'BASE_URL': "http://localhost:8000/ohlcv/1.1",
     'SYMBOL': "EUR-USD",
     'TIMEFRAME': "4h",
-    'TARGET_INDICATOR': "example-pivot-finder_40",
+    'TARGET_INDICATOR': "example-pivot-finder_50",
     'START_DATE': "2021-01-01",
     'END_DATE': "2025-12-31",
     'LIMIT': 100000,
@@ -113,7 +113,7 @@ def run():
                 
                 # --- ATOMIC SCAN TRIGGER ---
                 # Changed back to scan_size=6 and increased vitality pool to 40
-                if best_ever > 0.5:
+                if best_ever > 0.5 and False:
                     print(f"   🔬 Triggering Atomic 6-Gene Scan for Ground Truth...")
                     reactor.run_atomic_scan(top_n_vitality=40, scan_size=6)
                 
