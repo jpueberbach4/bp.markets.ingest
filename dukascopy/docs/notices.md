@@ -28,7 +28,9 @@ Until stresstesting has been done and results are not verified: use with caution
 
 It's serious work but requires brutal validation.
 
-Validating this will be my top priority upcoming days. A document will appear with the findings.  
+Validating this will be my top priority upcoming days. A document will appear with the findings.
+
+PS: i can literally translate some of its findings into clear text that makes sense: If the market isn't choppy (choppiness_14) and we hit the keltner_upper, look for 2crows to short. Thats a good thing.
 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
