@@ -55,7 +55,7 @@ FORCED_GENES = [
 ]
 
 NUM_GENES = 24
-CHUNK_MULT = 4
+CHUNK_MULT = 16
 
 CONFIG = {
     'BASE_URL': "http://localhost:8000/ohlcv/1.1",
@@ -138,6 +138,7 @@ def run():
                 
                 log_entry = f"{datetime.now()},{gen},{best_ever:.4f},{cur_p:.4f},{cur_r:.4f},{cur_s},{'|'.join(gn)}"
                 log_queue.put(("evolution.log", log_entry, False))
+                torch.cuda.synchronize()
 
                 checkpoint = {
                     'gen': gen, 'f1': best_ever, 'genes': gn,
