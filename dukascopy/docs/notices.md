@@ -1,5 +1,13 @@
 # ML
 
+**Update:** This actually works? I trained on data until 2025-12-31. I double checked everything. No leaks. 
+
+I used the weights and the discovered strategy on 2026. Look at this:
+
+![Wow](../images/wth-this-actually-works.png)
+
+Tbh i was skeptical at first. But, now i have seen this.... i am completely on "the other side". We might actually have something here.
+
 **Important:** This is a research project focusing on biometric feature discovery rather than public price action; it treats the GPU as a reactor to mine high-order, non-linear confluences that remain invisible to standard arbitrage. By discarding raw OHLCV data in favor of an evolved genomic population of indicators, the system generates unique "Genesis Blocks" of alpha that are statistically anchored to market physics.
 
 I am finding some very interesting combinations. Will stresstest them. 
