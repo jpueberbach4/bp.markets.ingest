@@ -14,9 +14,9 @@ BLACKLISTED_INDICATORS = [
 
     # MATH JUNK (Trig, logs, and arithmetic used for curve fitting)
     'talib-cos*', 'talib-sin*', 'talib-tan*', 'talib-acos*', 'talib-asin*', 
-    'talib-atan*', 'talib-mult', 'talib-div', 'talib-add', 'talib-sub', 
-    'talib-sqrt', 'talib-exp', 'talib-ceil', 'talib-floor', 'talib-cosh', 
-    'talib-sinh', 'talib-tanh', 'talib-ln', 'talib-log10', 'talib-sqrt',
+    'talib-atan*', 'talib-mult*', 'talib-div*', 'talib-add*', 'talib-sub*', 
+    'talib-sqrt*', 'talib-exp*', 'talib-ceil*', 'talib-floor*', 'talib-cosh*', 
+    'talib-sinh*', 'talib-tanh*', 'talib-ln*', 'talib-log10*', 'talib-sqrt*',
 
     # CYCLES & SIGNAL PROCESSING (The GA uses these to find "phantom" cycles)
     'talib-ht_dcperiod*', 'talib-ht_dcphase*', 'talib-ht_phasor*', 
