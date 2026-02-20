@@ -14,7 +14,7 @@ class IndicatorIngestor:
         url_base = f"{self.config['BASE_URL']}/select/{self.config['SYMBOL']},{self.config['TIMEFRAME']}"
         try:
             # Increased limit to handle H4 history
-            res = requests.get(f"{url_base}[{ind}]/after/{start_ms}/output/JSON?limit=20000&subformat=3", timeout=15).json()
+            res = requests.get(f"{url_base}[{ind}]/after/{start_ms}/output/JSON?limit={self.config['LIMIT']}&subformat=3", timeout=15).json()
             if res['status'] == 'ok' and res['result']:
                 df = pd.DataFrame(res['result'])
                 valid_cols = [c for c in df.columns if c not in ['time','open','high','low','close','volume']]
@@ -40,7 +40,7 @@ class IndicatorIngestor:
         print(f"🚜 [Ingest] Harvesting {len(universe)} indicators (Parallel)...")
         url_base = f"{self.config['BASE_URL']}/select/{self.config['SYMBOL']},{self.config['TIMEFRAME']}"
         
-        raw_target = requests.get(f"{url_base}[{self.config['TARGET_INDICATOR']}]/after/{start_ms}/output/JSON?limit=20000&subformat=3").json()['result']
+        raw_target = requests.get(f"{url_base}[{self.config['TARGET_INDICATOR']}]/after/{start_ms}/output/JSON?limit={self.config['LIMIT']}&subformat=3").json()['result']
         master = pd.DataFrame(raw_target)
         
         with ThreadPoolExecutor(max_workers=10) as executor:
