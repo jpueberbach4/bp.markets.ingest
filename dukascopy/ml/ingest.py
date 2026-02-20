@@ -60,25 +60,34 @@ class IndicatorIngestor:
             sys.exit(1)
         target_col_name = target_candidates[0]
 
+        # Mode-Based Filtering
+        # If TOP: Keep 1, convert -1 to 0
+        # If BOTTOM: Keep -1, convert 1 to 0 (and then usually abs() for the loss function)
+        if self.config.get('MODE') == 'TOP':
+            print("🚀 MODE: TOP - Filtering out Bottoms (-1)...")
+            master.loc[master[target_col_name] < -0.5, target_col_name] = 0.0
+        elif self.config.get('MODE') == 'BOTTOM':
+            print("🚀 MODE: BOTTOM - Filtering out Tops (1)...")
+            master.loc[master[target_col_name] > 0.5, target_col_name] = 0.0
+
         for col in list(master.columns):
             if col == target_col_name: continue
-            # this is to drop specific columns from multi-value indicators
             if any(fnmatch.fnmatch(col.lower(), p.lower()) for p in self.config['BLACKLISTED_INDICATORS']):
                 master = master.drop(columns=[col])
 
         master = master.apply(pd.to_numeric, errors='coerce')
         master = master.dropna(subset=[target_col_name])
         
+        # Binary Classification Target (0 or 1)
         targets = (master[target_col_name].abs() > 0.5).astype(float)
+        
         tops = (master[target_col_name] > 0.5).sum()
         bots = (master[target_col_name] < -0.5).sum()
         
         features = master.drop(columns=[target_col_name]).dropna(axis=1, how='all').fillna(0.0)
-
-        # FIX: The flat_universe is the literal list of every unique data column
         flat_universe = list(features.columns)
 
         print(f"✅ Sanitize Complete. Features: {len(features.columns)}")
-        print(f"📊 DATA CHECK: Tops: {tops} | Bottoms: {bots} | Total Rows: {len(targets)}")
+        print(f"📊 DATA CHECK: Mode: {self.config.get('MODE')} | Active Signals: {targets.sum()} | Total Rows: {len(targets)}")
         
         return features, targets, flat_universe
