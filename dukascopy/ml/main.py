@@ -9,7 +9,7 @@ BLACKLISTED_INDICATORS = [
     'zigzag*', 'swing-points*', 'fractaldimension*', 'kalman*', 
     'open', 'high', 'low', 'close', 'volume', 
     'is-open*', 'pivot*', 'camarilla-pivots*', 'psychlevels*', 
-    'sma*', 'midpoint*', 'drift*', 
+    'sma_*', 'midpoint*', 'drift*', 
     "*example-pivot-finder*", "*elliot*", "*macro*", "*fibonacci*", "feature*",
 
     # MATH JUNK (Trig, logs, and arithmetic used for curve fitting)
@@ -35,7 +35,7 @@ FORCED_INDICATORS = [
     "example-multi-tf-rsi_XAU-USD_14_14_14_14"
 ]
 
-NUM_GENES = 6
+NUM_GENES = 10
 CHUNK_MULT = 4
 
 CONFIG = {
