@@ -10,11 +10,12 @@ class IndicatorIngestor:
     def __init__(self, config):
         self.config = config
 
-    def _fetch_ind(self, ind, start_ms):
+    def _fetch_ind(self, ind, start_ms, end_ms):
         url_base = f"{self.config['BASE_URL']}/select/{self.config['SYMBOL']},{self.config['TIMEFRAME']}"
         try:
-            # Increased limit to handle H4 history
-            res = requests.get(f"{url_base}[{ind}]/after/{start_ms}/output/JSON?limit={self.config['LIMIT']}&subformat=3", timeout=15).json()
+            # Added /until/{end_ms} to enforce the strict training boundary
+            url = f"{url_base}[{ind}]/after/{start_ms}/until/{end_ms}/output/JSON?limit={self.config['LIMIT']}&subformat=3"
+            res = requests.get(url, timeout=15).json()
             if res['status'] == 'ok' and res['result']:
                 df = pd.DataFrame(res['result'])
                 valid_cols = [c for c in df.columns if c not in ['time','open','high','low','close','volume']]
@@ -35,12 +36,17 @@ class IndicatorIngestor:
             universe.append(f"{k}_{'_'.join(params)}" if params else k)
         
         universe = list(set(universe + self.config['FORCED_INDICATORS']))
+        
+        # Calculate strict Start and End boundaries in milliseconds
         start_ms = int(datetime.strptime(self.config['START_DATE'], "%Y-%m-%d").timestamp() * 1000)
+        end_ms = int(datetime.strptime(self.config['END_DATE'], "%Y-%m-%d").timestamp() * 1000)
         
         print(f"🚜 [Ingest] Harvesting {len(universe)} indicators (Parallel)...")
         url_base = f"{self.config['BASE_URL']}/select/{self.config['SYMBOL']},{self.config['TIMEFRAME']}"
         
-        raw_target = requests.get(f"{url_base}[{self.config['TARGET_INDICATOR']}]/after/{start_ms}/output/JSON?limit={self.config['LIMIT']}&subformat=3").json()['result']
+        # Apply strict boundaries to the target fetch
+        target_url = f"{url_base}[{self.config['TARGET_INDICATOR']}]/after/{start_ms}/until/{end_ms}/output/JSON?limit={self.config['LIMIT']}&subformat=3"
+        raw_target = requests.get(target_url).json()['result']
         
         # Set 'time' as the index for the master target immediately
         master = pd.DataFrame(raw_target).set_index('time')
@@ -48,8 +54,9 @@ class IndicatorIngestor:
         # Collect results in a list instead of merging iteratively
         dfs_to_merge = [master] 
         
+        # Pass end_ms to the concurrent fetcher
         with ThreadPoolExecutor(max_workers=10) as executor:
-            futures = [executor.submit(self._fetch_ind, ind, start_ms) for ind in universe]
+            futures = [executor.submit(self._fetch_ind, ind, start_ms, end_ms) for ind in universe]
             for i, future in enumerate(as_completed(futures)):
                 if i % 20 == 0: print(f"   Progress: {i}/{len(universe)}...", end="\r")
                 res_df = future.result()
