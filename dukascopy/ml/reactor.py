@@ -9,14 +9,13 @@ import os
 import fnmatch
 from itertools import combinations
 
-# VERSION 5.7.2 - "GETTING-THERE" VERSION. ALMOST.
-# LAZY VERSION.
+# VERSION 5.7.5 - FORCED GENES WERE BRED OUT. FIX
+# Fix: Forced Gene Drift, Elitism ordering, and probabilistic backfill.
 
 log_queue = queue.Queue(maxsize=100)
 
 def async_sink_worker():
     """Consumes data from the queue to decouple I/O from the GPU Flight path."""
-    # Ensure directories exist so we don't crash on the first write
     os.makedirs('checkpoints', exist_ok=True)
     os.makedirs('logs', exist_ok=True)
     
@@ -35,7 +34,6 @@ def async_sink_worker():
         finally:
             log_queue.task_done()
 
-# Start the background thread once
 sink_thread = threading.Thread(target=async_sink_worker, daemon=True)
 sink_thread.start()
 
@@ -55,7 +53,6 @@ class PersistentReactor:
         self.device = device
         self.unique_inds = feature_df.columns.tolist()
         
-        # Ground Truth Ingestion
         vals = np.nan_to_num(feature_df.values.astype(np.float32))
         self.lake = torch.tensor(vals, device=device)
         self.y_all = torch.tensor(target_series.values.astype(np.float32), device=device).view(1, -1, 1)
@@ -63,51 +60,36 @@ class PersistentReactor:
         self.num_indicators = len(self.unique_inds)
         self.hidden_dim = config.get("HIDDEN_DIM", 128)
         
-        # Resolve Forced Genes (RSI Thesis)
+        # 1. Resolve Forced Genes
         raw_forced = self.config.get("FORCED_GENES", [])
-        resolved_forced_names = set()
+        resolved_indices = []
         for pattern in raw_forced:
-            for ind_name in self.unique_inds:
+            for i, ind_name in enumerate(self.unique_inds):
                 if fnmatch.fnmatch(ind_name.lower(), pattern.lower()):
-                    resolved_forced_names.add(ind_name)
-
-        # Force unique indices to prevent redundant inputs
-        self.forced_indices = list(set([self.unique_inds.index(name) for name in resolved_forced_names]))
+                    resolved_indices.append(i)
+        
+        self.forced_indices = torch.tensor(list(set(resolved_indices)), device=device).long()
         self.num_forced = len(self.forced_indices)
-        self.available_pool = [i for i in range(self.num_indicators) if i not in self.forced_indices]
+        self.available_pool = [i for i in range(self.num_indicators) if i not in resolved_indices]
 
-        # Define Population Parameters
         p_size, g_count = config["POP_SIZE"], config["GENE_COUNT"]
         
-        # Build Population (Ensuring absolute uniqueness per genome)
+        # 2. Build Initial Population
         indices_list = []
         for _ in range(p_size):
             free_slots = g_count - self.num_forced
-            # Guard against pool exhaustion
-            pool = list(set(self.available_pool)) 
-            rand_idx = np.random.choice(pool, free_slots, replace=False)
-            
-            # Cat and Force Unique again as a final fail-safe
-            combined = torch.cat([torch.tensor(self.forced_indices), torch.tensor(rand_idx)])
-            unique_genome = torch.unique(combined) 
-            
-            # If unique check dropped a slot, backfill from pool
-            while len(unique_genome) < g_count:
-                extra = np.random.choice(pool, 1)
-                unique_genome = torch.unique(torch.cat([unique_genome, torch.tensor(extra)]))
-                
-            indices_list.append(unique_genome)
+            rand_idx = np.random.choice(self.available_pool, free_slots, replace=False)
+            genome = torch.cat([self.forced_indices.cpu(), torch.tensor(rand_idx)])
+            indices_list.append(genome)
 
         self.population = torch.stack(indices_list).to(device).long()
         self.thresholds = torch.full((p_size,), 0.7, device=device) 
 
-        # Weights Population (Initialized AFTER p_size/g_count)
         self.pop_W1 = torch.randn(p_size, g_count, self.hidden_dim, device=device) * 0.02
         self.pop_B1 = torch.zeros(p_size, 1, self.hidden_dim, device=device)
         self.pop_W2 = torch.randn(p_size, self.hidden_dim, 1, device=device) * 0.02
         self.pop_B2 = torch.zeros(p_size, 1, 1, device=device)
         
-        # Vitality Stats
         self.gene_scores = torch.zeros(self.num_indicators, device=device)
         self.gene_usage = torch.zeros(self.num_indicators, device=device)
         self.decay_factor = 0.95
@@ -125,7 +107,6 @@ class PersistentReactor:
         total_len = len(self.lake)
         master_oos_start = int(total_len * 0.9)
 
-        # Apply Regime Decay
         self.gene_scores *= self.decay_factor
         self.gene_usage *= self.decay_factor
 
@@ -134,7 +115,6 @@ class PersistentReactor:
             curr_chunk = end_i - i
             indices = self.population[i:end_i]
 
-            # Dynamic Training Windows
             window_end = torch.randint(int(total_len * 0.5), master_oos_start, (1,)).item()
             window_start = max(0, window_end - int(total_len * 0.4)) 
             train_split = window_start + int((window_end - window_start) * 0.8)
@@ -144,7 +124,6 @@ class PersistentReactor:
             x_val = self.lake[train_split:window_end, indices].permute(1, 0, 2)
             y_val = self.y_all[:, train_split:window_end, :].expand(curr_chunk, -1, -1)
 
-            # Optimization Loop
             w1 = self.pop_W1[i:end_i].detach().requires_grad_(True)
             b1 = self.pop_B1[i:end_i].detach().requires_grad_(True)
             w2 = self.pop_W2[i:end_i].detach().requires_grad_(True)
@@ -163,26 +142,21 @@ class PersistentReactor:
                 self.pop_W1[i:end_i].copy_(w1)
                 self.pop_W2[i:end_i].copy_(w2)
 
-                # Validation Search with Log-Penalty (Sniper Filter)
                 val_probs = torch.sigmoid(self._forward(x_val, w1, b1, w2, b2))
                 bt, mf1 = torch.full((curr_chunk,), 0.7, device=self.device), torch.zeros(curr_chunk, device=self.device)
                 
-                # NIT FIX: INCREASED GRID TO 80 POINTS FOR FINER RESOLUTION
                 for t in np.linspace(0.6, 0.95, 80):
                     p = (val_probs > t).float()
                     sigs = p.sum(1) + 1e-6
                     tp, fp, fn = (p * y_val).sum(1), (p * (1 - y_val)).sum(1), ((1 - p) * y_val).sum(1)
-                    
                     f1 = (2 * tp) / (2 * tp + fp + fn + 1e-6)
-                    penalty = torch.log10(sigs.clamp(min=1.0, max=10.0))
+                    penalty = torch.log10(sigs.clamp(min=1.0, max=100.0))
                     f1_weighted = f1.view(-1) * penalty.view(-1)
-                    
                     mask = f1_weighted > mf1
                     mf1[mask], bt[mask] = f1_weighted[mask], t
                 
                 self.thresholds[i:end_i].copy_(bt)
 
-                # Final OOS Test
                 x_test = self.lake[master_oos_start:, indices].permute(1, 0, 2)
                 y_test = self.y_all[:, master_oos_start:, :].expand(curr_chunk, -1, -1)
                 test_p = (torch.sigmoid(self._forward(x_test, w1, b1, w2, b2)) > bt.view(-1, 1, 1)).float()
@@ -206,59 +180,64 @@ class PersistentReactor:
 
     def evolve(self, fitness_scores):
         pop_size = self.config["POP_SIZE"]
+        # Sort based on OOS F1 Performance
         idx = torch.argsort(fitness_scores, descending=True)
         
-        # RE-ORDER ALL CUDA TENSORS (Elitism Fix)
         self.population = self.population[idx]
         self.pop_W1, self.pop_W2 = self.pop_W1[idx], self.pop_W2[idx]
         self.pop_B1, self.pop_B2 = self.pop_B1[idx], self.pop_B2[idx]
         self.thresholds = self.thresholds[idx]
 
-        # Stagnation Logic
+        # Stagnation check
         fit_mean = torch.mean(fitness_scores)
         fit_std = torch.std(fitness_scores) + 1e-6
-        is_stagnant = ((fitness_scores[idx[0]] - fit_mean) / fit_std) < 1.5
+        is_stagnant = ((fitness_scores[0] - fit_mean) / fit_std) < 1.2
         
-        keep = max(2, pop_size // 20)
+        keep = max(2, pop_size // 15)
         new_pop, new_w1, new_w2 = self.population.clone(), self.pop_W1.clone(), self.pop_W2.clone()
         vitality = (self.gene_scores + 0.1) / (self.gene_usage + 1.0)
         
         for i in range(keep, pop_size):
             t1, t2 = torch.randint(0, pop_size, (4,)), torch.randint(0, pop_size, (4,))
-            p1, p2 = t1[torch.argmax(fitness_scores[idx][t1])], t2[torch.argmax(fitness_scores[idx][t2])]
+            p1, p2 = t1[torch.argmax(fitness_scores[t1])], t2[torch.argmax(fitness_scores[t2])]
             
-            new_pop[i] = self.population[p1]
-            new_w1[i], new_w2[i] = self.pop_W1[p1], self.pop_W2[p1]
+            # Anchor Lock: Child inherits parent 1 initially
+            new_pop[i] = self.population[p1].clone()
+            new_w1[i], new_w2[i] = self.pop_W1[p1].clone(), self.pop_W2[p1].clone()
             
-            # Adaptive Crossover
+            # Explicitly re-force the anchors into the child (Self-Correction)
+            if self.num_forced > 0:
+                new_pop[i, :self.num_forced] = self.forced_indices
+
+            # Adaptive Crossover (Protecting the forced head)
             if torch.rand(1).item() < (0.85 if is_stagnant else 0.7):
-                cut = torch.randint(max(1, self.num_forced), self.config["GENE_COUNT"], (1,)).item()
-                head, tail = new_pop[i, :cut], self.population[p2, cut:].clone()
+                cut = torch.randint(self.num_forced, self.config["GENE_COUNT"], (1,)).item()
+                head = new_pop[i, :cut]
+                tail = self.population[p2, cut:].clone()
                 
+                # Probabilistic backfill for tail collisions
+                v_probs = vitality.softmax(0)
                 for g in range(len(tail)):
                     if tail[g] in head:
-                        # NIT FIX: MULTINOMIAL WITH SOFTMAX FOR PROBABILISTIC BACKFILL
-                        found = False
-                        v_probs = vitality.softmax(0)
-                        candidates = torch.multinomial(v_probs, min(100, len(v_probs)), replacement=False)
-                        
+                        candidates = torch.multinomial(v_probs, min(50, len(v_probs)), replacement=False)
                         for cand in candidates:
                             if cand not in head and cand not in tail:
-                                tail[g], found = cand, True; break
-                        if not found: 
-                            tail[g] = torch.tensor(np.random.choice(self.available_pool), device=self.device)
+                                tail[g] = cand; break
                 
-                new_pop[i, cut:], new_w1[i, cut:] = tail, self.pop_W1[p2, cut:]
+                new_pop[i, cut:] = tail
+                new_w1[i, cut:] = self.pop_W1[p2, cut:]
 
-        # Mutation Shock
-        mut_rate = self.config["WEIGHT_MUTATION_RATE"] * (3.0 if is_stagnant else 1.0)
+        # Mutation with "Regime Shock"
+        mut_rate = self.config["WEIGHT_MUTATION_RATE"] * (4.0 if is_stagnant else 1.0)
         new_w1[keep:] += torch.randn_like(new_w1[keep:]) * mut_rate
         new_w2[keep:] += torch.randn_like(new_w2[keep:]) * mut_rate
 
-        self.population.copy_(new_pop); self.pop_W1.copy_(new_w1); self.pop_W2.copy_(new_w2)
-        
-        # FINAL GOVERNOR CHECK: Halt on corruption
+        self.population.copy_(new_pop)
+        self.pop_W1.copy_(new_w1)
+        self.pop_W2.copy_(new_w2)
+
+        # Integrity Guard
         for g_idx in range(pop_size):
             if len(torch.unique(self.population[g_idx])) != self.config["GENE_COUNT"]:
-                print(f"❌ CRITICAL GENOME CORRUPTION AT POP {g_idx}!")
+                print(f"❌ GENOME COLLAPSE AT POP {g_idx}!")
                 import sys; sys.exit(1)

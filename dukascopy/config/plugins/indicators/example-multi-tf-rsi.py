@@ -20,8 +20,7 @@ def meta() -> Dict:
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
-    rsi_period = int(options.get('rsi_period', 14))
-    # 1D is 1440 mins. We need a massive 1H lead time for 1D RSI convergence.
+    # we dont need warmup. its handled upstream
     return 0
 
 def position_args(args: List[str]) -> Dict[str, Any]:
