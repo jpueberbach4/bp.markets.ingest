@@ -1,13 +1,5 @@
 # ML
 
-**Update:** This actually works? I trained on data until 2025-12-31. I double checked everything. No leaks. 
-
-I used the weights and the discovered strategy on 2026. Look at this:
-
-![Wow](../images/wth-this-actually-works.png)
-
-Tbh i was skeptical at first. But, now i have seen this.... i am completely on "the other side". We might actually have something here.
-
 **Important:** This is a research project focusing on biometric feature discovery rather than public price action; it treats the GPU as a reactor to mine high-order, non-linear confluences that remain invisible to standard arbitrage. By discarding raw OHLCV data in favor of an evolved genomic population of indicators, the system generates unique "Genesis Blocks" of alpha that are statistically anchored to market physics.
 
 I am finding some very interesting combinations. Will stresstest them. 
@@ -16,7 +8,6 @@ I am finding some very interesting combinations. Will stresstest them.
 gen, F1, prec, recall, signals, fps
 🌟 94   | 0.6087 | 0.8750 | 0.4667 | 8      | 492.8 | ....
 ```
-
 
 - Weights learned on 80% of a random window.
 - Thresholds tuned on 20% of a random window.
@@ -37,7 +28,13 @@ Until stresstesting has been done and results are not verified: use with caution
 
 It's serious work but requires brutal validation.
 
-PS. i get insane numbers in the recent market. core is, i think, pretty solid now. 
+**Update:** This actually works? I trained on data until 2025-12-31. I double checked everything. No leaks. 
+
+I used the weights and the discovered strategy on 2026. Look at this:
+
+![This is positive](../images/wth-this-actually-works.png)
+
+The model misfires so now and then as well. So it's not 100 percent accurate. I lost some precision somehow but still: i am cautiously optimistic on this method. We actually might have something here.
 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
