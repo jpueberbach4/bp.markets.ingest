@@ -28,14 +28,6 @@ Until stresstesting has been done and results are not verified: use with caution
 
 It's serious work but requires brutal validation.
 
-**Update:** This actually works? I trained on data until 2025-12-31. I double checked everything. No leaks. 
-
-I used the weights and the discovered strategy on 2026. Look at this:
-
-![This is positive](../images/wth-this-actually-works.png)
-
-The model misfires so now and then as well. So it's not 100 percent accurate. I lost some precision somehow but still: i am cautiously optimistic on this method. We actually might have something here.
-
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
