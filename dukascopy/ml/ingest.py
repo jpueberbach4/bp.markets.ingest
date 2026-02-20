@@ -27,6 +27,7 @@ class IndicatorIngestor:
         print(f"🔍 [Ingest] Fetching Indicator Universe for {self.config['TIMEFRAME']}...")
         r = requests.get(f"{self.config['BASE_URL']}/list/indicators/output/JSON").json()['result']
         
+
         universe = []
         for k, v in r.items():
             if any(fnmatch.fnmatch(k.lower(), p.lower()) for p in self.config['BLACKLISTED_INDICATORS']):
