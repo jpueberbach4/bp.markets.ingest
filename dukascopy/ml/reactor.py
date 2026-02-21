@@ -1,6 +1,6 @@
 """
 =============================================================================
-Institutional-Grade Quantitative Discovery Engine (Reactor)
+Quantitative Discovery Engine (Reactor)
 =============================================================================
 
 This module implements a hybrid Machine Learning architecture combining 
@@ -126,9 +126,7 @@ class PersistentReactor:
         self.config = config
         self.device = device
         
-        # 1. TEMPORAL EXPANSION
-        # Generates velocity (dt1) and momentum (dt3) features for every base indicator
-        expanded_df = apply_temporal_universe(feature_df)
+        expanded_df = feature_df
         self.unique_inds = expanded_df.columns.tolist()
         
         # Convert pandas dataframes to PyTorch tensors and send them directly to GPU VRAM

@@ -1,11 +1,12 @@
 # config.py
 
 NUM_GENES = 24
-POP_SIZE = 1200
-HIDDEN_DIM = 64
+POP_SIZE = 4800         # Massive search breadth
+HIDDEN_DIM = 128        # Doubled for complex signal interaction
+GPU_CHUNK = 1600        # Maximizing CUDA saturation for 8GB VRAM
+EPOCHS = 15             # Deeper weight convergence
+
 LEARNING_RATE = 0.001
-EPOCHS = 7 
-GPU_CHUNK = 750  # VRAM safety threshold for 8GB
 
 # FACTORY SPECS
 OOS_BOUNDARY = 0.75         
