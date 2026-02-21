@@ -32,7 +32,6 @@ import threading
 import queue
 import os
 import fnmatch
-from features import apply_temporal_universe
 
 # Global queue to handle background file saving
 log_queue = queue.Queue(maxsize=100)
