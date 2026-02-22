@@ -1,5 +1,7 @@
 # ML
 
+Update: Adding kinetics-Kinematics-seems to be a good direction. Still exploring and not done with this research item.
+
 Update: Am applying some magic to it. Out-of-the-box ideas. Lets see what this overnight run brings.
 
 Update: I have been playing with this for a couple of days now. Its not the golden egg. It comes close at times,... but on OOS tests precision drops on average 10-25 percent. It is usable but it needs a lot of additional PNL testing, other asset testing and so on. I am building a robust "universe"-alike version of this atm. Will be merged when ready. Perhaps with more and better indicators precision can stabilize on OOS. Perhaps addition of macro-economic data will help too. 
@@ -149,6 +151,7 @@ We have added several deep-dive guides to help you leverage the latest performan
 * **[Adjustments.md](adjustments.md)** – Implementation guide for Panama rolls, Dividends, and Multiplicative splits.
 * **[Templates.md](templates.md)** – Guidelines for "God-tier" indicator performance using Polars/Rust to bypass the Python GIL.
 * **[Code Examples](../config/plugins/indicators/)** – Direct reference for plugin and indicator development.
+
 
 
 
