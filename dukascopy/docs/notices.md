@@ -1,16 +1,14 @@
 # ML
 
-Update: Am applying some magic to it. Out-of-the-box ideas. Lets see what this overnight run brings.
-
-Update: I have been playing with this for a couple of days now. Its not the golden egg. It comes close at times,... but on OOS tests precision drops on average 10-25 percent. It is usable but it needs a lot of additional PNL testing, other asset testing and so on. I am building a robust "universe"-alike version of this atm. Will be merged when ready. Perhaps with more and better indicators precision can stabilize on OOS. Perhaps addition of macro-economic data will help too. 
-
-Note: its not horrible but also not 100 percent reliable.
-
 Here is a screenshot of an 100% OOS test. Trained 2022-2025. OOS on 2026 (it has never seen the data):
 
-![Truth](../images/usable-not-golden.png)
+![Usable](../images/usable-not-golden.png)
 
 As you can see i widened the bottom-signals to decrease "sparsity". Also my new "extension"-class now includes 3 extra columns per feature column for strength, direction and another thing ;) indication.
+
+Here is a screenshot on the "evolution" of the models
+
+![Evolution](../images/evolution.png)
 
 Running it overnight again.
 
