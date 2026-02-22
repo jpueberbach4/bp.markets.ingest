@@ -4,13 +4,77 @@ Here is a screenshot of an 100% OOS test. Trained 2022-2025. OOS on 2026 (it has
 
 ![Usable](../images/usable-not-golden.png)
 
-As you can see i widened the bottom-signals to decrease "sparsity". Also my new "extension"-class now includes 3 extra columns per feature column for strength, direction and another thing ;) indication.
+As you can see i widened the bottom-signals to decrease "sparsity". Also my new "extension"-class now includes 3 extra columns per feature column for acceleration, direction, velocity and presence. Basically adding "Market Kinetics" to every indicator.  
 
 Here is a screenshot on the "evolution" of the models
 
 ![Evolution](../images/evolution.png)
 
 Running it overnight again.
+
+This is how the commandline will look like, later. Will be shared this stuff.
+
+```sh
+🌌 [Flight]: Initializing MilkyWay Universe... 1640991600000 -> 1767135600000
+🌌 [Space]: Materializing MilkyWay for EUR-USD...
+☄️ [Space]: Establishing Orbit for Hale-Bopp. Tail length: 100
+🌌 [Space]: Igniting MilkyWay for EUR-USD...
+📊 [Data Audit]: target_col: example-pivot-finder_50_bottoms
+📊 [Data Audit]: Total Bars: 6207
+📊 [Data Audit]: Signals found: 108
+🧹 [Space Clean]: Purged 2 string-polluted dimensions.
+✅ [Space]: Discovered 198 valid dimensions.
+🌀 [Singularity]: Initialized on cuda
+🔬 [Spectrograph]: Instrument active using GravitationalLens configuration.
+🕳️ [Flight]: Compressing universe into the Singularity...
+🔭 [Space]: Applying Redshift (Z-Score) to matter...
+
+🔬 [Spectrograph]: Dimension Audit Report
+============================================================
+🚫 [Atmospheric Waste]: 2 dimensions dropped (Non-Numeric/Strings)
+   - fractaldimension_30__market_state
+   - fractaldimension_50__market_state
+------------------------------------------------------------
+💎 Matter Check: All 198 dimensions are solid (0 NaNs).
+============================================================
+💥 [Space]: Big Bang Successful! 198 dimensions normalized.
+
+============================================================
+🚀 [Flight]: Commencing Generation 1/5000
+============================================================
+--- OOS Audit: 31 positives in 1552 bars ---
+Chunk 0 | MaxP: 0.920 | BestSigs: 23 | F1: 0.1176
+Chunk 1 | MaxP: 0.921 | BestSigs: 23 | F1: 0.1429
+Chunk 2 | MaxP: 0.947 | BestSigs: 33 | F1: 0.1176
+Chunk 3 | MaxP: 0.938 | BestSigs: 23 | F1: 0.1277
+Chunk 4 | MaxP: 0.927 | BestSigs: 23 | F1: 0.1667
+Chunk 5 | MaxP: 0.913 | BestSigs: 23 | F1: 0.1176
+Chunk 6 | MaxP: 0.748 | BestSigs: 23 | F1: 0.0755
+
+📊 [Gen 1 Summary] (8.3s)
+   F1:         Avg 0.0184 | Max 0.1667
+   Precision: Avg 0.0548 | Max 0.6667
+   Activity:  Total Sigs 18292 | Density 0.9822%
+🏆 [Flight]: New High Water Mark! 0.1667 beats -1.0000
+🥇 [Singularity]: Atomic Winner Ejected. Features: 32
+
+🧬 [Gen 1 Gene Vitality Top 10]:
+   1. cci_10__direction    | Score: 0.0318
+   2. feature-nprice_50_close_zscore | Score: 0.0318
+   3. macd_5_13_5__hist    | Score: 0.0318
+   4. example-multi-tf-rsi_EUR-USD_9_9_9_9__rsi4h | Score: 0.0318
+   5. upbars               | Score: 0.0317
+   6. macd_8_17_9__macd    | Score: 0.0317
+   7. hma_9                | Score: 0.0317
+   8. choppiness_30__value | Score: 0.0317
+   9. ema_20               | Score: 0.0316
+   10. macd_12_26_9__signal | Score: 0.0316
+
+============================================================
+🚀 [Flight]: Commencing Generation 2/5000
+============================================================
+...
+```
 
 **Important:** This is a research project focusing on biometric feature discovery rather than public price action; it treats the GPU as a reactor to mine high-order, non-linear confluences that remain invisible to standard arbitrage. By discarding raw OHLCV data in favor of an evolved genomic population of indicators, the system generates unique "Genesis Blocks" of alpha that are statistically anchored to market physics.
 
@@ -83,6 +147,11 @@ We have added several deep-dive guides to help you leverage the latest performan
 * **[Adjustments.md](adjustments.md)** – Implementation guide for Panama rolls, Dividends, and Multiplicative splits.
 * **[Templates.md](templates.md)** – Guidelines for "God-tier" indicator performance using Polars/Rust to bypass the Python GIL.
 * **[Code Examples](../config/plugins/indicators/)** – Direct reference for plugin and indicator development.
+
+
+
+
+
 
 
 
