@@ -1,6 +1,6 @@
 # ML
 
-Update: Adding kinetics-Kinematics-seems to be a good direction. Still exploring and not done with this research item.
+Update: Adding kinetics-Kinematics-seems to be a good direction. Still exploring and not done with this research item. 
 
 Update: Am applying some magic to it. Out-of-the-box ideas. Lets see what this overnight run brings.
 
@@ -151,6 +151,7 @@ We have added several deep-dive guides to help you leverage the latest performan
 * **[Adjustments.md](adjustments.md)** – Implementation guide for Panama rolls, Dividends, and Multiplicative splits.
 * **[Templates.md](templates.md)** – Guidelines for "God-tier" indicator performance using Polars/Rust to bypass the Python GIL.
 * **[Code Examples](../config/plugins/indicators/)** – Direct reference for plugin and indicator development.
+
 
 
 
