@@ -48,6 +48,7 @@ MilkyWay:
   # This prevents features with large values from dominating the model.
   normalizers:
     - Redshift   # Uses z-score normalization (mean = 0, std = 1)
+    #- Kinematics   # 2nd: Laws of Motion (Expansion/Experimental)
 
   # --------------------------------------------------
   # COMETS (DATA TRANSPORT)
