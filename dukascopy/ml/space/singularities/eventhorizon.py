@@ -7,8 +7,8 @@ import pandas as pd
 from typing import Dict, Any, Tuple, Optional
 
 from ml.space.space import Singularity
-from ml.space.lenses import Spectrograph
-from ml.space.flight import Flight
+from ml.space.lenses.spectograph import Spectrograph
+from ml.space.space import Flight
 
 class EventHorizonSingularity(Singularity):
     """

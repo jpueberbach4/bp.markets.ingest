@@ -1,12 +1,10 @@
 from util.config import load_app_config
-from pathlib import Path
 from typing import Dict, Any
 from ml.space.universes.factory import UniverseFactory
 from ml.space.singularities.factory import SingularityFactory
-from ml.space.flight import Flight
+from ml.space.flights.factory import FlightFactory
 import os
 import argparse
-
 
 def parse_args() -> Dict[str, Any]:
     """
@@ -51,12 +49,16 @@ def main():
     singularity_type = singularity_config.get('type')
 
     flight_config = universe_config.get('flight')
+    flight_type = flight_config.get('type')
 
     # instantiate universe
     universe = UniverseFactory.manifest(universe_type, universe_config)
 
     # instantiate singularity
     singularity = SingularityFactory.manifest(singularity_type, singularity_config)
+
+    # instantiate flight
+    flight = FlightFactory.manifest(flight_type, flight_config)
 
     # ignite the universe
     universe.ignite()
@@ -68,9 +70,7 @@ def main():
     universe.bigbang()
 
     # start main loop
-    Flight(flight_config).warp(singularity)
-
-    pass
+    flight.warp(singularity)
 
 
 if __name__ == "__main__":

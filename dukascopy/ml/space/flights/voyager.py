@@ -2,13 +2,9 @@ import time
 import torch
 from datetime import datetime
 from typing import Dict, Any
-from ml.space.space import Singularity
+from ml.space.space import Singularity, Flight
 
-# Assuming these are available in your workspace
-# from ml.universe import MilkyWay
-# from ml.singularity import EventHorizonSingularity
-
-class Flight:
+class Voyager(Flight):
     """
     Orchestrates the evolutionary training loop for a Singularity.
     Handles thermal management, mass extinction events, and model checkpoints.
@@ -161,42 +157,3 @@ class Flight:
             
         print("✅ [Flight]: Cleanup complete. Singularity stable.")
 
-def run_test_flight():
-    """
-    Standardizes the test flight execution.
-    """
-    config = {
-        'START_DATE': '2022-01-01',
-        'END_DATE': '2025-12-31',
-        "POP_SIZE": 1200,
-        "GENE_COUNT": 12,
-        "HIDDEN_DIM": 256,
-        "GPU_CHUNK": 200,
-        "LEARNING_RATE": 0.0005,
-        "EPOCHS": 15,
-        "OOS_BOUNDARY": 0.75,
-        "VITALITY_DECAY": 0.90,
-        "PRECISION_EXP": 1.5,
-        "MIN_SIGNALS": 5,
-        "WEIGHT_MUTATION_RATE": 0.005,
-        "TARGET_DENSITY": 0.01,
-        "PENALTY_COEFF": 1.0,
-        "VERBOSE": True,
-        "MAX_GENERATIONS": 5000,
-        "EXTINCTION_THRESHOLD": 0.01,
-        'EXTINCTION_STAGNATION': 60,
-        'RADIATION_STAGNATION': 30,
-        'HOTNESS_MAX': 87,
-        'HOTNESS_MIN': 80,
-        "THRESH_STEPS": 31,
-        "EMA_ALPHA": 0.1,
-        "W1_MUTATION_RATE": 0.02,
-        "W2_MUTATION_RATE": 0.002,
-    }
-
-    mission = Flight(config)
-    try:
-        mission.prepare_engine(symbol="EUR-USD", timeframe="4h")
-        mission.execute_ascent()
-    finally:
-        mission.cleanup()
