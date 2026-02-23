@@ -53,11 +53,15 @@ MilkyWay:
   normalizers:
     Kinematics:   # 1st: Laws of Motion (Expansion)
       type: Kinematics
-      disabled: true
+      disabled: false
       filter:
         inclusive:
-        - '*rsi*'
-        - '*sma*'
+        - 'sma_9'
+        - '*rsi*'          # Multi-TF momentum
+        - '*williamsr*'    # Ultra-fast exhaustion
+        - '*cci*'          # Commodity Channel Index
+        - '*uo*'           # Ultimate Oscillator
+        - '*width*'        # Volatility squeeze/expansion
     Redshift:     # 2nd: Elementary Physics (Scaling)
       type: Redshift
       dim: 0 
@@ -226,6 +230,7 @@ MilkyWay:
   # 10. TRADITIONAL BASELINES
   # --------------------------------------------------
   # Simple indicators the model can reference as anchors
+  - sma_9
   - sma_20
   - sma_50
   - sma_200
