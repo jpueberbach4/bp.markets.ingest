@@ -2,7 +2,7 @@ from ml.space.space import Comet
 from ml.space.comets.halebopp import HaleBopp
 # Import future comets here (e.g., from ml.space.comets.encke import Encke)
 
-class OortCloud:
+class CometFactory:
     """
     The Comet Factory.
     Manifests specific comets from the cosmic void based on configuration.

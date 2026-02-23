@@ -1,112 +1,184 @@
-import os, time, torch, threading
+import torch
+import numpy as np
+import pandas as pd
+import time
 from datetime import datetime
-from ingest import IndicatorIngestor
-from reactor import PersistentReactor, log_queue, async_sink_worker 
-from config import CONFIG
+import sys
+from ml.space.universes.milkyway import MilkyWay
+from ml.space.singularity import EventHorizonSingularity
 
-DEVICE = torch.device("cuda")
+def run_test_flight():
+     config = {
+          'START_DATE': '2022-01-01',
+          'END_DATE': '2025-12-31',
+          "POP_SIZE": 1200,
+          "GENE_COUNT": 12,
+          "HIDDEN_DIM": 256,
+          "GPU_CHUNK": 200,
+          "LEARNING_RATE": 0.0005,
+          "EPOCHS": 15,
+          "OOS_BOUNDARY": 0.75,
+          "VITALITY_DECAY": 0.90,
+          "PRECISION_EXP": 1.5,
+          "MIN_SIGNALS": 5,
+          "WEIGHT_MUTATION_RATE": 0.005,
+          "TARGET_DENSITY": 0.01,
+          "PENALTY_COEFF": 50.0,
+          "VERBOSE": True,
+          "MAX_GENERATIONS": 5000,
+          "EXTINCTION_THRESHOLD": 0.01,
+          'EXTINCTION_STAGNATION': 60,
+          'RADIATION_STAGNATION': 30,
+          'HOTNESS_MAX': 87,
+          'HOTNESS_MIN': 80,
+          "TARGET_DENSITY": 0.01,
+          "PENALTY_COEFF": 1.0,
+          "THRESH_STEPS": 31,
+          "EMA_ALPHA": 0.1,
+          "W1_MUTATION_RATE": 0.02,    # Was 0.005 (4x increase)
+          "W2_MUTATION_RATE": 0.002,    # Was 0.0005 (4x increase)
+     }
 
-def run():
-    sink_thread = threading.Thread(target=async_sink_worker, daemon=True)
-    sink_thread.start()
+     after_dt = datetime.fromisoformat(config['START_DATE'])
+     until_dt = datetime.fromisoformat(config['END_DATE'])
 
-    os.makedirs("checkpoints", exist_ok=True)
-    os.makedirs("logs", exist_ok=True)
+     after_ms = int(after_dt.timestamp() * 1000)
+     until_ms = int(until_dt.timestamp() * 1000)
 
-    if not os.path.exists(CONFIG['LOG_FILE']):
-        with open(CONFIG['LOG_FILE'], "w") as f: 
-            f.write("timestamp,gen,f1,prec,rec,sigs,genes\n")
+     print(f"🌌 [Flight]: Initializing MilkyWay Universe... {after_ms} -> {until_ms}")
+     universe = MilkyWay("ml/config.yaml", symbol="EUR-USD", timeframe="4h")
+     universe.ignite(after_ms=after_ms, until_ms=until_ms, limit=1000000)
 
-    ingestor = IndicatorIngestor(CONFIG)
-    feats, targets, _ = ingestor.get_data() 
+     device = "cuda" if torch.cuda.is_available() else "cpu"
+     reactor = EventHorizonSingularity(config, device=device)
 
-    reactor = PersistentReactor(feats, targets, CONFIG, DEVICE)
-    
-    start_gen = 0
-    best_ever = 0.0
-    
-    # --- MULTI-DAY RESUME LOGIC ---
-    pop_ckpt_path = "checkpoints/population_latest.pt"
-    if os.path.exists(pop_ckpt_path):
-        print(f"\n🔄 [SYSTEM] Restoring population ecosystem from {pop_ckpt_path}...")
-        start_gen, best_ever = reactor.load_checkpoint(pop_ckpt_path)
+     print("🕳️ [Flight]: Compressing universe into the Singularity...")
+     reactor.compress(universe)
 
-    print("\n" + "="*85)
-    print(f"{'GEN':<6} | {'F1':<8} | {'PREC':<8} | {'REC':<8} | {'SIGS':<6} | {'FPS':<6}")
-    print("-" * 85)
+     best_f1 = -1.0
+     best_gen = 0
+     stagnation_counter = 0
+     stagnation_limit = config['RADIATION_STAGNATION']
+     extinction_limit = config['EXTINCTION_STAGNATION']
+     hotness_max = config['HOTNESS_MAX']
+     hotness_min = config['HOTNESS_MIN']
 
-    try:
-        for gen in range(start_gen, 1000000):
-            t0 = time.time()
-            
-            metrics = reactor.run_generation()
-            
-            if len(metrics['f1']) == 0:
-                print(f"⚠️ GEN {gen} produced no results.")
-                continue
+     # Get the total number of features available in this universe
+     total_features = len(universe.features())
 
-            f1_scores = metrics["f1"]
-            best_idx = torch.argmax(f1_scores)
-            best_val = f1_scores[best_idx].item()
-            
-            max_sigs = int(metrics['sigs'].max().item())
-            avg_f1 = f1_scores.mean().item()
-            
-            cur_p = metrics["prec"][best_idx].item()
-            cur_r = metrics["rec"][best_idx].item()
-            cur_s = metrics["sigs"][best_idx].item()
-            
-            fps = CONFIG["POP_SIZE"] / (time.time() - t0)
+     generations = config['MAX_GENERATIONS']
+     for gen in range(1, generations + 1):
+          print(f"\n" + "="*60)
+          print(f"🚀 [Flight]: Commencing Generation {gen}/{generations}")
+          print("="*60)
 
-            if best_val > best_ever:
-                best_ever = best_val
-                gn = [reactor.unique_inds[i] for i in reactor.population[best_idx]]
-                
-                print(f"\n🌟 {gen:<4} | {best_ever:.4f} | {cur_p:.4f} | {cur_r:.4f} | {int(cur_s):<6} | {fps:.1f}")
-                print(f"   └─ Genes: {gn}")
-                
-                scan_threshold = CONFIG.get('ATOMIC_SCAN_THRESHOLD', 0.5)
-                if best_ever > scan_threshold:
-                    scan_size = CONFIG.get('ATOMIC_SCAN_SIZE', 6)
-                    vitality_pool = CONFIG.get('ATOMIC_VITALITY_POOL', 40)
-                    print(f"   🔬 Triggering Atomic {scan_size}-Gene Scan for Ground Truth...")
-                    reactor.run_atomic_scan(top_n_vitality=vitality_pool, scan_size=scan_size)
-                
-                log_entry = f"{datetime.now()},{gen},{best_ever:.4f},{cur_p:.4f},{cur_r:.4f},{cur_s},{'|'.join(gn)}"
-                log_queue.put((CONFIG['LOG_FILE'], log_entry, False))
-                torch.cuda.synchronize()
-                
-                best_model = {
-                    'gen': gen, 'f1': best_ever, 'genes': gn, 
-                    'state_dict': {
-                        'W1': reactor.pop_W1[best_idx].cpu(), 'W2': reactor.pop_W2[best_idx].cpu(),
-                        'B1': reactor.pop_B1[best_idx].cpu(), 'B2': reactor.pop_B2[best_idx].cpu(),
-                        'threshold': reactor.thresholds[best_idx].cpu()
-                    }
-                }
-                log_queue.put((f"best_model_gen_{gen}.pt", best_model, True))
-            else:
-                print(f"🚜 {gen:<4} | Best: {best_ever:.4f} | Avg: {avg_f1:.4f} | MaxSig: {max_sigs:<4} | FPS: {fps:.1f}")
+          start_t = time.time()
+          metrics = reactor.run_generation(universe)
+          duration = time.time() - start_t
 
-            # --- POPULATION CHECKPOINTING (Offloaded to Sink) ---
-            pop_state = {
-                'gen': gen + 1, 'best_ever': best_ever,
-                'population': reactor.population.cpu(),
-                'W1': reactor.pop_W1.cpu(), 'W2': reactor.pop_W2.cpu(),
-                'B1': reactor.pop_B1.cpu(), 'B2': reactor.pop_B2.cpu(),
-                'thresholds': reactor.thresholds.cpu(),
-                'gene_scores': reactor.gene_scores.cpu(),
-                'gene_usage': reactor.gene_usage.cpu()
-            }
-            log_queue.put(("population_latest.pt", pop_state, True))
+          fitness = metrics["score"]
+          avg_f1 = metrics["f1"].mean().item()
+          max_f1 = metrics["f1"].max().item()
+          avg_prec = metrics["precision"].mean().item()
+          max_prec = metrics["precision"].max().item()
+          total_sigs = metrics["sigs"].sum().item()
 
-            reactor.evolve(f1_scores.to(DEVICE))
+          print(f"\n📊 [Gen {gen} Summary] ({duration:.1f}s)")
+          print(f"   F1:         Avg {avg_f1:.4f} | Max {max_f1:.4f}")
+          print(f"   Precision: Avg {avg_prec:.4f} | Max {max_prec:.4f}")
+          print(f"   Activity:  Total Sigs {int(total_sigs)} | Density {metrics['density'].mean().item():.4%}")
 
-    except KeyboardInterrupt:
-        print("\n[!] Shutdown Signal Received. Cleaning up...")
-        log_queue.put(None)
-        sink_thread.join(timeout=5) 
-        print("Reactor Off. Fly safe.")
+          if max_f1 > best_f1:
+              print(f"🏆 [Flight]: New High Water Mark! {max_f1:.4f} beats {best_f1:.4f}")
+              best_f1 = max_f1
+              best_gen = gen
+              stagnation_counter = 0
+
+              # CRITICAL: We find the specific index of the individual achieving max_f1
+              winner_idx = torch.argmax(fitness).item()
+              filename = f"model-best-gen{gen}-f1-{max_f1:.4f}.pt"
+
+              # Save only the winner's specific state for inference stability
+              reactor.save_state(universe, filename, winner_idx=winner_idx)
+          else:
+              stagnation_counter += 1
+              print(f"📉 [Flight]: No improvement. Stagnation: {stagnation_counter}/{extinction_limit}")
+              print(f"           Current Best F1: {best_f1:.4f} (Gen {best_gen})")
+
+          # --- MASS EXTINCTION EVENT ---
+          if stagnation_counter >= extinction_limit:
+               print(f"💀 [Flight]: MASS EXTINCTION. 100% of population sanitized. Rebooting evolution...")
+               with torch.no_grad():
+                    # Complete reset of the population DNA
+                    new_population = torch.randint(
+                         0, total_features,
+                         (config["POP_SIZE"], config["GENE_COUNT"]),
+                         device=device,
+                         dtype=reactor.population.dtype
+                    )
+                    reactor.population = new_population
+                    # Reset internal gene metrics to allow new pioneers to emerge
+                    reactor.gene_scores.fill_(0.0)
+                    reactor.gene_usage.fill_(0.0)
+               stagnation_counter = 0
+
+          # --- RADIATION STAGNATION BREAKER ---
+          elif stagnation_counter > 0 and stagnation_counter % stagnation_limit == 0:
+               print(f"☢️  [Flight]: CRITICAL STAGNATION. Injecting radiation into 40% of population...")
+               with torch.no_grad():
+                    n_nuke = int(config["POP_SIZE"] * 0.40)
+                    indices = torch.randperm(config["POP_SIZE"], device=device)[:n_nuke]
+
+                    # Generate new random gene indices using total_features as the upper bound
+                    new_dna = torch.randint(
+                         0, total_features,
+                         (n_nuke, config["GENE_COUNT"]),
+                         device=device,
+                         dtype=reactor.population.dtype
+                    )
+                    reactor.population[indices] = new_dna
+               # We don't reset stagnation_counter here, as we are still approaching the 60-gen extinction limit
+
+          vitality = (reactor.gene_scores + 0.1) / (reactor.gene_usage + 1.0)
+          top_v, top_i = torch.topk(vitality, k=10)
+
+          print(f"\n🧬 [Gen {gen} Gene Vitality Top 10]:")
+          for rank, (val, idx) in enumerate(zip(top_v, top_i)):
+                name = reactor.feature_names[idx.item()]
+                print(f"   1. {name:<20} | Score: {val.item():.4f}")
+
+          if gen < generations:
+               temperature = torch.cuda.temperature()
+               if  temperature > hotness_max:
+                    print(f"🔥 [Space]: Radiation spike ({temperature}°C). Orbiting to the dark side of the planet.")
+                    while True:
+                         time.sleep(1.0)
+                         temperature = torch.cuda.temperature()
+                         if temperature <= hotness_min:
+                              print(f"🛰️ [Space]: Thermal equilibrium reached ({temperature}°C). Exiting eclipse. Main drive re-engaged.")
+                              break
+
+               reactor.evolve(metrics)
+
+     print("\n" + "—"*60)
+     print(f"🏁 [Flight]: Flight Path Complete.")
+     print(f"🥇 [Best Result]: Gen {best_gen} achieved F1 {best_f1:.4f}")
+     print("—"*60)
+
+     print("\n🛰️ [Flight]: Draining the Oort Cloud...")
+     time.sleep(1)
+
+     del reactor
+     if torch.cuda.is_available():
+          torch.cuda.empty_cache()
+
+     print("✅ [Flight]: Test run complete. Singularity stable.")
 
 if __name__ == "__main__":
-    run()
+    try:
+        run_test_flight()
+    except Exception as e:
+        import traceback
+        print(f"💥 [Flight Critical]: System failure: {e}")
+        traceback.print_exc()
+        sys.exit(1)

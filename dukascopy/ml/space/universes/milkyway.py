@@ -5,53 +5,59 @@ import numpy as np
 import torch
 
 from util.api import get_data
-from ml.space.space import Universe, Comet
-from ml.space.normalizers.redshift import Redshift
-from ml.space.comets.oortcloud import OortCloud
+from ml.space.space import Universe, Comet, Normalizer
+from ml.space.normalizers.factory import NormalizerFactory
+from ml.space.comets.factory import CometFactory
 from typing import Tuple, Dict, Any
+from datetime import datetime
 
 
 class MilkyWay(Universe):
-    def __init__(self, config_path, symbol="EUR-USD", timeframe="4h"):
-        self.config_path = config_path
-        self.symbol = symbol
-        self.timeframe = timeframe
+    def __init__(self, config):
+        self.config = config
         
+        self.symbol = None
+        self.timeframe = None
+        self.after_ms = None
+        self.until_ms = None
+        self.limit = 1000000
+
         self._feature_table = None
         self._target_series = None
         self._feature_names = []
         self._discarded_dimensions = [] # Track string-polluted columns
-        self._oort_cloud: Dict[str, Comet] = {}
-        
-        # Initialize the Normalizer
-        self.redshift = Redshift(dim=0)
+        self._comets: Dict[str, Comet] = {}
+        self._normalizers: Dict[str, Normalizer] = {}
         
         self.features_to_request, self.filter_patterns, self.target_col = self._load_config()
 
     def _load_config(self):
-        try:
+        try:    
+            # read symbol and timeframe from config
+            self.symbol, self.timeframe = self.config.get('fabric').get('matter').split('/',1)
+            
+            # extract the other fabrics
+            self.after_ms = int(datetime.fromisoformat(str(self.config.get('fabric').get('after'))).timestamp() * 1000)
+            self.until_ms = int(datetime.fromisoformat(str(self.config.get('fabric').get('until'))).timestamp() * 1000)
+
             print(f"🌌 [Space]: Materializing MilkyWay for {self.symbol}...")
-            with open(self.config_path, 'r') as f:
-                cfg = yaml.safe_load(f)
-            
-            universes = cfg.get('ml', {}).get('universes', [])
-            mw_cfg = next((u['MilkyWay'] for u in universes if 'MilkyWay' in u), None)
-            
-            if not mw_cfg:
-                raise ValueError(f"Could not find MilkyWay configuration in {self.config_path}")
-            
-            requested_comets = mw_cfg.get('comets', ["HaleBopp"])
-            for comet_name in requested_comets:
-                self._oort_cloud[comet_name] = OortCloud.manifest(comet_name)
-            
-            center = mw_cfg.get('center', [])
+
+            # Initialize the Comets
+            for comet_name in self.config.get('comets'):
+                self._normalizers[comet_name] = CometFactory.manifest(comet_name)
+
+            # Initialize the Normalizers
+            for normalizer_name in self.config.get('normalizers'):
+                self._normalizers[normalizer_name] = NormalizerFactory.manifest(normalizer_name, dim=0)
+       
+            center = self.config.get('center', [])
             target = center[0] if isinstance(center, list) and len(center) > 0 else None
             
-            features = mw_cfg.get('features', [])
+            features = self.config.get('features', [])
             if target and target not in features:
                 features.append(target)
                 
-            return features, mw_cfg.get('filter', []), target
+            return features, self.config.get('filter', []), target
         except Exception as e:
             print(f"❌ [MilkyWay Init Error]: {e}")
             raise
@@ -65,9 +71,9 @@ class MilkyWay(Universe):
         raw_polars = get_data(
             symbol=self.symbol,
             timeframe=self.timeframe,
-            after_ms=after_ms,
-            until_ms=until_ms,
-            limit=limit,
+            after_ms=self.after_ms,
+            until_ms=self.until_ms,
+            limit=self.limit,
             order="asc",
             indicators=self.features_to_request,
             options={**options, "return_polars": True}
@@ -163,7 +169,7 @@ class MilkyWay(Universe):
         return self._feature_names
 
     def eject(self, filename: str, data: Any, is_model: bool = False, is_gene_dump: bool = False):
-        for comet in self._oort_cloud.values():
+        for comet in self._comets.values():
             comet.deposit(filename, data, is_model, is_gene_dump)
 
     def audit(self):

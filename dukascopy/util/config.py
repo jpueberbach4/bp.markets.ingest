@@ -29,6 +29,7 @@ class BuilderConfig:
 class AppConfig:
     """The root configuration for the entire application."""
     builder: BuilderConfig = field(default_factory=BuilderConfig)
+    ml: Dict[str, Any] = None
 
 
 def _resolve_yaml_includes(data: Dict[str, Any]) -> Dict[str, Any]:
