@@ -9,10 +9,10 @@ class Redshift(Normalizer):
     
     Formula: $z = \frac{x - \mu}{\sigma}$
     """
-    def __init__(self, dim=0, eps=1e-8):
+    def __init__(self, config):
         super().__init__()
-        self.dim = dim
-        self.eps = eps # Prevents division by zero in a vacuum
+        self.dim = int(config.get('dim', 0))
+        self.eps = float(config.get('eps', 1e-8)) # Prevents division by zero in a vacuum
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """

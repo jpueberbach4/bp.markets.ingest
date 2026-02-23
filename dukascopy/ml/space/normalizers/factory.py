@@ -7,7 +7,7 @@ from ml.space.normalizers.kinematics import Kinematics
 
 class NormalizerFactory: #rename
     @staticmethod
-    def manifest(normalizer_name: str, dim=0, eps=1e-8) -> Normalizer:
+    def manifest(normalizer_name: str, config) -> Normalizer:
         """
         Factory method to create comet instances.
         """
@@ -18,6 +18,6 @@ class NormalizerFactory: #rename
         }
 
         if normalizer_name in registry:
-            return registry[normalizer_name](dim, eps)
+            return registry[normalizer_name](config)
         
         raise ValueError(f"🌌 [Normalizer]: Unknown normalizer type '{normalizer_name}' requested.")

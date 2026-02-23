@@ -46,9 +46,19 @@ MilkyWay:
   # --------------------------------------------------
   # Normalizers convert raw indicator values into comparable numbers.
   # This prevents features with large values from dominating the model.
+  # Normalizers are applied in the order specified. Order is important.
   normalizers:
-    - Redshift   # Uses z-score normalization (mean = 0, std = 1)
-    #- Kinematics   # 2nd: Laws of Motion (Expansion/Experimental)
+    Kinematics:   # 1st: Laws of Motion (Expansion)
+      type: Kinematics
+      disabled: true
+      filter:
+        inclusive:
+        - '*rsi*'
+        - '*sma*'
+    Redshift:     # 2nd: Elementary Physics (Scaling)
+      type: Redshift
+      dim: 0 
+      eps: 1e-8
 
   # --------------------------------------------------
   # COMETS (DATA TRANSPORT)

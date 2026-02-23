@@ -47,8 +47,11 @@ class MilkyWay(Universe):
                 self._comets[comet_name] = CometFactory.manifest(comet_name)
 
             # Initialize the Normalizers
-            for normalizer_name in self.config.get('normalizers'):
-                self._normalizers[normalizer_name] = NormalizerFactory.manifest(normalizer_name, dim=0)
+            for normalizer_name in self.config.get('normalizers').keys():
+                normalizer_config = self.config.get('normalizers').get(normalizer_name)
+                if bool(normalizer_config.get('disabled', False)):
+                    continue
+                self._normalizers[normalizer_name] = NormalizerFactory.manifest(normalizer_name, normalizer_config)
        
             center = self.config.get('center', [])
             target = center[0] if isinstance(center, list) and len(center) > 0 else None

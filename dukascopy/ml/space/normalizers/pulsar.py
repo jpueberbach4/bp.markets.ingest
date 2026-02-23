@@ -7,9 +7,9 @@ class Pulsar(Normalizer):
     Normalizes data between 0 and 1, like the periodic 
     pulses of a neutron star.
     """
-    def __init__(self, dim=0):
+    def __init__(self, config):
         super().__init__()
-        self.dim = dim
+        self.dim = config.get('dim', 0)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x_min = x.min(dim=self.dim, keepdim=True)[0]
