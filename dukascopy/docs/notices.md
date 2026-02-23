@@ -1,27 +1,8 @@
 # ML
 
-Here is a screenshot of an 100% OOS test. Trained 2022-2025. OOS on 2026 (it has never seen the data):
+A beta "play-version" is released. You can find it in the ml folder. It's research-grade stuff and may be still a bit rough. You need a cuda-capable GPU to use this feature.
 
-![Usable](../images/usable-not-golden.png)
-
-As you can see i widened the bottom-signals to decrease "sparsity". Also my new "extension"-class now includes 3 extra columns per feature column for acceleration, direction, velocity and presence. Basically adding "Market Kinetics" to every indicator.  
-
-Here is a screenshot on the "evolution" of the models
-
-![Evolution](../images/evolution.png)
-
-Same model on GBP:
-
-![GBP](../images/same-model-on-gbp.png)
-
-But again: this needs thorough validation.
-
-**Important:** This is a research project focusing on biometric feature discovery rather than public price action; it treats the GPU as a reactor to mine high-order, non-linear confluences that remain invisible to standard arbitrage. By discarding raw OHLCV data in favor of an evolved genomic population of indicators, the system generates unique "Genesis Blocks" of alpha that are statistically anchored to market physics.
-
-
-This is a different method of backtesting. Normally you have an idea and you test it. In this method you add your custom signal generators, feed it into an engine and have it evolve together with all indicators and have IT find a strategy for you, eg with a > 80 percent precision. This code has (attempted) protection against overfitting (using rolling windows,master holdout, precision bias) but i am still researching, optimizing and testing it. This part will become the cathedral of this project if tests checkout. This is (one of) the original idea(s) behind this project.
-
-It's serious work but requires brutal validation.
+It's promising but serious work that (still) requires brutal validation.
 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
