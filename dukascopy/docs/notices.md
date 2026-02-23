@@ -12,6 +12,7 @@ For "a first attempt" it's definately not bad.
 
 ![Example](../images/same-model-on-gbp.png)
 
+Update: it's currently building a setup where it frontruns the bottoms by 2-3 days. interesting.
 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
@@ -77,6 +78,7 @@ We have added several deep-dive guides to help you leverage the latest performan
 * **[Adjustments.md](adjustments.md)** – Implementation guide for Panama rolls, Dividends, and Multiplicative splits.
 * **[Templates.md](templates.md)** – Guidelines for "God-tier" indicator performance using Polars/Rust to bypass the Python GIL.
 * **[Code Examples](../config/plugins/indicators/)** – Direct reference for plugin and indicator development.
+
 
 
 
