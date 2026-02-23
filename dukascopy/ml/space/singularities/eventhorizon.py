@@ -437,7 +437,7 @@ class EventHorizonSingularity(Singularity):
 
         return res
 
-    def run_atomic_scan(self, top_n_vitality=40):
+    def run_atomic_scan(self):
         """Repopulates the weakest population members using high-vitality genes.
 
         This method computes a vitality score for each gene based on its
@@ -459,8 +459,14 @@ class EventHorizonSingularity(Singularity):
         # encourages high-impact genes while penalizing overused ones
         vitality = (self.gene_scores + 0.1) / (self.gene_usage + 1.0)
 
+        # Better poolsize handling
+        pool_size = max(int(self.gene_count * 1.5), 40)
+        
+        # Ensure we don't try to grab more indicators than actually exist in the lake
+        pool_size = min(pool_size, len(self.feature_names))
+
         # Select indices of top-N most vital genes
-        pool = torch.argsort(vitality, descending=True)[:top_n_vitality]
+        pool = torch.argsort(vitality, descending=True)[:pool_size]
 
         # Define the cutoff for weakest population members (bottom 20%)
         start_idx = int(self.pop_size * 0.8)
@@ -621,7 +627,7 @@ class EventHorizonSingularity(Singularity):
         self.thresholds = torch.clamp(new_thresh, 0.10, 0.85)
 
         # Inject high-vitality genes into weakest individuals
-        self.run_atomic_scan(top_n_vitality=40)
+        self.run_atomic_scan()
 
     def emit(self, features: pd.DataFrame) -> np.ndarray:
         """Generates binary signals from input features using the best individual.

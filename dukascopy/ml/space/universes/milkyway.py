@@ -137,22 +137,22 @@ class MilkyWay(Universe):
         if self._feature_table is None:
             raise RuntimeError("Cannot Big Bang an unignited universe. Call ignite() first.")
         
-        print("🔭 [Space]: Applying Redshift (Z-Score) to matter...")
+        print("🔭 [Space]: Applying Cosmic Normalization (Redshift & Kinematics)...")
         
-        # This will now succeed because self._feature_table is guaranteed numeric
-        raw_tensor = torch.tensor(self._feature_table.values, dtype=torch.float32)
+        current_names = list(self._feature_table.columns)
+        normalized_tensor = torch.tensor(self._feature_table.values, dtype=torch.float32)
 
-        # Avoid Division by Zero, later on, in Redshift or any other normalizer
-        mean = raw_tensor.mean(dim=0)
-        std = raw_tensor.std(dim=0)
+        for normalizer in self._normalizers.values():
+            if hasattr(normalizer, 'generate_names'):
+                current_names = normalizer.generate_names(current_names)
+            
+            # Execute the transformation (Direction, Velocity, Presence blocks)
+            normalized_tensor = normalizer.forward(normalized_tensor)
         
-        # Replace 0 std with 1 to prevent NaN explosion
-        std[std == 0] = 1.0
+        self._feature_names = current_names
 
-        normalized_tensor = (raw_tensor - mean) / (std + 1e-8)
-        
         self._feature_table = pd.DataFrame(
-            normalized_tensor.numpy(), 
+            normalized_tensor.cpu().numpy(), # .cpu() ensures we can move from CUDA to RAM
             columns=self._feature_names, 
             index=self._feature_table.index
         )

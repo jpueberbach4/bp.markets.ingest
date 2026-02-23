@@ -69,9 +69,6 @@ def main():
     # compress the universe into the singularity
     singularity.compress(universe)
 
-    # make the bigbang happen
-    universe.bigbang()
-
     # start main loop
     flight.warp(singularity)
 
