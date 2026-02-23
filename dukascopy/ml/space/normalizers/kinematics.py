@@ -52,4 +52,6 @@ class Kinematics(Normalizer):
             a_idx = torch.tensor([0, 1], device=x.device)
             acceleration.index_fill_(self.dim, a_idx, self.fill_value)
 
+        print(f"🌌 [Space]: Secondary physics-laws initiated. Kinematics.")
+
         return torch.cat([direction, velocity, acceleration, magnitude], dim=-1)
