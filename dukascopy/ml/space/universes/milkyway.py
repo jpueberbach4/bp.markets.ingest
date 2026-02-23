@@ -49,7 +49,10 @@ class MilkyWay(Universe):
             # Initialize the Normalizers
             for normalizer_name in self.config.get('normalizers').keys():
                 normalizer_config = self.config.get('normalizers').get(normalizer_name)
-                if bool(normalizer_config.get('disabled', False)):
+                is_disabled = str(normalizer_config.get('disabled', 'false')).strip().lower() in ('true', '1', 't', 'y', 'yes')
+
+                print(f"is_disabled: {is_disabled}")
+                if is_disabled:
                     continue
                 self._normalizers[normalizer_name] = NormalizerFactory.manifest(normalizer_name, normalizer_config)
        
