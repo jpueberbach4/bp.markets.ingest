@@ -10,7 +10,7 @@ MilkyWay:
     type: Voyager
     settings:
       max_generations: 5000
-      extinction_stagnations: 60
+      extinction_stagnation: 60
       radiation_stagnation: 20
       gene_count: 16
       vitality_decay: 0.9
