@@ -1,87 +1,85 @@
 import pandas as pd
 import torch
+import torch.nn as nn
 import numpy as np
+import os
 from typing import List, Dict, Any
 
 def description() -> str:
-    return (
-        "Alpha Gen 117 - High Visibility. Scales the binary signal to the "
-        "max observed score to ensure it is visible against wide-range scores."
-    )
+    return "Alpha Gen 1087 - Live Inference. Factory Spec 1.3 (Flight Build)"
 
 def meta() -> Dict:
-    return {
-        "author": "Google Gemini",
-        "version": 1.21,
-        "panel": 1,  # Sub-panel 1
-        "verified": 1,
-        "polars": 0
-    }
+    return {"author": "Gemini", "version": "33.2_ATOMIC_STABILITY", "panel": 1, "verified": 1}
 
-def warmup_count(options: Dict[str, Any]) -> int:
-    return 150 
+def position_args(args: List[str]) -> Dict[str, Any]:
+    return {"model-name": args[0] if len(args) > 0 else "model_best_gen14_f1_0.3636.pt"}
+
+def warmup_count(options: Dict[str, Any]):
+    return 1000
+
+
+class SingularityInference(nn.Module):
+    """
+    Architecture synced to Factory Spec 1.3: HIDDEN_DIM = 256
+    Uses GELU activation to match EventHorizonSingularity._forward exactly.
+    """
+    def __init__(self, input_dim: int, hidden_dim: int = 256):
+        super(SingularityInference, self).__init__()
+        self.l1 = nn.Linear(input_dim, hidden_dim)
+        self.l2 = nn.Linear(hidden_dim, 1)
+        self.activation = nn.GELU() 
+        self.out_act = nn.Sigmoid()
+        
+    def forward(self, x):
+        x = self.activation(self.l1(x))
+        x = self.out_act(self.l2(x))
+        return x
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
-    """
-    Neural Inference with Visibility Scaling.
-    The signal is multiplied by the max score to create visible 'spikes'.
-    """
     from util.api import get_data_auto
-    import os
-
-    # Load Checkpoint
-    ckpt_path = 'checkpoints/best_model_gen_117.pt'
-    if not os.path.exists(ckpt_path):
-        ckpt_path = 'best_model_gen_117.pt'
-
-    ckpt = torch.load(ckpt_path, map_location='cpu', weights_only=True)
-    genes = ckpt['genes']
-    state = ckpt['state_dict']
+    from ml.space.normalizers.redshift import Redshift
     
-    # Fetch Data
-    base_indicators = sorted(list(set([g.split('__')[0] for g in genes])))
-    ex_df = get_data_auto(df, indicators=base_indicators)
-    
-    # Sanitization (Ingestion Parity)
-    try:
-        feature_slice = ex_df[genes].copy()
-        feature_slice = feature_slice.apply(pd.to_numeric, errors='coerce').fillna(0.0)
-        clean_numpy = feature_slice.to_numpy(dtype=np.float32)
-        input_tensor = torch.from_numpy(clean_numpy)
-    except Exception as e:
-        return pd.DataFrame(index=df.index, data={'alpha_score': 0, 'alpha_signal': 0})
+    model_name = options.get('model-name', 'model_best_gen14_f1_0.3636.pt')
 
-    # Neural Inference
+    checkpoint_path = f"checkpoints/{model_name}"
+    if not os.path.exists(checkpoint_path):
+        return pd.DataFrame({'alpha_score': 0.0, 'alpha_signal': 0.0}, index=df.index)
+
+    checkpoint = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
+    active_features = checkpoint.get('feature_names', [])
+    
+    base_indicators = list(set([f.split('__')[0] for f in active_features]))
+    raw_df = get_data_auto(df, indicators=base_indicators)
+    
+    # Force alignment and numeric conversion immediately
+    selected_features_df = raw_df[active_features].apply(pd.to_numeric, errors='coerce').fillna(0)
+    
+    # Fix: Ensure the numpy array is purely float before tensor conversion
+    input_array = selected_features_df.values.astype(np.float32)
+    data_tensor = torch.tensor(input_array)
+    
+    normalizer = Redshift()
     with torch.no_grad():
-        w1, b1 = state['W1'].cpu(), state['B1'].cpu()
-        w2, b2 = state['W2'].cpu(), state['B2'].cpu()
-        threshold = state['threshold'].cpu().item()
+        normalized_tensor = normalizer(data_tensor)
+    
+    model = SingularityInference(input_dim=len(active_features), hidden_dim=256)
+    model.load_state_dict({
+        'l1.weight': checkpoint['W1'].t(),
+        'l1.bias': checkpoint['B1'].reshape(-1),
+        'l2.weight': checkpoint['W2'].t(),
+        'l2.bias': checkpoint['B2'].reshape(-1)
+    })
+    model.eval()
 
-        # Interaction Layer
-        hidden = torch.nn.functional.relu(torch.matmul(input_tensor, w1) + b1)
-        
-        # Scoring
-        scores_tensor = torch.matmul(hidden, w2) + b2
-        
-        # Binary Trigger
-        signals_tensor = (scores_tensor > threshold).float()
-    
-    # Visibility Logic: Scale Signal to Max Score
-    # Convert back to numpy
-    scores = scores_tensor.numpy().flatten()
-    signals = signals_tensor.numpy().flatten()
-    
-    # Find the maximum score in the visible range to act as our 'Ceiling'
-    max_visible_score = np.max(scores) if len(scores) > 0 else 1.0
-    
-    # If max is negative or zero, use a default positive constant to ensure visibility
-    signal_height = max_visible_score if max_visible_score > 0 else 100.0
+    with torch.no_grad():
+        predictions = model(normalized_tensor).squeeze().cpu().numpy()
 
-    # Assembly
     res = pd.DataFrame(index=df.index)
-    res['alpha_score'] = scores
+    res['score'] = predictions
     
-    # We multiply the 0/1 by the height so it spikes to the top of the pane
-    res['alpha_signal'] = signals * 2000
+    threshold_val = checkpoint.get('threshold', 0.40)
+    if torch.is_tensor(threshold_val):
+        threshold_val = threshold_val.item()
     
-    return res[['alpha_score', 'alpha_signal']]
+    res['signal'] = np.where(predictions > threshold_val, 1.0, 0.0)
+    return res

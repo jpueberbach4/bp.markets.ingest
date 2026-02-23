@@ -1,0 +1,209 @@
+import yaml
+import fnmatch
+import pandas as pd
+import numpy as np
+import torch
+
+from util.api import get_data
+from ml.space.space import Universe, Comet
+from ml.space.normalizers.redshift import Redshift
+from ml.space.comets.oortcloud import OortCloud
+from typing import Tuple, Dict, Any
+
+
+class MilkyWay(Universe):
+    def __init__(self, config_path, symbol="EUR-USD", timeframe="4h"):
+        self.config_path = config_path
+        self.symbol = symbol
+        self.timeframe = timeframe
+        
+        self._feature_table = None
+        self._target_series = None
+        self._feature_names = []
+        self._discarded_dimensions = [] # Track string-polluted columns
+        self._oort_cloud: Dict[str, Comet] = {}
+        
+        # Initialize the Normalizer
+        self.redshift = Redshift(dim=0)
+        
+        self.features_to_request, self.filter_patterns, self.target_col = self._load_config()
+
+    def _load_config(self):
+        try:
+            print(f"🌌 [Space]: Materializing MilkyWay for {self.symbol}...")
+            with open(self.config_path, 'r') as f:
+                cfg = yaml.safe_load(f)
+            
+            universes = cfg.get('ml', {}).get('universes', [])
+            mw_cfg = next((u['MilkyWay'] for u in universes if 'MilkyWay' in u), None)
+            
+            if not mw_cfg:
+                raise ValueError(f"Could not find MilkyWay configuration in {self.config_path}")
+            
+            requested_comets = mw_cfg.get('comets', ["HaleBopp"])
+            for comet_name in requested_comets:
+                self._oort_cloud[comet_name] = OortCloud.manifest(comet_name)
+            
+            center = mw_cfg.get('center', [])
+            target = center[0] if isinstance(center, list) and len(center) > 0 else None
+            
+            features = mw_cfg.get('features', [])
+            if target and target not in features:
+                features.append(target)
+                
+            return features, mw_cfg.get('filter', []), target
+        except Exception as e:
+            print(f"❌ [MilkyWay Init Error]: {e}")
+            raise
+
+    def ignite(self, after_ms=1546300800000, until_ms=2757952000000, limit=10000, options=None):
+        if options is None:
+            options = {}
+
+        print(f"🌌 [Space]: Igniting MilkyWay for {self.symbol}...")
+
+        raw_polars = get_data(
+            symbol=self.symbol,
+            timeframe=self.timeframe,
+            after_ms=after_ms,
+            until_ms=until_ms,
+            limit=limit,
+            order="asc",
+            indicators=self.features_to_request,
+            options={**options, "return_polars": True}
+        )
+        
+        df = raw_polars.to_pandas()
+
+        max_time_date = pd.to_datetime(df['time_ms'].max(), unit='ms').strftime('%Y-%m-%d')
+        print(f"🌌 [Space]: Temporal boundary detected at {max_time_date}. Beyond this, there is only the future.")
+
+        # --- Handle Target ---
+        if self.target_col in df.columns:
+            raw_target = df[self.target_col].copy()
+            # Ensure target itself is numeric before calculation
+            if not pd.api.types.is_numeric_dtype(raw_target):
+                 raw_target = pd.to_numeric(raw_target, errors='coerce').fillna(0)
+
+            pos_count = (raw_target == 1).sum()
+            neg_count = (raw_target == -1).sum()
+            
+            print(f"📊 [Data Audit]: target_col: {self.target_col}")
+            print(f"📊 [Data Audit]: Total Bars: {len(df)}")
+            print(f"📊 [Data Audit]: Signals found: {pos_count + neg_count}")
+            
+            self._target_series = (raw_target != 0).astype(np.float32)
+            self._target_series.name = "target"
+        else:
+            print(f"⚠️ [Space Error]: Target column '{self.target_col}' not found!")
+            self._target_series = pd.Series(np.zeros(len(df)), name="target")
+
+        # --- Filter Patterns & Metadata ---
+        cols_to_drop = []
+        for pattern in self.filter_patterns:
+            matches = fnmatch.filter(df.columns, pattern)
+            cols_to_drop.extend(matches)
+        
+        metadata = ['time_ms', 'symbol', 'open', 'high', 'low', 'close', 'volume', 'timeframe']
+        final_drops = list(set(cols_to_drop + [c for c in metadata if c in df.columns]))
+        
+        if self.target_col in df.columns and self.target_col not in final_drops:
+            final_drops.append(self.target_col)
+
+        work_df = df.drop(columns=[c for c in final_drops if c in df.columns])
+
+        # --- FIX: volatility data is not much, causes nan at the beginning, however, rest of column is fine ---
+        work_df = work_df.bfill().ffill().fillna(0)
+
+        # --- NEW: Filter out "Atmospheric Waste" (Non-numeric columns) ---
+        numeric_df = work_df.select_dtypes(include=[np.number])
+        self._discarded_dimensions = [c for c in work_df.columns if c not in numeric_df.columns]
+        
+        self._feature_table = numeric_df
+        self._feature_names = self._feature_table.columns.tolist()
+
+        if self._discarded_dimensions:
+            print(f"🧹 [Space Clean]: Purged {len(self._discarded_dimensions)} string-polluted dimensions.")
+
+        print(f"✅ [Space]: Discovered {len(self._feature_names)} valid dimensions.")
+
+    def bigbang(self) -> Tuple[pd.DataFrame, pd.Series]:
+        if self._feature_table is None:
+            raise RuntimeError("Cannot Big Bang an unignited universe. Call ignite() first.")
+        
+        print("🔭 [Space]: Applying Redshift (Z-Score) to matter...")
+        
+        # This will now succeed because self._feature_table is guaranteed numeric
+        raw_tensor = torch.tensor(self._feature_table.values, dtype=torch.float32)
+
+        # Avoid Division by Zero, later on, in Redshift or any other normalizer
+        mean = raw_tensor.mean(dim=0)
+        std = raw_tensor.std(dim=0)
+        
+        # Replace 0 std with 1 to prevent NaN explosion
+        std[std == 0] = 1.0
+
+        normalized_tensor = (raw_tensor - mean) / (std + 1e-8)
+        
+        self._feature_table = pd.DataFrame(
+            normalized_tensor.numpy(), 
+            columns=self._feature_names, 
+            index=self._feature_table.index
+        )
+
+        self.audit()
+        
+        print(f"💥 [Space]: Big Bang Successful! {len(self._feature_names)} dimensions normalized.")
+        return self._feature_table, self._target_series
+
+    def dimensions(self):
+        return self._feature_table.shape if self._feature_table is not None else (0,0)
+
+    def features(self):
+        return self._feature_names
+
+    def eject(self, filename: str, data: Any, is_model: bool = False, is_gene_dump: bool = False):
+        for comet in self._oort_cloud.values():
+            comet.deposit(filename, data, is_model, is_gene_dump)
+
+    def audit(self):
+        """
+        Dumps a statistical report of NaNs and string-polluted columns.
+        """
+        if self._feature_table is None:
+            print("❌ [Spectrograph]: No matter found. Ignite the universe first.")
+            return
+
+        print("\n🔬 [Spectrograph]: Dimension Audit Report")
+        print("=" * 60)
+        
+        # Report String Voids (Dropped Columns)
+        if self._discarded_dimensions:
+            print(f"🚫 [Atmospheric Waste]: {len(self._discarded_dimensions)} dimensions dropped (Non-Numeric/Strings)")
+            for col in self._discarded_dimensions:
+                print(f"   - {col}")
+            print("-" * 60)
+        else:
+            print("✅ No string pollution detected in requested features.")
+
+        # Report NaN Voids (Existing Columns)
+        nan_counts = self._feature_table.isna().sum()
+        nan_percentages = (nan_counts / len(self._feature_table)) * 100
+        
+        void_report = pd.DataFrame({
+            'void_count': nan_counts,
+            'void_percent': nan_percentages
+        }).query('void_count > 0').sort_values(by='void_count', ascending=False)
+
+        if void_report.empty:
+            print(f"💎 Matter Check: All {len(self._feature_names)} dimensions are solid (0 NaNs).")
+        else:
+            print(f"⚠️ [Void Report]: {len(void_report)} dimensions contain NaNs")
+            print(void_report.to_string())
+            
+            critical = void_report[void_report['void_percent'] > 50]
+            if not critical.empty:
+                print(f"🚨 CRITICAL: {len(critical)} columns are more than 50% empty!")
+
+        print("=" * 60)
+        return void_report

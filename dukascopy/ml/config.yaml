@@ -1,0 +1,195 @@
+ml:
+  # Top-level machine learning configuration
+  # Note: curated list
+  universes:
+  
+  # A "universe" is a complete ML environment (data, features, rules)
+  - MilkyWay:
+
+      # --------------------------------------------------
+      # CENTER (TARGET / LABEL DEFINITION)
+      # --------------------------------------------------
+      # This defines what the model is trying to learn or predict.
+      # Everything else (features) is built to explain this target.
+      center:
+        - example-pivot-finder_50_bottoms
+
+      # --------------------------------------------------
+      # NORMALIZERS (SCALING / STANDARDIZATION)
+      # --------------------------------------------------
+      # Normalizers convert raw indicator values into comparable numbers.
+      # This prevents features with large values from dominating the model.
+      normalizers:
+        - RedShift   # Uses z-score normalization (mean = 0, std = 1)
+
+      # --------------------------------------------------
+      # COMETS (DATA TRANSPORT)
+      # --------------------------------------------------
+      # Comets move processed data from GPU / compute layer into the ML core.
+      # The name is symbolic; functionally this is a data pipeline.
+      comets:
+        - HaleBopp
+
+      # --------------------------------------------------
+      # FILTER (COLUMNS TO DROP BEFORE TRAINING)
+      # --------------------------------------------------
+      # These columns are removed because:
+      # - They leak future information
+      # - They are identifiers, not predictive signals
+      # - They duplicate information already encoded in indicators
+      filter:
+        - example-multi-tf-rsi_*_*__rsi
+        - open
+        - high
+        - low
+        - close
+        - volume
+        - symbol
+        - timeframe
+
+      # --------------------------------------------------
+      # FEATURES (INPUT SIGNALS FOR THE MODEL)
+      # --------------------------------------------------
+      # These are the indicators the model uses to detect market bottoms.
+      # Grouped by purpose for readability and reasoning.
+      features:
+
+      # ==================================================
+      # BOTTOM SNIPER CONFIGURATION – EUR/USD (4H)
+      # Tuned for ~0.58% bottom density
+      # ==================================================
+
+      # --------------------------------------------------
+      # 1. OVERSOLD CONFIRMATION
+      # --------------------------------------------------
+      # Fast oscillators to detect exhaustion and early reversals
+      - rsi_14
+
+      - williamsr_14
+
+      - cci_20
+
+      # --------------------------------------------------
+      # 2. VOLUME & BUY/SELL PRESSURE
+      # --------------------------------------------------
+      # Detects whether strong money is entering or exiting the market
+      - mfi_14
+      - obv
+      - adl
+      - chaikin_3_10
+      - eom_14
+      - vwma_20
+
+      # --------------------------------------------------
+      # 3. MEAN REVERSION ZONES
+      # --------------------------------------------------
+      # Measures how far price is stretched from its average
+      - zscore_20
+
+      # Bollinger Bands (price extremes)
+      - bbands_20_2.0
+
+      # Bollinger Band width (volatility expansion / contraction)
+      - bbands-width_20_2.0
+
+      # Keltner Channels (ATR-based volatility envelopes)
+      - keltner_20_1.5
+
+      # Donchian Channels (range extremes)
+      - donchian_20
+      - donchian-width_20
+
+      # --------------------------------------------------
+      # 4. DIVERGENCE DETECTORS
+      # --------------------------------------------------
+      # Identifies momentum disagreement with price
+      - macd_12_26_9
+
+      - uo_7_14_20
+
+      # --------------------------------------------------
+      # 5. STRUCTURAL BOTTOM PATTERNS
+      # --------------------------------------------------
+      # Candle behavior and price structure around lows
+
+      # Classic candlestick reversal patterns
+      - talib-cdlhammer_14
+      - talib-cdlpiercing_14
+      - talib-cdlmorningstar_14
+      - talib-cdlengulfing_14
+
+      # --------------------------------------------------
+      # 6. VOLATILITY REGIME
+      # --------------------------------------------------
+      # Determines whether the market is calm, expanding, or chaotic
+      - atr_14
+
+      - atrp_14
+
+      - volatility-ratio_20_2.0_1.0
+
+      - choppiness_10
+
+      - vqi_14
+
+      # --------------------------------------------------
+      # 7. ML-NORMALIZED FEATURES (GROUND TRUTH STYLE)
+      # --------------------------------------------------
+      # Pre-normalized features designed for ML stability
+
+      # --------------------------------------------------
+      # 8. TREND & MOMENTUM CONTEXT
+      # --------------------------------------------------
+      # Helps the model understand the broader trend environment
+      - adx_14
+
+      - aroon_14
+
+      - kaufman-er_10
+
+      - fractaldimension_30
+
+      - hma_9
+
+      # --------------------------------------------------
+      # 9. CROSS-SYMBOL CONTEXT
+      # --------------------------------------------------
+      # Adds macro and inter-market awareness
+      # RSI
+      - example-multi-tf-rsi_EUR-USD_14_14_14_14
+      - example-multi-tf-rsi_GBP-USD_14_14_14_14
+      - example-multi-tf-rsi_USD-JPY_14_14_14_14
+      - example-multi-tf-rsi_DOLLAR.IDX-USD_14_14_14_14
+      - example-multi-tf-rsi_BUND.TR-EUR_14_14_14_14
+      - example-multi-tf-rsi_USTBOND.TR-USD_14_14_14_14
+
+      # STRETCHING
+      #- example-sma-distance_EUR-USD_20
+      #- example-sma-distance_EUR-USD_50
+      - example-sma-distance_EUR-USD_200
+      #- example-sma-distance_DOLLAR.IDX-USD_20
+      #- example-sma-distance_DOLLAR.IDX-USD_50
+      - example-sma-distance_DOLLAR.IDX-USD_200
+      #- example-sma-distance_XAU-USD_20
+      #- example-sma-distance_XAU-USD_50
+      #- example-sma-distance_XAU-USD_200
+      # BONDS
+      #- example-sma-distance_BUND.TR-EUR_20
+      #- example-sma-distance_BUND.TR-EUR_50
+      #- example-sma-distance_BUND.TR-EUR_200
+      #- example-sma-distance_USTBOND.TR-USD_20
+      #- example-sma-distance_USTBOND.TR-USD_50
+      #- example-sma-distance_USTBOND.TR-USD_200
+
+      # --------------------------------------------------
+      # 10. TRADITIONAL BASELINES
+      # --------------------------------------------------
+      # Simple indicators the model can reference as anchors
+      - sma_20
+      - sma_50
+      - sma_200
+
+      - ema_20
+      - ema_50
+ 
+      - vwap

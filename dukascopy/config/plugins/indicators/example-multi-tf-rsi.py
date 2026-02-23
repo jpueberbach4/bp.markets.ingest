@@ -89,6 +89,13 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
             options=api_opts
         )
 
+        # Not all data is available. Eg dollar data is only available 2017/9-ish
+        if data.is_empty():
+            return pl.DataFrame({
+                "time_ms": pl.Series([], dtype=pl.UInt64),
+                alias: pl.Series([], dtype=pl.Float64)
+            }).lazy()
+
         # Convert to lazy mode for efficient joins
         # Drop open candles so values only update on closed bars
         # Rename the RSI column so multiple timeframes can coexist
