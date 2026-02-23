@@ -76,6 +76,14 @@ Your models will be extremely flawed if any indicators peak into the future. Gen
 
 When you are running this on a laptop, make sure your hotness_max and hotness_min are configured properly. Running this stuff `hot` for a longer period is VERY BAD (trust me) for your VRMs and VRAM chips.
 
+## IMPORTANT
+
+The Kinematics normalizer explodes every indicator value into 4 dimensions. Velocity, Direction, Acceleration and magnitude. Use a high gene count if you enable this. Typically one third of the total number of dimensions. Use high powered GPU as well if you want to grind through 300 + dimensions. Kinematics looks very promising but i am still grinding. I will make this stuff multigpu capable, later.
+
+Expect it to grind for a couple of days before it returns something really useful. 
+
+For normal setups: dont use kinematics. Try first with normal indicator values.
+
 ## Structure
 
 ```sh
@@ -96,4 +104,5 @@ Singularity (ABC)               ← Core computational engine (the "reactor")
 
 Flight (ABC)                    ← Orchestration / training loop
   └── Voyager (concrete)        ← The main runner (warp, thermal management, extinction)
+
 ```
