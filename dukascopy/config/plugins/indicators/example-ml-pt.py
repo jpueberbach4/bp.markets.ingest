@@ -9,7 +9,7 @@ def description() -> str:
     return "Alpha Gen 1087 - Live Inference. Factory Spec 1.3 (Flight Build)"
 
 def meta() -> Dict:
-    return {"author": "Gemini", "version": "33.3_ATOMIC_STABILITY", "panel": 1, "verified": 1}
+    return {"author": "Gemini", "version": "7-7-7.bar-bar-bar", "panel": 1, "verified": 1}
 
 def position_args(args: List[str]) -> Dict[str, Any]:
     return {"model-name": args[0] if len(args) > 0 else "model-best-gen14-f1-0.3636.pt"}
@@ -37,62 +37,75 @@ class SingularityInference(nn.Module):
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     from util.api import get_data_auto
     from ml.space.normalizers.redshift import Redshift
+    from ml.space.normalizers.kinematics import Kinematics
     
-    model_name = options.get('model-name', 'model-best-gen14-f1-0.3636.pt')
+    model_name = options.get('model-name', 'model-best-gen2-f1-0.1778.pt')
     checkpoint_path = f"checkpoints/{model_name}"
 
     if not os.path.exists(checkpoint_path):
-        print(f"🚨 [Inference]: Model missing: {checkpoint_path}")
         return pd.DataFrame({'score': 0.0, 'signal': 0.0}, index=df.index)
 
-    # Load with False weights_only to allow full state dict parsing
     checkpoint = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
     active_features = checkpoint.get('feature_names', [])
-    
-    # DYNAMIC DIMENSION DETECTION
-    if 'hidden_dim' in checkpoint:
-        actual_hidden_dim = checkpoint['hidden_dim']
-    else:
-        # If metadata is missing, we infer it from the B1 bias or W1 weights
-        actual_hidden_dim = checkpoint['B1'].shape[-1]
-        print(f"📡 [Inference]: Inferred hidden_dim: {actual_hidden_dim}")
+    expected_input_dim = checkpoint['W1'].shape[0] 
+    actual_hidden_dim = checkpoint['B1'].shape[-1]
 
-    base_indicators = list(set([f.split('__')[0] for f in active_features]))
-    raw_df = get_data_auto(df, indicators=base_indicators)
+    parent_indicators = []
+    for f in active_features:
+        parent = f.split(':')[0].split('__')[0]
+        if parent not in parent_indicators:
+            parent_indicators.append(parent)
     
-    selected_features_df = raw_df[active_features].apply(pd.to_numeric, errors='coerce').fillna(0)
-    input_array = selected_features_df.values.astype(np.float32)
-    data_tensor = torch.tensor(input_array)
+    raw_df = get_data_auto(df, indicators=parent_indicators)
+
+    base_columns = []
+    for f in active_features:
+        base_col = f.split(':')[0]
+        if base_col not in base_columns:
+            base_columns.append(base_col)
     
-    normalizer = Redshift()
+    ordered_matter_df = raw_df.reindex(columns=base_columns).apply(pd.to_numeric, errors='coerce').fillna(0)
+    base_tensor = torch.tensor(ordered_matter_df.values.astype(np.float32), dtype=torch.float32)
+
+    redshift = Redshift()
+    kinematics = Kinematics() 
+    
     with torch.no_grad():
-        normalized_tensor = normalizer(data_tensor)
+        normalized = redshift.forward(base_tensor)
+        expanded_tensor = kinematics.forward(normalized)
     
-    # Initialize model with the detected dimension
-    model = SingularityInference(input_dim=len(active_features), hidden_dim=actual_hidden_dim)
+    expanded_names = kinematics.generate_names(base_columns)
+    name_to_idx = {name: i for i, name in enumerate(expanded_names)}
     
-    try:
-        model.load_state_dict({
-            'l1.weight': checkpoint['W1'].t(),
-            'l1.bias': checkpoint['B1'].reshape(-1),
-            'l2.weight': checkpoint['W2'].t(),
-            'l2.bias': checkpoint['B2'].reshape(-1)
-        })
-    except RuntimeError as e:
-        print(f"💀 [Inference]: Critical structural mismatch: {e}")
-        return pd.DataFrame({'score': 0.0, 'signal': 0.0}, index=df.index)
+    indices = []
+    for f in active_features:
+        if f in name_to_idx:
+            indices.append(name_to_idx[f])
+        else:
+            naked_fallback = f"{f}:dir"
+            if naked_fallback in name_to_idx:
+                indices.append(name_to_idx[naked_fallback])
+            else:
+                print(f"💀 [Inference]: Feature {f} is completely unreachable.")
+                return pd.DataFrame({'score': 0.0, 'signal': 0.0}, index=df.index)
 
+    final_tensor = expanded_tensor[:, indices]
+
+    model = SingularityInference(input_dim=expected_input_dim, hidden_dim=actual_hidden_dim)
+    model.load_state_dict({
+        'l1.weight': checkpoint['W1'].t(), 'l1.bias': checkpoint['B1'].reshape(-1),
+        'l2.weight': checkpoint['W2'].t(), 'l2.bias': checkpoint['B2'].reshape(-1)
+    })
     model.eval()
 
     with torch.no_grad():
-        predictions = model(normalized_tensor).squeeze().cpu().numpy()
+        predictions = model(final_tensor).squeeze().cpu().numpy()
+
+    raw_thresh = checkpoint.get('threshold', 0.40)
+    threshold_val = float(raw_thresh.item()) if torch.is_tensor(raw_thresh) else float(raw_thresh)
 
     res = pd.DataFrame(index=df.index)
     res['score'] = predictions
-    
-    threshold_val = checkpoint.get('threshold', 0.40)
-    if torch.is_tensor(threshold_val):
-        threshold_val = threshold_val.item()
-    
     res['signal'] = np.where(predictions > threshold_val, 1.0, 0.0)
+    
     return res

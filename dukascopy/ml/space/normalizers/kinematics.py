@@ -15,7 +15,7 @@ class Kinematics(Normalizer):
         super().__init__()
         self.dim = dim
         self.fill_value = fill_value
-        self.suffixes = ["_dir", "_vel", "_acc", "_mag"]
+        self.suffixes = [":dir", ":vel", ":acc", ":mag"]
 
     def generate_names(self, input_names: List[str]) -> List[str]:
         # Guard against double-concatenation (dir_dir)
