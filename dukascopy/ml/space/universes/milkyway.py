@@ -44,7 +44,7 @@ class MilkyWay(Universe):
 
             # Initialize the Comets
             for comet_name in self.config.get('comets'):
-                self._normalizers[comet_name] = CometFactory.manifest(comet_name)
+                self._comets[comet_name] = CometFactory.manifest(comet_name)
 
             # Initialize the Normalizers
             for normalizer_name in self.config.get('normalizers'):
