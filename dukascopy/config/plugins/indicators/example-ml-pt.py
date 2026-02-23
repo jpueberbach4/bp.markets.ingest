@@ -67,14 +67,32 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     ordered_matter_df = raw_df.reindex(columns=base_columns).apply(pd.to_numeric, errors='coerce').fillna(0)
     base_tensor = torch.tensor(ordered_matter_df.values.astype(np.float32), dtype=torch.float32)
 
-    redshift = Redshift()
-    kinematics = Kinematics() 
+    redshift = Redshift({})
+    kinematics = Kinematics({'filter': {'inclusive': ['*']}}) 
     
+    # IMPORTANT!
+    # THIS IS AN EXAMPLE WITH ONLY THE REDSHIFT ACTIVE
+    # IF YOU USE KINEMATICS, YOU NEED TO SET THE FOLLOWING FLAG TO True.
+    # I WILL FIX THIS IN THE FUTURE. NEEDS UNIVERSE NAME IN INPUT AS WELL
+
+    kinematics_disabled = False
+
+    # PRIME THE NORMALIZERS FIRST
+    if kinematics_disabled:
+        expanded_names = base_columns
+    else:
+        # This populates self.eligible_indices inside the class!
+        expanded_names = kinematics.generate_names(base_columns)
+
+    # EXECUTE THE PHYSICS
     with torch.no_grad():
-        normalized = redshift.forward(base_tensor)
-        expanded_tensor = kinematics.forward(normalized)
-    
-    expanded_names = kinematics.generate_names(base_columns)
+        if kinematics_disabled:
+            expanded_tensor = base_tensor
+        else:
+            expanded_tensor = kinematics.forward(base_tensor)
+
+        normalized_tensor = redshift.forward(expanded_tensor)
+        
     name_to_idx = {name: i for i, name in enumerate(expanded_names)}
     
     indices = []
@@ -89,7 +107,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
                 print(f"💀 [Inference]: Feature {f} is completely unreachable.")
                 return pd.DataFrame({'score': 0.0, 'signal': 0.0}, index=df.index)
 
-    final_tensor = expanded_tensor[:, indices]
+    final_tensor = normalized_tensor[:, indices]
 
     model = SingularityInference(input_dim=expected_input_dim, hidden_dim=actual_hidden_dim)
     model.load_state_dict({
