@@ -74,6 +74,17 @@ http:
   workers: 4                            # Number of worker processes to serve with
   reload: 0                             # During development you want this probably set to 1. Production? 0
 
+## Below you will find the configuration for the ml script
+ml:
+  device: 
+    type: cuda
+    settings:
+      temp_max: 87
+      temp_min: 80
+  universes:
+    includes:
+    - config/ml/universes/*.yaml
+
 ## Below you will find the configuration for the orchestrator script
 orchestrator:
   # num_processes: 8                  # Override maximum number of cores to use

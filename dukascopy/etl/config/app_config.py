@@ -33,6 +33,7 @@ from dataclasses import dataclass, fields, field
 from pathlib import Path
 from typing import Dict, List, Optional, Type, TypeVar, Any, Union, get_origin, get_args
 from etl.exceptions import *
+from util.config import resolve_yaml_includes_to_string
 
 # Config loading optimization (currently responsible for 80 percent of startup lag)
 import yaml
@@ -333,112 +334,6 @@ def load_config_data(config_class: Type[T], data: Dict[str, Any]) -> T:
 
     # Construct the dataclass instance
     return config_class(**final_args)
-
-
-
-
-def _resolve_yaml_includes(data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Recursively resolve `includes` directives in a YAML-loaded dictionary.
-
-    Any dictionary containing an `includes` key with a list of file patterns
-    will have those files loaded and merged in order. The inline configuration
-    in the current dictionary always takes precedence over included data.
-
-    Parameters
-    ----------
-    data : Dict[str, Any]
-        A dictionary produced by loading a YAML file.
-
-    Returns
-    -------
-    Dict[str, Any]
-        The same dictionary structure with all `includes` resolved and merged.
-    """
-    # Non-dict values are returned as-is (base case for recursion)
-    if not isinstance(data, dict):
-        return data
-
-    # Iterate over a snapshot of items to allow in-place mutation
-    for key, value in list(data.items()):
-        if isinstance(value, dict):
-            # Check for an `includes` directive at this level
-            if "includes" in value and isinstance(value["includes"], list):
-                # Extract include patterns and remove the directive
-                includes_list: List[str] = value.pop("includes")
-                merged_data: Dict[str, Any] = {}
-
-                # Load and merge all included YAML files in order
-                for pattern in includes_list:
-                    for file_path in glob.glob(pattern):
-                        try:
-                            with open(file_path, "r") as f:
-                                included_data = yaml.load(f,Loader=SafeLoader)
-                                if isinstance(included_data, dict):
-                                    merged_data.update(included_data)
-                        except (FileNotFoundError, yaml.YAMLError):
-                            # Ignore missing or invalid include files
-                            pass
-
-                # Overlay inline configuration on top of included data
-                merged_data.update(value)
-                data[key] = merged_data
-
-            # Recurse into the (possibly merged) dictionary
-            _resolve_yaml_includes(data[key])
-
-        elif isinstance(value, list):
-            # Recurse into any dictionaries contained within lists
-            for item in value:
-                if isinstance(item, dict):
-                    _resolve_yaml_includes(item)
-
-    return data
-
-def resolve_yaml_includes_to_string(config_file_path: str) -> str:
-    """
-    Load a YAML configuration file, resolve all nested `includes`, and return
-    the fully merged configuration as a YAML string.
-
-    This function reads the YAML file from disk, expands any `includes` keys
-    by recursively loading and merging referenced YAML files, and then
-    serializes the final configuration back into a YAML-formatted string.
-
-    Parameters
-    ----------
-    config_file_path : str
-        Path to the root YAML configuration file.
-
-    Returns
-    -------
-    str
-        The resolved YAML configuration as a string, or an error message
-        if loading or parsing fails.
-    """
-    # Load the root YAML configuration file
-    try:
-        with open(config_file_path, "r") as f:
-            yaml_data = yaml.load(f, Loader=SafeLoader)
-    except FileNotFoundError:
-        return f"Error: Configuration file not found at {config_file_path}"
-    except yaml.YAMLError as e:
-        return f"Error parsing YAML file: {e}"
-
-    # The top-level YAML structure must be a dictionary
-    if not isinstance(yaml_data, dict):
-        return "Error: Top level of YAML file must be a dictionary."
-
-    # Recursively resolve all `includes` directives
-    resolved_data = _resolve_yaml_includes(yaml_data)
-
-    # Serialize the resolved configuration back into a YAML string
-    return yaml.dump(
-        resolved_data,
-        default_flow_style=False,
-        sort_keys=False,
-        Dumper=SafeDumper
-    )
-
 
 
 def resample_get_symbol_config(symbol: str, app_config: AppConfig) -> ResampleSymbol:
