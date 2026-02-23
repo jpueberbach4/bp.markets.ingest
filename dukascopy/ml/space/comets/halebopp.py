@@ -44,6 +44,7 @@ class HaleBopp(Comet):
         
         # Route 1: Singularity Weights
         if is_model:
+            print(f"☄️ [Hale-Bopp]: Perihelion reached. Ejecting core payload to 'checkpoints/{filename}'.")
             torch.save(data, f"checkpoints/{filename}")
             
         # Route 2: Gene Debug Dump
