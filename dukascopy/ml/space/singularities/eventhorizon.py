@@ -20,11 +20,23 @@ class EventHorizonSingularity(Singularity):
         super().__init__(device=config.get('device'))
         self.config = config
         
-        self.pop_size = 1200
-        self.gene_count = 16
-        self.hidden_dim = 128
-        self.decay_factor = 0.9
-        
+        # setup
+        self.pop_size = int(self.config.get('population_size', 1200))
+        self.gene_count = int(self.config.get('gene_count', 16))
+        self.hidden_dim = int(self.config.get('hidden_dim', 128))
+        self.decay_factor = float(self.config.get('decay_factor', 0.9))
+        self.chunk_size = int(self.config.get("gpu_chunk", 256))
+        self.min_sigs = int(self.config.get("min_signals", 3))
+        self.target_density = float(self.config.get("target_density", 0.01))
+        self.precision_exp = float(self.config.get("precision_exp", 2.5))
+        self.penalty_coeff = float(self.config.get("penalty_coeff", 1.0))
+        self.thresh_steps = int(self.config.get("thresh_steps", 31))
+        self.oos_boundary = float(self.config.get("oos_boundary", 0.75))
+        self.epochs = int(self.config.get("epochs", 25))
+        self.weight_mutation_rate = float(self.config.get("weight_mutation_rate", 0.005))
+        self.verbose = bool(self.config.get("verbose", True))
+
+        # TODO: should use a lenses config in configuration
         self.spectrograph = Spectrograph(mode="focal", alpha=0.99, gamma=2.0)
         
         self.population = None  
@@ -68,36 +80,16 @@ class EventHorizonSingularity(Singularity):
         h1 = F.gelu(torch.bmm(x, w1) + b1)
         return torch.bmm(h1, w2) + b2
 
-    def wormhole(self, flight: Flight ):
-        # patch function, change
-        print(f"🛰️ [Space]: Event Horizon expanded. New Flight path locked.")
-        self.config = {**self.config, **(flight.config.get('settings') or {})}
-        return self
-
     def run_generation(self, config):
 
-        self.pop_size = 1200
-        self.gene_count = 16
-        self.hidden_dim = 128
-        self.decay_factor = 0.9
-
-
-        chunk_size = int(self.config.get("gpu_chunk", 256))
-        min_sigs = int(self.config.get("min_signals", 3))
-        target_density = float(self.config.get("target_density", 0.01))
-        precision_exp = float(self.config.get("precision_exp", 2.5))
-        penalty_coeff = float(self.config.get("penalty_coeff", 1.0))
-        thresh_steps = int(self.config.get("thresh_steps", 31))
-        verbose = bool(self.config.get("verbose", True))
-        
         metrics = {"f1": [], "sigs": [], "density": [], "precision": [], "recall": [], "score": []}
-        train_end = int(len(self.lake) * float(self.config.get("oos_boundary", 0.75)))
+        train_end = int(len(self.lake) * self.oos_boundary)
         
         self.gene_scores *= self.decay_factor
         self.gene_usage *= self.decay_factor
 
-        for i in range(0, self.pop_size, chunk_size):
-            end_i = min(i + chunk_size, self.pop_size)
+        for i in range(0, self.pop_size, self.chunk_size):
+            end_i = min(i + self.chunk_size, self.pop_size)
             curr_chunk = end_i - i
             indices = self.population[i:end_i]
 
@@ -108,10 +100,10 @@ class EventHorizonSingularity(Singularity):
             w2, b2 = self.pop_W2[i:end_i].detach().requires_grad_(True), self.pop_B2[i:end_i].detach().requires_grad_(True)
             optimizer = optim.Adam([w1, b1, w2, b2], lr=0.0005)
 
-            for _ in range(int(self.config.get("epochs", 25))):
+            for _ in range(self.epochs):
                 optimizer.zero_grad()
                 logits = self._forward(x_train, w1, b1, w2, b2)
-                loss = self.spectrograph.analyze(logits, y_train) + (torch.sigmoid(logits).mean() * penalty_coeff)
+                loss = self.spectrograph.analyze(logits, y_train) + (torch.sigmoid(logits).mean() * self.penalty_coeff)
                 loss.backward()
 
                 if i == 0:
@@ -135,7 +127,7 @@ class EventHorizonSingularity(Singularity):
                 best_f1, best_thresh, best_sigs = torch.zeros(curr_chunk, device=self.device), torch.full((curr_chunk,), 0.40, device=self.device), torch.zeros(curr_chunk, device=self.device)
                 best_prec, best_rec = torch.zeros(curr_chunk, device=self.device), torch.zeros(curr_chunk, device=self.device)
 
-                for t in torch.linspace(0.15, 0.85, thresh_steps):
+                for t in torch.linspace(0.15, 0.85, self.thresh_steps):
                     preds = (oos_probs > t).float()
                     sig_count, density = preds.sum(dim=1).view(-1), preds.mean(dim=1).view(-1)
                     tp = (preds * y_oos).sum(dim=1).view(-1)
@@ -144,20 +136,20 @@ class EventHorizonSingularity(Singularity):
                     
                     prec, rec = tp / (tp + fp + 1e-8), tp / (tp + fn + 1e-8)
                     f1 = 2 * prec * rec / (prec + rec + 1e-8)
-                    score = f1 * torch.clamp(torch.pow(prec, precision_exp), max=5.0)
+                    score = f1 * torch.clamp(torch.pow(prec, self.precision_exp), max=5.0)
                     
-                    min_density = min_sigs / oos_probs.shape[1]
-                    dev_high = torch.relu(density - target_density * 1.5) * 15.0
+                    min_density = self.min_sigs / oos_probs.shape[1]
+                    dev_high = torch.relu(density - self.target_density * 1.5) * 15.0
                     dev_low = torch.relu(min_density * 0.8 - density) * 6.0
                     score = score - (dev_high + dev_low)
                     
-                    score = torch.where(sig_count >= min_sigs, score, torch.full_like(score, -1e9))
+                    score = torch.where(sig_count >= self.min_sigs, score, torch.full_like(score, -1e9))
                     mask = score > best_score
                     best_score[mask], best_f1[mask], best_thresh[mask], best_sigs[mask] = score[mask], f1[mask], t, sig_count[mask]
                     best_prec[mask], best_rec[mask] = prec[mask], rec[mask]
 
-                if verbose:
-                    print(f"Chunk {i//chunk_size} | MaxP: {oos_probs.max():.3f} | BestSigs: {best_sigs.max().item():.0f} | F1: {best_f1.max():.4f}")
+                if self.verbose:
+                    print(f"Chunk {i//self.chunk_size} | MaxP: {oos_probs.max():.3f} | BestSigs: {best_sigs.max().item():.0f} | F1: {best_f1.max():.4f}")
 
                 self.thresholds[i:end_i] = best_thresh
                 
@@ -213,7 +205,7 @@ class EventHorizonSingularity(Singularity):
         self.pop_W2, self.pop_B2 = self.pop_W2[idx], self.pop_B2[idx]
 
         if gen_best_f1_val > self.global_best_f1:
-            if bool(self.config.get("verbose", True)):
+            if self.verbose:
                 print(f"🔥 [Evolution]: New F1 High-Water Mark: {gen_best_f1_val:.4f} (Global Best was {self.global_best_f1:.4f})")
             self.global_best_f1 = gen_best_f1_val.item()
         
@@ -234,7 +226,7 @@ class EventHorizonSingularity(Singularity):
             new_w2[1], new_b2[1] = champ_w2, champ_b2
             new_thresh[1] = champ_thresh
 
-        mutation_std = float(self.config.get("weight_mutation_rate", 0.005))
+        mutation_std = self.weight_mutation_rate
 
         for i in range(keep, self.pop_size):
             p1, p2 = torch.randint(0, keep, (2,))
@@ -286,7 +278,7 @@ class EventHorizonSingularity(Singularity):
             'config': self.config
         }
         universe.eject(filename, state, is_model=True)
-        if bool(self.config.get("verbose", True)):
+        if self.verbose:
             print(f"🥇 [Singularity]: Atomic Winner Ejected. Features: {len(atomic_feature_map)}")
 
     def state_dict(self):

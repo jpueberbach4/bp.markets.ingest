@@ -22,7 +22,6 @@ class Voyager(Flight):
         Runs the main evolutionary loop.
         """
         self.singularity = singularity
-        singularity.wormhole(self)
         self.universe = singularity.universe
 
         if not self.singularity or not self.universe:

@@ -51,6 +51,9 @@ def main():
     flight_config = universe_config.get('flight')
     flight_type = flight_config.get('type')
 
+    # This is ugly as hell, but need to live with it for a moment
+    singularity_config = {**singularity_config, **(flight_config.get('settings') or {})}
+
     # instantiate universe
     universe = UniverseFactory.manifest(universe_type, universe_config)
 

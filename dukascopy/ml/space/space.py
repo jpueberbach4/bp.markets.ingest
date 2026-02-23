@@ -299,14 +299,6 @@ class Singularity(ABC):
         pass
 
     @abstractmethod
-    def wormhole(self, flight: Flight ):
-        """
-        Temporary linkage point for flight and singularity. Cleanup later
-        TODO: cleanup
-        """
-        pass
-
-    @abstractmethod
     def emit(self, features: pd.DataFrame) -> np.ndarray:
         """
         The inference path. Takes a coordinate space and 
