@@ -76,14 +76,9 @@ http:
 
 ## Below you will find the configuration for the ml script
 ml:
-  device: 
-    type: cuda
-    settings:
-      temp_max: 87
-      temp_min: 80
   universes:
     includes:
-    - config/ml/universes/*.yaml
+    - config/ml/universes/*.yaml       # Include these universes for ML training
 
 ## Below you will find the configuration for the orchestrator script
 orchestrator:
