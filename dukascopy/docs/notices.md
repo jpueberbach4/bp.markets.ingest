@@ -6,6 +6,13 @@ It's promising but serious work that (still) requires brutal validation.
 
 At minimum this can be used as an additional "signal"-filter. I have something working with that and works pretty good.
 
+This is the result of a trained model on EUR-USD, applied to GBP-USD. The data for training was strictly cutoff at 2025-12-31. It has never seen the 2026 data. No leakage. 
+
+For "a first attempt" it's definately not bad.
+
+![Example](../images/same-model-on-gbp.png)
+
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
