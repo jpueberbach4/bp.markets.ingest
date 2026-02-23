@@ -40,6 +40,9 @@ Still **research-grade** — requires brutal validation. Not yet a plug-and-play
 - YAML-configurable + factory pattern extensibility  
 - Cosmic-themed observability (logs, vitality ranks, reject %, weight stats)
 
+
+Note: this document was AI generated based on an other "private repo". A heavily overengineered one that doesnt work correctly. This version is simpler but works much better for simple NN signal-finding. Moral of the story: Above may not completely reflect the "real situation. **Documentation subject to change.**
+
 ## Quick Start
 
 YOU NEED A CUDA CAPABLE GPU! 
