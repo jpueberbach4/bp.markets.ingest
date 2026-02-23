@@ -71,6 +71,11 @@ Results of the past are by no means predictive of the future.
 
 Your models will be extremely flawed if any indicators peak into the future. Generally these are indicators that use rolling(center=True) or use any other next-bar information. So before you jump off your chair when you reach an F1 > 0.5, triple-check, no, quadruple check your features for leakage!
 
+
+## IMPORTANT
+
+When you are running this on a laptop, make sure your hotness_max and hotness_min are configured properly. Running this stuff `hot` for a longer period is VERY BAD (trust me) for your VRMs and VRAM chips.
+
 ## Structure
 
 ```sh
