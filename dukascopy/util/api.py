@@ -195,15 +195,27 @@ def get_data(
     after_idx = cache.find_record(symbol, timeframe, after_ms, "left")
     until_idx = cache.find_record(symbol, timeframe, until_ms, "right")
 
-    # Extend the start index backward to include warmup rows
-    after_idx = after_idx - warmup_rows
+    # Store the intended start before clamping to 0
+    intended_start_idx = after_idx - warmup_rows
+    
+    # Calculate actual index to fetch from
+    effective_after_idx = max(0, intended_start_idx)
+    
+    # Calculate how many rows of warmup we actually managed to get.
+    # If intended was -50 and we use 0, we only got (warmup_rows - 50) rows.
+    actual_warmup_retrieved = warmup_rows + intended_start_idx if intended_start_idx < 0 else warmup_rows
+    actual_warmup_retrieved = max(0, actual_warmup_retrieved)
 
     # Enforce the total row limit depending on sort order
-    if until_idx - after_idx > total_limit:
+    # Using the effective_after_idx for accurate distance calculation
+    if until_idx - effective_after_idx > total_limit:
         if order == "desc":
-            after_idx = until_idx - total_limit
+            effective_after_idx = until_idx - total_limit
+            # If we shifted the start due to limit, we are no longer at the 
+            # beginning of the dataset, so we have a full warmup window again.
+            actual_warmup_retrieved = warmup_rows
         if order == "asc":
-            until_idx = after_idx + total_limit
+            until_idx = effective_after_idx + total_limit
 
     max_idx = cache.get_record_count(symbol, timeframe)
 
@@ -211,26 +223,21 @@ def get_data(
     if until_idx > max_idx:
         until_idx = max_idx
 
-    # Clamp the start index to zero to avoid negative indexing
-    if after_idx < 0:
-        after_idx = 0
-
     # Skiplast handling
     if until_idx == max_idx and "skiplast" in modifiers:
         until_idx -= 1
 
     # Retrieve the data slice from cache
-    chunk_df = cache.get_chunk(symbol, timeframe, after_idx, until_idx, return_polars)
+    chunk_df = cache.get_chunk(symbol, timeframe, effective_after_idx, until_idx, return_polars)
 
     if indicators:
         # Hot reload support (only for custom user indicators)
         indicator_registry = cache.indicators.refresh(indicators)
 
-        # Recursive mapping disable from options, True by default since get_data API in 
-        # indicators mostly needs it to be True 
+        # Recursive mapping disable from options
         disable_recursive_mapping = options.get('disable_recursive_mapping', True)
 
-        # Enrich the returned result with the requested indicators (parallelized)
+        # Enrich the returned result with the requested indicators
         chunk_df = parallel_indicators(
             chunk_df, 
             indicators, 
@@ -239,12 +246,13 @@ def get_data(
             return_polars
         )
 
-    # Drop warmup rows
+    # Drop ONLY the actual warmup rows retrieved
     is_pl = isinstance(chunk_df, pl.DataFrame)
     is_empty = chunk_df.is_empty() if is_pl else chunk_df.empty
 
-    if not is_empty and warmup_rows:
-        chunk_df = chunk_df.slice(warmup_rows) if is_pl else chunk_df[warmup_rows:]
+    if not is_empty and actual_warmup_retrieved > 0:
+        # Slicing by the calculated actual count, not the requested constant
+        chunk_df = chunk_df.slice(actual_warmup_retrieved) if is_pl else chunk_df[actual_warmup_retrieved:]
 
     # Apply the sort
     force_ordering = options.get('force_ordering', False)
