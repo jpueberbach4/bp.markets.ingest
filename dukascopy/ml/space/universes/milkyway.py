@@ -129,7 +129,7 @@ class MilkyWay(Universe):
         self._feature_names = self._feature_table.columns.tolist()
 
         if self._discarded_dimensions:
-            print(f"🧹 [Space Clean]: Purged {len(self._discarded_dimensions)} string-polluted dimensions.")
+            print(f"🧹 [Space]: Radiated {len(self._discarded_dimensions)} string-polluted dimensions.")
 
         print(f"✅ [Space]: Discovered {len(self._feature_names)} valid dimensions.")
 
