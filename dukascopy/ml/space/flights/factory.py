@@ -1,5 +1,6 @@
 from ml.space.space import Singularity
 from ml.space.flights.voyager import Voyager
+from ml.space.flights.millenniumfalcon import MilleniumFalcon
 
 from typing import Dict, Any
 
@@ -15,6 +16,7 @@ class FlightFactory:
         """
         registry = {
             "Voyager": Voyager,
+            "MilleniumFalcon": MilleniumFalcon
         }
 
         if flight_name in registry:
