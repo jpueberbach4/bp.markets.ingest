@@ -7,6 +7,7 @@ MilkyWay:
     until: 2025-12-31
 
   flight:
+    type: Voyager
     settings:
       max_generations: 5000
       extinction_stagnations: 60
