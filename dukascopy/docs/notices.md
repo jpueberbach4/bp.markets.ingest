@@ -12,6 +12,8 @@ For "a first attempt" it's definately not bad.
 
 ![Example](../images/same-model-on-gbp.png)
 
+There is one VERY important thing to mention on the above screenshot. Training and inference is purely done on indicator values. No OHLCV information. Careful conclusion is that there are indeed "hidden confluences" deeply hidden in the market. Waiting to be found.
+
 Update: it's currently building a setup where it frontruns the bottoms by 2-3 days. interesting.
 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
@@ -78,6 +80,7 @@ We have added several deep-dive guides to help you leverage the latest performan
 * **[Adjustments.md](adjustments.md)** – Implementation guide for Panama rolls, Dividends, and Multiplicative splits.
 * **[Templates.md](templates.md)** – Guidelines for "God-tier" indicator performance using Polars/Rust to bypass the Python GIL.
 * **[Code Examples](../config/plugins/indicators/)** – Direct reference for plugin and indicator development.
+
 
 
 
