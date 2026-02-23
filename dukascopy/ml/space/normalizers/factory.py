@@ -2,6 +2,7 @@
 from ml.space.space import Normalizer
 from ml.space.normalizers.redshift import Redshift
 from ml.space.normalizers.pulsar import Pulsar
+from ml.space.normalizers.kinematics import Kinematics
 # Import future normalizers here
 
 class NormalizerFactory: #rename
@@ -13,6 +14,7 @@ class NormalizerFactory: #rename
         registry = {
             "Redshift": Redshift,
             "Pulsar": Pulsar,
+            "Kinematics": Kinematics,
         }
 
         if normalizer_name in registry:
