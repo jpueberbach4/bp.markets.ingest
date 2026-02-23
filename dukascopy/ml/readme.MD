@@ -67,6 +67,10 @@ It is "decent" in its current state, but its ongoing research item of me.
 
 Results of the past are by no means predictive of the future. 
 
+## IMPORTANT
+
+Your models will be extremely flawed if any indicators peak into the future. Generally these are indicators that use rolling(center=True) or use any other next-bar information. So before you jump off your chair when you reach an F1 > 0.5, triple-check, no, quadruple check your features for leakage!
+
 ## Structure
 
 ```sh
