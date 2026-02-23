@@ -47,6 +47,9 @@ MilkyWay:
   # Normalizers convert raw indicator values into comparable numbers.
   # This prevents features with large values from dominating the model.
   # Normalizers are applied in the order specified. Order is important.
+  # Kinematics explodes all includes into 4D dimensions. Be selective
+  # to prevent noise-ness. Kinematics need high power GPU and higher 
+  # gene_count.
   normalizers:
     Kinematics:   # 1st: Laws of Motion (Expansion)
       type: Kinematics
