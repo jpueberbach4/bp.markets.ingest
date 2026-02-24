@@ -40,7 +40,7 @@ class MilkyWay(Universe):
             self.after_ms = int(datetime.fromisoformat(str(self.config.get('fabric').get('after'))).timestamp() * 1000)
             self.until_ms = int(datetime.fromisoformat(str(self.config.get('fabric').get('until'))).timestamp() * 1000)
 
-            print(f"🌌 [Space]: Materializing MilkyWay for {self.symbol}...")
+            print(f"🌌 [Space]: Materializing MilkyWay for {self.symbol}... {self.after_ms} -> {self.until_ms}")
 
             # Initialize the Comets
             for comet_name in self.config.get('comets'):

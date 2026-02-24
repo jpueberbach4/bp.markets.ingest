@@ -8,45 +8,45 @@
  Important:   This is RESEARCH-grade code. 
 
  Description:
-     Evolutionary neural feature-selection and signal-emission engine.
+      Evolutionary neural feature-selection and signal-emission engine.
 
-     This module implements an evolutionary strategy over a population of
-     lightweight neural networks, each operating on a sparse subset of
-     features ("genes"). The system combines gradient-based learning within
-     each generation with genetic operators across generations, enabling
-     adaptive feature discovery, sparsity control, and robust signal
-     generation.
+      This module implements an evolutionary strategy over a population of
+      lightweight neural networks, each operating on a sparse subset of
+      features ("genes"). The system combines gradient-based learning within
+      each generation with genetic operators across generations, enabling
+      adaptive feature discovery, sparsity control, and robust signal
+      generation.
 
-     Core concepts:
-       - Population-based evolution with elitism, crossover, and mutation
-       - Per-individual neural networks trained via backpropagation
-       - Dynamic feature (gene) selection and vitality scoring
-       - Out-of-sample threshold optimization with density constraints
-       - Atomic reseeding of weak individuals using high-impact genes
+      Core concepts:
+        - Population-based evolution with elitism, crossover, and mutation
+        - Per-individual neural networks trained via backpropagation
+        - Dynamic feature (gene) selection and vitality scoring
+        - Out-of-sample threshold optimization with density constraints
+        - Atomic reseeding of weak individuals using high-impact genes
 
-     Primary components:
-       - PulsarSingularity:
-           Orchestrates population initialization, training, evaluation,
-           evolution, inference, and persistence. Includes Factory Spec
-           global scale freezing for OOD inference parity.
+      Primary components:
+        - PulsarSingularity:
+            Orchestrates population initialization, training, evaluation,
+            evolution, inference, and persistence. Includes Factory Spec
+            global scale freezing for OOD inference parity.
 
-     Key capabilities:
-       - Chunked GPU-safe training over large populations
-       - Precision-weighted F1 optimization with signal-density penalties
-       - Long-term gene importance tracking with decay
-       - Deterministic champion preservation and state export
-       - Stateless inference via a single evolved individual
+      Key capabilities:
+        - Chunked GPU-safe training over large populations
+        - Precision-weighted F1 optimization with signal-density penalties
+        - Long-term gene importance tracking with decay
+        - Deterministic champion preservation and state export
+        - Stateless inference via a single evolved individual
 
  Requirements:
-     - Python 3.8+
-     - PyTorch
-     - NumPy
-     - Pandas
+      - Python 3.8+
+      - PyTorch
+      - NumPy
+      - Pandas
 
  Notes:
-     This system intentionally blends deterministic gradient descent with
-     stochastic evolutionary pressure. Correct elite preservation is
-     critical; subtle ordering bugs can materially degrade performance.
+      This system intentionally blends deterministic gradient descent with
+      stochastic evolutionary pressure. Correct elite preservation is
+      critical; subtle ordering bugs can materially degrade performance.
 ===============================================================================
 """
 import torch
@@ -324,6 +324,8 @@ class PulsarSingularity(Singularity):
                 x_oos = self.lake[train_end:, indices].permute(1, 0, 2)
                 y_oos = self.y_all[:, train_end:, :].expand(curr_chunk, -1, -1)
 
+                oos_target_count = y_oos[0].sum().item()
+
                 # Convert logits to probabilities
                 oos_probs = torch.sigmoid(self._forward(x_oos, w1, b1, w2, b2))
 
@@ -367,9 +369,9 @@ class PulsarSingularity(Singularity):
                     dev_low = torch.relu(min_density * 0.8 - density) * 6.0
                     score = score - (dev_high + dev_low)
 
-                    # Enforce minimum signal constraint
+                    # Enforce minimum signal constraint and precision floor
                     score = torch.where(
-                        sig_count >= self.min_sigs,
+                        (sig_count >= self.min_sigs) & (prec > 0.02),
                         score,
                         torch.full_like(score, -1e9)
                     )
@@ -391,7 +393,8 @@ class PulsarSingularity(Singularity):
                     print(
                         f"Chunk {i//self.chunk_size} | "
                         f"MaxP: {oos_probs.max():.3f} | "
-                        f"BestSigs: {best_sigs.max().item():.0f} | "
+                        f"Targets: {oos_target_count:.0f} | "
+                        f"Fired: {best_sigs.max().item():.0f} | "
                         f"F1: {best_f1.max():.4f}"
                     )
 
@@ -708,6 +711,14 @@ class PulsarSingularity(Singularity):
             - Emits a verbose log message when enabled.
             - Safely extracts and bundles Redshift global scaling physics.
         """
+        # Determine current F1 and if it's worth saving
+        current_best_f1 = torch.max(self.latest_f1).item() if self.latest_f1 is not None else -1.0
+        
+        # PERSISTENCE GATE: Only save if F1 has improved
+        if current_best_f1 <= self.global_best_f1 and self.global_best_f1 > 0:
+            if self.verbose:
+                print(f"🛑 [Singularity]: Save aborted. {current_best_f1:.4f} is not better than {self.global_best_f1:.4f}")
+            return
 
         # Determine which population member to persist
         if winner_idx is None:
@@ -735,6 +746,7 @@ class PulsarSingularity(Singularity):
             'B2': self.pop_B2[winner_idx].cpu(),
             'feature_names': atomic_feature_map,
             'config': self.config,
+            'f1': current_best_f1
         }
 
         # --- FACTORY SPEC FIX: Inject Scaling Physics ---
@@ -762,7 +774,7 @@ class PulsarSingularity(Singularity):
         if self.verbose:
             print(
                 f"🥇 [Singularity]: Atomic Winner Ejected. "
-                f"Features: {len(atomic_feature_map)}"
+                f"Features: {len(atomic_feature_map)} | F1: {current_best_f1:.4f}"
             )
 
     def state_dict(self):
