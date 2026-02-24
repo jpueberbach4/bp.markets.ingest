@@ -34,7 +34,11 @@ So far, the model was right on that latest GBPUSD bottom. GBP about to breakout.
 
 Also, if you are testing this stuff. Dont just look at the highest F1 models. The lower ones might actually be more valuable.
 
-I will be doing a real replay test with a model soon. This week.
+![Example](../images/tiny-but-correct.png)
+
+It creates incredibly tiny signals. Signals in the order of e-9 but "flatline" is at e-20. This needs to improve before i can release the new version. It marks correctly. Macro genes are the main driver.
+
+I will be doing a real replay test with a model soon. This week. When the signalling is fixed.
 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
