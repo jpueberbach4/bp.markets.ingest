@@ -39,7 +39,7 @@ import time
 class Universe(ABC):
     """Baseclass for feature universes."""
     @abstractmethod
-    def ignite(self, after_ms, limit): pass
+    def ignite(self): pass
 
     @abstractmethod
     def dimensions(self): pass
