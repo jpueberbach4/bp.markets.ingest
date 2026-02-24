@@ -590,11 +590,11 @@ class PulsarSingularity(Singularity):
             new_thresh[1] = champ_thresh
             
             if self.verbose:
-                print(f"  ⚡ [Evolution]: Champion (F1={champ_f1:.4f}) restored to elite slot 1")
+                print(f"💎 [Singularity]: Quantum Lock: Champion (F1={champ_f1:.4f}) pinned to Elite Slot 1")
         else:
             # Champion already in top 2, no action needed
             if self.verbose and champ_new_idx < 2:
-                print(f"  ✓ [Evolution]: Champion (F1={champ_f1:.4f}) already in top 2 at position {champ_new_idx}")
+                print(f"⚠️ [Singularity]: Entropy Alert! Champion lost in crossover. Re-materializing at Slot 1")
         
         # Standard deviation for weight mutation noise
         mutation_std = self.weight_mutation_rate
