@@ -12,7 +12,7 @@ This is the result of a trained model on EUR-USD, applied to GBP-USD. The data f
 
 Note: it's an animated gif since i am battling scaling issues. The signals are tiny 1e-9 vs 1e-20 noise. Seeing how i can fix that but for today i am done. Ending the day with a remarkable result. This model is almost completely-inter asset-divergence and macro-inter asset- driven. No price information. Pure indicators.
 
-Important: Tbh this is -almost- "too perfect". 25 percent 2-5 candles before low (forming stage), 50 percent 1 bar before and 25 percent at the actual low. Only a few misses. Raises suspicion. Thats why an extensive forward-test is needed, soon now, targetting this week. This model is stored safely. Just in case it might be "the real thing"
+Important: Tbh this is -almost- "too perfect". 25 percent 2-5 candles before low (forming stage), 50 percent 1 bar before and 25 percent at the actual low. Only a few misses. Raises suspicion. Thats why an extensive forward-test is needed, soon now, targetting this week.
 
 To be continued,...
 
