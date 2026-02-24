@@ -609,8 +609,39 @@ class PulsarSingularity(Singularity):
             if torch.rand(1).item() < 0.7:
                 # One-point crossover on gene indices
                 cut = torch.randint(0, self.gene_count, (1,)).item()
-                new_pop[i, :cut] = self.population[p1, :cut]
-                new_pop[i, cut:] = self.population[p2, cut:]
+                
+                # FIX: Ensure unique genes after crossover
+                # Concatenate genes from both parents
+                child_genes = torch.cat([
+                    self.population[p1, :cut],
+                    self.population[p2, cut:]
+                ])
+                
+                # Check for duplicates and fix if necessary
+                unique_genes, inverse = torch.unique(child_genes, return_inverse=True)
+                if len(unique_genes) < self.gene_count:
+                    # We have duplicates - need to replace them
+                    
+                    # Get set of all possible gene indices
+                    all_indicators = set(range(len(self.feature_names)))
+                    used_indicators = set(unique_genes.tolist())
+                    available = list(all_indicators - used_indicators)
+                    
+                    # Start with unique genes
+                    fixed_genes = unique_genes.tolist()
+                    
+                    # Fill remaining slots with random available genes
+                    needed = self.gene_count - len(fixed_genes)
+                    if needed > 0 and available:
+                        # Randomly sample without replacement
+                        new_genes = np.random.choice(available, needed, replace=False).tolist()
+                        fixed_genes.extend(new_genes)
+                        # Convert back to tensor
+                        new_pop[i] = torch.tensor(fixed_genes, device=self.device)
+                    else:
+                        new_pop[i] = child_genes  # Keep original if no fix needed
+                else:
+                    new_pop[i] = child_genes
                 
                 # Blend weights and thresholds using convex combination
                 alpha = torch.rand(1, device=self.device) * 0.2 + 0.4
@@ -624,7 +655,31 @@ class PulsarSingularity(Singularity):
             # Mutation-only path (30% probability)
             else:
                 # Clone parent genes
-                new_pop[i] = self.population[p1].clone()
+                child_genes = self.population[p1].clone()
+                
+                # FIX: Apply gene-level mutation with uniqueness check
+                # 30% chance to mutate genes (in addition to weight mutation)
+                if torch.rand(1).item() < 0.3:
+                    # Randomly select how many genes to mutate (1-3)
+                    n_mutations = torch.randint(1, min(4, self.gene_count), (1,)).item()
+                    
+                    # Get current gene set
+                    current_set = set(child_genes.tolist())
+                    all_indicators = set(range(len(self.feature_names)))
+                    available = list(all_indicators - current_set)
+                    
+                    if len(available) >= n_mutations:
+                        # Randomly choose positions to mutate
+                        mutate_positions = torch.randperm(self.gene_count)[:n_mutations]
+                        
+                        # Sample new unique genes
+                        new_genes = np.random.choice(available, n_mutations, replace=False)
+                        
+                        # Apply mutations
+                        for pos, new_gene in zip(mutate_positions, new_genes):
+                            child_genes[pos] = new_gene
+                
+                new_pop[i] = child_genes
                 
                 # Apply Gaussian noise to weights
                 new_w1[i] = (
@@ -641,6 +696,28 @@ class PulsarSingularity(Singularity):
                     self.thresholds[p1]
                     + torch.randn(1, device=self.device).squeeze() * 0.01
                 )
+        
+        # FIX: Final uniqueness verification across entire population
+        for i in range(self.pop_size):
+            genes = new_pop[i]
+            if len(torch.unique(genes)) < self.gene_count:
+                # Fix any remaining duplicates
+                if self.verbose:
+                    print(f"    🔧 Post-processing fix for individual {i}")
+                
+                unique_genes = torch.unique(genes)
+                fixed_genes = unique_genes.tolist()
+                
+                all_indicators = set(range(len(self.feature_names)))
+                used_indicators = set(fixed_genes)
+                available = list(all_indicators - used_indicators)
+                
+                needed = self.gene_count - len(fixed_genes)
+                if needed > 0 and available:
+                    new_genes = np.random.choice(available, needed, replace=False).tolist()
+                    fixed_genes.extend(new_genes)
+                
+                new_pop[i] = torch.tensor(fixed_genes, device=self.device)
         
         # FIXED: Final sanity check - ensure champion still exists after crossover/mutation
         champ_mask_final = (new_pop == champ_pop.unsqueeze(0)).all(dim=1)
