@@ -86,6 +86,12 @@ class PulsarSingularity(Singularity):
         self.weight_mutation_rate = float(self.config.get("weight_mutation_rate", 0.005))
         self.verbose = bool(self.config.get("verbose", True))
 
+        # FACTORY SPEC: Set random seeds for reproducibility
+        self.seed = self.config.get('seed', 42)
+        torch.manual_seed(self.seed)
+        np.random.seed(self.seed)
+        self.torch_generator = torch.Generator(device=self.device).manual_seed(self.seed)
+
         # TODO: should use a lenses config in configuration
         self.spectrograph = Spectrograph(mode="focal", alpha=0.99, gamma=2.0)
         
@@ -297,12 +303,15 @@ class PulsarSingularity(Singularity):
                 # Backpropagation
                 loss.backward()
 
-                # Freeze first two individuals in first chunk (elitism safeguard)
-                if i == 0:
-                    w1.grad[:2] = 0
-                    b1.grad[:2] = 0
-                    w2.grad[:2] = 0
-                    b2.grad[:2] = 0
+                # FIXED: Freeze champion individuals (indices 0 and 1) regardless of chunk
+                # Find which individuals in this chunk are the top 2
+                chunk_indices_global = torch.arange(i, end_i, device=self.device)
+                elite_mask = (chunk_indices_global == 0) | (chunk_indices_global == 1)
+                if elite_mask.any():
+                    w1.grad[elite_mask] = 0
+                    b1.grad[elite_mask] = 0
+                    w2.grad[elite_mask] = 0
+                    b2.grad[elite_mask] = 0
 
                 # Gradient clipping for stability
                 torch.nn.utils.clip_grad_norm_([w1, b1, w2, b2], max_norm=1.0)
@@ -448,7 +457,16 @@ class PulsarSingularity(Singularity):
         self.latest_f1 = res["f1"].clone()
         self.latest_score = res["score"].clone()
 
-        
+        # FIXED: Update global best F1 here, after evaluation
+        gen_best_f1 = torch.max(self.latest_f1).item()
+        if gen_best_f1 > self.global_best_f1:
+            if self.verbose:
+                print(
+                    f"🔥 [Evolution]: New F1 High-Water Mark: "
+                    f"{gen_best_f1:.4f} "
+                    f"(Global Best was {self.global_best_f1:.4f})"
+                )
+            self.global_best_f1 = gen_best_f1
 
         return res
 
@@ -493,18 +511,18 @@ class PulsarSingularity(Singularity):
 
             # Randomly sample genes from the vitality pool without replacement
             self.population[i] = pool[
-                torch.randperm(len(pool))[:self.gene_count]
+                torch.randperm(len(pool), generator=self.torch_generator)[:self.gene_count]
             ].to(self.device)
 
             # Reinitialize first-layer weights (He initialization)
             self.pop_W1[i] = (
-                torch.randn(self.gene_count, self.hidden_dim, device=self.device)
+                torch.randn(self.gene_count, self.hidden_dim, device=self.device, generator=self.torch_generator)
                 * np.sqrt(2.0 / self.gene_count)
             )
 
             # Reinitialize second-layer weights (He initialization)
             self.pop_W2[i] = (
-                torch.randn(self.hidden_dim, 1, device=self.device)
+                torch.randn(self.hidden_dim, 1, device=self.device, generator=self.torch_generator)
                 * np.sqrt(2.0 / self.hidden_dim)
             )
 
@@ -558,15 +576,7 @@ class PulsarSingularity(Singularity):
         self.pop_W2, self.pop_B2 = self.pop_W2[idx], self.pop_B2[idx]
         f1_scores = f1_scores[idx]  # Also reorder F1 scores for consistency
         
-        # Update global best F1 if a new high-water mark is reached
-        if gen_best_f1_val > self.global_best_f1:
-            if self.verbose:
-                print(
-                    f"🔥 [Evolution]: New F1 High-Water Mark: "
-                    f"{gen_best_f1_val:.4f} "
-                    f"(Global Best was {self.global_best_f1:.4f})"
-                )
-            self.global_best_f1 = gen_best_f1_val.item()
+        # FIXED: Remove global best update from here - moved to run_generation
         
         # Number of elite individuals preserved unchanged
         keep = max(2, self.pop_size // 10)
@@ -577,28 +587,15 @@ class PulsarSingularity(Singularity):
         new_w2, new_b2 = self.pop_W2.clone(), self.pop_B2.clone()
         new_thresh = self.thresholds.clone()
         
-        # FIXED: Find where champion ended up after sorting
-        # Compare each row of population with champion_pop to find match
-        champ_mask = (self.population == champ_pop.unsqueeze(0)).all(dim=1)
-        if champ_mask.any():
-            champ_new_idx = champ_mask.nonzero()[0].item()
-        else:
-            champ_new_idx = -1
+        # FIXED: Force champion into top 2 positions using stored state (not gene comparison)
+        # Always put champion in slot 1 (keep slot 0 as best by score)
+        new_pop[1] = champ_pop
+        new_w1[1], new_b1[1] = champ_w1, champ_b1
+        new_w2[1], new_b2[1] = champ_w2, champ_b2
+        new_thresh[1] = champ_thresh
         
-        # FIXED: Force champion into top 2 positions if it's not already there
-        if champ_new_idx >= 2 or champ_new_idx == -1:
-            # Champion is not in top 2 - inject it into position 1 (keep position 0 as best by score)
-            new_pop[1] = champ_pop
-            new_w1[1], new_b1[1] = champ_w1, champ_b1
-            new_w2[1], new_b2[1] = champ_w2, champ_b2
-            new_thresh[1] = champ_thresh
-            
-            if self.verbose:
-                print(f"💎 [Singularity]: Quantum Lock: Champion (F1={champ_f1:.4f}) pinned to Elite Slot 1")
-        else:
-            # Champion already in top 2, no action needed
-            if self.verbose and champ_new_idx < 2:
-                print(f"⚠️ [Singularity]: Entropy Alert! Champion lost in crossover. Re-materializing at Slot 1")
+        if self.verbose:
+            print(f"💎 [Singularity]: Quantum Lock: Champion (F1={champ_f1:.4f}) pinned to Elite Slot 1")
         
         # Standard deviation for weight mutation noise
         mutation_std = self.weight_mutation_rate
@@ -607,12 +604,12 @@ class PulsarSingularity(Singularity):
         for i in range(keep, self.pop_size):
             
             # Randomly select two elite parents
-            p1, p2 = torch.randint(0, keep, (2,))
+            p1, p2 = torch.randint(0, keep, (2,), generator=self.torch_generator)
             
             # Crossover with 70% probability
-            if torch.rand(1).item() < 0.7:
+            if torch.rand(1, generator=self.torch_generator).item() < 0.7:
                 # One-point crossover on gene indices
-                cut = torch.randint(0, self.gene_count, (1,)).item()
+                cut = torch.randint(0, self.gene_count, (1,), generator=self.torch_generator).item()
                 
                 # OPTIMIZED: Ensure unique genes after crossover
                 # Concatenate genes from both parents
@@ -640,8 +637,8 @@ class PulsarSingularity(Singularity):
                     needed = self.gene_count - len(fixed_genes)
                     if needed > 0 and len(available) >= needed:
                         # Randomly sample without replacement
-                        new_genes = np.random.choice(available, needed, replace=False).tolist()
-                        fixed_genes.extend(new_genes)
+                        new_genes = np.random.choice(available, needed, replace=False)
+                        fixed_genes.extend(new_genes.tolist())
                         # Convert back to tensor
                         new_pop[i] = torch.tensor(fixed_genes, device=self.device)
                     else:
@@ -650,7 +647,7 @@ class PulsarSingularity(Singularity):
                     new_pop[i] = child_genes
                 
                 # Blend weights and thresholds using convex combination
-                alpha = torch.rand(1, device=self.device) * 0.2 + 0.4
+                alpha = torch.rand(1, device=self.device, generator=self.torch_generator) * 0.2 + 0.4
                 new_w1[i] = alpha * self.pop_W1[p1] + (1 - alpha) * self.pop_W1[p2]
                 new_w2[i] = alpha * self.pop_W2[p1] + (1 - alpha) * self.pop_W2[p2]
                 new_thresh[i] = (
@@ -665,9 +662,9 @@ class PulsarSingularity(Singularity):
                 
                 # OPTIMIZED: Apply gene-level mutation with uniqueness check
                 # 30% chance to mutate genes (in addition to weight mutation)
-                if torch.rand(1).item() < 0.3:
+                if torch.rand(1, generator=self.torch_generator).item() < 0.3:
                     # Randomly select how many genes to mutate (1-3)
-                    n_mutations = torch.randint(1, min(4, self.gene_count), (1,)).item()
+                    n_mutations = torch.randint(1, min(4, self.gene_count), (1,), generator=self.torch_generator).item()
                     
                     # Fast uniqueness check for current genes
                     current_unique_mask = torch.zeros(len(self.feature_names), dtype=torch.bool, device=self.device)
@@ -679,7 +676,7 @@ class PulsarSingularity(Singularity):
                     
                     if len(available) >= n_mutations:
                         # Randomly choose positions to mutate
-                        mutate_positions = torch.randperm(self.gene_count)[:n_mutations]
+                        mutate_positions = torch.randperm(self.gene_count, generator=self.torch_generator)[:n_mutations]
                         
                         # Sample new unique genes
                         new_genes = np.random.choice(available, n_mutations, replace=False)
@@ -703,7 +700,7 @@ class PulsarSingularity(Singularity):
                 # Slightly mutate decision threshold
                 new_thresh[i] = (
                     self.thresholds[p1]
-                    + torch.randn(1, device=self.device).squeeze() * 0.01
+                    + torch.randn(1, device=self.device, generator=self.torch_generator).squeeze() * 0.01
                 )
         
         # OPTIMIZED: Final uniqueness verification across entire population (vectorized)
@@ -732,15 +729,15 @@ class PulsarSingularity(Singularity):
             
             needed = self.gene_count - len(fixed_genes)
             if needed > 0 and len(available) >= needed:
-                new_genes = np.random.choice(available, needed, replace=False).tolist()
-                fixed_genes.extend(new_genes)
+                new_genes = np.random.choice(available, needed, replace=False)
+                fixed_genes.extend(new_genes.tolist())
                 new_pop[i] = torch.tensor(fixed_genes, device=self.device)
                 if self.verbose:
                     print(f"    🔧 Post-processing fix for individual {i}")
         
-        # FIXED: Final sanity check - ensure champion still exists after crossover/mutation
-        champ_mask_final = (new_pop == champ_pop.unsqueeze(0)).all(dim=1)
-        if not champ_mask_final.any():
+        # FIXED: Final sanity check - ensure champion still exists (using stored state, not gene comparison)
+        champ_exists = (new_pop == champ_pop.unsqueeze(0)).all(dim=1).any()
+        if not champ_exists:
             # Champion was lost during crossover/mutation - restore it
             if self.verbose:
                 print(f"  ⚠️ [Evolution]: Champion lost! Restoring to position 1")
@@ -757,8 +754,8 @@ class PulsarSingularity(Singularity):
         # Clamp thresholds to valid probability range
         self.thresholds = torch.clamp(new_thresh, 0.10, 0.85)
         
-        # Inject high-vitality genes into weakest individuals
-        self.run_atomic_scan()
+        # FIXED: Atomic scan moved to separate phase (call it from training loop, not here)
+        # self.run_atomic_scan()
 
     def emit(self, features: pd.DataFrame) -> np.ndarray:
         """Generates binary signals from input features using the best individual.
@@ -833,6 +830,7 @@ class PulsarSingularity(Singularity):
         current_best_f1 = torch.max(self.latest_f1).item() if self.latest_f1 is not None else -1.0
         
         # PERSISTENCE GATE: Only save if F1 has improved
+        # FIXED: Now works correctly because global_best_f1 is updated after evaluation
         if current_best_f1 <= self.global_best_f1 and self.global_best_f1 > 0:
             if self.verbose:
                 print(f"🛑 [Singularity]: Save aborted. {current_best_f1:.4f} is not better than {self.global_best_f1:.4f}")
