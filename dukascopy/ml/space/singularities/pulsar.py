@@ -1,6 +1,6 @@
 """
 ===============================================================================
- File:        aggregate.py
+ File:        pulsar.py
  Author:      JP Ueberbach
  Created:     2026-02-23
               Elite preservation fix and evolutionary stability improvements
