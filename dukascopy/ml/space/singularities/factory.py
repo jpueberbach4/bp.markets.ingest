@@ -1,5 +1,6 @@
 from ml.space.space import Singularity
 from ml.space.singularities.eventhorizon import EventHorizonSingularity
+from ml.space.singularities.pulsar import PulsarSingularity
 
 from typing import Dict, Any
 
@@ -15,6 +16,7 @@ class SingularityFactory:
         """
         registry = {
             "EventHorizon": EventHorizonSingularity,
+            "Pulsar": PulsarSingularity,
         }
 
         if singularity_name in registry:

@@ -30,7 +30,7 @@ MilkyWay:
       weight_mutation_rate: 0.005
 
   singularity:
-    type: EventHorizon
+    type: Pulsar       # Warning. Do not use EventHorizon
     device: cuda
 
   # --------------------------------------------------
