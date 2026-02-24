@@ -32,6 +32,8 @@ Before the new release i will also add support for "factory overrides" so that e
 
 So far, the model was right on that latest GBPUSD bottom. GBP about to breakout.
 
+Also, if you are testing this stuff. Dont just look at the highest F1 models. The lower ones might actually be more valuable.
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
@@ -96,6 +98,7 @@ We have added several deep-dive guides to help you leverage the latest performan
 * **[Adjustments.md](adjustments.md)** – Implementation guide for Panama rolls, Dividends, and Multiplicative splits.
 * **[Templates.md](templates.md)** – Guidelines for "God-tier" indicator performance using Polars/Rust to bypass the Python GIL.
 * **[Code Examples](../config/plugins/indicators/)** – Direct reference for plugin and indicator development.
+
 
 
 
