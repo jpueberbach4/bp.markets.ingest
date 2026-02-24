@@ -28,6 +28,8 @@ Adding macro data and divergence between certain assets increased reliability. B
 
 I will share one of my universes-i got like 10-later so you can try this yourself (validate my screenshots).
 
+Before the new release i will also add support for "factory overrides" so that every part of the system can be overridden through your `config.user` directory. So the core doesnt break any custom implementations.
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
