@@ -8,10 +8,11 @@ At minimum this can be used as an additional "signal"-filter. I have something w
 
 This is the result of a trained model on EUR-USD, applied to GBP-USD. The data for training was strictly cutoff at 2025-12-31. It has never seen the 2026 data. No leakage. 
 
-For "a first attempt" it's definately not bad.
+![Example](../images/signals.gif)
 
-![Example](../images/same-model-on-gbp.png)
+Tbh this is "too perfect". 25 percent 2-5 candles before low (forming stage), 50 percent 1 bar before and 25 percent at the actual low. few misses. It is too perfect. Raises suspicion. Thats why an extensive forward-test is needed, soon now, targetting this week. This model is stored safely. Just in case it might be "the real thing"
 
+To be continued,...
 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
@@ -77,6 +78,14 @@ We have added several deep-dive guides to help you leverage the latest performan
 * **[Adjustments.md](adjustments.md)** – Implementation guide for Panama rolls, Dividends, and Multiplicative splits.
 * **[Templates.md](templates.md)** – Guidelines for "God-tier" indicator performance using Polars/Rust to bypass the Python GIL.
 * **[Code Examples](../config/plugins/indicators/)** – Direct reference for plugin and indicator development.
+
+
+
+
+
+
+
+
 
 
 
