@@ -465,23 +465,35 @@ class PulsarSingularity(Singularity):
         self.latest_score = res["score"].clone()
         self.latest_precision = res["precision"].clone()  # NEW: Track precision
 
-        # FIXED: Update global best F1 and precision here, after evaluation
+        # FIXED: Determine if we should save BEFORE updating global best
         gen_best_idx = torch.argmax(self.latest_f1).item()
         gen_best_f1 = self.latest_f1[gen_best_idx].item()
         gen_best_prec = self.latest_precision[gen_best_idx].item()
         
-        improved = False
+        # Check for improvement and set save flag
+        self._pending_save = False
         if gen_best_f1 > self.global_best_f1:
-            improved = True
+            self._pending_save = True
+            self._pending_save_idx = gen_best_idx
+            self._pending_save_f1 = gen_best_f1
+            self._pending_save_prec = gen_best_prec
             reason = f"new F1 record ({gen_best_f1:.4f} > {self.global_best_f1:.4f})"
-        elif gen_best_f1 == self.global_best_f1 and gen_best_prec > self.global_best_prec:
-            improved = True
-            reason = f"same F1 ({gen_best_f1:.4f}) but better precision ({gen_best_prec:.4f} > {self.global_best_prec:.4f})"
-        
-        if improved:
             if self.verbose:
                 print(f"🔥 [Evolution]: New High-Water Mark: {reason}")
+        elif gen_best_f1 == self.global_best_f1 and gen_best_f1 > 0 and gen_best_prec > self.global_best_prec:
+            self._pending_save = True
+            self._pending_save_idx = gen_best_idx
+            self._pending_save_f1 = gen_best_f1
+            self._pending_save_prec = gen_best_prec
+            reason = f"same F1 ({gen_best_f1:.4f}) but better precision ({gen_best_prec:.4f} > {self.global_best_prec:.4f})"
+            if self.verbose:
+                print(f"🔥 [Evolution]: New High-Water Mark: {reason}")
+        
+        # Update global best AFTER setting save flag
+        if gen_best_f1 > self.global_best_f1:
             self.global_best_f1 = gen_best_f1
+            self.global_best_prec = gen_best_prec
+        elif gen_best_f1 == self.global_best_f1 and gen_best_prec > self.global_best_prec:
             self.global_best_prec = gen_best_prec
 
         return res
@@ -833,14 +845,14 @@ class PulsarSingularity(Singularity):
         Args:
             universe: Object responsible for persistence. Must implement
                 an `eject(filename, state, is_model=True)` method.
-            filename (str): Destination path or identifier for the saved state.
-            winner_idx (Optional[int]): Index of the population member to save.
-                If None, the best individual by latest F1 score is selected.
+                filename (str): Destination path or identifier for the saved state.
+                winner_idx (Optional[int]): Index of the population member to save.
+                    If None, the best individual by latest F1 score is selected.
 
         Side Effects:
-            - Writes model state to disk or external storage.
-            - Emits a verbose log message when enabled.
-            - Safely extracts and bundles Redshift global scaling physics.
+                - Writes model state to disk or external storage.
+                - Emits a verbose log message when enabled.
+                - Safely extracts and bundles Redshift global scaling physics.
         """
         # Determine current best F1 and precision
         current_best_f1 = torch.max(self.latest_f1).item() if self.latest_f1 is not None else -1.0
@@ -854,10 +866,13 @@ class PulsarSingularity(Singularity):
         if current_best_f1 > self.global_best_f1:
             should_save = True
             reason = f"new F1 record ({current_best_f1:.4f} > {self.global_best_f1:.4f})"
+            # Update global best precision when F1 improves
+            self.global_best_prec = current_best_prec
         elif current_best_f1 == self.global_best_f1 and self.global_best_f1 > 0:
             if current_best_prec > self.global_best_prec:
                 should_save = True
                 reason = f"same F1 ({current_best_f1:.4f}) but better precision ({current_best_prec:.4f} > {self.global_best_prec:.4f})"
+                self.global_best_prec = current_best_prec
             else:
                 reason = f"same F1 ({current_best_f1:.4f}) but precision not improved"
         else:
