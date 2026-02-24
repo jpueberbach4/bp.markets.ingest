@@ -38,9 +38,7 @@ Also, if you are testing this stuff. Dont just look at the highest F1 models. Th
 
 It creates incredibly tiny signals. Signals in the order of e-9 but "flatline" is at e-20. This needs to improve before i can release the new version. It's (likely) calibration. Not a flaw in the code. It marks correctly, macro genes are the main driver.
 
-I will be doing a real replay test with a model soon. This week. When the signalling is fixed.
-
-Tbh this is "too perfect". 25 percent 2-3 candles before low (forming stage), 50 percent 1 bar before and 25 percent at the actual low. It is too perfect almost. Raises suspicion. Thats why this test, soon now. This model is stored safely. Just in case it might be "the real thing"
+Tbh this is "too perfect". 25 percent 2-3 candles before low (forming stage), 50 percent 1 bar before and 25 percent at the actual low. It is too perfect. Raises suspicion. Thats why an extensive forward-test, soon now, target to do this, this week. This model is stored safely. Just in case it might be "the real thing"
 
 To be continued,...
 
@@ -108,6 +106,7 @@ We have added several deep-dive guides to help you leverage the latest performan
 * **[Adjustments.md](adjustments.md)** – Implementation guide for Panama rolls, Dividends, and Multiplicative splits.
 * **[Templates.md](templates.md)** – Guidelines for "God-tier" indicator performance using Polars/Rust to bypass the Python GIL.
 * **[Code Examples](../config/plugins/indicators/)** – Direct reference for plugin and indicator development.
+
 
 
 
