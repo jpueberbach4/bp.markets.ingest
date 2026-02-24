@@ -40,6 +40,10 @@ It creates incredibly tiny signals. Signals in the order of e-9 but "flatline" i
 
 I will be doing a real replay test with a model soon. This week. When the signalling is fixed.
 
+Tbh this is "too perfect". 25 percent 2-3 candles before low (forming stage), 50 percent 1 bar before and 25 percent at the actual low. It is too perfect almost. Raises suspicion. Thats why this test, soon now. This model is stored safely. Just in case it might be "the real thing"
+
+To be continued,...
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
@@ -104,6 +108,7 @@ We have added several deep-dive guides to help you leverage the latest performan
 * **[Adjustments.md](adjustments.md)** – Implementation guide for Panama rolls, Dividends, and Multiplicative splits.
 * **[Templates.md](templates.md)** – Guidelines for "God-tier" indicator performance using Polars/Rust to bypass the Python GIL.
 * **[Code Examples](../config/plugins/indicators/)** – Direct reference for plugin and indicator development.
+
 
 
 
