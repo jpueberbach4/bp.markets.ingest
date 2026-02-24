@@ -52,6 +52,7 @@ class Kinematics(Normalizer):
         2D: [Rows, Features] -> for bigbang() initialization
         3D: [Batch, Seq, Features] -> for live inference
         """
+        print(f"🌌 [Space]: Estabiishing physics. Kinematics.")
         if not self.eligible_indices:
             return x
 

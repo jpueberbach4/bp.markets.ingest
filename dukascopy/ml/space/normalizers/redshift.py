@@ -18,7 +18,7 @@ class Redshift(Normalizer):
         """
         Applies Redshift to the incoming tensor.
         """
-        print(f"🌌 [Space]: Primary physics-law initiated. Z-Score gravity.")
+        print(f"🌌 [Space]: Establishing physics. Z-Score.")
         mu = x.mean(dim=self.dim, keepdim=True)
         sigma = x.std(dim=self.dim, keepdim=True)
         

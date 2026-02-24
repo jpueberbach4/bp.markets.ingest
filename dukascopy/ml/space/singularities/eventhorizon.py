@@ -223,7 +223,7 @@ class EventHorizonSingularity(Singularity):
             3. Evaluates OOS performance across multiple probability thresholds.
             4. Selects the best threshold per individual based on a custom score.
             5. Updates gene importance statistics using performance-weighted attribution.
-            6. Returns aggregated performance metrics.
+            6. Returns aggregated performance metrics including the 2D signal map.
 
         Args:
             config: Configuration object (currently unused but reserved
@@ -238,6 +238,7 @@ class EventHorizonSingularity(Singularity):
                 - "precision"
                 - "recall"
                 - "score"
+                - "signal_map" (2D boolean tensor of locations)
 
         Side Effects:
             - Updates population weights and biases.
@@ -245,8 +246,8 @@ class EventHorizonSingularity(Singularity):
             - Updates self.thresholds, self.latest_f1, and self.latest_score.
         """
 
-        # Storage for metrics collected across all population chunks
-        metrics = {"f1": [], "sigs": [], "density": [], "precision": [], "recall": [], "score": []}
+        # Storage for metrics collected across all population chunks. Added signal_map.
+        metrics = {"f1": [], "sigs": [], "density": [], "precision": [], "recall": [], "score": [], "signal_map": []}
 
         # Determine in-sample training cutoff index
         train_end = int(len(self.lake) * self.oos_boundary)
@@ -331,6 +332,9 @@ class EventHorizonSingularity(Singularity):
                 best_sigs = torch.zeros(curr_chunk, device=self.device)
                 best_prec = torch.zeros(curr_chunk, device=self.device)
                 best_rec = torch.zeros(curr_chunk, device=self.device)
+                
+                # We also need to cache the exact sequence of predictions that generated the best score
+                best_preds = torch.zeros_like(oos_probs, device=self.device)
 
                 # Threshold sweep for optimal decision boundary
                 for t in torch.linspace(0.15, 0.85, self.thresh_steps):
@@ -376,6 +380,9 @@ class EventHorizonSingularity(Singularity):
                     best_sigs[mask] = sig_count[mask]
                     best_prec[mask] = prec[mask]
                     best_rec[mask] = rec[mask]
+                    
+                    # Capture the physical location of the signals for the diagnostic output
+                    best_preds[mask] = preds[mask]
 
                 # Optional logging
                 if self.verbose:
@@ -427,6 +434,7 @@ class EventHorizonSingularity(Singularity):
                 metrics["precision"].append(best_prec.detach().cpu())
                 metrics["recall"].append(best_rec.detach().cpu())
                 metrics["score"].append(best_score.detach().cpu())
+                metrics["signal_map"].append(best_preds.squeeze(-1).detach().cpu())
 
         # Concatenate chunk metrics into full population tensors
         res = {k: torch.cat(v) for k, v in metrics.items()}
