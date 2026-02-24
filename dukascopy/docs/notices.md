@@ -30,6 +30,8 @@ I will share one of my universes-i got like 10-later so you can try this yoursel
 
 Before the new release i will also add support for "factory overrides" so that every part of the system can be overridden through your `config.user` directory. So the core doesnt break any custom implementations.
 
+So far, the model was right on that latest GBPUSD bottom. GBP about to breakout.
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
@@ -94,6 +96,7 @@ We have added several deep-dive guides to help you leverage the latest performan
 * **[Adjustments.md](adjustments.md)** – Implementation guide for Panama rolls, Dividends, and Multiplicative splits.
 * **[Templates.md](templates.md)** – Guidelines for "God-tier" indicator performance using Polars/Rust to bypass the Python GIL.
 * **[Code Examples](../config/plugins/indicators/)** – Direct reference for plugin and indicator development.
+
 
 
 
