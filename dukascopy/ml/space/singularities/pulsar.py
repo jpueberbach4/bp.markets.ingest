@@ -90,7 +90,12 @@ class PulsarSingularity(Singularity):
         self.seed = self.config.get('seed', 42)
         torch.manual_seed(self.seed)
         np.random.seed(self.seed)
-        self.torch_generator = torch.Generator(device=self.device).manual_seed(self.seed)
+        # FIXED: Create separate generators for CPU and CUDA operations
+        self.torch_generator = torch.Generator(device='cpu').manual_seed(self.seed)
+        if self.device.type == 'cuda':
+            self.cuda_generator = torch.Generator(device=self.device).manual_seed(self.seed)
+        else:
+            self.cuda_generator = self.torch_generator
 
         # TODO: should use a lenses config in configuration
         self.spectrograph = Spectrograph(mode="focal", alpha=0.99, gamma=2.0)
@@ -527,13 +532,13 @@ class PulsarSingularity(Singularity):
 
             # Reinitialize first-layer weights (He initialization)
             self.pop_W1[i] = (
-                torch.randn(self.gene_count, self.hidden_dim, device=self.device, generator=self.torch_generator)
+                torch.randn(self.gene_count, self.hidden_dim, device=self.device, generator=self.cuda_generator)
                 * np.sqrt(2.0 / self.gene_count)
             )
 
             # Reinitialize second-layer weights (He initialization)
             self.pop_W2[i] = (
-                torch.randn(self.hidden_dim, 1, device=self.device, generator=self.torch_generator)
+                torch.randn(self.hidden_dim, 1, device=self.device, generator=self.cuda_generator)
                 * np.sqrt(2.0 / self.hidden_dim)
             )
 
@@ -658,7 +663,7 @@ class PulsarSingularity(Singularity):
                     new_pop[i] = child_genes
                 
                 # Blend weights and thresholds using convex combination
-                alpha = torch.rand(1, device=self.device, generator=self.torch_generator) * 0.2 + 0.4
+                alpha = torch.rand(1, device=self.device, generator=self.cuda_generator) * 0.2 + 0.4
                 new_w1[i] = alpha * self.pop_W1[p1] + (1 - alpha) * self.pop_W1[p2]
                 new_w2[i] = alpha * self.pop_W2[p1] + (1 - alpha) * self.pop_W2[p2]
                 new_thresh[i] = (
@@ -711,7 +716,7 @@ class PulsarSingularity(Singularity):
                 # Slightly mutate decision threshold
                 new_thresh[i] = (
                     self.thresholds[p1]
-                    + torch.randn(1, device=self.device, generator=self.torch_generator).squeeze() * 0.01
+                    + torch.randn(1, device=self.device, generator=self.cuda_generator).squeeze() * 0.01
                 )
         
         # OPTIMIZED: Final uniqueness verification across entire population (vectorized)
