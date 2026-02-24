@@ -1,25 +1,54 @@
+"""
+===============================================================================
+File:        voyager.py
+Author:      JP Ueberbach
+Created:     2026-02-23
+
+Description:
+    Implementation of the Voyager flight orchestrator within the ML space.
+
+    Voyager handles the evolutionary training loop of a Singularity, including:
+        - Thermal management for GPU safety
+        - Mass extinction and mutation events to avoid stagnation
+        - Checkpointing models based on F1 performance
+        - Vitality scoring of genes
+
+Key Capabilities:
+    - Evolutionary orchestration of singularities
+    - Population stagnation handling and mutation flares
+    - Detailed F1/precision logging
+    - Safe checkpoint and cache management
+===============================================================================
+"""
+
 import time
-import torch
-from datetime import datetime
 from typing import Dict, Any
+
+import torch
 from ml.space.space import Singularity, Flight
 
+
 class Voyager(Flight):
-    """
-    Orchestrates the evolutionary training loop for a Singularity.
-    Handles thermal management, mass extinction events, and model checkpoints.
-    """
-    def __init__(self, config):
-        # State Tracking
+    """Orchestrates the evolutionary training loop for a Singularity."""
+
+    def __init__(self, config: Dict[str, Any]):
+        """Initialize flight with configuration and tracking state.
+
+        Args:
+            config (Dict[str, Any]): Configuration dictionary for evolutionary parameters.
+        """
         self.config = config
-        self.best_f1 = -1.0
-        self.best_gen = 0
-        self.stagnation_counter = 0
+        self.best_f1: float = -1.0
+        self.best_gen: int = 0
+        self.stagnation_counter: int = 0
         self.universe = None
+        self.device: str = None
 
     def warp(self, singularity: Singularity):
-        """
-        Runs the main evolutionary loop.
+        """Run the main evolutionary loop with stagnation handling and thermal management.
+
+        Args:
+            singularity (Singularity): Singularity object to train and evolve.
         """
         self.singularity = singularity
         self.universe = singularity.universe
@@ -30,30 +59,26 @@ class Voyager(Flight):
         print(f"🚀 [Flight]: Firing up warp-drive of VOYAGER")
 
         total_features = len(self.universe.features())
-        generations = self.config.get('max_generations', 4000)
-        settings = self.config.get('settings')
-        extinction_limit = settings.get('extinction_stagnation', 60)
-        stagnation_limit = settings.get('radiation_stagnation', 20)
-        hotness_max = settings.get('hotness_max', 87)
-        hotness_min = settings.get('hotness_min', 80)
-        population_size = settings.get('population_size', 1000)
-        gene_count = settings.get('gene_count', 16)
+        generations = self.config.get("max_generations", 4000)
+        settings = self.config.get("settings", {})
+        extinction_limit = settings.get("extinction_stagnation", 60)
+        stagnation_limit = settings.get("radiation_stagnation", 20)
+        hotness_max = settings.get("hotness_max", 87)
+        hotness_min = settings.get("hotness_min", 80)
+        population_size = settings.get("population_size", 1000)
+        gene_count = settings.get("gene_count", 16)
 
-        # fix, set self.device
-        self.device = singularity.config.get('device')
-
+        self.device = singularity.config.get("device")
 
         for gen in range(1, generations + 1):
-            print(f"\n" + "="*60)
+            print("\n" + "=" * 60)
             print(f"🚀 [Flight]: Commencing Generation {gen}/{generations}")
-            print("="*60)
+            print("=" * 60)
 
             start_t = time.time()
             metrics = self.singularity.run_generation(self.universe)
             duration = time.time() - start_t
 
-            # Extract Metrics
-            fitness = metrics["score"]
             avg_f1 = metrics["f1"].mean().item()
             max_f1 = metrics["f1"].max().item()
             avg_prec = metrics["precision"].mean().item()
@@ -62,8 +87,8 @@ class Voyager(Flight):
 
             print(f"\n📊 [Gen {gen} Summary] ({duration:.1f}s)")
             print(f"   F1:         Avg {avg_f1:.4f} | Max {max_f1:.4f}")
-            print(f"   Precision: Avg {avg_prec:.4f} | Max {max_prec:.4f}")
-            print(f"   Activity:  Total Sigs {int(total_sigs)} | Density {metrics['density'].mean().item():.4%}")
+            print(f"   Precision:  Avg {avg_prec:.4f} | Max {max_prec:.4f}")
+            print(f"   Activity:   Total Sigs {int(total_sigs)} | Density {metrics['density'].mean().item():.4%}")
 
             # Improvement Check (Higher F1 only)
             if max_f1 > self.best_f1:
@@ -72,8 +97,7 @@ class Voyager(Flight):
                 self.best_gen = gen
                 self.stagnation_counter = 0
 
-                # Find winner and save
-                winner_idx = torch.argmax(fitness).item()
+                winner_idx = torch.argmax(metrics["score"]).item()
                 filename = f"model-best-gen{gen}-f1-{max_f1:.4f}.pt"
                 self.singularity.save_state(self.universe, filename, winner_idx=winner_idx)
             else:
@@ -81,7 +105,7 @@ class Voyager(Flight):
                 print(f"📉 [Flight]: No improvement. Stagnation: {self.stagnation_counter}/{extinction_limit}")
                 print(f"           Current Best F1: {self.best_f1:.4f} (Gen {self.best_gen})")
 
-            # --- MASS EXTINCTION EVENT ---
+            # Mass extinction: reset population if stagnation limit reached
             if self.stagnation_counter >= extinction_limit:
                 print(f"💀 [Flight]: MASS EXTINCTION. Rebooting evolution...")
                 with torch.no_grad():
@@ -96,7 +120,7 @@ class Voyager(Flight):
                     self.singularity.gene_usage.fill_(0.0)
                 self.stagnation_counter = 0
 
-            # --- RADIATION STAGNATION BREAKER ---
+            # Radiation stagnation breaker (mutation flare)
             elif self.stagnation_counter > 0 and self.stagnation_counter % stagnation_limit == 0:
                 print(f"☢️  [Flight]: CRITICAL STAGNATION. Injecting radiation into 40% of population...")
                 with torch.no_grad():
@@ -110,18 +134,17 @@ class Voyager(Flight):
                     )
                     self.singularity.population[indices] = new_dna
 
-            # Display Gene Vitality
             self._print_vitality()
 
-            # --- THERMAL MANAGEMENT ---
+            # Thermal management
             if gen < generations:
                 self._manage_thermals(hotness_max, hotness_min)
                 self.singularity.evolve(metrics)
 
-        print("\n" + "—"*60)
+        print("\n" + "—" * 60)
         print(f"🏁 [Flight]: Flight Path Complete.")
         print(f"🥇 [Best Result]: Gen {self.best_gen} achieved F1 {self.best_f1:.4f}")
-        print("—"*60)
+        print("—" * 60)
 
     def _print_vitality(self):
         """Displays the top 10 genes based on vitality score."""
@@ -134,27 +157,25 @@ class Voyager(Flight):
 
     def _manage_thermals(self, max_temp: float, min_temp: float):
         """Monitors GPU temperature to prevent hardware throttle or damage."""
-        if self.device == "cuda":
-            temperature = torch.cuda.temperature()
-            if temperature > max_temp:
-                print(f"🔥 [Space]: Radiation spike ({temperature}°C). Orbiting to dark side...")
-                while temperature > min_temp:
-                    time.sleep(1.0)
-                    temperature = torch.cuda.temperature()
-                print(f"🛰️ [Space]: Thermal equilibrium reached ({temperature}°C). Main drive re-engaged.")
+        if self.device != "cuda":
+            return
+        temperature = torch.cuda.temperature()
+        if temperature > max_temp:
+            print(f"🔥 [Space]: Radiation spike ({temperature}°C). Orbiting to dark side...")
+            while temperature > min_temp:
+                time.sleep(1.0)
+                temperature = torch.cuda.temperature()
+            print(f"🛰️ [Space]: Thermal equilibrium reached ({temperature}°C). Main drive re-engaged.")
 
     def cleanup(self):
-        """
-        Clears memory and drains the system cache.
-        """
+        """Clears memory and drains the system cache."""
         print("\n🛰️ [Flight]: Draining the Oort Cloud...")
         time.sleep(1)
-        
-        if self.singularity:
+
+        if hasattr(self, "singularity"):
             del self.singularity
-        
+
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-            
-        print("✅ [Flight]: Cleanup complete. Singularity stable.")
 
+        print("✅ [Flight]: Cleanup complete. Singularity stable.")

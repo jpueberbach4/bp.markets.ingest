@@ -1,4 +1,22 @@
-import yaml
+"""
+===============================================================================
+File:        milkyway.py
+Author:      JP Ueberbach
+Created:     2026-02-23
+
+Description:
+    Factory module for instantiating universe objects within the ML space.
+
+    This module provides a centralized factory pattern for creating different
+    universe instances, such as MilkyWay. It abstracts construction logic and
+    allows flexible instantiation based on type name and configuration.
+
+Key Capabilities:
+    - Centralized universe creation
+    - Configuration-driven initialization
+    - Extensible registry for future universes
+===============================================================================
+"""
 import fnmatch
 import pandas as pd
 import numpy as np

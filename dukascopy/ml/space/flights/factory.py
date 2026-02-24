@@ -1,25 +1,63 @@
+"""
+===============================================================================
+File:        factory.py
+Author:      JP Ueberbach
+Created:     2026-02-23
+
+Description:
+    Factory module for instantiating flight objects within the ML space.
+
+    Provides a centralized factory pattern for creating flight instances, such
+    as Voyager or MilleniumFalcon, based on type name and configuration.
+    Supports easy extension for future flight types.
+
+Key Capabilities:
+    - Centralized flight creation
+    - Configuration-driven initialization
+    - Extensible registry for new flight types
+===============================================================================
+"""
+
+from typing import Dict, Any
+
 from ml.space.space import Singularity
 from ml.space.flights.voyager import Voyager
 from ml.space.flights.millenniumfalcon import MilleniumFalcon
 
-from typing import Dict, Any
 
 class FlightFactory:
-    """
-    The Singularies Factory.
-    Manifests specific comets from the cosmic void based on configuration.
-    """
+    """Factory for creating flight (singularity) instances."""
+
     @staticmethod
     def manifest(flight_name: str, config: Dict[str, Any]) -> Singularity:
+        """Instantiate a flight based on its name and configuration.
+
+        Args:
+            flight_name (str): Name of the flight to create. Supported types
+                include "Voyager" and "MilleniumFalcon".
+            config (Dict[str, Any]): Configuration parameters for the flight.
+
+        Returns:
+            Singularity: An instance of the requested flight.
+
+        Raises:
+            ValueError: If the flight_name is not recognized.
+
+        Example:
+            >>> factory = FlightFactory()
+            >>> voyager = factory.manifest("Voyager", config)
         """
-        Factory method to create comet instances.
-        """
+        # Registry mapping flight names to their classes
         registry = {
             "Voyager": Voyager,
             "MilleniumFalcon": MilleniumFalcon
         }
 
+        # Create flight instance if name exists in registry
         if flight_name in registry:
             return registry[flight_name](config)
-        
-        raise ValueError(f"🌌 [Flight]: Unknown flight type '{flight_name}' requested.")
+
+        # Raise error for unknown flight types
+        raise ValueError(
+            f"🌌 [Flight]: Unknown flight type '{flight_name}' requested."
+        )

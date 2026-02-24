@@ -1,5 +1,29 @@
+"""
+===============================================================================
+File:        milkyway.py
+Author:      JP Ueberbach
+Created:     2026-02-23
+
+Description:
+    Implementation of the MilkyWay Universe within the ML space.
+
+    MilkyWay manages:
+        - Data ingestion and temporal boundaries
+        - Initialization of Comets and Normalizers
+        - Feature and target preprocessing
+        - BigBang normalization applying multiple Normalizers
+        - Auditing of string-polluted and NaN dimensions
+        - Ejection of payloads to comets (models, gene dumps, logs)
+
+Key Capabilities:
+    - Config-driven universe instantiation
+    - Cosmic normalization pipeline (Redshift, Kinematics)
+    - Statistical auditing and reporting
+    - Integration with Comet and Normalizer factories
+===============================================================================
+"""
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict
 import os
 import queue
 import threading

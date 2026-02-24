@@ -1,36 +1,68 @@
+"""
+===============================================================================
+File:        redshift.py
+Author:      JP Ueberbach
+Created:     2026-02-23
+
+Description:
+    Implementation of a Redshift normalizer within the ML space.
+
+    Redshift performs Z-score normalization on tensors, transforming absolute
+    values into relative coordinates using the mean and standard deviation.
+    This ensures each feature has zero mean and unit variance along the
+    specified dimension.
+
+Key Capabilities:
+    - Z-score normalization along a specified tensor dimension
+    - Maintains input shape
+    - Compatible with 2D or 3D tensors
+    - Stores mean and std for potential downstream analysis
+===============================================================================
+"""
+
 from ml.space.space import Normalizer
 import torch
 
+
 class Redshift(Normalizer):
     """
-    A Z-Score Normalizer.
-    Transforms absolute matter into relative cosmic coordinates 
-    using the mean and standard deviation.
+    Z-score normalizer for tensor inputs.
     
-    Formula: $z = \frac{x - \mu}{\sigma}$
+    Normalizes each feature along a given dimension using its mean and standard
+    deviation: z = (x - mu) / (sigma + eps)
     """
-    def __init__(self, config):
+    def __init__(self, config: dict):
+        """
+        Args:
+            config (dict): Configuration dictionary with optional keys:
+                - dim (int): Dimension along which to compute mean/std (default 0)
+                - eps (float): Small epsilon to avoid division by zero (default 1e-8)
+        """
         super().__init__()
-        self.dim = int(config.get('dim', 0))
-        self.eps = float(config.get('eps', 1e-8)) # Prevents division by zero in a vacuum
+        self.dim: int = int(config.get('dim', 0))
+        self.eps: float = float(config.get('eps', 1e-8))
         
-        # State tracking for Factory Spec baseline locking
-        self.means = None
-        self.stds = None
+        # Stored statistics for potential inspection or factory baseline locking
+        self.means: torch.Tensor | None = None
+        self.stds: torch.Tensor | None = None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
-        Applies Redshift to the incoming tensor.
+        Applies Z-score normalization along the configured dimension.
+        
+        Args:
+            x (torch.Tensor): Input tensor to normalize.
+        
+        Returns:
+            torch.Tensor: Normalized tensor with zero mean and unit variance.
         """
-        print(f"🌌 [Space]: Establishing physics. Z-Score.")
+        print(f"🌌 [Space]: Establishing physics. Z-Score normalization.")
         mu = x.mean(dim=self.dim, keepdim=True)
         sigma = x.std(dim=self.dim, keepdim=True)
         
-        # Lock the global physics parameters into the class state.
-        # Squeezing removes the target dimension to create a flat 1D tensor 
-        # mapping directly to the feature indices.
+        # Store per-feature statistics for external use
         self.means = mu.squeeze(self.dim)
         self.stds = sigma.squeeze(self.dim)
         
-        # Shift the matter to the center of the universe
+        # Normalize and shift to relative cosmic coordinates
         return (x - mu) / (sigma + self.eps)
