@@ -531,27 +531,29 @@ class PulsarSingularity(Singularity):
         # Retrieve latest generation metrics
         f1_scores = self.latest_f1.to(self.device).flatten()
         primary_scores = self.latest_score.to(self.device).flatten()
-
+        
         # Identify best individual by F1 score (generation champion)
         gen_best_f1_val, gen_best_f1_idx = torch.max(f1_scores, dim=0)
-
-        # Preserve champion's genes, weights, biases, and threshold
+        
+        # Store champion's complete state BEFORE any reordering
         champ_pop = self.population[gen_best_f1_idx].clone()
         champ_w1 = self.pop_W1[gen_best_f1_idx].clone()
         champ_b1 = self.pop_B1[gen_best_f1_idx].clone()
         champ_w2 = self.pop_W2[gen_best_f1_idx].clone()
         champ_b2 = self.pop_B2[gen_best_f1_idx].clone()
         champ_thresh = self.thresholds[gen_best_f1_idx].clone()
-
+        champ_f1 = gen_best_f1_val.clone()
+        
         # Rank population by primary fitness score (descending)
         idx = torch.argsort(primary_scores, descending=True)
-
+        
         # Reorder population and parameters by fitness ranking
         self.population = self.population[idx]
         self.thresholds = self.thresholds[idx]
         self.pop_W1, self.pop_B1 = self.pop_W1[idx], self.pop_B1[idx]
         self.pop_W2, self.pop_B2 = self.pop_W2[idx], self.pop_B2[idx]
-
+        f1_scores = f1_scores[idx]  # Also reorder F1 scores for consistency
+        
         # Update global best F1 if a new high-water mark is reached
         if gen_best_f1_val > self.global_best_f1:
             if self.verbose:
@@ -561,46 +563,55 @@ class PulsarSingularity(Singularity):
                     f"(Global Best was {self.global_best_f1:.4f})"
                 )
             self.global_best_f1 = gen_best_f1_val.item()
-
+        
         # Number of elite individuals preserved unchanged
         keep = max(2, self.pop_size // 10)
-
+        
         # Initialize new population containers
         new_pop = self.population.clone()
         new_w1, new_b1 = self.pop_W1.clone(), self.pop_B1.clone()
         new_w2, new_b2 = self.pop_W2.clone(), self.pop_B2.clone()
         new_thresh = self.thresholds.clone()
-
-        # Ensure the generation champion survives (elitism guarantee)
-        if gen_best_f1_val > f1_scores[idx[0]]:
-            # Replace top-ranked individual if champion differs
-            new_pop[0] = champ_pop
-            new_w1[0], new_b1[0] = champ_w1, champ_b1
-            new_w2[0], new_b2[0] = champ_w2, champ_b2
-            new_thresh[0] = champ_thresh
+        
+        # FIXED: Find where champion ended up after sorting
+        # Compare each row of population with champion_pop to find match
+        champ_mask = (self.population == champ_pop.unsqueeze(0)).all(dim=1)
+        if champ_mask.any():
+            champ_new_idx = champ_mask.nonzero()[0].item()
         else:
-            # Otherwise, inject champion as second-best
+            champ_new_idx = -1
+        
+        # FIXED: Force champion into top 2 positions if it's not already there
+        if champ_new_idx >= 2 or champ_new_idx == -1:
+            # Champion is not in top 2 - inject it into position 1 (keep position 0 as best by score)
             new_pop[1] = champ_pop
             new_w1[1], new_b1[1] = champ_w1, champ_b1
             new_w2[1], new_b2[1] = champ_w2, champ_b2
             new_thresh[1] = champ_thresh
-
+            
+            if self.verbose:
+                print(f"  ⚡ [Evolution]: Champion (F1={champ_f1:.4f}) restored to elite slot 1")
+        else:
+            # Champion already in top 2, no action needed
+            if self.verbose and champ_new_idx < 2:
+                print(f"  ✓ [Evolution]: Champion (F1={champ_f1:.4f}) already in top 2 at position {champ_new_idx}")
+        
         # Standard deviation for weight mutation noise
         mutation_std = self.weight_mutation_rate
-
+        
         # Generate offspring for non-elite population members
         for i in range(keep, self.pop_size):
-
+            
             # Randomly select two elite parents
             p1, p2 = torch.randint(0, keep, (2,))
-
+            
             # Crossover with 70% probability
             if torch.rand(1).item() < 0.7:
                 # One-point crossover on gene indices
                 cut = torch.randint(0, self.gene_count, (1,)).item()
                 new_pop[i, :cut] = self.population[p1, :cut]
                 new_pop[i, cut:] = self.population[p2, cut:]
-
+                
                 # Blend weights and thresholds using convex combination
                 alpha = torch.rand(1, device=self.device) * 0.2 + 0.4
                 new_w1[i] = alpha * self.pop_W1[p1] + (1 - alpha) * self.pop_W1[p2]
@@ -609,12 +620,12 @@ class PulsarSingularity(Singularity):
                     alpha * self.thresholds[p1]
                     + (1 - alpha) * self.thresholds[p2]
                 )
-
+            
             # Mutation-only path (30% probability)
             else:
                 # Clone parent genes
                 new_pop[i] = self.population[p1].clone()
-
+                
                 # Apply Gaussian noise to weights
                 new_w1[i] = (
                     self.pop_W1[p1]
@@ -624,21 +635,32 @@ class PulsarSingularity(Singularity):
                     self.pop_W2[p1]
                     + torch.randn_like(self.pop_W2[p1]) * mutation_std
                 )
-
+                
                 # Slightly mutate decision threshold
                 new_thresh[i] = (
                     self.thresholds[p1]
                     + torch.randn(1, device=self.device).squeeze() * 0.01
                 )
-
+        
+        # FIXED: Final sanity check - ensure champion still exists after crossover/mutation
+        champ_mask_final = (new_pop == champ_pop.unsqueeze(0)).all(dim=1)
+        if not champ_mask_final.any():
+            # Champion was lost during crossover/mutation - restore it
+            if self.verbose:
+                print(f"  ⚠️ [Evolution]: Champion lost! Restoring to position 1")
+            new_pop[1] = champ_pop
+            new_w1[1], new_b1[1] = champ_w1, champ_b1
+            new_w2[1], new_b2[1] = champ_w2, champ_b2
+            new_thresh[1] = champ_thresh
+        
         # Commit evolved population
         self.population = new_pop
         self.pop_W1, self.pop_B1 = new_w1, new_b1
         self.pop_W2, self.pop_B2 = new_w2, new_b2
-
+        
         # Clamp thresholds to valid probability range
         self.thresholds = torch.clamp(new_thresh, 0.10, 0.85)
-
+        
         # Inject high-vitality genes into weakest individuals
         self.run_atomic_scan()
 
@@ -711,7 +733,7 @@ class PulsarSingularity(Singularity):
             - Emits a verbose log message when enabled.
             - Safely extracts and bundles Redshift global scaling physics.
         """
-        # Determine current F1 and if it's worth saving
+        # Determine current best F1
         current_best_f1 = torch.max(self.latest_f1).item() if self.latest_f1 is not None else -1.0
         
         # PERSISTENCE GATE: Only save if F1 has improved
@@ -719,22 +741,26 @@ class PulsarSingularity(Singularity):
             if self.verbose:
                 print(f"🛑 [Singularity]: Save aborted. {current_best_f1:.4f} is not better than {self.global_best_f1:.4f}")
             return
-
-        # Determine which population member to persist
+        
+        # FIXED: Determine which population member to persist - ALWAYS the best one
         if winner_idx is None:
             if self.latest_f1 is not None:
-                # Select best individual based on latest F1 performance
+                # Select best individual based on latest F1 performance (not just index 0)
                 winner_idx = torch.argmax(self.latest_f1).item()
+                if self.verbose:
+                    print(f"  📍 [Singularity]: Saving best model at index {winner_idx} with F1={current_best_f1:.4f}")
             else:
                 # Fallback to the first population member
                 winner_idx = 0
-
+                if self.verbose:
+                    print(f"  ⚠️ [Singularity]: No F1 scores, saving index 0")
+        
         # Extract gene indices for the winning individual
         winner_genes = self.population[winner_idx].cpu().tolist()
-
+        
         # Map gene indices back to original feature names
         atomic_feature_map = [self.feature_names[i] for i in winner_genes]
-
+        
         # Assemble serializable model state
         state = {
             # Population is remapped to a compact [0..N-1] index space
@@ -748,7 +774,7 @@ class PulsarSingularity(Singularity):
             'config': self.config,
             'f1': current_best_f1
         }
-
+        
         # --- FACTORY SPEC FIX: Inject Scaling Physics ---
         # We need the global Means and Stds specifically for the winner_genes
         if hasattr(universe, '_normalizers') and 'Redshift' in universe._normalizers:
@@ -766,10 +792,10 @@ class PulsarSingularity(Singularity):
                 except Exception as e:
                     if self.verbose:
                         print(f"⚠️ [Singularity]: Failed to extract Redshift physics: {e}")
-
+        
         # Delegate persistence to universe
         universe.eject(filename, state, is_model=True)
-
+        
         # Optional logging
         if self.verbose:
             print(
