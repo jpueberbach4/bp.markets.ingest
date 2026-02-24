@@ -305,11 +305,19 @@ class PulsarSingularity(Singularity):
                 # Forward pass
                 logits = self._forward(x_train, w1, b1, w2, b2)
 
-                # Custom loss + sparsity penalty
-                loss = (
-                    self.spectrograph.analyze(logits, y_train)
-                    + (torch.sigmoid(logits).mean() * self.penalty_coeff)
-                )
+                # FIX: Stable sparsity penalty using MSE against target density
+                # Models got broken since loss applied got way too high
+                main_loss = self.spectrograph.analyze(logits, y_train)
+                
+                # MSE penalty to guide toward target density (prevents -∞ drift)
+                target_mean = torch.tensor(self.target_density, device=self.device)
+                current_mean = torch.sigmoid(logits).mean()
+                sparsity_penalty = self.penalty_coeff * F.mse_loss(current_mean, target_mean)
+                
+                # Small L1 penalty on output bias to prevent extreme values
+                b2_penalty = 0.001 * torch.abs(b2).mean()
+                
+                loss = main_loss + sparsity_penalty + b2_penalty
 
                 # Backpropagation
                 loss.backward()
