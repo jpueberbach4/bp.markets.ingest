@@ -448,6 +448,8 @@ class PulsarSingularity(Singularity):
         self.latest_f1 = res["f1"].clone()
         self.latest_score = res["score"].clone()
 
+        
+
         return res
 
     def run_atomic_scan(self):
@@ -480,6 +482,8 @@ class PulsarSingularity(Singularity):
 
         # Select indices of top-N most vital genes
         pool = torch.argsort(vitality, descending=True)[:pool_size]
+
+        assert len(pool) == len(torch.unique(pool)), "Vitality pool contains duplicates!"
 
         # Define the cutoff for weakest population members (bottom 20%)
         start_idx = int(self.pop_size * 0.8)
@@ -610,29 +614,31 @@ class PulsarSingularity(Singularity):
                 # One-point crossover on gene indices
                 cut = torch.randint(0, self.gene_count, (1,)).item()
                 
-                # FIX: Ensure unique genes after crossover
+                # OPTIMIZED: Ensure unique genes after crossover
                 # Concatenate genes from both parents
                 child_genes = torch.cat([
                     self.population[p1, :cut],
                     self.population[p2, cut:]
                 ])
                 
-                # Check for duplicates and fix if necessary
-                unique_genes, inverse = torch.unique(child_genes, return_inverse=True)
-                if len(unique_genes) < self.gene_count:
+                # Fast uniqueness check using broadcasting
+                unique_mask = torch.zeros(len(self.feature_names), dtype=torch.bool, device=self.device)
+                unique_mask[child_genes] = True
+                unique_count = unique_mask.sum().item()
+                
+                if unique_count < self.gene_count:
                     # We have duplicates - need to replace them
                     
-                    # Get set of all possible gene indices
-                    all_indicators = set(range(len(self.feature_names)))
-                    used_indicators = set(unique_genes.tolist())
-                    available = list(all_indicators - used_indicators)
+                    # Get available genes (not in child_genes)
+                    available_mask = ~unique_mask
+                    available = torch.where(available_mask)[0].cpu().numpy()
                     
-                    # Start with unique genes
-                    fixed_genes = unique_genes.tolist()
+                    # Get unique genes (remove duplicates)
+                    fixed_genes = child_genes.unique().tolist()
                     
                     # Fill remaining slots with random available genes
                     needed = self.gene_count - len(fixed_genes)
-                    if needed > 0 and available:
+                    if needed > 0 and len(available) >= needed:
                         # Randomly sample without replacement
                         new_genes = np.random.choice(available, needed, replace=False).tolist()
                         fixed_genes.extend(new_genes)
@@ -657,16 +663,19 @@ class PulsarSingularity(Singularity):
                 # Clone parent genes
                 child_genes = self.population[p1].clone()
                 
-                # FIX: Apply gene-level mutation with uniqueness check
+                # OPTIMIZED: Apply gene-level mutation with uniqueness check
                 # 30% chance to mutate genes (in addition to weight mutation)
                 if torch.rand(1).item() < 0.3:
                     # Randomly select how many genes to mutate (1-3)
                     n_mutations = torch.randint(1, min(4, self.gene_count), (1,)).item()
                     
-                    # Get current gene set
-                    current_set = set(child_genes.tolist())
-                    all_indicators = set(range(len(self.feature_names)))
-                    available = list(all_indicators - current_set)
+                    # Fast uniqueness check for current genes
+                    current_unique_mask = torch.zeros(len(self.feature_names), dtype=torch.bool, device=self.device)
+                    current_unique_mask[child_genes] = True
+                    
+                    # Get available genes
+                    available_mask = ~current_unique_mask
+                    available = torch.where(available_mask)[0].cpu().numpy()
                     
                     if len(available) >= n_mutations:
                         # Randomly choose positions to mutate
@@ -697,27 +706,37 @@ class PulsarSingularity(Singularity):
                     + torch.randn(1, device=self.device).squeeze() * 0.01
                 )
         
-        # FIX: Final uniqueness verification across entire population
-        for i in range(self.pop_size):
+        # OPTIMIZED: Final uniqueness verification across entire population (vectorized)
+        # Create boolean mask for all genes at once
+        all_genes = new_pop  # Shape: (pop_size, gene_count)
+        pop_size, gene_count = all_genes.shape
+        
+        # Sort each row to detect duplicates
+        sorted_genes, _ = torch.sort(all_genes, dim=1)
+        # Duplicates exist if consecutive elements are equal
+        dup_mask = (sorted_genes[:, 1:] == sorted_genes[:, :-1]).any(dim=1)
+        
+        # Get indices of individuals with duplicates
+        dup_indices = torch.where(dup_mask)[0].cpu().numpy()
+        
+        for i in dup_indices:
+            # Fix duplicates for this individual
             genes = new_pop[i]
-            if len(torch.unique(genes)) < self.gene_count:
-                # Fix any remaining duplicates
+            unique_genes = genes.unique()
+            fixed_genes = unique_genes.tolist()
+            
+            # Vectorized available gene calculation
+            used_mask = torch.zeros(len(self.feature_names), dtype=torch.bool, device=self.device)
+            used_mask[fixed_genes] = True
+            available = torch.where(~used_mask)[0].cpu().numpy()
+            
+            needed = self.gene_count - len(fixed_genes)
+            if needed > 0 and len(available) >= needed:
+                new_genes = np.random.choice(available, needed, replace=False).tolist()
+                fixed_genes.extend(new_genes)
+                new_pop[i] = torch.tensor(fixed_genes, device=self.device)
                 if self.verbose:
                     print(f"    🔧 Post-processing fix for individual {i}")
-                
-                unique_genes = torch.unique(genes)
-                fixed_genes = unique_genes.tolist()
-                
-                all_indicators = set(range(len(self.feature_names)))
-                used_indicators = set(fixed_genes)
-                available = list(all_indicators - used_indicators)
-                
-                needed = self.gene_count - len(fixed_genes)
-                if needed > 0 and available:
-                    new_genes = np.random.choice(available, needed, replace=False).tolist()
-                    fixed_genes.extend(new_genes)
-                
-                new_pop[i] = torch.tensor(fixed_genes, device=self.device)
         
         # FIXED: Final sanity check - ensure champion still exists after crossover/mutation
         champ_mask_final = (new_pop == champ_pop.unsqueeze(0)).all(dim=1)
