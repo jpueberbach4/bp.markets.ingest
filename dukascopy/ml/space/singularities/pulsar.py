@@ -105,8 +105,10 @@ class PulsarSingularity(Singularity):
         self.feature_names = None
         
         self.global_best_f1 = -1.0
+        self.global_best_prec = 0.0  # Track best precision for tie-breaking
         self.latest_f1 = None
         self.latest_score = None
+        self.latest_precision = None  # Track latest precision values
 
     def compress(self, universe):
         """Initializes population parameters and encodes universe data for training.
@@ -456,17 +458,26 @@ class PulsarSingularity(Singularity):
         # Cache latest metrics
         self.latest_f1 = res["f1"].clone()
         self.latest_score = res["score"].clone()
+        self.latest_precision = res["precision"].clone()  # NEW: Track precision
 
-        # FIXED: Update global best F1 here, after evaluation
-        gen_best_f1 = torch.max(self.latest_f1).item()
+        # FIXED: Update global best F1 and precision here, after evaluation
+        gen_best_idx = torch.argmax(self.latest_f1).item()
+        gen_best_f1 = self.latest_f1[gen_best_idx].item()
+        gen_best_prec = self.latest_precision[gen_best_idx].item()
+        
+        improved = False
         if gen_best_f1 > self.global_best_f1:
+            improved = True
+            reason = f"new F1 record ({gen_best_f1:.4f} > {self.global_best_f1:.4f})"
+        elif gen_best_f1 == self.global_best_f1 and gen_best_prec > self.global_best_prec:
+            improved = True
+            reason = f"same F1 ({gen_best_f1:.4f}) but better precision ({gen_best_prec:.4f} > {self.global_best_prec:.4f})"
+        
+        if improved:
             if self.verbose:
-                print(
-                    f"🔥 [Evolution]: New F1 High-Water Mark: "
-                    f"{gen_best_f1:.4f} "
-                    f"(Global Best was {self.global_best_f1:.4f})"
-                )
+                print(f"🔥 [Evolution]: New High-Water Mark: {reason}")
             self.global_best_f1 = gen_best_f1
+            self.global_best_prec = gen_best_prec
 
         return res
 
@@ -826,14 +837,30 @@ class PulsarSingularity(Singularity):
             - Emits a verbose log message when enabled.
             - Safely extracts and bundles Redshift global scaling physics.
         """
-        # Determine current best F1
+        # Determine current best F1 and precision
         current_best_f1 = torch.max(self.latest_f1).item() if self.latest_f1 is not None else -1.0
+        current_best_idx = torch.argmax(self.latest_f1).item() if self.latest_f1 is not None else 0
+        current_best_prec = self.latest_precision[current_best_idx].item() if self.latest_precision is not None else 0.0
         
-        # PERSISTENCE GATE: Only save if F1 has improved
-        # FIXED: Now works correctly because global_best_f1 is updated after evaluation
-        if current_best_f1 <= self.global_best_f1 and self.global_best_f1 > 0:
+        # PERSISTENCE GATE: Only save if F1 has improved OR F1 equal with better precision
+        should_save = False
+        reason = ""
+        
+        if current_best_f1 > self.global_best_f1:
+            should_save = True
+            reason = f"new F1 record ({current_best_f1:.4f} > {self.global_best_f1:.4f})"
+        elif current_best_f1 == self.global_best_f1 and self.global_best_f1 > 0:
+            if current_best_prec > self.global_best_prec:
+                should_save = True
+                reason = f"same F1 ({current_best_f1:.4f}) but better precision ({current_best_prec:.4f} > {self.global_best_prec:.4f})"
+            else:
+                reason = f"same F1 ({current_best_f1:.4f}) but precision not improved"
+        else:
+            reason = f"{current_best_f1:.4f} is not better than {self.global_best_f1:.4f}"
+        
+        if not should_save:
             if self.verbose:
-                print(f"🛑 [Singularity]: Save aborted. {current_best_f1:.4f} is not better than {self.global_best_f1:.4f}")
+                print(f"🛑 [Singularity]: Save aborted. {reason}")
             return
         
         # FIXED: Determine which population member to persist - ALWAYS the best one
@@ -842,7 +869,7 @@ class PulsarSingularity(Singularity):
                 # Select best individual based on latest F1 performance (not just index 0)
                 winner_idx = torch.argmax(self.latest_f1).item()
                 if self.verbose:
-                    print(f"  📍 [Singularity]: Saving best model at index {winner_idx} with F1={current_best_f1:.4f}")
+                    print(f"  📍 [Singularity]: Saving best model at index {winner_idx} with F1={current_best_f1:.4f}, Precision={current_best_prec:.4f}")
             else:
                 # Fallback to the first population member
                 winner_idx = 0
@@ -866,7 +893,8 @@ class PulsarSingularity(Singularity):
             'B2': self.pop_B2[winner_idx].cpu(),
             'feature_names': atomic_feature_map,
             'config': self.config,
-            'f1': current_best_f1
+            'f1': current_best_f1,
+            'precision': current_best_prec  # NEW: Save precision too
         }
         
         # --- FACTORY SPEC FIX: Inject Scaling Physics ---
@@ -894,7 +922,7 @@ class PulsarSingularity(Singularity):
         if self.verbose:
             print(
                 f"🥇 [Singularity]: Atomic Winner Ejected. "
-                f"Features: {len(atomic_feature_map)} | F1: {current_best_f1:.4f}"
+                f"Features: {len(atomic_feature_map)} | F1: {current_best_f1:.4f} | Precision: {current_best_prec:.4f}"
             )
 
     def state_dict(self):
