@@ -47,6 +47,10 @@
       This system intentionally blends deterministic gradient descent with
       stochastic evolutionary pressure. Correct elite preservation is
       critical; subtle ordering bugs can materially degrade performance.
+
+ TODO: 
+      Start splitting this up to helper classes. Code is becoming massive.
+      Also, cleanup the code.
 ===============================================================================
 """
 import torch
@@ -62,8 +66,8 @@ from ml.space.lenses.spectograph import Spectrograph
 
 class PulsarSingularity(Singularity):
     """
-    1.4.8 Fix and polish: elite preservation fix. This is hard stuff. Brr
-    Includes Factory Spec Global Physics locking.
+    2.0 This is actually a nice version. We should continue on another singularity class.
+        Keep this one.
     """
     def __init__(self, config):
         
@@ -86,11 +90,11 @@ class PulsarSingularity(Singularity):
         self.weight_mutation_rate = float(self.config.get("weight_mutation_rate", 0.005))
         self.verbose = bool(self.config.get("verbose", True))
 
-        # FACTORY SPEC: Set random seeds for reproducibility
+        # Set random seeds for reproducibility
         self.seed = self.config.get('seed', 42)
         torch.manual_seed(self.seed)
         np.random.seed(self.seed)
-        # FIXED: Create separate generators for CPU and CUDA operations
+        # Create separate generators for CPU and CUDA operations
         self.torch_generator = torch.Generator(device='cpu').manual_seed(self.seed)
         if self.device.type == 'cuda':
             self.cuda_generator = torch.Generator(device=self.device).manual_seed(self.seed)
@@ -310,7 +314,7 @@ class PulsarSingularity(Singularity):
                 # Backpropagation
                 loss.backward()
 
-                # FIXED: Freeze champion individuals (indices 0 and 1) regardless of chunk
+                # Freeze champion individuals (indices 0 and 1) regardless of chunk
                 # Find which individuals in this chunk are the top 2
                 chunk_indices_global = torch.arange(i, end_i, device=self.device)
                 elite_mask = (chunk_indices_global == 0) | (chunk_indices_global == 1)
@@ -463,9 +467,9 @@ class PulsarSingularity(Singularity):
         # Cache latest metrics
         self.latest_f1 = res["f1"].clone()
         self.latest_score = res["score"].clone()
-        self.latest_precision = res["precision"].clone()  # NEW: Track precision
+        self.latest_precision = res["precision"].clone()  # Track precision
 
-        # FIXED: Determine if we should save BEFORE updating global best
+        # Determine if we should save BEFORE updating global best
         gen_best_idx = torch.argmax(self.latest_f1).item()
         gen_best_f1 = self.latest_f1[gen_best_idx].item()
         gen_best_prec = self.latest_precision[gen_best_idx].item()
@@ -604,7 +608,7 @@ class PulsarSingularity(Singularity):
         self.pop_W2, self.pop_B2 = self.pop_W2[idx], self.pop_B2[idx]
         f1_scores = f1_scores[idx]  # Also reorder F1 scores for consistency
         
-        # FIXED: Remove global best update from here - moved to run_generation
+        # Remove global best update from here - moved to run_generation
         
         # Number of elite individuals preserved unchanged
         keep = max(2, self.pop_size // 10)
@@ -615,7 +619,7 @@ class PulsarSingularity(Singularity):
         new_w2, new_b2 = self.pop_W2.clone(), self.pop_B2.clone()
         new_thresh = self.thresholds.clone()
         
-        # FIXED: Force champion into top 2 positions using stored state (not gene comparison)
+        # Force champion into top 2 positions using stored state (not gene comparison)
         # Always put champion in slot 1 (keep slot 0 as best by score)
         new_pop[1] = champ_pop
         new_w1[1], new_b1[1] = champ_w1, champ_b1
@@ -763,7 +767,7 @@ class PulsarSingularity(Singularity):
                 if self.verbose:
                     print(f"    🔧 Post-processing fix for individual {i}")
         
-        # FIXED: Final sanity check - ensure champion still exists (using stored state, not gene comparison)
+        # Final sanity check - ensure champion still exists (using stored state, not gene comparison)
         champ_exists = (new_pop == champ_pop.unsqueeze(0)).all(dim=1).any()
         if not champ_exists:
             # Champion was lost during crossover/mutation - restore it
@@ -781,9 +785,6 @@ class PulsarSingularity(Singularity):
         
         # Clamp thresholds to valid probability range
         self.thresholds = torch.clamp(new_thresh, 0.10, 0.85)
-        
-        # FIXED: Atomic scan moved to separate phase (call it from training loop, not here)
-        # self.run_atomic_scan()
 
     def emit(self, features: pd.DataFrame) -> np.ndarray:
         """Generates binary signals from input features using the best individual.
@@ -854,47 +855,46 @@ class PulsarSingularity(Singularity):
                 - Emits a verbose log message when enabled.
                 - Safely extracts and bundles Redshift global scaling physics.
         """
-        # Determine current best F1 and precision
-        current_best_f1 = torch.max(self.latest_f1).item() if self.latest_f1 is not None else -1.0
-        current_best_idx = torch.argmax(self.latest_f1).item() if self.latest_f1 is not None else 0
-        current_best_prec = self.latest_precision[current_best_idx].item() if self.latest_precision is not None else 0.0
-        
-        # PERSISTENCE GATE: Only save if F1 has improved OR F1 equal with better precision
-        should_save = False
-        reason = ""
-        
-        if current_best_f1 > self.global_best_f1:
-            should_save = True
-            reason = f"new F1 record ({current_best_f1:.4f} > {self.global_best_f1:.4f})"
-            # Update global best precision when F1 improves
-            self.global_best_prec = current_best_prec
-        elif current_best_f1 == self.global_best_f1 and self.global_best_f1 > 0:
-            if current_best_prec > self.global_best_prec:
-                should_save = True
-                reason = f"same F1 ({current_best_f1:.4f}) but better precision ({current_best_prec:.4f} > {self.global_best_prec:.4f})"
-                self.global_best_prec = current_best_prec
-            else:
-                reason = f"same F1 ({current_best_f1:.4f}) but precision not improved"
-        else:
-            reason = f"{current_best_f1:.4f} is not better than {self.global_best_f1:.4f}"
-        
-        if not should_save:
+        # Check pending save flags first
+        if hasattr(self, '_pending_save') and self._pending_save:
+            # Use the pending save info
+            current_best_f1 = self._pending_save_f1
+            current_best_prec = self._pending_save_prec
+            if winner_idx is None:
+                winner_idx = self._pending_save_idx
+            # Clear the pending flag
+            self._pending_save = False
             if self.verbose:
-                print(f"🛑 [Singularity]: Save aborted. {reason}")
-            return
-        
-        # FIXED: Determine which population member to persist - ALWAYS the best one
-        if winner_idx is None:
-            if self.latest_f1 is not None:
-                # Select best individual based on latest F1 performance (not just index 0)
-                winner_idx = torch.argmax(self.latest_f1).item()
-                if self.verbose:
-                    print(f"  📍 [Singularity]: Saving best model at index {winner_idx} with F1={current_best_f1:.4f}, Precision={current_best_prec:.4f}")
+                print(f"  📍 [Singularity]: Saving pending best model with F1={current_best_f1:.4f}, Precision={current_best_prec:.4f}")
+        else:
+            # Fall back to old logic (though this should rarely happen)
+            current_best_f1 = torch.max(self.latest_f1).item() if self.latest_f1 is not None else -1.0
+            current_best_idx = torch.argmax(self.latest_f1).item() if self.latest_f1 is not None else 0
+            current_best_prec = self.latest_precision[current_best_idx].item() if self.latest_precision is not None else 0.0
+            
+            # Only save if F1 has improved OR F1 equal with better precision
+            should_save = False
+            reason = ""
+            
+            if current_best_f1 > self.global_best_f1:
+                should_save = True
+                reason = f"new F1 record ({current_best_f1:.4f} > {self.global_best_f1:.4f})"
+            elif current_best_f1 == self.global_best_f1 and self.global_best_f1 > 0:
+                if current_best_prec > self.global_best_prec:
+                    should_save = True
+                    reason = f"same F1 ({current_best_f1:.4f}) but better precision ({current_best_prec:.4f} > {self.global_best_prec:.4f})"
+                else:
+                    reason = f"same F1 ({current_best_f1:.4f}) but precision not improved"
             else:
-                # Fallback to the first population member
-                winner_idx = 0
+                reason = f"{current_best_f1:.4f} is not better than {self.global_best_f1:.4f}"
+            
+            if not should_save:
                 if self.verbose:
-                    print(f"  ⚠️ [Singularity]: No F1 scores, saving index 0")
+                    print(f"🛑 [Singularity]: Save aborted. {reason}")
+                return
+            
+            if winner_idx is None:
+                winner_idx = current_best_idx
         
         # Extract gene indices for the winning individual
         winner_genes = self.population[winner_idx].cpu().tolist()
@@ -917,7 +917,6 @@ class PulsarSingularity(Singularity):
             'precision': current_best_prec  # NEW: Save precision too
         }
         
-        # --- FACTORY SPEC FIX: Inject Scaling Physics ---
         # We need the global Means and Stds specifically for the winner_genes
         if hasattr(universe, '_normalizers') and 'Redshift' in universe._normalizers:
             redshift = universe._normalizers['Redshift']
