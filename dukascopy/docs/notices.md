@@ -29,6 +29,10 @@ This is a permission system.
 
 That alone is alpha-if confirmed ok.
 
+I did not include the Andromeda config, but the milkyway one instead. The frontrunner. The below example is made with the default shared indicators. If you run the MilkyWay example, and have done the `./setup-dukascopy.sh` you should get models, that, when queried. Should give something like this. Note: the default indicators are not optimal. You need to put a bit of your own secret-sauce into it. "Simple fixes on the shared indicators are needed".
+
+![MilkyWay](../images/milkyway-default-config.png)
+
 PS. I have merged the latest code. Although the signals are "scale minimum", you can increase it by applying eg 1e10 in the `example-mt-pl` indicator. This is for now a workaround. Today is a special day so no updates today.
 
  
