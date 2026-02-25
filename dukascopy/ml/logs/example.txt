@@ -1,0 +1,146 @@
+🛰️ [Space]: Passing coordinates: --universe MilkyWay
+🌌 [Space]: Materializing MilkyWay for EUR-USD... 1640991600000 -> 1767135600000
+☄️ [Space]: Establishing Orbit for Hale-Bopp. Tail length: 100
+☄️ [Space]: Establishing Orbit for Halley. Tail length: 100
+☄️ [Halley]: Picked up speed.
+🌀 [Singularity]: Initialized on cuda
+🔬 [Spectrograph]: Instrument active using GravitationalLens configuration.
+🌌 [Space]: Igniting MilkyWay for EUR-USD...
+🌌 [Space]: Temporal boundary detected at 2025-12-30. Beyond this, there is only the future.
+📊 [Data Audit]: target_col: example-pivot-finder_30_bottoms
+📊 [Data Audit]: Total Bars: 6207
+📊 [Data Audit]: Signals found: 65
+🧹 [Space]: Radiated 1 string-polluted dimensions.
+✅ [Space]: Discovered 98 valid dimensions.
+🔭 [Space]: Applying Cosmic Normalization (Redshift & Kinematics)...
+🌌 [Space]: Establishing physics. Z-Score normalization.
+
+🔬 [Spectrograph]: Dimension Audit Report
+============================================================
+🚫 [Atmospheric Waste]: 1 dimensions dropped (Non-Numeric/Strings)
+   - fractaldimension_30__market_state
+------------------------------------------------------------
+💎 Matter Check: All 98 dimensions are solid (0 NaNs).
+============================================================
+💥 [Space]: Big Bang Successful! 98 dimensions normalized.
+🚀 [Flight]: Firing up warp-drive of MilleniumFalcon
+
+============================================================
+🚀 [Flight]: Commencing Generation 1/4000
+============================================================
+Chunk 0 | MaxP: 1.000 | Targets: 21 | Fired: 173 | F1: 0.1481
+Chunk 1 | MaxP: 1.000 | Targets: 21 | Fired: 192 | F1: 0.1481
+🔥 [Evolution]: New High-Water Mark: new F1 record (0.1481 > -1.0000)
+
+📊 [Gen 1 Summary] (6.6s)
+   F1:         Avg 0.0114 | Max 0.1481
+   Precision:  Avg 0.0156 | Max 0.3333
+   Activity:   Total Sigs 5995 | Density 0.3218%
+   Winner Sigs: 6
+🔍 [Diagnostic]: Model 374 fired at bars: [28, 1511, 1512, 1517, 1630, 1631]
+🏆 [Flight]: New Alpha Peak! 0.1481 beats -1.0000
+📍 [Singularity]: Saving pending best model with F1=0.1481, Precision=0.3333
+🥇 [Singularity]: Atomic Winner Ejected. Features: 24 | F1: 0.1481 | Precision: 0.3333
+☄️ [Halley]: Making a pass.
+☄️ [Hale-Bopp]: Perihelion reached. Ejecting core payload to 'checkpoints/model-best-gen1-f1-0.1481.pt'.
+
+🧬 [Gene Vitality Top 10]:
+   1. example-multi-tf-rsi_USA500.IDX-USD_14_14_14_14__rsi1W | Score: 0.0115
+   2. example-multi-tf-rsi_BUND.TR-EUR_14_14_14_14__rsi4h | Score: 0.0114
+   3. example-multi-tf-rsi_DOLLAR.IDX-USD_14_14_14_14__rsi1W | Score: 0.0111
+   4. bbands-width_20_2.0__width | Score: 0.0111
+   5. example-cross-divergence_USD-CHF_USD-JPY_20_rsi_14 | Score: 0.0111
+   6. uo_7_14_20           | Score: 0.0110
+   7. keltner_20_1.5__upper | Score: 0.0107
+   8. fractaldimension_30__fractal_dim | Score: 0.0105
+   9. example-cross-divergence_DEU.IDX-EUR_BUND.TR-EUR_20_rsi_14 | Score: 0.0105
+   10. adl                  | Score: 0.0104
+💎 [Singularity]: Quantum Lock: Champion (F1=0.1481) pinned to Elite Slot 1
+
+============================================================
+🚀 [Flight]: Commencing Generation 2/4000
+============================================================
+Chunk 0 | MaxP: 0.572 | Targets: 21 | Fired: 47 | F1: 0.1481
+Chunk 1 | MaxP: 0.504 | Targets: 21 | Fired: 37 | F1: 0.1176
+
+📊 [Gen 2 Summary] (5.0s)
+   F1:         Avg 0.0036 | Max 0.1481
+   Precision:  Avg 0.0054 | Max 0.3333
+   Activity:   Total Sigs 958 | Density 0.0514%
+   Winner Sigs: 6
+🔍 [Diagnostic]: Model 0 fired at bars: [28, 1511, 1512, 1517, 1630, 1631]
+📉 [Flight]: No improvement. Stagnation: 1/200
+           Current Best F1: 0.1481 (Gen 1)
+
+🧬 [Gene Vitality Top 10]:
+   1. example-multi-tf-rsi_EUR-USD_14_14_14_14__rsi1d | Score: 0.0073
+   2. example-multi-tf-rsi_XAU-USD_14_14_14_14__rsi4h | Score: 0.0073
+   3. obv                  | Score: 0.0071
+   4. example-multi-tf-rsi_USD-CHF_14_14_14_14__rsi1d | Score: 0.0068
+   5. atrp_14              | Score: 0.0068
+   6. example-multi-tf-rsi_DOLLAR.IDX-USD_14_14_14_14__rsi1W | Score: 0.0068
+   7. keltner_20_1.5__upper | Score: 0.0066
+   8. atr_14               | Score: 0.0065
+   9. zscore_20__z_score   | Score: 0.0065
+   10. adl                  | Score: 0.0065
+💎 [Singularity]: Quantum Lock: Champion (F1=0.1481) pinned to Elite Slot 1
+
+============================================================
+🚀 [Flight]: Commencing Generation 3/4000
+============================================================
+Chunk 0 | MaxP: 0.458 | Targets: 21 | Fired: 7 | F1: 0.1481
+Chunk 1 | MaxP: 0.272 | Targets: 21 | Fired: 0 | F1: 0.0000
+
+📊 [Gen 3 Summary] (5.0s)
+   F1:         Avg 0.0004 | Max 0.1481
+   Precision:  Avg 0.0008 | Max 0.3333
+   Activity:   Total Sigs 19 | Density 0.0010%
+   Winner Sigs: 6
+🔍 [Diagnostic]: Model 0 fired at bars: [28, 1511, 1512, 1517, 1630, 1631]
+📉 [Flight]: No improvement. Stagnation: 2/200
+           Current Best F1: 0.1481 (Gen 1)
+
+🧬 [Gene Vitality Top 10]:
+   1. example-multi-tf-rsi_EUR-USD_14_14_14_14__rsi1d | Score: 0.0141
+   2. keltner_20_1.5__upper | Score: 0.0140
+   3. atrp_14              | Score: 0.0138
+   4. zscore_20__z_score   | Score: 0.0136
+   5. obv                  | Score: 0.0134
+   6. example-cross-divergence_USD-CHF_XAU-USD_20_rsi_14 | Score: 0.0134
+   7. example-cross-divergence_EUR-USD_GBP-USD_20_rsi_14 | Score: 0.0132
+   8. atr_14               | Score: 0.0132
+   9. example-multi-tf-rsi_XAU-USD_14_14_14_14__rsi4h | Score: 0.0131
+   10. example-multi-tf-rsi_XAU-USD_14_14_14_14__rsi1d | Score: 0.0131
+💎 [Singularity]: Quantum Lock: Champion (F1=0.1481) pinned to Elite Slot 1
+
+============================================================
+🚀 [Flight]: Commencing Generation 4/4000
+============================================================
+Chunk 0 | MaxP: 0.462 | Targets: 21 | Fired: 26 | F1: 0.2222
+Chunk 1 | MaxP: 0.424 | Targets: 21 | Fired: 12 | F1: 0.2000
+🔥 [Evolution]: New High-Water Mark: new F1 record (0.2222 > 0.1481)
+
+📊 [Gen 4 Summary] (5.1s)
+   F1:         Avg 0.0051 | Max 0.2222
+   Precision:  Avg 0.0101 | Max 0.5000
+   Activity:   Total Sigs 423 | Density 0.0227%
+   Winner Sigs: 6
+🔍 [Diagnostic]: Model 3 fired at bars: [444, 561, 563, 731, 942, 1217]
+🏆 [Flight]: New Alpha Peak! 0.2222 beats 0.1481
+📍 [Singularity]: Saving pending best model with F1=0.2222, Precision=0.5000
+🥇 [Singularity]: Atomic Winner Ejected. Features: 24 | F1: 0.2222 | Precision: 0.5000
+☄️ [Halley]: Making a pass.
+☄️ [Hale-Bopp]: Perihelion reached. Ejecting core payload to 'checkpoints/model-best-gen4-f1-0.2222.pt'.
+
+🧬 [Gene Vitality Top 10]:
+   1. obv                  | Score: 0.0110
+   2. example-multi-tf-rsi_EUR-USD_14_14_14_14__rsi1d | Score: 0.0107
+   3. example-multi-tf-rsi_DOLLAR.IDX-USD_14_14_14_14__rsi1W | Score: 0.0106
+   4. bbands_20_2.0__lower | Score: 0.0104
+   5. example-cross-divergence_USD-CHF_XAU-USD_20_rsi_14 | Score: 0.0100
+   6. example-multi-tf-rsi_USD-JPY_14_14_14_14__rsi4h | Score: 0.0099
+   7. atrp_14              | Score: 0.0098
+   8. example-multi-tf-rsi_XAU-USD_14_14_14_14__rsi4h | Score: 0.0098
+   9. example-multi-tf-rsi_USD-CHF_14_14_14_14__rsi1d | Score: 0.0098
+   10. example-multi-tf-rsi_USD-JPY_14_14_14_14__rsi | Score: 0.0098
+💎 [Singularity]: Quantum Lock: Champion (F1=0.2222) pinned to Elite Slot 1
