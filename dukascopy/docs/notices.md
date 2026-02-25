@@ -35,6 +35,9 @@ I did not include the Andromeda config, but the milkyway one instead. The frontr
 
 PS. I have merged the latest code. Although the signals are "scale minimum", you can increase it by applying eg 1e10 in the `example-mt-pl` indicator. This is for now a workaround. Today is a special day so no updates today.
 
+**Why a cosmic theme?**
+It’s a fair question. Over the course of my professional career, I’ve stared at an endless sea of dull, lifeless log messages. At some point, I decided to do things differently. Instead of sterile outputs, I wanted something with character—something that tells a story. The cosmic theme adds a human, narrative layer to the system, turning raw mechanics into a journey rather than just another stream of logs.
+
  
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
