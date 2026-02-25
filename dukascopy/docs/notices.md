@@ -16,8 +16,21 @@ Important: Tbh this is -almost- "too perfect". 25 percent 2-5 candles before low
 
 To be continued,...
 
-PS i do shift 1 bar on divergence and the custom multi tf rsi indicators to avoid opencandles problem. i need to double, triple check this part.
+~~PS i do shift 1 bar on divergence and the custom multi tf rsi indicators to avoid opencandles problem. i need to double, triple check this part.~~ This part is ok.
 
+So what remains is a real forward test on this model. The model works for all *USD pairs.
+
+I am currently treating the model's output like this:
+
+This is not a trade trigger.
+This is a permission system.
+
+“If this fires, I am allowed to look.”
+
+That alone is alpha-if confirmed ok.
+
+PS. I have merged the latest code. Although the signals are "scale minimum", you can increase it by applying eg 1e10 in the `example-mt-pl` indicator. This is for now a workaround. Today is a special day so no updates today.
+ 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
