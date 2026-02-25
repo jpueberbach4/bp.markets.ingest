@@ -84,6 +84,22 @@ Expect it to grind for a couple of days before it returns something really usefu
 
 For normal setups: dont use kinematics. Try first with normal indicator values.
 
+## Extending the code
+
+The code can be easily extend by just specifying your own classes in a java-alike notation witin the config-file.
+
+`config.user.ml.comets.Halley` (Example is present in config directory)
+
+Extensions are possible for:
+
+- comets
+- flights
+- normalizers
+- singularities
+- universes
+
+Note that the custom classes need to extend the specific baseclasses.
+
 ## Structure
 
 ```sh
