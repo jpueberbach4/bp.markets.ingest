@@ -29,6 +29,8 @@
   - Details on CSV->Parquet conversion
 - [HTTP API service](docs/http.md)
   - Details on HTTP API
+- [Neuro-evolution](ml/readme.MD)
+  - Details on detecting sparse events
 - [Fail-Fast](docs/architecture.md#fail-fast)
 - [Directory Structure](docs/architecture.md#directory-structure)
 - [Troubleshooting](docs/troubleshooting.md)
@@ -57,6 +59,8 @@ The system incrementally updates market data, resampling completed 1-minute cand
 Data can be queried or constructed directly from a WSL2 terminal or via an HTTP API service. Designed by a trader, for traders, BP-Markets focuses on performance, accuracy, and workflow efficiency. Future releases will introduce high-performance backtesting capabilities that fully eliminate lookahead bias. \
 \
 The tool features a customizable, advanced (hybrid) indicator engine and uses an internal API to query data across assets and timeframes, including access to indicator values from other instruments. Indicators can be expressed as Polars-expressions or implemented on Pandas dataframes directly. \
+\
+It also features an experimental Neuro-evolution engine to build ML models for sparse event detection. Example for macro-driven bottom-sniping included. This is a research-item on how to use ML for hunting an alpha-edge.
 \
 Any modern laptop having NVMe will do. Storage requirements are about 1 GB per configured symbol. \
 \

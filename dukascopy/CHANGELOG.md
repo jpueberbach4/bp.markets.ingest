@@ -87,5 +87,14 @@ Non-breaking.
 !!BREAKING!! FOR TEXT MODE USERS. SWITCH TO BINARY MODE. SEE DOCUMENTATION.
 YOU WILL GET A LOT OF BENEFITS WITH BINARY MODE
 
+## [0.6.8-beta] - 2026-02-25
 
+- **Feature**: Performance improvements
+- **Feature**: Neuro-evolution for sparse event detection
+- **Feature**: More example indicators
+- **Feature**: Config generators for Panama-backadjustment-alike sidetracked datasets
+- **Feature**: Other additions
+- **Documentation**: Updated README with instructions
 
+### For Existing Users
+Non-breaking.
