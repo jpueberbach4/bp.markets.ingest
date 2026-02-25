@@ -18,7 +18,7 @@ To be continued,...
 
 ~~PS i do shift 1 bar on divergence and the custom multi tf rsi indicators to avoid opencandles problem. i need to double, triple check this part.~~ This part is ok.
 
-So what remains is a real forward test on this model. The model works for all *USD pairs.
+So what remains is a real forward test on this model. The model works for all *USD pairs. I have looked at the genes and they are completely sensible. It checks on DXY compression, risk-on/risk-off sentiment and some volatility stuff. This is the main driver for scoring for this model.
 
 I am currently treating the model's output like this:
 
