@@ -60,7 +60,7 @@ Data can be queried or constructed directly from a WSL2 terminal or via an HTTP 
 \
 The tool features a customizable, advanced (hybrid) indicator engine and uses an internal API to query data across assets and timeframes, including access to indicator values from other instruments. Indicators can be expressed as Polars-expressions or implemented on Pandas dataframes directly. \
 \
-It also features an experimental Neuro-evolution engine to build ML models for sparse event detection. Example for macro-driven bottom-sniping included. This is a research-item on how to use ML for hunting an alpha-edge.
+It also features an experimental Neuro-evolution engine to build ML models for sparse event detection. Example for macro-driven bottom-sniping included. This is a research-item on how to use ML for hunting an alpha-edge. \
 \
 Any modern laptop having NVMe will do. Storage requirements are about 1 GB per configured symbol. \
 \
