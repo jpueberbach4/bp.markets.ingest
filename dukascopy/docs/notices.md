@@ -12,13 +12,7 @@ This is the result of a trained model on EUR-USD, applied to GBP-USD. The data f
 
 Note: it's an animated gif since i am battling scaling issues. The signals are tiny 1e-9 vs 1e-20 noise. Seeing how i can fix that but for today i am done. Ending the day with a remarkable result. This model is almost completely-inter asset-divergence and macro-inter asset- driven. No price information. Pure indicators.
 
-Important: Tbh this is -almost- "too perfect". 25 percent 2-5 candles before low (forming stage), 50 percent 1 bar before and 25 percent at the actual low. Only a few misses. Raises suspicion. Thats why an extensive forward-test is needed, soon now, targetting this week.
-
-To be continued,...
-
-~~PS i do shift 1 bar on divergence and the custom multi tf rsi indicators to avoid opencandles problem. i need to double, triple check this part.~~ This part is ok.
-
-So what remains is a real forward test on this model. The model works for all *USD pairs. I have looked at the genes and they are completely sensible. It checks on DXY compression, risk-on/risk-off sentiment and some volatility stuff. This is the main driver for scoring for this model.
+So what remains is a real forward test-trying to do this week-on this model. The model works for all *USD pairs. I have looked at the genes and they are completely sensible. It checks on DXY compression, risk-on/risk-off sentiment and some volatility stuff. This is the main driver for scoring for this model.
 
 I am currently treating the model's output like this:
 
@@ -33,7 +27,7 @@ I did not include the Andromeda config, but the milkyway one instead. The frontr
 
 ![MilkyWay](../images/milkyway-default-config.png)
 
-PS. I have merged the latest code. Although the signals are "scale minimum", you can increase it by applying eg 1e10 in the `example-mt-pl` indicator. This is for now a workaround. Today is a special day so no updates today.
+PI have merged the latest code. Although the signals are "scale minimum", you can increase it by applying eg 1e10 in the `example-mt-pl` indicator. This is for now a workaround.
 
 **Why a cosmic theme?**
 It’s a fair question. Over the course of my professional career, I’ve stared at an endless sea of dull, lifeless log messages. At some point, I decided to do things differently. Instead of sterile outputs, I wanted something with character—something that tells a story. The cosmic theme adds a human, narrative layer to the system, turning raw mechanics into a journey rather than just another stream of logs.
