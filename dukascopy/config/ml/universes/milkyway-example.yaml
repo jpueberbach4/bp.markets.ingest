@@ -1,149 +1,148 @@
 MilkyWay:
   type: MilkyWay
   fabric:
-    matter: EUR-USD/4h
-    after: 2022-01-01
-    until: 2025-12-31
+    matter: EUR-USD/4h            # Primary traded instrument and timeframe (EUR/USD on 4-hour candles)
+    after: 2022-01-01             # Start date of historical data used for training/validation
+    until: 2025-12-31             # End date of dataset (defines full in-sample incl OOS horizon)
 
   flight:
     type: MilleniumFalcon
     settings:
-      max_generations: 5000
-      extinction_stagnation: 200
-      radiation_stagnation: 100
-      gene_count: 24  # Increased to 24 to handle more cross-symbol features
-      vitality_decay: 0.75
-      population_size: 1000
-      hidden_dim: 128
-      hotness_max: 87
-      hotness_min: 80
-      gpu_chunk: 500
-      min_signals: 6  # Slightly higher to maintain sparsity with more genes
-      target_density: 0.005
-      precision_exp: 4
-      penalty_coeff: 2.0
-      thresh_steps: 31
-      verbose: true
-      oos_boundary: 0.70
-      epochs: 50
-      weight_mutation_rate: 0.005
+      max_generations: 5000       # Maximum number of evolutionary generations allowed during optimization
+      extinction_stagnation: 200  # Stop if no fitness improvement for 200 generations (hard stagnation limit)
+      radiation_stagnation: 100   # Trigger diversification/radiation if stagnation persists for 100 generations
+      gene_count: 24              # Number of genes (feature slots) per genome; expanded to support richer cross-asset context
+      vitality_decay: 0.75        # Penalization factor applied to aging/underperforming individuals to encourage turnover
+      population_size: 1000       # Number of candidate models evolved per generation
+      hidden_dim: 128             # Hidden layer dimensionality of the neural component (model capacity)
+      hotness_max: 87             # Upper percentile threshold for elite selection pressure
+      hotness_min: 80             # Lower percentile threshold defining survival/selection band
+      gpu_chunk: 500              # Number of samples processed per GPU batch to balance speed and memory
+      min_signals: 6              # Minimum number of trade signals required; prevents overly sparse or inactive strategies
+      target_density: 0.005       # Desired signal frequency (≈0.5% of bars) to enforce selectivity
+      precision_exp: 4            # Exponent applied to precision metric to strongly reward high-accuracy models
+      penalty_coeff: 2.0          # Coefficient scaling regularization/complexity penalties in fitness
+      thresh_steps: 31            # Number of discrete threshold candidates scanned for signal calibration
+      verbose: true               # Enables detailed logging during evolutionary training
+      oos_boundary: 0.70          # 70% of data used in-sample; remaining 30% reserved for out-of-sample validation
+      epochs: 50                  # Number of gradient training epochs per evolutionary evaluation
+      weight_mutation_rate: 0.005 # Probability of mutating neural weights during genetic evolution
 
   singularity:
     type: Pulsar
-    device: cuda
+    device: cuda                  # Use GPU acceleration (CUDA) for model training/inference
 
   center:
-    - example-pivot-finder_30_bottoms
+    - example-pivot-finder_30_bottoms  # Core signal anchor: pivot-based bottom detection over 30-bar window
 
   normalizers:
     Kinematics: 
       type: Kinematics
-      disabled: true
+      disabled: true              # Disabled: raw indicator values preserved without kinematic transformation
       filter:
         inclusive:
-        - '*EUR*rsi*'
-        - '*DOLLAR*rsi*'
+        - '*EUR*rsi*'             # Would target RSI features related to EUR pairs
+        - '*DOLLAR*rsi*'          # Would target RSI features related to Dollar Index context
     Redshift: 
       type: Redshift
-      dim: 0 
-      eps: 1e-8
+      dim: 0                      # Normalize along feature dimension (per-feature scaling)
+      eps: 1e-8                   # Small epsilon added for numerical stability (avoid division by zero)
 
   comets:
-    - HaleBopp
+    - HaleBopp                    # Default asynchronous monitoring/persistence module
     # Custom comets
-    # A custom commet can be used for additional monitoring/persistency. They are asynchronous 
-    # objects and there is no guarantee they will get called in the order specified. 
+    # Can be used as an additional sink/monitoring They are asynchronous objects.
     # - config.user.ml.comets.Halley
 
   filter:
-    - open
-    - high
-    - low
-    - close
-    - volume
-    - symbol
-    - timeframe
-    - '*direction*'
+    - open                        # Exclude candle open price
+    - high                        # Exclude candle high price
+    - low                         # Exclude candle low price
+    - close                       # Exclude candle close price
+    - volume                      # Exclude traded volume
+    - symbol                      # Exclude instrument identifier (for multi-asset context)
+    - timeframe                   # Exclude timeframe metadata
+    - '*direction*'               # Exclude any directional/label-related fields
 
   features:
-    # 1. OVERSOLD CONFIRMATION
-    - williamsr_14
-    - cci_20
+    # 1. OVERSOLD CONFIRMATION (Mean-reversion entry timing filters)
+    - williamsr_14                # Williams %R over 14 periods (short-term overbought/oversold oscillator)
+    - cci_20                      # Commodity Channel Index over 20 periods (deviation from statistical mean)
 
-    # 2. VOLUME & BUY/SELL PRESSURE
-    - mfi_14
-    - obv
-    - adl
-    - chaikin_3_10
-    - eom_14
-    - vwma_20
+    # 2. VOLUME & BUY/SELL PRESSURE (Participation and accumulation context)
+    - mfi_14                      # Money Flow Index (volume-weighted RSI-style momentum)
+    - obv                         # On-Balance Volume (cumulative volume flow)
+    - adl                         # Accumulation/Distribution Line (price-volume pressure measure)
+    - chaikin_3_10                # Chaikin Oscillator (3/10 EMA spread of ADL)
+    - eom_14                      # Ease of Movement (price change relative to volume)
+    - vwma_20                     # Volume-Weighted Moving Average over 20 periods
 
-    # 3. MEAN REVERSION ZONES
-    - zscore_20
-    - bbands_20_2.0
-    - bbands-width_20_2.0
-    - keltner_20_1.5
-    - donchian_20
-    - donchian-width_20
+    # 3. MEAN REVERSION ZONES (Statistical stretch and channel positioning)
+    - zscore_20                   # Z-score over 20 periods (standardized deviation from mean)
+    - bbands_20_2.0               # Bollinger Bands (20-period, 2 std dev) for volatility envelopes
+    - bbands-width_20_2.0         # Bollinger Band width (volatility expansion/contraction)
+    - keltner_20_1.5              # Keltner Channels (ATR-based envelope)
+    - donchian_20                 # Donchian Channel high/low range over 20 periods
+    - donchian-width_20           # Width of Donchian Channel (range compression/expansion)
 
-    # 4. DIVERGENCE DETECTORS
-    - macd_12_26_9
-    - uo_7_14_20
+    # 4. DIVERGENCE DETECTORS (Momentum vs price disagreement)
+    - macd_12_26_9                # MACD line/signal (12/26 EMA with 9 signal smoothing)
+    - uo_7_14_20                  # Ultimate Oscillator (multi-period momentum blend)
 
-    # 5. VOLATILITY REGIME
-    - atr_14
-    - atrp_14
-    - volatility-ratio_20_2.0_1.0
-    - choppiness_10
-    - vqi_14
+    # 5. VOLATILITY REGIME (Market state classification)
+    - atr_14                      # Average True Range (absolute volatility)
+    - atrp_14                     # ATR as percentage of price (normalized volatility)
+    - volatility-ratio_20_2.0_1.0 # Custom volatility expansion ratio (short vs long horizon comparison)
+    - choppiness_10               # Choppiness Index (trend vs range detection)
+    - vqi_14                      # Volatility Quality Index (trend efficiency under volatility)
 
-    # 6. TREND & MOMENTUM CONTEXT
-    - adx_14
-    - aroon_14
-    - kaufman-er_10
-    - fractaldimension_30
-    - hma_9
+    # 6. TREND & MOMENTUM CONTEXT (Directional structure filters)
+    - adx_14                      # Average Directional Index (trend strength)
+    - aroon_14                    # Aroon Up/Down (trend emergence timing)
+    - kaufman-er_10               # Kaufman Efficiency Ratio (trend efficiency vs noise)
+    - fractaldimension_30         # Fractal Dimension Index (trend persistence vs randomness)
+    - hma_9                       # Hull Moving Average (low-lag trend smoothing)
 
-    # 7. CROSS-SYMBOL CONTEXT (Multi-TF RSI)
-    - example-multi-tf-rsi_GBP-USD_14_14_14_14
-    - example-multi-tf-rsi_USD-JPY_14_14_14_14
-    - example-multi-tf-rsi_EUR-USD_14_14_14_14
-    - example-multi-tf-rsi_USD-CHF_14_14_14_14
-    - example-multi-tf-rsi_XAU-USD_14_14_14_14
-    - example-multi-tf-rsi_DOLLAR.IDX-USD_14_14_14_14
-    - example-multi-tf-rsi_USTBOND.TR-USD_14_14_14_14
-    - example-multi-tf-rsi_BUND.TR-EUR_14_14_14_14
-    - example-multi-tf-rsi_USA500.IDX-USD_14_14_14_14
-    - example-multi-tf-rsi_VOL.IDX-USD_14_14_14_14
-    - example-multi-tf-rsi_DEU.IDX-EUR_14_14_14_14
+    # 7. CROSS-SYMBOL CONTEXT (Multi-TF RSI) – Intermarket momentum alignment
+    - example-multi-tf-rsi_GBP-USD_14_14_14_14        # Multi-timeframe RSI for GBP/USD (FX correlation context)
+    - example-multi-tf-rsi_USD-JPY_14_14_14_14        # Multi-timeframe RSI for USD/JPY (yen risk sentiment proxy)
+    - example-multi-tf-rsi_EUR-USD_14_14_14_14        # Multi-timeframe RSI for EUR/USD (self-alignment across TFs)
+    - example-multi-tf-rsi_USD-CHF_14_14_14_14        # Multi-timeframe RSI for USD/CHF (safe-haven FX flow)
+    - example-multi-tf-rsi_XAU-USD_14_14_14_14        # Multi-timeframe RSI for Gold (inflation/safety proxy)
+    - example-multi-tf-rsi_DOLLAR.IDX-USD_14_14_14_14 # Multi-timeframe RSI for Dollar Index (broad USD strength)
+    - example-multi-tf-rsi_USTBOND.TR-USD_14_14_14_14 # Multi-timeframe RSI for US Treasury Bonds (rates sentiment)
+    - example-multi-tf-rsi_BUND.TR-EUR_14_14_14_14    # Multi-timeframe RSI for German Bund (EU rates proxy)
+    - example-multi-tf-rsi_USA500.IDX-USD_14_14_14_14 # Multi-timeframe RSI for S&P 500 index (risk-on proxy)
+    - example-multi-tf-rsi_VOL.IDX-USD_14_14_14_14    # Multi-timeframe RSI for Volatility Index (risk-off proxy)
+    - example-multi-tf-rsi_DEU.IDX-EUR_14_14_14_14    # Multi-timeframe RSI for German equity index (EU risk proxy)
 
     # 8. CROSS-SYMBOL DIVERGENCES (NEW - replacing SMA distances)
-    # USD Strength Divergences
-    - example-cross-divergence_EUR-USD_DOLLAR.IDX-USD_20_rsi_14
-    - example-cross-divergence_EUR-USD_USD-CHF_20_rsi_14
-    - example-cross-divergence_EUR-USD_USD-JPY_20_rsi_14
-    
-    # Safe Haven Divergences
-    - example-cross-divergence_EUR-USD_XAU-USD_20_rsi_14
-    - example-cross-divergence_USD-CHF_XAU-USD_20_rsi_14
-    
-    # Risk Sentiment Divergences
-    - example-cross-divergence_EUR-USD_USA500.IDX-USD_20_rsi_14
-    - example-cross-divergence_EUR-USD_VOL.IDX-USD_20_rsi_14
-    - example-cross-divergence_USA500.IDX-USD_VOL.IDX-USD_20_rsi_14
-    
-    # Bond Market Divergences
-    - example-cross-divergence_EUR-USD_USTBOND.TR-USD_20_rsi_14
-    - example-cross-divergence_EUR-USD_BUND.TR-EUR_20_rsi_14
-    - example-cross-divergence_USTBOND.TR-USD_BUND.TR-EUR_20_rsi_14
-    
-    # Cross-Currency Divergences
-    - example-cross-divergence_EUR-USD_GBP-USD_20_rsi_14
-    - example-cross-divergence_USD-CHF_USD-JPY_20_rsi_14
-    
-    # European Risk Divergences
-    - example-cross-divergence_EUR-USD_DEU.IDX-EUR_20_rsi_14
-    - example-cross-divergence_DEU.IDX-EUR_BUND.TR-EUR_20_rsi_14
+    # USD Strength Divergences (FX vs Dollar basket conflicts)
+    - example-cross-divergence_EUR-USD_DOLLAR.IDX-USD_20_rsi_14  # EUR/USD vs Dollar Index RSI divergence over 20 bars
+    - example-cross-divergence_EUR-USD_USD-CHF_20_rsi_14         # EUR/USD vs USD/CHF divergence (USD flow imbalance)
+    - example-cross-divergence_EUR-USD_USD-JPY_20_rsi_14         # EUR/USD vs USD/JPY divergence (USD vs JPY rotation)
 
-    # 9. REMAINING STATIONARY FEATURES
-    - vwap
+    # Safe Haven Divergences (Gold and CHF vs risk FX)
+    - example-cross-divergence_EUR-USD_XAU-USD_20_rsi_14         # EUR/USD vs Gold divergence (macro fear gauge)
+    - example-cross-divergence_USD-CHF_XAU-USD_20_rsi_14         # USD/CHF vs Gold divergence (safe-haven competition)
+
+    # Risk Sentiment Divergences (Equities vs volatility)
+    - example-cross-divergence_EUR-USD_USA500.IDX-USD_20_rsi_14  # EUR/USD vs S&P 500 divergence (risk appetite shift)
+    - example-cross-divergence_EUR-USD_VOL.IDX-USD_20_rsi_14     # EUR/USD vs Volatility Index divergence (fear inversion)
+    - example-cross-divergence_USA500.IDX-USD_VOL.IDX-USD_20_rsi_14  # Equity index vs volatility index divergence
+
+    # Bond Market Divergences (Rates-driven macro flows)
+    - example-cross-divergence_EUR-USD_USTBOND.TR-USD_20_rsi_14  # EUR/USD vs US Treasuries divergence (rate differential effect)
+    - example-cross-divergence_EUR-USD_BUND.TR-EUR_20_rsi_14     # EUR/USD vs German Bund divergence (EU yield influence)
+    - example-cross-divergence_USTBOND.TR-USD_BUND.TR-EUR_20_rsi_14  # US vs German bond divergence (transatlantic spread shift)
+
+    # Cross-Currency Divergences (FX internal structure)
+    - example-cross-divergence_EUR-USD_GBP-USD_20_rsi_14         # EUR/USD vs GBP/USD divergence (European FX rotation)
+    - example-cross-divergence_USD-CHF_USD-JPY_20_rsi_14         # USD/CHF vs USD/JPY divergence (safe-haven allocation shift)
+
+    # European Risk Divergences (Regional equity vs rates)
+    - example-cross-divergence_EUR-USD_DEU.IDX-EUR_20_rsi_14     # EUR/USD vs German equity index divergence
+    - example-cross-divergence_DEU.IDX-EUR_BUND.TR-EUR_20_rsi_14 # German equity vs Bund divergence (risk vs rates in EU)
+
+    # 9. REMAINING STATIONARY FEATURES (Session/fair value anchors)
+    - vwap                        # Volume-Weighted Average Price (intraperiod fair value benchmark)
