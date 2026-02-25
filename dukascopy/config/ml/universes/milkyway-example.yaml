@@ -15,8 +15,8 @@ MilkyWay:
       vitality_decay: 0.75        # Penalization factor applied to aging/underperforming individuals to encourage turnover
       population_size: 1000       # Number of candidate models evolved per generation
       hidden_dim: 128             # Hidden layer dimensionality of the neural component (model capacity)
-      hotness_max: 87             # Upper percentile threshold for elite selection pressure
-      hotness_min: 80             # Lower percentile threshold defining survival/selection band
+      hotness_max: 87             # Upper temperature limit for GPU core temperature
+      hotness_min: 80             # Lower temperature limit for GPU core temperature (resume at this temp)
       gpu_chunk: 500              # Number of samples processed per GPU batch to balance speed and memory
       min_signals: 6              # Minimum number of trade signals required; prevents overly sparse or inactive strategies
       target_density: 0.005       # Desired signal frequency (≈0.5% of bars) to enforce selectivity
