@@ -878,7 +878,7 @@ class PulsarSingularity(Singularity):
             # Clear the pending flag
             self._pending_save = False
             if self.verbose:
-                print(f"  📍 [Singularity]: Saving pending best model with F1={current_best_f1:.4f}, Precision={current_best_prec:.4f}")
+                print(f"📍 [Singularity]: Saving pending best model with F1={current_best_f1:.4f}, Precision={current_best_prec:.4f}")
         else:
             # Fall back to old logic (though this should rarely happen)
             current_best_f1 = torch.max(self.latest_f1).item() if self.latest_f1 is not None else -1.0
