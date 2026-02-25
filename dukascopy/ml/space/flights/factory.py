@@ -20,12 +20,12 @@ Key Capabilities:
 
 from typing import Dict, Any
 
-from ml.space.space import Singularity
+from ml.space.space import BaseFactory, Singularity
 from ml.space.flights.voyager import Voyager
 from ml.space.flights.millenniumfalcon import MilleniumFalcon
 
 
-class FlightFactory:
+class FlightFactory(BaseFactory):
     """Factory for creating flight (singularity) instances."""
 
     @staticmethod
@@ -56,6 +56,14 @@ class FlightFactory:
         # Create flight instance if name exists in registry
         if flight_name in registry:
             return registry[flight_name](config)
+
+        # Extension capability
+        if "." in flight_name:
+            try:
+                flight_class = FlightFactory._load_from_config_string(flight_name)
+                return flight_class(config)
+            except ImportError as e:
+                raise ValueError(str(e))
 
         # Raise error for unknown flight types
         raise ValueError(

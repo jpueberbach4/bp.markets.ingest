@@ -20,13 +20,13 @@ Key Capabilities:
 
 from typing import Any, Dict
 
-from ml.space.space import Normalizer
+from ml.space.space import BaseFactory, Normalizer
 from ml.space.normalizers.redshift import Redshift
 from ml.space.normalizers.pulsar import Pulsar
 from ml.space.normalizers.kinematics import Kinematics
 
 
-class NormalizerFactory:
+class NormalizerFactory(BaseFactory):
     """Factory for creating normalizer instances."""
 
     @staticmethod
@@ -58,6 +58,14 @@ class NormalizerFactory:
         # Create normalizer instance if name exists in registry
         if normalizer_name in registry:
             return registry[normalizer_name](config)
+        
+        # Extension capability
+        if "." in normalizer_name:
+            try:
+                normalizer_class = NormalizerFactory._load_from_config_string(normalizer_name)
+                return normalizer_class(config)
+            except ImportError as e:
+                raise ValueError(str(e))
 
         # Raise error for unknown normalizer types
         raise ValueError(

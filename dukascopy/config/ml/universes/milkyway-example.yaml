@@ -50,6 +50,10 @@ MilkyWay:
 
   comets:
     - HaleBopp
+    # Custom comets
+    # A custom commet can be used for additional monitoring/persistency. They are asynchronous 
+    # objects and there is no guarantee they will get called in the order specified. 
+    # - config.user.ml.comets.Halley
 
   filter:
     - open

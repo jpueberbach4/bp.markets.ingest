@@ -20,11 +20,11 @@ Key Capabilities:
 
 from typing import Dict, Any
 
-from ml.space.space import Universe
+from ml.space.space import BaseFactory, Universe
 from ml.space.universes.milkyway import MilkyWay
 
 
-class UniverseFactory:
+class UniverseFactory(BaseFactory):
     """Factory for creating universe instances."""
 
     @staticmethod
@@ -54,6 +54,14 @@ class UniverseFactory:
         if universe_name in registry:
             return registry[universe_name](config)
 
+        # Extension capability
+        if "." in universe_name:
+            try:
+                universe_class = UniverseFactory._load_from_config_string(universe_name)
+                return universe_class(config)
+            except ImportError as e:
+                raise ValueError(str(e))
+            
         # Raise error for unknown universe types
         raise ValueError(
             f"🌌 [Space]: Unknown universe type '{universe_name}' requested."

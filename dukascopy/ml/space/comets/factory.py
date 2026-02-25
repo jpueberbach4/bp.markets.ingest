@@ -17,11 +17,11 @@ Key Capabilities:
 ===============================================================================
 """
 
-from ml.space.space import Comet
+from ml.space.space import BaseFactory, Comet
 from ml.space.comets.halebopp import HaleBopp
 
 
-class CometFactory:
+class CometFactory(BaseFactory):
     """Factory for creating comet instances."""
 
     @staticmethod
@@ -50,6 +50,14 @@ class CometFactory:
         # Create comet instance if name exists in registry
         if comet_name in registry:
             return registry[comet_name]()
+        
+        # Extension capability
+        if "." in comet_name:
+            try:
+                comet_class = CometFactory._load_from_config_string(comet_name)
+                return comet_class()
+            except ImportError as e:
+                raise ValueError(str(e))
 
         # Raise error for unknown comet types
         raise ValueError(

@@ -22,12 +22,12 @@ Key Capabilities:
 
 from typing import Dict, Any
 
-from ml.space.space import Singularity
+from ml.space.space import BaseFactory, Singularity
 from ml.space.singularities.eventhorizon import EventHorizonSingularity
 from ml.space.singularities.pulsar import PulsarSingularity
 
 
-class SingularityFactory:
+class SingularityFactory(BaseFactory):
     """Factory for creating singularity instances."""
 
     @staticmethod
@@ -58,6 +58,14 @@ class SingularityFactory:
         # Attempt to create singularity from registry
         if singularity_name in registry:
             return registry[singularity_name](config)
+        
+        # Extension capability
+        if "." in singularity_name:
+            try:
+                singularity_class = SingularityFactory._load_from_config_string(singularity_name)
+                return singularity_class(config)
+            except ImportError as e:
+                raise ValueError(str(e))
 
         # Raise error for unknown types
         raise ValueError(

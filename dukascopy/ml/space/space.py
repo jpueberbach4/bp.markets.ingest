@@ -23,7 +23,8 @@ Key Capabilities:
 ===============================================================================
 """
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any, Dict, Type
+from pathlib import Path
 import os
 import queue
 import threading
@@ -32,9 +33,56 @@ import torch.nn as nn
 import pandas as pd
 import numpy as np
 import time
+import sys
+import importlib
+import random
 
 # Mocking the data provider - ensure this is available in your environment
 # from your_data_module import get_data 
+
+class BaseFactory:
+    """Base class for factories that resolve classes via config-style paths."""
+
+
+    def _load_from_config_string(class_path: str):
+        """
+        Directly handles the 'config.user' folder anchor.
+        Converts trailing dots to slashes to locate the .py file.
+        """
+        parts = class_path.split('.')
+        class_name = parts.pop()
+        
+        # Check for our specific folder anchor
+        if "config.user" in class_path:        
+            path_str = class_path.replace(class_name, "").rstrip('.')
+            # Replace only the dots occurring AFTER config.user
+            if path_str.startswith("config.user."):
+                sub_path = path_str.replace("config.user.", "").replace(".", "/")
+                file_path = Path(f"config.user/{sub_path}.py")
+            else:
+                # It's just config.user.FileName
+                file_path = Path(path_str.replace(".", "/") + ".py")
+                
+            if file_path.is_file():
+                rand_id = random.randint(1000, 999999)
+                module_name = f"custom_module_{rand_id}"
+                try:
+                    spec = importlib.util.spec_from_file_location(module_name, file_path.resolve())
+                    module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+                    return getattr(module, class_name)
+                except Exception as e:
+                    print(f"Error loading {class_name} from {file_path}: {e}")
+                    sys.exit(1)
+
+        # Standard Fallback for core generators or site-packages
+        try:
+            module_path = ".".join(parts)
+            module = importlib.import_module(module_path)
+            return getattr(module, class_name)
+        except Exception as e:
+            print(f"Error: Could not resolve '{class_path}'.\n{e}")
+            sys.exit(1)
 
 class Universe(ABC):
     """Baseclass for feature universes."""
