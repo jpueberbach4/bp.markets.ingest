@@ -30,6 +30,7 @@ This is a permission system.
 That alone is alpha-if confirmed ok.
 
 PS. I have merged the latest code. Although the signals are "scale minimum", you can increase it by applying eg 1e10 in the `example-mt-pl` indicator. This is for now a workaround. Today is a special day so no updates today.
+
  
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 

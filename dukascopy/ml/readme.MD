@@ -11,7 +11,8 @@ Strictly excludes raw OHLCV to force discovery of higher-order, physics-like con
 Current focus: detecting asymmetric market bottoms on 4h timeframes (~0.3–0.6% density).
 
 **Status (February 2026):**  
-Promising directional generalization (EURUSD → GBPUSD transfer with same frozen model), F1 range 0.46–0.59 on unseen forward data, very low signal density (~0.36%).  
+Observed forward F1 in the 0.46–0.59 range on sparse (~0.3–0.6%) asymmetric event detection, depending on model and market regime.”
+
 Still **research-grade** — requires brutal validation. Not yet a plug-and-play money printer.
 
 ## Core Principles
