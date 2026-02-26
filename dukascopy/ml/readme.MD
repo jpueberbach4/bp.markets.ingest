@@ -13,6 +13,7 @@ Why so extreme?
 
 - PulsarSingularity is GPU-optimized (CUDA kernels for bmm/scatter_add_, vectorized vitality scoring, etc.). CPU falls back to slow PyTorch CPU paths — no parallelism at the same level.
 
+Also, a GPU, like an RTX3070, is more than sufficient (without Kinematics). It will render usable, testeable, models in a matter of minutes. Only Kinematics enablement will make it grind longer because the dimensionality expands x4. Kinematics is broken atm. It will be reintroduced soon but is highly experimental.
 
 # Singularities
 
