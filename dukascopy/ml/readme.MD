@@ -191,3 +191,30 @@ Flight (ABC)                    ← Orchestration / training loop
 ## What is Andromeda
 
 Andromeda is an "advanced" MilkyWay that has support for all the various API methods (HTTP, bootstrapped and files). So you can decouple the ML from your data ingestion layer. Currently MilkyWay is coupled to the bootstrapped API. Andromeda is a more clean and more modular universe. It will be added but currently still developing. Tomorrow, development of Andromeda continues.
+
+
+## Deep Dive: Model 3750 (Transferability Analysis)
+
+I performed a deep evaluation of model 3750 to understand why it is significantly more transferable than other models from the same evolutionary run.
+
+**Key insight:**
+
+Only 3 out of 24 features are EUR-USD specific — and all three have low importance.
+
+Instead, the model’s signal formation is dominated by global macro dynamics:
+
+- Dollar Index behavior
+
+- Risk-on / risk-off rotation (equities vs volatility)
+
+- Rate differential signals (bonds)
+
+- Safe-haven flows (gold, CHF)
+
+**Conclusion:**
+
+This model is not trading EUR-USD directly. It is observing the global macro state and inferring when USD regime pressure is about to reverse.
+
+That macro-first perspective explains its strong cross-asset transferability. Roughly ~85% of the model behaves as a macro model,~15% pair-context anchoring.
+
+I will do the walkforward and candle-by-candle feed on Saturday. Respect results of this test to be published by Sunday.
