@@ -128,7 +128,7 @@ Expect it to grind for a couple of days before it returns something really usefu
 
 ## Extending the code
 
-The code can be easily extend by just specifying your own classes in a java-alike notation witin the config-file.
+The code can be easily extended by just specifying your own classes in a java-alike notation witin the config-file.
 
 `config.user.ml.comets.Halley` (Example is present in config directory)
 
