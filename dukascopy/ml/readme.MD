@@ -1,9 +1,5 @@
 ## ML Experiment
 
-A day off means: no cognitive load. Just documentation.
-
-# Singularities
-
 **Note upfront:** I have tested CPU mode. CPU actually works already. But the conclusion: It's not doable. Not with a 1000 population and 50 epochs configuration. To give an indication:
 
 - CPU-mode, 1000 population, 50 epochs: 264.2 seconds
@@ -11,7 +7,14 @@ A day off means: no cognitive load. Just documentation.
 
 **Conclusion? This is not suitable for CPU-only environments. YOU NEED A GPU!**
 
----
+Why so extreme?
+
+- Neuro-evolution is compute-heavy: population of 1000 small nets × 50 epochs of gradient descent per individual × batched matrix ops (forward/backward passes, gene selection, crossover/mutation).
+
+- PulsarSingularity is GPU-optimized (CUDA kernels for bmm/scatter_add_, vectorized vitality scoring, etc.). CPU falls back to slow PyTorch CPU paths — no parallelism at the same level.
+
+
+# Singularities
 
 **Open-source neuroevolution forge for discovering high-conviction, sparse market signals — without raw price or volume.**
 
