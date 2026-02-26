@@ -1,7 +1,11 @@
 ## Short term todo list
 
+26-2: A change in priorization was made
+
 Priorization:
 
+- ML: Neuro-evolution sidetrack (experimental) -> finalize (see below) **
+- Strip DuckDB
 - Stabilization - Seeing if we can prevent OOM's and instead degrade in a "nicer way"
 - Quality - Another full comparison pass on the indicators. LLM's can tell me they are fine but i want to SEE (TA-lib?).
 - Coverage - Unit-testing > 80-90% + "Unhappy paths"
@@ -37,15 +41,24 @@ Quality:
   - [x] Find solution for UVLOOP WSL2 watchfiles CPU 100pct issue. Optionally, configurable.
   - [x] The panama and stock-split fixes
   - [x] Partial rebuilds eg `./rebuild-full.sh --symbol BRENT.CMD-USD-PANAMA` (plus their sources)
-  - [ ] Third indicator execution path: CUDA/Rapids. I need to know this for ML. Can I gain with it?
+  - [ ] Third indicator execution path: CUDA/Rapids
 
-Note: UVLOOP WSL2 fix was implemented through a config.user.yaml setting.
+Note: Cuda/Rapids/GPU: We were thinking "too advanced". Just implement it as a tensor operation. No chaining. Just in/out. Deploy first as an "experimental"-feature that is easy to grasp. Later we can see on advanced stuff. This path will be implemented to support inference better.
 
-Note: Cuda/Rapids/GPU: The "Elegant" Fix: Use a Coalescing Buffer. Instead of immediate execution, the internal API should collect indicator requests within a tiny time window (e.g., 5-10ms) or until a batch size is met, then ship one massive Arrow table to the GPU. This maximizes the O(1) nature of the parallel execution. Could be too much for now. If too much: it moves down the feature-list.
+ML:
+  - [x] Implement an experimental version for sparse asymmetric bottom detection
+  - [x] Test asymmetric bottom detection
+  - [ ] Cleanup/Split major singularity class into parts. Generalize them. Make overloadable
+  - [ ] Provide extension support for lenses (loss functions)
+  - [ ] See what other activation functions, next to Gelu and Sigmoid, exist. Make configurable.
+  - [ ] Revisit comet functionality. Make it support logs more properly.
+  - [ ] Important: full forward test on NZDUSD, EURUSD and GBPUSD for "model 3750"
+  - [ ] Add advanced diagnostics tools 
+  - [ ] Fix scaling issues. Idea is to implement a zoom-alike approach (like in the interface, to amplify signals)
+  - [ ] Harden
+  - [-] 3x QA pass (1 done)
 
-Note: 1 million rows with market/volumeprofile is now acceptable after JIT optimizations. 
-
-Note: as of 10 feb, we are down to the original quality features list. the important stuff.
+Note: this has, unexpectedly, become a very promising part of the system. It outperforms what i expected by magnitudes. Neuroevolution was the correct solution after standard RandomForest "failed" multiple times.
 
 Modularity:
   - [ ] Split up ETL and have a central "feeder" engine that can distribute in near-realtime
@@ -65,18 +78,16 @@ Note: strike-through of above is because get_data is powerful enough to handle d
 ASX:
   - [ ] Custom timeshifting
 
-Panama:
+QuackQuack:
   - [ ] Eliminate DuckDB completely
-  - [ ] Panama prevents text-strip, invent solution for binary
+  - [x] Panama prevents text-strip, invent solution for binary
 
-Note: solution here is that we are embracing a "side-track" approach. This will eliminate the Panama builder component
-since the dataset is already there. No need to "build" it anymore. Just configure it instead. When Panama sidetracking is
-done we can strip text/csv and DuckDB completely. Lessening the code by 3-8 percent.
+Note: Sidetracking for symbols was implemented. We are now ready to strip DuckDB (feature 043)
 
 Drawing/Visualization:
   - [x] Split JS to libs (chart.js, drawing.js, ui.js)
   - [ ] Drawing tools (lines, channels, fibs)
-  - [ ] Allow for line-color specification in the indicator (currently via custom.js)
+  - [x] Allow for line-color specification in the indicator (currently via custom.js)
   - [x] ~~Export to PNG/SVG?~~
 
 Note: strike-through=wont do
@@ -94,25 +105,38 @@ Note: the HTTP API is nice but it has a major serialization tax
 
 Example Indicator:
   - [x] ML integration example
-  - [ ] EUR-USD vs Bond Pearson correlation example
+  - [x] EUR-USD vs Bond Pearson correlation example
+  - [x] Cross divergence example indicators
+  - [x] Normalized ML indicators (they are overkill since ML engine normalizes itself but cannot delete them since users may already use them)
+  - [ ] Add flags to certain indicators to "shift" bars to prevent lookahead bias in ML training
+
+Note: Pearson was generalized and included as a system indicator. Furthermore cross-asset divergence examples were added to show divergences between assets for single column indicators (like RSI, SMA etc).
+
+Note: I have custom indicators that eliminate lookahead bias. Eg on RSI, without the shift, the indicators peek in the "future". Generalize this functionality, using an additional argument, and share with users. Currently users should update their indicators themselves. 
 
 Protection
   - [x] Circular indicator dependency protection (V1 present as a unit-test, V2 options checking todo)
   - [x] ~~Custom threadpool to optimize recursive get_data calls which use pandas indicators~~
+  - [ ] OOM degradation
 
-Note: Tried an overload of the default threadpool and replaced it with a custom threadpool. Dynamically sizing, making it a global singleton etc etc etc. Profiling showed the wins are marginal because of the GIL locking for data transfer back and forth between threads and mainthread. Yes, thread creation is eliminated but the locking remains the same. Too much complexity for too little gains, so hands off. This didnt help, meaning: we are basically at the limits for what is possible in Python. If more performance needed, i will need to move to C++ or Rust (but C++ is already planned, that is what i know and gives full power).
+Note: Threadpool overload did not work. Same GIL issues. Waiting for 3.14t. Perhaps run an experiment. 3.14t is too difficult to install and use atm. I have it running but it involves a lot of manual compiling since not all wheels have been updated for the dependencies. I cannot put that burden on the users, so we wait a tiny bit longer. I don't think it's "useful" to write a script that does all the manual compilations. Too error-prone. If user encounters an error, maybe will not know what to do or how to proceed. Bad UX. Waiting is better option.
 
 Testing:
   - [ ] Unit tests (80%+ coverage)
   - [x] Load tests
   - [ ] New performance benchmarks
 
+Note: also cover the ML with unittests. ML is very tricky with respect to lookahead and leakage. First split up, while keeping in mind that te code should be testeable for potential lookahead/leakage (if possible). Still need to think on this.
+
 Observability
   - [ ] Monitoring Health/Throughput/ROE
   - [ ] Normalized logging messages
+  - [ ] Make a string-map for the ML log messages
   - [ ] "Additional stuff"
 
 Note: better monitoring/normalized logging IS a requirement for K8S envs.
+
+Note: currently the log messages of the ML are cosmic-themed. Most users will like, some will not. Map to a string table. Support dull as well. Minor prio.
 
 Cleanup:
   - [ ] Builder cleanup
@@ -125,8 +149,9 @@ Rest
   - [x] Take a day off
   - [x] Take a second day off
   - [x] Take a third day off
-  - [ ] Take a fourth day off
+  - [x] Take a fourth day off (26 feb)
   - [ ] Take a fifth day off
 
 
-I know Istio too. Seeing if it's beneficial to build adapters (but this is medium term).
+~~I know Istio too. Seeing if it's beneficial to build adapters (but this is medium term).~~ 
+Moved to backlog.
