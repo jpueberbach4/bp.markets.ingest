@@ -217,4 +217,16 @@ This model is not trading EUR-USD directly. It is observing the global macro sta
 
 That macro-first perspective explains its strong cross-asset transferability. Roughly ~85% of the model behaves as a macro model,~15% pair-context anchoring.
 
-I will do the walkforward and candle-by-candle feed on Saturday. Respect results of this test to be published by Sunday.
+**Additional Insight**
+
+Model selection should incorporate transferability screening, not just in-sample F1.
+
+For example:
+
+- Validate signals across EURUSD, NZDUSD, GBPUSD
+
+- Evaluate average F1 across multiple USD pairs
+
+- Prefer models that retain structure under cross-asset exposure
+
+Transferability appears to be a strong proxy for structural robustness.
