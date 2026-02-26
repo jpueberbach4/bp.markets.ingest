@@ -25,7 +25,7 @@ Current focus? detecting asymmetric market bottoms on 4h timeframes (~0.3–0.6%
 - Still rough but nearing real-beta rapidly
 - Neuroevolution outperforms RandomForest quite dramatically
 - GPU-only but CPU-only support will be added. 
-- One result absolutely requires forward testing (see the signals.gif in images folder)
+- One observed behavior appears highly promising but requires prolonged forward validation (see [signals.gif](../images/signals.gif)).
 - Currently have 11 universes of which 3 are generating very promising models
 - One model frontruns the actual bottoms by 2-5 H4 candles consistently, which is interesting.
 - Supports Out of sample testing. Another repo has real walkforward testing but is currently unstable.
@@ -35,7 +35,7 @@ Current focus? detecting asymmetric market bottoms on 4h timeframes (~0.3–0.6%
 - Default MilkyWay is optimized for a 8GB RTX3070 GPU
 - Elites on F1 and Precision are persistently stored in slot 0 and 1 and always survive.
 - **Advice:** for a card having more VRAM, tune GPU chunk and population. Monitor with nvtop.
-- **Advice:** check all models scoring F1 between 0.30 and 0.44 with the `example-ml-pt` indicator. Lower F1 may actually be better.
+- **Advice:** Lower-F1 models often exhibit lower signal density, better regime stability, and reduced overfitting, which can outperform high-F1 models out of sample. Check using `example-ml-pt` indicator.
 - **Advice:** watch your temps if running on laptop. I regret it that i didnt build temperature protection before. Now its in.
 
 **Important:** Still **research-grade** — requires brutal validation. Do not trust it blindly!
