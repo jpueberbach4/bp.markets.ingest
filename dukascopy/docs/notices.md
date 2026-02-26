@@ -38,6 +38,8 @@ On that last red-candle close, the signal becomes 0.000009 (from 0.0), on the li
 
 ![Example](../images/live-edge-example.gif)
 
+PS I will add a checkbox to the interface to hide the active candle. Soon.
+
 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
