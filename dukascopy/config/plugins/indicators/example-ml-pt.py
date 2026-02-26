@@ -38,7 +38,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     if not os.path.exists(checkpoint_path):
         return pd.DataFrame({'score': 0.0, 'signal': 0.0}, index=df.index)
 
-    # 1. LOAD MODEL & EXTRACT PAYLOAD
+    # Load model
     checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
     active_features = checkpoint.get('feature_names', [])
     w1 = checkpoint['W1'].to(device)
@@ -48,33 +48,37 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     means = checkpoint['means'].to(device)
     stds = checkpoint['stds'].to(device)
 
-    # 2. DATA FETCH & ALIGNMENT
+    # Fetch (with is-open to prevent repainting)
     parent_indicators = list(set([f.split(':')[0].split('__')[0] for f in active_features]))
-    raw_df = get_data_auto(df, indicators=parent_indicators)
+    raw_df = get_data_auto(df, indicators=parent_indicators + ["is-open"])
+
+    # Split: Inference only runs on finalized candles where is-open == 0
+    inference_df = raw_df[raw_df['is-open'] == 0].copy()
     
+    if inference_df.empty:
+         return pd.DataFrame({'score': 0.0, 'signal': 0.0}, index=df.index)
+
     ordered_columns = []
     for f in active_features:
-        ordered_columns.append(raw_df[f].values if f in raw_df.columns else np.zeros(len(raw_df)))
+        ordered_columns.append(inference_df[f].values if f in inference_df.columns else np.zeros(len(inference_df)))
 
     raw_values = np.stack(ordered_columns, axis=1).astype(np.float32)
     raw_model_tensor = torch.from_numpy(raw_values).to(device)
 
-    # 3. NORMALIZATION
+    # Normalization
     normalized_tensor = (raw_model_tensor - means) / (stds + 1e-8)
 
-    # 4. FULL FEATURE CONTRIBUTION AUDIT
+    # Audit
     with torch.no_grad():
-        # Contribution = (Input * Weight)
         bar_contribution = normalized_tensor.unsqueeze(2) * w1.unsqueeze(0) 
         feature_impact = bar_contribution.mean(dim=(0, 2)).cpu().numpy()
 
-    # 5. NEURAL INFERENCE
+    # Inference
     in_dim, hid_dim = w1.shape
     model = SingularityInference(input_dim=in_dim, hidden_dim=hid_dim).to(device)
     model.l1.weight.data = w1.t()
     model.l1.bias.data = b1
     
-    # Check shape of W2 (must be 1, hidden)
     final_w2 = w2 if w2.shape[0] == 1 else w2.t()
     model.l2.weight.data = final_w2
     model.l2.bias.data = b2
@@ -83,44 +87,54 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     with torch.no_grad():
         out, h1, a1, s2 = model(normalized_tensor)
         predictions = out.squeeze().cpu().numpy()
+        if predictions.ndim == 0:
+            predictions = np.array([predictions.item()])
 
-    # 6. TOTAL RECALL REPORTING
-    print("\n" + "☢️" * 30)
-    print(f"TOTAL RECALL FORENSIC AUDIT: {model_name}")
-    print(f"Device: {device} | Hidden Dim: {hid_dim}")
-    print("-" * 60)
+    # Reporting (see console)
+    print("\n" + "☢️" * 60)
+    print(f"STABLE AS-OF AUDIT: {model_name}")
+    print(f"Device: {device} | Total Bars: {len(raw_df)} | Inference Bars: {len(inference_df)}")
+    print("-" * 80)
     
-    # Feature Table
-    header = f"{'FEATURE NAME':<45} | {'RAW MEAN':>10} | {'Z-MEAN':>8} | {'IMPACT':>8}"
+    header = f"{'FEATURE NAME':<60} | {'RAW MEAN':>10} | {'Z-MEAN':>8} | {'IMPACT':>8}"
     print(header)
-    print("-" * 60)
+    print("-" * 80)
     for i, name in enumerate(active_features):
         r_mean = raw_model_tensor[:, i].mean().item()
         z_mean = normalized_tensor[:, i].mean().item()
         impact = feature_impact[i]
-        print(f"{name[:44]:<45} | {r_mean:>10.4f} | {z_mean:>8.4f} | {impact:>8.4f}")
+        print(f"{name[:59]:<60} | {r_mean:>10.4f} | {z_mean:>8.4f} | {impact:>8.4f}")
 
     print("-" * 60)
-    print("🧬 [LAYER 2 - THE DEATH ZONE AUDIT]")
-    print(f"L2 Bias (b2):             {b2.item():.4f}")
-    print(f"L2 Weights (W2) Mean:     {final_w2.mean().item():.4f}")
-    print(f"L2 Weights (W2) Max/Min:  {final_w2.max().item():.4f} / {final_w2.min().item():.4f}")
-    print(f"Hidden Act (a1) Mean:     {a1.mean().item():.4f} (Sparsity: {(a1 > 0).float().mean().item():.2%})")
-    print(f"Pre-Sigmoid (s2) Mean:    {s2.mean().item():.4f}")
-    print("-" * 60)
-    print(f"FINAL MAX PREDICTION:     {predictions.max():.4f}")
-    print("☢️" * 30 + "\n")
+    print(f"FINAL MAX PREDICTION (STABLE): {predictions.max():.4f}")
+    print("☢️" * 60 + "\n")
 
-    # 7. RETURN
+    # Signal construction
     threshold_val = float(checkpoint.get('threshold', 0.2433))
-    full_res = pd.DataFrame(index=raw_df.index)
-    full_res['time_ms'] = raw_df['time_ms']
-    full_res['score'] = predictions
+    stable_results = pd.DataFrame({
+        'time_ms': inference_df['time_ms'],
+        'score': predictions
+    })
+    stable_results['signal'] = np.where(stable_results['score'] > threshold_val, 1.0, 0.0)
 
-    full_res['signal'] = np.where(predictions > threshold_val, 1.0, 0.0)
+    # Alignment
+    final_df = df[['time_ms']].copy()
+    
+    final_df['time_ms'] = final_df['time_ms'].astype('int64')
+    stable_results['time_ms'] = stable_results['time_ms'].astype('int64')
 
+    final_df = pd.merge_asof(
+        final_df.sort_values('time_ms'),
+        stable_results.sort_values('time_ms'),
+        on='time_ms',
+        direction='backward'
+    )
+
+    # Forward fill ensures the open candle gets the last valid signal
+    res = final_df.ffill().fillna(0.0)
+    
     start_time = df['time_ms'].iloc[0]
-    sliced_res = full_res[full_res['time_ms'] >= start_time].copy()
+    sliced_res = res[res['time_ms'] >= start_time].copy()
     if len(sliced_res) != len(df):
         sliced_res = sliced_res.iloc[-len(df):]
 
