@@ -34,7 +34,7 @@ It’s a fair question. Over the course of my professional career, I’ve stared
 
 **Update** Live edge example
 
-On that last red-candle close, the signal become 0.000009, on the live candle its 0.000029. Would i have traded the signal? Likely (support, potential double bottom, volume, positive divergence, must retrace. tight stop). But this gives a glimpse on how this works on the live-edge. Still: it is not the ONLY signal you should trade on. Thats why: permission filter. Signal? -> go look.
+On that last red-candle close, the signal becomes 0.000009 (from 0.0), on the live candle its 0.000029. Would i have traded the signal? Likely (support, potential double bottom, volume, positive divergence, must retrace. tight stop). But this gives a glimpse on how this works on the live-edge. Still: it is not the ONLY signal you should trade on. Thats why: permission filter. Signal? -> go look.
 
 ![Example](../images/live-edge-example.gif)
 
