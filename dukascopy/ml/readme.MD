@@ -2,7 +2,7 @@
 
 A day off means: no cognitive load. Just documentation.
 
-# Singularies
+# Singularities
 
 **Open-source neuroevolution forge for discovering high-conviction, sparse market signals — without raw price or volume.**
 
