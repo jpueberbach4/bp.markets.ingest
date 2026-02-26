@@ -8,7 +8,7 @@ A day off means: no cognitive load. Just documentation.
 
 A hardened, GPU-accelerated system that evolves small neural networks purely from technical indicators + derived **Market Kinetics** (velocity, acceleration, presence).
 
-Note: the kinetics feature is at this moment unreliable, was shuvved under the carpet for a bit, because a specific model built on cross-divergency and multi-tf-rsi was performing really good. It will be reintroduced soon. First i need to split up the major singularities class. It may still work, but untested atm. Hold your horsies. It will be back (and tested) soon.
+Note: the kinetics feature is at this moment unreliable, was temporarily shelved, because a specific model built on cross-divergency and multi-tf-rsi was performing really good. It will be reintroduced soon. First i need to split up the major singularities class. It may still work, but untested atm. Hold your horsies. It will be back (and tested) soon.
 
 Limits: strictly excludes raw OHLCV to force discovery of higher-order, physics-like confluences.
 
@@ -43,6 +43,8 @@ Current focus? detecting asymmetric market bottoms on 4h timeframes (~0.3–0.6%
 **Not yet a plug-and-play money printer.**
 
 **Signals as a permission filter. If signals, go look at the chart. Know that a bottom is soon in. Like that.**
+
+**Non-goal:** This project is not intended to compete with high-frequency or microstructure-based systems. It explicitly targets medium-horizon structural asymmetries where sparsity and precision dominate.
 
 ## What's next
 
