@@ -138,6 +138,42 @@ Expect it to grind for a couple of days before it returns something really usefu
 
 **For now: dont use kinematics. Try first with normal indicator values.**
 
+## Transferrable models
+
+To create transferable models—models that can be trained on one asset (like EUR-USD) and successfully traded on another (like GBP-USD) without falling into "Predictive Paralysis"—you must ensure that your features are stationary and asset-agnostic.
+
+When a model is "anchored" to the specific price levels of its training data, it becomes a prisoner of that regime. If you move from a 1.08 price environment to a 1.34 environment, the model sees a "Black Swan" outlier rather than a tradable opportunity.
+
+Here is how to ensure your models possess "Universal Physics":
+
+**Purge Absolute Price Levels**
+
+The most common mistake is using indicators that return raw price values.
+
+The Trap: Indicators like standard VWAP, Donchian Channels, or Moving Averages return the price where the line sits (e.g., 1.0850).
+
+The Result: When you move to an asset at 1.34, the normalizer calculates a Z-score of 6.0+, which saturates the neural network's activation layers and mutes the signal.
+
+The Fix: Always convert these to Percentage Deviations or Ratios. Use (Price - VWAP) / VWAP instead of the VWAP price itself to ensure the model sees "0.5% above average" regardless of the asset's scale.
+
+**Avoid Cumulative "Running Totals"**
+
+Features that accumulate value over time create a "scale-clash" between assets with different liquidity.
+
+The Trap: On-Balance Volume (OBV) and Accumulation/Distribution (ADL) grow indefinitely based on the specific volume of the asset.
+
+The Result: A high-volume pair like EUR-USD will produce millions in OBV, while a lower-volume pair will produce thousands. The model will fail to recognize the pattern because the magnitudes don't match.
+
+The Fix: Use bounded volume oscillators like Chaikin Money Flow (CMF) or MFI, which normalize flow into a fixed range.
+
+**Use Dimensionless Ratios and Oscillators**
+
+The most transferable features are those that mathematically cancel out the underlying price scale.
+
+Volatility Ratios: Instead of using absolute ATR (which is in pips), use the Volatility Ratio (Bollinger Width / Keltner Width). This produces a stationary value (e.g., 0.95 for a "squeeze") that looks the same on every chart.
+
+Quality Indices: Use indicators like VQI, which divides price change by True Range. This creates a dimensionless "trend vs. noise" score that is perfectly asset-agnostic.
+
 ## Lower timeframes?
 
 This system is also quite interesting to run on the 1h timeframe.
