@@ -4,6 +4,13 @@ A day off means: no cognitive load. Just documentation.
 
 # Singularities
 
+**Note:** I have tested CPU mode. CPU actually works already. But the conclusion: It's not doable. Not with a 1000 population and 50 epochs configuration. To give an indication:
+
+- CPU-mode, 1000 population, 50 epochs: 264.2 seconds
+- CUDA-mode, 1000 population, 50 epochs: 6.5 seconds
+
+**Conclusion? This is not suitable for CPU-only environments. YOU NEED A GPU!**
+
 **Open-source neuroevolution forge for discovering high-conviction, sparse market signals — without raw price or volume.**
 
 A hardened, GPU-accelerated system that evolves small neural networks purely from technical indicators + derived **Market Kinetics** (velocity, acceleration, presence).
@@ -24,7 +31,6 @@ Current focus? detecting asymmetric market bottoms on 4h timeframes (~0.3–0.6%
 - Models are transferable, not locked into a single asset
 - Still rough but nearing real-beta rapidly
 - Neuroevolution outperforms RandomForest quite dramatically
-- GPU-only but CPU-only support will be added. 
 - One observed behavior appears highly promising but requires prolonged forward validation (see [signals.gif](../images/signals.gif)).
 - Currently have 11 universes of which 3 are generating very promising models
 - One model frontruns the actual bottoms by 2-5 H4 candles consistently, which is interesting.
