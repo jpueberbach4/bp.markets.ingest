@@ -171,3 +171,7 @@ Flight (ABC)                    ← Orchestration / training loop
   └── MilleniumFalcon (concrete) ← Hardened main runner (warp, thermal management, extinction)
 
 ```
+
+## Fancy image (just for fun)
+
+![fancy](../images/fancy.jpeg)
