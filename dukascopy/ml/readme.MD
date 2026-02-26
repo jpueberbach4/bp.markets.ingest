@@ -175,3 +175,7 @@ Flight (ABC)                    ← Orchestration / training loop
 ## Fancy image (just for fun)
 
 ![fancy](../images/fancy.jpeg)
+
+## What is Andromeda
+
+Andromeda is an "advanced" MilkyWay that has support for all the various API methods (HTTP, bootstrapped and files). So you can decouple the ML from your data ingestion layer. Currently MilkyWay is coupled to the bootstrapped API. Andromeda is a more clean and more modular universe. It will be added but currently still developing. Tomorrow, development of Andromeda continues.
