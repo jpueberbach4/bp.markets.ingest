@@ -230,3 +230,13 @@ For example:
 - Prefer models that retain structure under cross-asset exposure
 
 Transferability appears to be a strong proxy for structural robustness.
+
+**Next Steps**
+
+Build standard tooling for and publish results:
+
+- Walk-forward validation
+
+- Candle-by-candle forward feed evaluation
+
+Results of these tests will be published by Sunday.
