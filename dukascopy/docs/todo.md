@@ -46,6 +46,7 @@ Quality:
 Note: Cuda/Rapids/GPU: We were thinking "too advanced". Just implement it as a tensor operation. No chaining. Just in/out. Deploy first as an "experimental"-feature that is easy to grasp. Later we can see on advanced stuff. This path will be implemented to support inference better.
 
 ML:
+  - [ ] Validate CPU mode. Currently GPU focussed but users not having CUDA GPU should be able to run it as well.
   - [x] Implement an experimental version for sparse asymmetric bottom detection
   - [x] Test asymmetric bottom detection
   - [ ] Cleanup/Split major singularity class into parts. Generalize them. Make overloadable
