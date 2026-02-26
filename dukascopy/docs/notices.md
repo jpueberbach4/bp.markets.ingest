@@ -32,7 +32,13 @@ I have merged the latest code. Although the signals are "scale minimum", you can
 **Why a cosmic theme?**
 It’s a fair question. Over the course of my professional career, I’ve stared at an endless sea of dull, lifeless log messages. At some point, I decided to do things differently. Instead of sterile outputs, I wanted something with character—something that tells a story. The cosmic theme adds a human, narrative layer to the system, turning raw mechanics into a journey rather than just another stream of logs.
 
- 
+**Update** Live edge example
+
+On that last red-candle close, the signal become 0.000009, on the live candle its 0.000029. Would i have traded the signal? Yes (support). But this gives a glimp on how this works on the live-edge. Still: it is not the ONLY signal you should trade on. Thats why: permission filter. Signal? -> go look.
+
+![Example](../images/live-edge-example.gif)
+
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
