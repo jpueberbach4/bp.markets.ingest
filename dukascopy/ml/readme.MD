@@ -77,7 +77,7 @@ What else? see [todo.md](../docs/todo.md) document.
 - Precision-biased fitness (`prec^exp` ramp)
 - Extreme penalization of bad-precision population
 - Density/recall floors + hard reject logic  
-- Leakage smoke test (`assert` early F1 < 0.30)  
+- Leakage smoke test (`assert` early when F1 > 0.30)  
 - Radiation injection (40% fresh DNA) on stagnation  
 - Mass extinction (100% reset) on prolonged stagnation  
 - GPU thermal throttling (park if >87 °C)  
