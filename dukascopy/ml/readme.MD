@@ -138,6 +138,48 @@ Expect it to grind for a couple of days before it returns something really usefu
 
 **For now: dont use kinematics. Try first with normal indicator values.**
 
+## Lower timeframes?
+
+This system is also quite interesting to run on the 1h timeframe.
+
+However, as you move to lower timeframes, memory requirements increase significantly. The reason is simple:
+more bars × number of feature dimensions = more tensors in VRAM.
+
+GPU memory is fragile. It fills up quickly when you increase historical depth or dimensionality.
+
+You can monitor VRAM usage with:
+
+```sh
+sudo apt install nvtop
+nvtop
+```
+
+If memory consumption becomes critical:
+
+- Immediately stop the run (CTRL+C)
+
+- Reduce either gpu_chunk or population_size
+
+**Note:** some systems may have "shared GPU memory". Shared GPU memory is normal RAM that is outside of the GPU-subsystem and is MUCH slower. As soon as you see consumption of "shared GPU memory", consider it equally as an out-of-memory event. If you don't, performance will degrade dramatically. Try to target 80-90 percent NVRAM consumption.  
+
+Recommendation:
+
+Lower gpu_chunk first. Avoid changing population_size unless absolutely necessary.
+
+What does gpu_chunk do?
+
+gpu_chunk splits the population into smaller batches processed sequentially on the GPU.
+
+**Example:**
+
+population_size = 1000
+
+gpu_chunk = 200
+
+A single generation will execute in 5 chunked passes instead of one large pass.
+
+This reduces peak VRAM usage at the cost of slightly longer generation time.
+
 ## Extending the code
 
 The code can be easily extended by just specifying your own classes in a java-alike notation witin the config-file.
