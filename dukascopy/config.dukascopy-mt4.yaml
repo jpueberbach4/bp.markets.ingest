@@ -74,6 +74,13 @@ http:
   workers: 4                            # Number of worker processes to serve with
   reload: 0                             # During development you want this probably set to 1. Production? 0
 
+## Below you will find the configuration for the ml script
+ml:
+  log_style: ml.space.messages.spacey  # You can choose from like 8 scripts, see ml/space/messages
+  universes:
+    includes:
+    - config/ml/universes/*.yaml       # Include these universes for ML training
+
 ## Below you will find the configuration for the orchestrator script
 orchestrator:
   # num_processes: 8                  # Override maximum number of cores to use
