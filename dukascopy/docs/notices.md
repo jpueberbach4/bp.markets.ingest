@@ -16,6 +16,8 @@ Regarding the scaling issue: it’s identified. One feature in the dataset is di
 
 It’s a busy phase.
 
+Monday = day off
+
 # ML
 
 A beta "play-version" is released. You can find it in the ml folder. It's research-grade stuff and may be still a bit rough. You need a cuda-capable GPU to use this feature.
