@@ -85,7 +85,10 @@ class EventHorizonSingularity(Singularity):
         self.verbose = bool(self.config.get("verbose", True))
 
         # TODO: should use a lenses config in configuration
-        self.lens = LensFactory.manifest("Gravitational", self.config.get("lens"))
+        self.lens = LensFactory.manifest(
+            self.config.get("lens",{}).get("type","Gravitational"), 
+            self.config.get("lens", {})
+        )
         
         self.population = None  
         self.thresholds = None

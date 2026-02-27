@@ -101,7 +101,10 @@ class PulsarSingularity(Singularity):
         else:
             self.cuda_generator = self.torch_generator
 
-        self.lens = LensFactory.manifest("Gravitational", self.config.get("lens"))
+        self.lens = LensFactory.manifest(
+            self.config.get("lens",{}).get("type","Gravitational"), 
+            self.config.get("lens", {})
+        )
  
         self.population = None  
         self.thresholds = None
@@ -777,7 +780,7 @@ class PulsarSingularity(Singularity):
                 fixed_genes.extend(new_genes.tolist())
                 new_pop[i] = torch.tensor(fixed_genes, device=self.device)
                 if self.verbose:
-                    print(f"    🔧 Post-processing fix for individual {i}")
+                    print(f"🔧 Post-processing fix for individual {i}")
         
         # Final sanity check - ensure champion still exists (using stored state, not gene comparison)
         champ_exists = (new_pop == champ_pop.unsqueeze(0)).all(dim=1).any()

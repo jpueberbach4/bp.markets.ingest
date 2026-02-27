@@ -27,7 +27,6 @@ from typing import Dict, Any
 import torch
 from ml.space.space import Singularity, Flight
 
-
 class Voyager(Flight):
     """Orchestrates the evolutionary training loop for a Singularity."""
 

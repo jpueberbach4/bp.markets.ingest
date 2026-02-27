@@ -31,6 +31,10 @@ MilkyWay:
   singularity:
     type: Pulsar
     device: cuda                  # Use GPU acceleration (CUDA) for model training/inference
+    lens:
+      type: Gravitational         # Loss function
+      alpha: 0.99
+      gamma: 2.0
 
   center:
     - example-pivot-finder_30_bottoms  # Core signal anchor: pivot-based bottom detection over 30-bar window
