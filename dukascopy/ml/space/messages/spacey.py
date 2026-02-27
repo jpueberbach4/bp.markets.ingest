@@ -66,5 +66,11 @@ STRING_TABLE = {
     "NOSTRING_POLLUTION": "✅ No string pollution detected in requested features.",
     "MATTER_CHECK_SUCCESS": "💎 Matter Check: All {count} dimensions are solid (0 NaNs).",
     "VOID_REPORT_WARNING": "⚠️ [Void Report]: {count} dimensions contain NaNs",
-    "DATA_DENSITY_CRITICAL": "🚨 CRITICAL: {count} columns are more than 50% empty!"
+    "DATA_DENSITY_CRITICAL": "🚨 CRITICAL: {count} columns are more than 50% empty!",
+    "UNINITIALIZED_RESOURCE_ERROR": "❌ [Space]: No matter found. Ignite the universe first.",
+    "INITIALIZATION_FAILURE": "❌ [Init Error]: {e}",
+    "GENERATION_SUMMARY_HEADER": "\n📊 [Gen {gen} Summary] ({duration:.1f}s)",
+    "METRIC_F1_BLOCK": "   F1:         Avg {avg_f1:.4f} | Max {max_f1:.4f}",
+    "METRIC_PRECISION_BLOCK": "   Precision: Avg {avg_prec:.4f} | Max {max_prec:.4f}",
+    "METRIC_ACTIVITY_BLOCK": "   Activity:  Total Sigs {sigs} | Density {density:.4%}"
 }

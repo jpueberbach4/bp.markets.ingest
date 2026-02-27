@@ -76,6 +76,7 @@ http:
 
 ## Below you will find the configuration for the ml script
 ml:
+  log_style: spacey                    # Can be either spacey or default
   universes:
     includes:
     - config/ml/universes/*.yaml       # Include these universes for ML training

@@ -27,9 +27,6 @@ Key Capabilities:
 """
 from util.config import load_app_config
 from typing import Dict, Any
-from ml.space.universes.factory import UniverseFactory
-from ml.space.singularities.factory import SingularityFactory
-from ml.space.flights.factory import FlightFactory
 import os
 import argparse
 
@@ -89,6 +86,15 @@ def main():
     )  # Load first existing config file
 
     ml_config = app_config.ml  # Extract ML configuration section
+
+    # Set environment variable to select log_style to be discovered by base Fabric class
+    # Bit hacky but we need to live with this as well
+    os.environ["ML_LOG_STYLE"] = ml_config.get("log_style", "spacey")
+
+    # Now import with right messaging style
+    from ml.space.universes.factory import UniverseFactory
+    from ml.space.singularities.factory import SingularityFactory
+    from ml.space.flights.factory import FlightFactory
 
     universe_name = args.get('universe')  # Selected universe name
     universe_config = ml_config.get('universes').get(universe_name)  # Universe config block

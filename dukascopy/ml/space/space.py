@@ -151,69 +151,83 @@ class Flight(BaseFlight):
     """
 
     def warp(self, singularity):
-        """
-        Run full evolutionary optimization loop.
+        """Run the main evolutionary training loop with stagnation and thermal management.
 
         Args:
-            singularity:
-                Configured singularity instance.
+            singularity (Singularity): Singularity object to train and evolve.
         """
-        self.singularity = singularity  # Attach predictive core
-        singularity.wormhole(self)  # Bridge flight context
-        self.universe = singularity.universe  # Access universe
-        self.device = singularity.config.get('device', 'cpu')  # Execution device
+        self.singularity = singularity
+        self.universe = singularity.universe
 
         if not self.singularity or not self.universe:
-            raise RuntimeError("Flight Engine failure: Singularity or Universe not initialized.")
+            raise RuntimeError("Engine not prepared. Ensure Singularity and Universe are initialized.")
 
-        total_features = len(self.universe.features())  # Feature space size
-        
-        settings = self.config.get('settings', {})  # Extract nested settings
-        generations = self.config.get('max_generations', 4000)
-        extinction_limit = settings.get('extinction_stagnation', 60)
-        stagnation_limit = settings.get('radiation_stagnation', 20)
-        hotness_max = settings.get('hotness_max', 87)
-        hotness_min = settings.get('hotness_min', 80)
-        population_size = settings.get('population_size', 1000)
-        gene_count = settings.get('gene_count', 16)
+        self.print("FLIGHT_WARP_INIT")
 
-        for gen in range(1, generations + 1):  # Iterate evolutionary generations
-            print(f"\n" + "="*60)
-            self.print("FLIGHT_START", gen=gen, total=generations )
-            print("="*60)
+        total_features = len(self.universe.features())
+        generations = self.config.get("max_generations", 4000)
+        settings = self.config.get("settings", {})
 
-            start_t = time.time()  # Start generation timer
-            metrics = self.singularity.run_generation(self.universe)  # Evaluate population
-            duration = time.time() - start_t  # Compute runtime
+        # Evolutionary parameters
+        extinction_limit = settings.get("extinction_stagnation", 120)
+        radiation_stagnation = settings.get("radiation_stagnation", 20)
+        min_sigs_required = settings.get("min_signals", 10)
+        hotness_max = settings.get("hotness_max", 87)
+        hotness_min = settings.get("hotness_min", 80)
+        population_size = settings.get("population_size", 1000)
+        gene_count = settings.get("gene_count", 16)
 
-            fitness = metrics["score"]  # Extract fitness scores
+        self.device = singularity.config.get("device")
+
+        for gen in range(1, generations + 1):
+            print("\n" + "=" * 60)
+            self.print("FLIGHT_GEN_START", gen=gen, total=generations)
+            print("=" * 60)
+
+            start_t = time.time()
+            metrics = self.singularity.run_generation(self.universe)
+            duration = time.time() - start_t
+
+            # Extract key metrics
+            fitness = metrics["score"]
             avg_f1 = metrics["f1"].mean().item()
             max_f1 = metrics["f1"].max().item()
             avg_prec = metrics["precision"].mean().item()
             max_prec = metrics["precision"].max().item()
             total_sigs = metrics["sigs"].sum().item()
+            winner_idx = torch.argmax(metrics["f1"]).item()
+            winner_sigs = metrics["sigs"][winner_idx].sum().item()
 
-            print(f"\n📊 [Gen {gen} Summary] ({duration:.1f}s)")
-            print(f"   F1:         Avg {avg_f1:.4f} | Max {max_f1:.4f}")
-            print(f"   Precision: Avg {avg_prec:.4f} | Max {max_prec:.4f}")
-            print(f"   Activity:  Total Sigs {int(total_sigs)} | Density {metrics['density'].mean().item():.4%}")
+            self.print("FLIGHT_GEN_SUMMARY", gen=gen, duration=duration)
+            self.print("FLIGHT_METRIC_F1", avg_f1=avg_f1, max_f1=max_f1)
+            self.print("FLIGHT_METRIC_PREC", avg_prec=avg_prec, max_prec=max_prec)
+            self.print("FLIGHT_METRIC_ACT", sigs=int(total_sigs), density=metrics['density'].mean().item())
+            self.print("FLIGHT_METRIC_WINNER", sigs=int(winner_sigs))
 
-            if max_f1 > self.best_f1:  # Check for improvement
-                print(f"🏆 [Flight]: New High Water Mark! {max_f1:.4f} beats {self.best_f1:.4f}")
+            self._diagnose_signals(metrics, winner_idx)
+
+            # Save models with improved F1 and sufficient signals
+            if max_f1 > self.best_f1 and winner_sigs >= min_sigs_required:
+                self.print("FLIGHT_ALPHA_PEAK", f1=max_f1, old_f1=self.best_f1)
                 self.best_f1 = max_f1
                 self.best_gen = gen
                 self.stagnation_counter = 0
 
-                winner_idx = torch.argmax(fitness).item()  # Identify best genome
                 filename = f"model-best-gen{gen}-f1-{max_f1:.4f}.pt"
                 self.singularity.save_state(self.universe, filename, winner_idx=winner_idx)
-            else:
-                self.stagnation_counter += 1  # Increment stagnation
-                print(f"📉 [Flight]: No improvement. Stagnation: {self.stagnation_counter}/{extinction_limit}")
-                print(f"           Current Best F1: {self.best_f1:.4f} (Gen {self.best_gen})")
 
-            if self.stagnation_counter >= extinction_limit:  # Mass extinction reset
-                print(f"💀 [Flight]: MASS EXTINCTION. Rebooting evolution...")
+            else:
+                self.stagnation_counter += 1
+                if max_f1 <= self.best_f1:
+                    self.print("FLIGHT_STAGNATION", count=self.stagnation_counter, limit=extinction_limit)
+                    self.print("FLIGHT_BEST_RECORD", f1=self.best_f1, gen=self.best_gen)
+                else:
+                    self.print("FLIGHT_REJECTED", f1=max_f1, sigs=int(winner_sigs), min=min_sigs_required)
+                    self.print("FLIGHT_STAG_COUNT", count=self.stagnation_counter, limit=extinction_limit)
+
+            # Mass extinction: reset population if stagnation limit reached
+            if self.stagnation_counter >= extinction_limit:
+                self.print("FLIGHT_EXTINCTION")
                 with torch.no_grad():
                     new_population = torch.randint(
                         0, total_features,
@@ -226,10 +240,16 @@ class Flight(BaseFlight):
                     self.singularity.gene_usage.fill_(0.0)
                 self.stagnation_counter = 0
 
-            elif self.stagnation_counter > 0 and self.stagnation_counter % stagnation_limit == 0:
-                print(f"☢️  [Flight]: CRITICAL STAGNATION. Injecting radiation into 40% of population...")
+            # Radiation stagnation breaker (mutation flare)
+            elif self.stagnation_counter > 0 and self.stagnation_counter % radiation_stagnation == 0:
+                mutation_rate = 0.40
+                if self.stagnation_counter > (extinction_limit // 2):
+                    self.print("FLIGHT_RAD_DEEP")
+                    mutation_rate = 0.60
+                else:
+                    self.print("FLIGHT_RAD_INJECT")
                 with torch.no_grad():
-                    n_nuke = int(population_size * 0.40)
+                    n_nuke = int(population_size * mutation_rate)
                     indices = torch.randperm(population_size, device=self.device)[:n_nuke]
                     new_dna = torch.randint(
                         0, total_features,
@@ -239,16 +259,15 @@ class Flight(BaseFlight):
                     )
                     self.singularity.population[indices] = new_dna
 
-            self._print_vitality()  # Display gene vitality metrics
-
+            self._print_vitality()
             if gen < generations:
-                self._manage_thermals(hotness_max, hotness_min)  # Protect GPU
-                self.singularity.evolve(metrics)  # Advance population
+                self._manage_thermals(hotness_max, hotness_min)
+                self.singularity.evolve(metrics)
 
-        print("\n" + "—"*60)
-        print(f"🏁 [Flight]: Flight Path Complete.")
-        print(f"🥇 [Best Result]: Gen {self.best_gen} achieved F1 {self.best_f1:.4f}")
-        print("—"*60)
+        print("\n" + "—" * 60)
+        self.print("FLIGHT_COMPLETE")
+        self.print("FLIGHT_BEST_RESULT", gen=self.best_gen, f1=self.best_f1)
+        print("—" * 60)
 
     def _print_vitality(self):
         """
@@ -276,11 +295,11 @@ class Flight(BaseFlight):
         if self.device == "cuda":
             temperature = torch.cuda.temperature()
             if temperature > max_temp:
-                print(f"🔥 [Space]: Radiation spike ({temperature}°C). Orbiting to dark side...")
+                self.print("THERMAL_SPIKE", temperature=temperature)
                 while temperature > min_temp:
                     time.sleep(1.0)
                     temperature = torch.cuda.temperature()
-                print(f"🛰️ [Space]: Thermal equilibrium reached ({temperature}°C). Main drive re-engaged.")
+                self.print("THERMAL_RESUME", temperature=temperature)
 
     def cleanup(self):
         """
@@ -452,7 +471,7 @@ class Universe(BaseUniverse):
 
             return features, self.config.get('filter', []), target
         except Exception as e:
-            print(f"❌ [MilkyWay Init Error]: {e}")
+            self.print("INITIALIZATION_FAILURE", e=e)
             raise
 
     def audit(self):
@@ -462,7 +481,7 @@ class Universe(BaseUniverse):
             pd.DataFrame: DataFrame of columns with NaNs and their percentage.
         """
         if self._feature_table is None:
-            print("❌ [Space]: No matter found. Ignite the universe first.")
+            self.print("UNINITIALIZED_RESOURCE_ERROR")
             return
 
         self.print("DIMENSIONAUDIT_REPORT")
@@ -522,7 +541,7 @@ class Universe(BaseUniverse):
         )
 
         self.audit()
-        print(f"💥 [Space]: Big Bang Successful! {len(self._feature_names)} dimensions normalized.")
+        self.print("SPACE_BIG_BANG", dims=len(self._feature_names))
         return self._feature_table, self._target_series
 
     def dimensions(self):

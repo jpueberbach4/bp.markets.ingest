@@ -64,5 +64,11 @@ STRING_TABLE = {
     "NOSTRING_POLLUTION": "[INFO] [DataAudit] Validation successful: Requested feature set contains no non-numeric or string-polluted dimensions.",
     "MATTER_CHECK_SUCCESS": "[INFO] [DataAudit] Data integrity verification complete: All {count} feature dimensions contain zero null values (NaN).",
     "VOID_REPORT_WARNING": "[WARN] [DataAudit] Data integrity risk identified: {count} feature dimensions contain null values (NaN).",
-    "DATA_DENSITY_CRITICAL": "[CRITICAL] [DataAudit] Data density failure: {count} feature columns exceed the 50% null-value threshold."
+    "DATA_DENSITY_CRITICAL": "[CRITICAL] [DataAudit] Data density failure: {count} feature columns exceed the 50% null-value threshold.",
+    "UNINITIALIZED_RESOURCE_ERROR": "[ERROR] [System] Null dataset access attempted: The execution environment must be initialized before proceeding with this operation.",
+    "INITIALIZATION_FAILURE": "[ERROR] [System] A critical error occurred during the component initialization sequence: {e}",
+    "GENERATION_SUMMARY_HEADER": "\n[METRIC] Generation {gen} Performance Report (Process Time: {duration:.1f}s)",
+    "METRIC_F1_BLOCK": "   F1 Score:     Arithmetic Mean: {avg_f1:.4f} | Maximum: {max_f1:.4f}",
+    "METRIC_PRECISION_BLOCK": "   Precision:    Arithmetic Mean: {avg_prec:.4f} | Maximum: {max_prec:.4f}",
+    "METRIC_ACTIVITY_BLOCK": "   Activity:     Aggregate Signals: {sigs} | Mean Density: {density:.4%}"
 }
