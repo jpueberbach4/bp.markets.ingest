@@ -89,7 +89,7 @@ def main():
 
     # Set environment variable to select log_style to be discovered by base Fabric class
     # Bit hacky but we need to live with this as well
-    os.environ["ML_LOG_STYLE"] = ml_config.get("log_style", "spacey")
+    os.environ["ML_LOG_CLASS"] = ml_config.get("log_style", "ml.space.messages.spacey")
 
     # Now import with right messaging style
     from ml.space.universes.factory import UniverseFactory

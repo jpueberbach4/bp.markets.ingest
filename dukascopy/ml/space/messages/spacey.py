@@ -1,4 +1,10 @@
-
+"""
+===============================================================================
+File:         spacey.py
+Theme:        Space (the default)
+Description:  Space as the next frontier
+===============================================================================
+"""
 
 STRING_TABLE = {
     "SPACE_IGNITE": "🌌 [Space]: Materializing {universe} for {symbol}... {start} -> {end}",

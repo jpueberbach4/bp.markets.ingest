@@ -9,19 +9,13 @@ import numpy as np
 import os
 
 # MESSAGING IMPORT BASED ON ENVIROMENT VARIABLE
-log_style = os.getenv("ML_LOG_STYLE", "SPACEY").upper()
-if log_style == "DEFAULT":
-    module_path = "ml.space.messages.boring"
-else:
-    module_path = "ml.space.messages.spacey"
-
+module_path = os.getenv("ML_LOG_CLASS", "ml.space.messages.spacey")
 try:
     _module = importlib.import_module(module_path)
     STRING_TABLE = getattr(_module, "STRING_TABLE")
 except (ImportError, AttributeError) as e:
     print(f"[Internal Error] Failed to load {module_path}: {e}")
     STRING_TABLE = {}
-
 # END OF MESSAGING IMPORT
 
 class Fabric(ABC):
