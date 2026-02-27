@@ -3,16 +3,26 @@ import torch
 import torch.nn as nn
 import numpy as np
 import os
+import time
 from typing import List, Dict, Any
 
+MODEL_REGISTRY = {} 
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+TTL_SECONDS = 30
+
 def description() -> str:
-    return "Alpha Gen 1087 - Forensic Interrogator 5.0 (Total Recall Build)"
+    return "Alpha Gen 1087 - Forensic Interrogator 5.0 (Performance Audit Build)"
 
 def meta() -> Dict:
-    return {"author": "Gemini", "version": "forensic.5.0.0", "panel": 1, "verified": 1}
+    return {"author": "Gemini", "version": "forensic.5.0.4", "panel": 1, "verified": 1}
 
 def position_args(args: List[str]) -> Dict[str, Any]:
     return {"model-name": args[0] if len(args) > 0 else "model-best-gen22-f1-0.3810.pt"}
+
+
+def warmup_count(options):
+    return 0
+
 
 class SingularityInference(nn.Module):
     def __init__(self, input_dim: int, hidden_dim: int):
@@ -28,114 +38,105 @@ class SingularityInference(nn.Module):
         s2 = self.l2(a1)
         return self.out_act(s2), h1, a1, s2
 
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
-    from util.api import get_data_auto
+def get_model_from_registry(checkpoint_path: str):
+    now = time.time()
+    model_id = os.path.basename(checkpoint_path)
+    entry = MODEL_REGISTRY.get(model_id)
     
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model_name = options.get('model-name', 'model-best-gen22-f1-0.3810.pt')
-    checkpoint_path = f"checkpoints/{model_name}"
+    if entry:
+        if (now - entry['last_load_time']) < TTL_SECONDS:
+            return entry['model'], entry['metadata'], False
 
     if not os.path.exists(checkpoint_path):
-        return pd.DataFrame({'score': 0.0, 'signal': 0.0}, index=df.index)
+        return None, None, False
 
-    # Load model
-    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
-    active_features = checkpoint.get('feature_names', [])
-    w1 = checkpoint['W1'].to(device)
-    b1 = checkpoint['B1'].to(device).reshape(-1)
-    w2 = checkpoint['W2'].to(device)
-    b2 = checkpoint['B2'].to(device).reshape(-1)
-    means = checkpoint['means'].to(device)
-    stds = checkpoint['stds'].to(device)
-
-    # Fetch (with is-open to prevent repainting)
-    parent_indicators = list(set([f.split(':')[0].split('__')[0] for f in active_features]))
-    raw_df = get_data_auto(df, indicators=parent_indicators + ["is-open"])
-
-    # Split: Inference only runs on finalized candles where is-open == 0
-    inference_df = raw_df[raw_df['is-open'] == 0].copy()
+    checkpoint = torch.load(checkpoint_path, map_location=DEVICE, weights_only=False)
     
-    if inference_df.empty:
-         return pd.DataFrame({'score': 0.0, 'signal': 0.0}, index=df.index)
-
-    ordered_columns = []
-    for f in active_features:
-        ordered_columns.append(inference_df[f].values if f in inference_df.columns else np.zeros(len(inference_df)))
-
-    raw_values = np.stack(ordered_columns, axis=1).astype(np.float32)
-    raw_model_tensor = torch.from_numpy(raw_values).to(device)
-
-    # Normalization
-    normalized_tensor = (raw_model_tensor - means) / (stds + 1e-8)
-
-    # Audit
-    with torch.no_grad():
-        bar_contribution = normalized_tensor.unsqueeze(2) * w1.unsqueeze(0) 
-        feature_impact = bar_contribution.mean(dim=(0, 2)).cpu().numpy()
-
-    # Inference
+    w1 = checkpoint['W1'].to(DEVICE)
+    b1 = checkpoint['B1'].to(DEVICE).reshape(-1)
+    w2 = checkpoint['W2'].to(DEVICE)
+    b2 = checkpoint['B2'].to(DEVICE).reshape(-1)
+    
     in_dim, hid_dim = w1.shape
-    model = SingularityInference(input_dim=in_dim, hidden_dim=hid_dim).to(device)
+    model = SingularityInference(input_dim=in_dim, hidden_dim=hid_dim).to(DEVICE)
     model.l1.weight.data = w1.t()
     model.l1.bias.data = b1
-    
-    final_w2 = w2 if w2.shape[0] == 1 else w2.t()
-    model.l2.weight.data = final_w2
+    model.l2.weight.data = w2 if w2.shape[0] == 1 else w2.t()
     model.l2.bias.data = b2
     model.eval()
 
+    metadata = {
+        'feature_names': checkpoint.get('feature_names', []),
+        'means': checkpoint['means'].to(DEVICE),
+        'stds': checkpoint['stds'].to(DEVICE),
+        'threshold': float(checkpoint.get('threshold', 0.2433)),
+        'w1': w1 # Keep for impact audit
+    }
+
+    MODEL_REGISTRY[model_id] = {
+        'model': model,
+        'metadata': metadata,
+        'last_load_time': now
+    }
+    
+    return model, metadata, True
+
+def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    from util.api import get_data_auto
+
+    if df.empty:
+        return pd.DataFrame({'score': 0.0, 'signal': 0.0}, index=df.index)
+    
+    model_name = options.get('model-name', 'model-best-gen22-f1-0.3810.pt')
+    checkpoint_path = f"checkpoints/{model_name}"
+    
+    model, meta_data, did_reload = get_model_from_registry(checkpoint_path)
+    
+    if model is None:
+        return pd.DataFrame({'score': 0.0, 'signal': 0.0}, index=df.index)
+
+    active_features = meta_data['feature_names']
+    parent_indicators = list(set([f.split(':')[0].split('__')[0] for f in active_features]))
+    raw_df = get_data_auto(df, indicators=parent_indicators + ["is-open"])
+
+    inference_mask = raw_df['is-open'] == 0
+    if not inference_mask.any():
+        return pd.DataFrame({'score': 0.0, 'signal': 0.0}, index=df.index)
+
+    inf_data = raw_df.loc[inference_mask, active_features].fillna(0.0).values
+    raw_model_tensor = torch.from_numpy(inf_data.astype(np.float32)).to(DEVICE)
+
     with torch.no_grad():
+        normalized_tensor = (raw_model_tensor - meta_data['means']) / (meta_data['stds'] + 1e-8)
         out, h1, a1, s2 = model(normalized_tensor)
-        predictions = out.squeeze().cpu().numpy()
-        if predictions.ndim == 0:
-            predictions = np.array([predictions.item()])
+        predictions = out.view(-1).cpu().numpy()
 
-    # Reporting (see console)
-    print("\n" + "☢️" * 60)
-    print(f"STABLE AS-OF AUDIT: {model_name}")
-    print(f"Device: {device} | Total Bars: {len(raw_df)} | Inference Bars: {len(inference_df)}")
-    print("-" * 80)
+        if did_reload:
+            w1 = meta_data['w1']
+            bar_contribution = normalized_tensor.unsqueeze(2) * w1.unsqueeze(0) 
+            feature_impact = bar_contribution.mean(dim=(0, 2)).cpu().numpy()
+            
+            print("\n" + "☢️" * 30)
+            print(f"AUDIT REPORT: {model_name} (TTL REFRESH)")
+            print(f"Device: {DEVICE} | Buffer: {len(raw_df)} | Mask: {len(raw_model_tensor)}")
+            print("-" * 80)
+            header = f"{'FEATURE':<50} | {'RAW':>10} | {'Z':>8} | {'IMPACT':>8}"
+            print(header)
+            print("-" * 80)
+            for i, name in enumerate(active_features):
+                r_mean = raw_model_tensor[:, i].mean().item()
+                z_mean = normalized_tensor[:, i].mean().item()
+                imp = feature_impact[i]
+                print(f"{name[:49]:<50} | {r_mean:>10.4f} | {z_mean:>8.4f} | {imp:>8.4f}")
+            print(f"MAX PREDICTION: {predictions.max():.4f}")
+            print("☢️" * 30 + "\n")
+
+    scores = np.zeros(len(raw_df))
+    scores[inference_mask] = predictions
     
-    header = f"{'FEATURE NAME':<60} | {'RAW MEAN':>10} | {'Z-MEAN':>8} | {'IMPACT':>8}"
-    print(header)
-    print("-" * 80)
-    for i, name in enumerate(active_features):
-        r_mean = raw_model_tensor[:, i].mean().item()
-        z_mean = normalized_tensor[:, i].mean().item()
-        impact = feature_impact[i]
-        print(f"{name[:59]:<60} | {r_mean:>10.4f} | {z_mean:>8.4f} | {impact:>8.4f}")
+    result_df = pd.DataFrame({
+        'score': scores,
+        'signal': (scores > meta_data['threshold']).astype(float)
+    }, index=df.index)
 
-    print("-" * 60)
-    print(f"FINAL MAX PREDICTION (STABLE): {predictions.max():.4f}")
-    print("☢️" * 60 + "\n")
-
-    # Signal construction
-    threshold_val = float(checkpoint.get('threshold', 0.2433))
-    stable_results = pd.DataFrame({
-        'time_ms': inference_df['time_ms'],
-        'score': predictions
-    })
-    stable_results['signal'] = np.where(stable_results['score'] > threshold_val, 1.0, 0.0)
-
-    # Alignment
-    final_df = df[['time_ms']].copy()
-    
-    final_df['time_ms'] = final_df['time_ms'].astype('int64')
-    stable_results['time_ms'] = stable_results['time_ms'].astype('int64')
-
-    final_df = pd.merge_asof(
-        final_df.sort_values('time_ms'),
-        stable_results.sort_values('time_ms'),
-        on='time_ms',
-        direction='backward'
-    )
-
-    # Forward fill ensures the open candle gets the last valid signal
-    res = final_df.ffill().fillna(0.0)
-    
-    start_time = df['time_ms'].iloc[0]
-    sliced_res = res[res['time_ms'] >= start_time].copy()
-    if len(sliced_res) != len(df):
-        sliced_res = sliced_res.iloc[-len(df):]
-
-    return sliced_res[['score', 'signal']]
+    return result_df.ffill().fillna(0.0)
