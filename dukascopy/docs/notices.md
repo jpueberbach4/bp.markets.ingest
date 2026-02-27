@@ -65,42 +65,16 @@ A beta "play-version" is released. You can find it in the ml folder. It's resear
 
 It's promising but serious work that (still) requires brutal validation.
 
-At minimum this can be used as an additional "signal"-filter. I have something working with that and works pretty good.
+See [here](../ml/readme.MD) for more information on deep-learning/machine-learning/neuro-evolution for sparse event detection. Bottom hunting.
 
-This is the result of a trained model on EUR-USD, applied to GBP-USD. The data for training was strictly cutoff at 2025-12-31. It has never seen the 2026 data. No leakage. 
+What i have learned, after having generated and evaluated many models, is that this is extremely useful for detecting the end of a downtrend. 
 
-![Example](../images/signals.gif)
+BUT: it is not the golden-egg (yet). I am planning to add (deep) diagnostic tooling to this layer tomorrow so i can actually estimate where in my personal pipeline this should get integrated. 
 
-Note: it's an animated gif since i am battling scaling issues. The signals are tiny 1e-9 vs 1e-20 noise. Seeing how i can fix that but for today i am done. Ending the day with a remarkable result. This model is almost completely-inter asset-divergence and macro-inter asset- driven. No price information. Pure indicators.
+I didnt make it to finish up the Andromeda singularity. Tomorrow first the tooling and when time-left, i will take on Andromeda. Andromeda is nothing more than a decoupled MilkyWay universe. Eg make you able to train on a different machine than where your data stuff resides. It does not have the highest priority. Diagnostic tooling is way more important at this moment.
 
-So what remains is a real forward test-trying to do this week-on this model. The model works for all *USD pairs. I have looked at the genes and they are completely sensible. It checks on DXY compression, risk-on/risk-off sentiment and some volatility stuff. This is the main driver for scoring for this model.
-
-I am currently treating the model's output like this:
-
-This is not a trade trigger.
-This is a permission system.
-
-“If this fires, I am allowed to look.”
-
-That alone is alpha-if confirmed ok.
-
-I did not include the Andromeda config, but the milkyway one instead. The frontrunner. The below example is made with the default shared indicators. If you run the MilkyWay example, and have done the `./setup-dukascopy.sh` you should get models, that, when queried. Should give something like this. Note: the default indicators are not optimal. You need to put a bit of your own secret-sauce into it. "Simple fixes on the shared indicators are needed".
-
-![MilkyWay](../images/milkyway-default-config.png)
-
-I have merged the latest code. Although the signals are "scale minimum", you can increase it by applying eg 1e10 in the `example-mt-pl` indicator. This is for now a workaround.
-
-**Why a cosmic theme?**
-It’s a fair question. Over the course of my professional career, I’ve stared at an endless sea of dull, lifeless log messages. At some point, I decided to do things differently. Instead of sterile outputs, I wanted something with character—something that tells a story. The cosmic theme adds a human, narrative layer to the system, turning raw mechanics into a journey rather than just another stream of logs.
-
-**Update** Live edge example
-
-On that last red-candle close, the signal becomes 0.000009 (from 0.0), on the live candle its 0.000029. Would i have traded the signal? Likely (support, potential double bottom, volume, positive divergence, must retrace. tight stop). But this gives a glimpse on how this works on the live-edge. Still: it is not the ONLY signal you should trade on. Thats why: permission filter. Signal? -> go look.
-
-![Example](../images/live-edge-example.gif)
-
-PS I updated the example-ml-pt connector with repaint prevention using is-open in the subcall. Now its oke.
-
+- Walk forward tests
+- Candle-by-candle forward test
 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
