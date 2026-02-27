@@ -20,7 +20,8 @@ Key Capabilities:
 
 from typing import Dict, Any
 
-from ml.space.space import BaseFactory, Singularity
+from ml.space.base import BaseFactory
+from ml.space.space import Singularity
 from ml.space.flights.voyager import Voyager
 from ml.space.flights.millenniumfalcon import MilleniumFalcon
 

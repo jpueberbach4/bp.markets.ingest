@@ -17,7 +17,8 @@ Key Capabilities:
 ===============================================================================
 """
 
-from ml.space.space import BaseFactory, Comet
+from ml.space.base import BaseFactory
+from ml.space.space import Comet
 from ml.space.comets.halebopp import HaleBopp
 
 

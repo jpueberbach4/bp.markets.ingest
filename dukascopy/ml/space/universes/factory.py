@@ -20,7 +20,8 @@ Key Capabilities:
 
 from typing import Dict, Any
 
-from ml.space.space import BaseFactory, Universe
+from ml.space.base import BaseFactory
+from ml.space.space import Universe
 from ml.space.universes.milkyway import MilkyWay
 
 

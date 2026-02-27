@@ -1,13 +1,13 @@
 """
 ===============================================================================
-File:        milkyway.py
+File:        andromeda.py
 Author:      JP Ueberbach
 Created:     2026-02-23
 
 Description:
-    Implementation of the MilkyWay universe within the ML space.
+    Implementation of the Andromeda universe within the ML space.
 
-    MilkyWay manages:
+    Andromeda manages:
         - Data ingestion and temporal boundaries
         - Initialization of Comets and Normalizers
         - Feature and target preprocessing
@@ -30,10 +30,8 @@ import numpy as np
 from util.api import get_data
 from ml.space.space import Universe
 
-class MilkyWay(Universe):
+class Andromeda(Universe):
     """Concrete Universe class handling data ingestion and normalization."""
-
-
 
     def ignite(self, options=None):
         """Load raw data, handle targets, and filter features.

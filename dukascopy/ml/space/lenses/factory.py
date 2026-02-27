@@ -22,7 +22,7 @@ Key Capabilities:
 
 from typing import Dict, Any
 
-from ml.space.space import BaseFactory
+from ml.space.base import BaseFactory
 from ml.space.space import Lens
 from ml.space.lenses.gravitational import GravitationalLens
 from ml.space.lenses.standardeye import StandardEye

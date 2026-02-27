@@ -20,7 +20,8 @@ Key Capabilities:
 
 from typing import Any, Dict
 
-from ml.space.space import BaseFactory, Normalizer
+from ml.space.base import BaseFactory
+from ml.space.space import Normalizer
 from ml.space.normalizers.redshift import Redshift
 from ml.space.normalizers.pulsar import Pulsar
 from ml.space.normalizers.kinematics import Kinematics

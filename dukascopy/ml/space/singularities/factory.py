@@ -22,7 +22,8 @@ Key Capabilities:
 
 from typing import Dict, Any
 
-from ml.space.space import BaseFactory, Singularity
+from ml.space.base import BaseFactory
+from ml.space.space import Singularity
 from ml.space.singularities.eventhorizon import EventHorizonSingularity
 from ml.space.singularities.pulsar import PulsarSingularity
 
