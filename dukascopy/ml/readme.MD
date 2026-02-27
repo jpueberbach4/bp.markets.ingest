@@ -43,7 +43,6 @@ A hardened, GPU-accelerated system that evolves small neural networks purely fro
 - Supports Out of sample testing. Another repo has real walkforward testing but is currently unstable.
   It is too advanced for my current knowledge but this is increasing at lightspeed.
 - Currently only GELU and Sigmoid activation functions but others are explored (Relu, leaky Relu and others)
-- System is not yet fully overloadable with custom classes, it misses overloading for lenses functions (will soon be in)
 - Default MilkyWay is optimized for a 8GB RTX3070 GPU
 - Elites on F1 and Precision are persistently stored in slot 0 and 1 and always survive.
 - **Advice:** for a card having more VRAM, tune GPU chunk and population. Monitor with nvtop.
@@ -52,9 +51,9 @@ A hardened, GPU-accelerated system that evolves small neural networks purely fro
 
 **Important:** Still **research-grade** — requires brutal validation. Do not trust it blindly!
 
-**Not yet a plug-and-play money printer.**
+**Not yet a plug-and-play money printer or your local private unlimited ATM. We are working towards that.**
 
-**Signals as a permission filter. If signals, go look at the chart. Know that a bottom is soon in. Like that.**
+**Current advice: signals as a permission filter. If signals, go look at the chart. Know that a bottom is soon in. Like that.**
 
 **Non-goal:** This project is not intended to compete with high-frequency or microstructure-based systems. It explicitly targets medium-horizon structural asymmetries where sparsity and precision dominate.
 
@@ -65,8 +64,6 @@ A hardened, GPU-accelerated system that evolves small neural networks purely fro
 - Diagnostic walk-forward backtest -> report
 - Perhaps, if have time: PNL testing (first want to see the walkforward test)
 - Currently cosmic-themed logs. Will add string-table to support boring "enterprise" log-messages.
-- CPU support
-- Split up of the massive singularities class
 - Configurable destination directories for checkpoints/logs (parameterizing HaleBopp)
 - Degrade Voyager and EventHorizon (MilleniumFalcon and Pulsar outperform, use these two)
 
@@ -94,9 +91,9 @@ What else? see [todo.md](../docs/todo.md) document.
 - Mass extinction (100% reset) on prolonged stagnation  
 - GPU thermal throttling (park if >87 °C)  
 - Async persistence (Hale-Bopp comet)  
-- Champion/Elite deployment (full-history retrain + saved normalization)  
 - YAML-configurable + factory pattern extensibility  
 - Cosmic-themed observability (logs, vitality ranks, reject %, weight stats)
+- Funny-string tables added to add a bit of humor to the project (important)
 
 ## Quick Start
 
@@ -196,7 +193,7 @@ If memory consumption becomes critical:
 
 - Reduce either gpu_chunk or population_size
 
-**Note:** some systems may have "shared GPU memory". Shared GPU memory is normal RAM that is outside of the GPU-subsystem and is MUCH slower. As soon as you see consumption of "shared GPU memory", consider it equally as an out-of-memory event. If you don't, performance will degrade dramatically. Try to target 80-90 percent NVRAM consumption.  
+**Note:** some systems may have "shared GPU memory". Shared GPU memory is normal RAM that lives outside of the GPU-subsystem and is MUCH slower. As soon as you see consumption of "shared GPU memory", consider it equally as an out-of-memory event. If you don't, performance will degrade dramatically. Try to target 80-90 percent NVRAM consumption.  
 
 Recommendation:
 
@@ -226,13 +223,13 @@ Extensions are possible for:
 
 - comets
 - flights
+- lenses
 - normalizers
 - singularities
 - universes
+- string tables
 
 Note: custom classes need to extend the specific baseclasses.
-
-Note: additional abstractions will be added soon
 
 ## Structure
 
@@ -250,7 +247,8 @@ Normalizer (ABC)                ← Feature scaling
   └── Kinematics (concrete)     ← Establishes laws like velocity, direction, magnitude,.. \
 
 Lens (ABC)                      ← Loss function
-  └── GravitationalLens (concrete) ← Focal loss with alpha/gamma
+  └── GravitationalLens (concrete) ← Focal loss with alpha/gamma (sparse events optimized)
+  └── StandardEye                  ← Standard loss function
 
 Singularity (ABC)               ← Core computational engine (the "reactor")
   └── EventHorizonSingularity (concrete) ← Population-based neuroevolution + hardening (deprecated)
@@ -261,6 +259,8 @@ Flight (ABC)                    ← Orchestration / training loop
   └── MilleniumFalcon (concrete) ← Hardened main runner (warp, thermal management, extinction)
 
 ```
+
+To do: abstraction for activation functions. Elimination of some remaining magic values.
 
 ## Fancy image (just for fun)
 
