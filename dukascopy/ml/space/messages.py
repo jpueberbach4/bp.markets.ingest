@@ -35,5 +35,13 @@ STRING_TABLE = {
     "THERMAL_SPIKE": "🔥 [Space]: Radiation spike ({temp}°C). Orbiting to dark side...",
     "THERMAL_RESUME": "🛰️ [Space]: Thermal equilibrium reached ({temp}°C). Main drive re-engaged.",
     "CLEANUP_START": "\n🛰️ [Flight]: Draining the Oort Cloud...",
-    "CLEANUP_END": "✅ [Flight]: Cleanup complete. Singularity stable."
+    "CLEANUP_END": "✅ [Flight]: Cleanup complete. Singularity stable.",
+    "SPACE_IGNITE_START": "🌌 [Space]: Igniting MilkyWay for {symbol}...",
+    "SPACE_BOUNDARY": "🌌 [Space]: Temporal boundary detected at {date}. Beyond this, there is only the future.",
+    "DATA_AUDIT_TARGET": "📊 [Data Audit]: Target Column: {target}",
+    "DATA_AUDIT_BARS": "📊 [Data Audit]: Total Bars: {count}",
+    "DATA_AUDIT_SIGS": "📊 [Data Audit]: Signals found: {sigs}",
+    "SPACE_ERROR_TARGET": "⚠️ [Space Error]: Target column '{target}' not found!",
+    "SPACE_CLEANUP_STRINGS": "🧹 [Space]: Radiated {count} string-polluted dimensions.",
+    "SPACE_DISCOVERY": "✅ [Space]: Discovered {count} valid dimensions."
 }

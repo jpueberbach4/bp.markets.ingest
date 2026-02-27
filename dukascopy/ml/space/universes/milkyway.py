@@ -33,8 +33,6 @@ from ml.space.space import Universe
 class MilkyWay(Universe):
     """Concrete Universe class handling data ingestion and normalization."""
 
-
-
     def ignite(self, options=None):
         """Load raw data, handle targets, and filter features.
 
@@ -47,7 +45,7 @@ class MilkyWay(Universe):
         if options is None:
             options = {}
 
-        print(f"🌌 [Space]: Igniting MilkyWay for {self.symbol}...")
+        self.print("SPACE_IGNITE_START", symbol=self.symbol)
 
         raw_polars = get_data(
             symbol=self.symbol,
@@ -62,7 +60,7 @@ class MilkyWay(Universe):
 
         df = raw_polars.to_pandas()
         max_time_date = pd.to_datetime(df['time_ms'].max(), unit='ms').strftime('%Y-%m-%d')
-        print(f"🌌 [Space]: Temporal boundary detected at {max_time_date}. Beyond this, there is only the future.")
+        self.print("SPACE_BOUNDARY", date=max_time_date)
 
         # Handle Target Column
         if self.target_col in df.columns:
@@ -72,14 +70,15 @@ class MilkyWay(Universe):
 
             pos_count = (raw_target == 1).sum()
             neg_count = (raw_target == -1).sum()
-            print(f"📊 [Data Audit]: Target Column: {self.target_col}")
-            print(f"📊 [Data Audit]: Total Bars: {len(df)}")
-            print(f"📊 [Data Audit]: Signals found: {pos_count + neg_count}")
+            
+            self.print("DATA_AUDIT_TARGET", target=self.target_col)
+            self.print("DATA_AUDIT_BARS", count=len(df))
+            self.print("DATA_AUDIT_SIGS", sigs=pos_count + neg_count)
 
             self._target_series = (raw_target != 0).astype(np.float32)
             self._target_series.name = "target"
         else:
-            print(f"⚠️ [Space Error]: Target column '{self.target_col}' not found!")
+            self.print("SPACE_ERROR_TARGET", target=self.target_col)
             self._target_series = pd.Series(np.zeros(len(df)), name="target")
 
         # Filter Patterns & Metadata
@@ -102,6 +101,6 @@ class MilkyWay(Universe):
         self._feature_names = self._feature_table.columns.tolist()
 
         if self._discarded_dimensions:
-            print(f"🧹 [Space]: Radiated {len(self._discarded_dimensions)} string-polluted dimensions.")
-        print(f"✅ [Space]: Discovered {len(self._feature_names)} valid dimensions.")
-
+            self.print("SPACE_CLEANUP_STRINGS", count=len(self._discarded_dimensions))
+        
+        self.print("SPACE_DISCOVERY", count=len(self._feature_names))
