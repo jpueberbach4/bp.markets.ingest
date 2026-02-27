@@ -9,14 +9,14 @@ import numpy as np
 
 from ml.space.messages import STRING_TABLE
 
-class God(ABC):
+class Fabric(ABC):
 
     def print(self, key: str, **kwargs):
         """Ejects a string from the cosmic table with formatted parameters."""
         msg = STRING_TABLE.get(key, f"UNRESOLVED MATTER: {key}")
         print(msg.format(**kwargs))
 
-class BaseFlight(God):
+class BaseFlight(Fabric):
     """
     Abstract base class for evolutionary orchestration engines.
     """
@@ -55,7 +55,7 @@ class BaseFlight(God):
         """
         pass
 
-class BaseUniverse(God):
+class BaseUniverse(Fabric):
     """Abstract base class for feature universes."""
 
     @abstractmethod
@@ -102,7 +102,7 @@ class BaseUniverse(God):
         pass
 
 
-class BaseFactory(God):
+class BaseFactory(Fabric):
     """Base class for factories that resolve classes via config-style paths."""
 
     def _load_from_config_string(class_path: str):
@@ -162,7 +162,7 @@ class BaseFactory(God):
 
 
 
-class BaseSingularity(God):
+class BaseSingularity(Fabric):
     """
     Abstract predictive core.
 
