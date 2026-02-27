@@ -18,6 +18,14 @@ It’s a busy phase.
 
 Monday = day off
 
+This is why i am so curious and obsessed with this model 3750:
+
+![3750](../images/curious.png)
+
+This is a model that was trained on the H4 EUR/USD. It also works for the H1. Very strange. Something is wrong. That's my hunch at least.
+
+It's too bad i didnt have the 3750 running at that live edge example (see below). 
+
 # ML
 
 A beta "play-version" is released. You can find it in the ml folder. It's research-grade stuff and may be still a bit rough. You need a cuda-capable GPU to use this feature.
