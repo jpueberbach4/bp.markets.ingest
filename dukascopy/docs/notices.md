@@ -1,63 +1,6 @@
-# ML
+# Alerting/Trigger System
 
-Everything is overloadable now. You can specify your classes in config.user and just specify it with type argument in the YAML.
-
-eg
-
-```yaml
-MilkyWay:
-  type: config.user.ml.classes.universes.MyCustomUniverse
-  fabric:
-    ...
-
-  flight:
-    type: config.user.ml.classes.flights.MyCustomFlight
-    settings:
-    ...
-
-  singularity:
-    type: config.user.ml.classes.singularies.MyCustomSingularity
-    lens:
-      type: config.user.ml.classes.lenses.MyCustomLossFunction
-    ...
-  center:
-    - example-pivot-finder_30_bottoms  # Core signal anchor: pivot-based bottom detection over 30-bar window
-
-  normalizers:
-    Kinematics: 
-      type: config.user.ml.classes.normalizers.MyCustomNormalizer
-
-... and so on...
-
-```
-
-# Alerting System
-
-The alerting system isn’t live yet, but it has been moved up in priority. I’ve started gradually integrating it into my workflow.
-
-Today: Finalizing the ML component — improving modularity, increasing decoupling, and running final checks.
-
-Tomorrow: Building the forward-testing tooling for the ML models.
-
-Sunday: Running both forward tests and candle-by-candle tests on Model 3750.
-
-This model is outperforming my expectations by a wide margin, so I need to evaluate how it behaves in a “semi-live” environment. That should provide valuable new insights.
-
-Two weeks ago, I didn’t know anything about machine learning.
-
-Regarding the scaling issue: it’s identified. One feature in the dataset is disproportionately strong — it effectively overwhelms the neurons, causing the model to default to low-confidence outputs rather than acting decisively. I’m revisiting the transferability aspect again to address this properly.
-
-It’s a busy phase.
-
-Monday = day off
-
-This is why i am so curious and obsessed with this model 3750:
-
-![3750](../images/curious.png)
-
-This is a model that was trained on the H4 EUR/USD. It also works for the H1. Very strange. Something is wrong. That's my hunch at least.
-
-It's too bad i didnt have the 3750 running at that live edge example (see below). 
+This is getting more important. But first I need to know how to alert using the ML models. Thats why some tests need to be performed first. Measuring is knowing. The larger picture of this subsystem is that "business-rules" can be described in a YAML-alike syntax. A mini coding language expressed in simple YAML. 
 
 # ML
 
