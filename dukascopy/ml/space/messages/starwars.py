@@ -21,7 +21,7 @@ STRING_TABLE = {
     "SINGULARITY_LENS": "🔭 [Targeting]: Stay on target. {lens} computer engaged.",
     "SPACE_MATERIALIZING": "✨ [Hangar]: Rezzing {name} for {symbol}. Ready for takeoff.",
     "COSMIC_NORMALIZATION": "🌀 [Jedi]: Balancing the Force. Standardizing bitstreams...",
-    "REDSHIFT_NORMALIZE": "🌀 [Nav]: Shifting to relative hyperspace coordinates.",
+    "REDSHIFT_NORMALIZE": "🌀 [Nav]: Shifting to relative hyperspace coordinates. Z-Score normalization applied.",
     "GRAVITATIONALLENS_INIT": "👁️ [Kyber]: Piercing the Dark Side. GravitationalLens resolving hidden matter.",
     "STANDARDEYE_INIT": "👁️ [Binoculars]: Scanning the dunes. StandardEye resolving hidden matter.",
     
@@ -50,6 +50,10 @@ STRING_TABLE = {
     "DIAG_UNAVAILABLE": "❌ [Comms]: Static on the channel. Tensor unavailable.",
     "GENE_VITALITY_HEADER": "\n🧬 [Midichlorian Count Top 10]:",
     "GENE_VITALITY_ROW": "   {rank}. {name:<20} | Vitality: {score:.4f}",
+
+    # Thermal & Physics Updates (Missing Strings Added)
+    "THERMAL_SPIKE": "🔥 [R2-D2]: Beep-bloop! Overheating ({temp}°C). Diverting power to shields!",
+    "THERMAL_RESUME": "❄️ [Hoth]: Temperature stabilized ({temp}°C). Engines re-engaged.",
     "CLEANUP_START": "\n🧹 [Garbage Chute]: One thing for sure, we're all gonna be a lot thinner...",
     "CLEANUP_END": "✅ [Docking Bay]: Cleanup complete. Ship is secured.",
     
@@ -71,12 +75,15 @@ STRING_TABLE = {
     "PULSAR_SAVE_PENDING": "📍 [Archives]: Saving blueprint (F1={f1:.4f}, Prec={prec:.4f})...",
     "PULSAR_SAVE_ABORT": "🛑 [Admiral Ackbar]: It's a trap! Save aborted. {reason}",
     "PULSAR_PHYSICS_FAIL": "⚠️ [Droid]: R2 says the motivator is blown: {error}",
-    "PULSAR_WINNER_EJECT": "🥇 [Medal]: Winner Ejected to the Archives. Features: {features} | F1: {f1:.4f}",
-    "PULSAR_CHUNK_LOG": "Sector {chunk} | MaxProb: {max_p:.3f} | Targets: {targets:.0f} | Fired: {fired:.0f}",
+    "PULSAR_WINNER_EJECT": "🥇 [Medal]: Winner Ejected to the Archives. Features: {features} | F1: {f1:.4f} | Precision: {prec:.4f}",
+    "PULSAR_CHUNK_LOG": "Sector {chunk} | MaxProb: {max_p:.3f} | Targets: {targets:.0f} | Fired: {fired:.0f} | F1: {f1:.4f}",
     
-    # Normalizer & Error States
+    # Hale-Bopp & Advanced Normalization
     "HALEBOPP_EJECT": "☄️ [Smuggler]: Kessel run complete. Delivering payload to 'checkpoints/{filename}'",
     "HALEBOPP_DUMPGENES": "🔬 [Labs]: Extracted {count} midichlorian-rich dimensions.",
+    "COSMIC_NORMALIZATION": "🔭 [Alliance]: Calibrating the navigation computer and galactic kinematics...",
+
+    # Audit & Error States
     "DIMENSIONAUDIT_REPORT": "\n🔬 [Briefing]: Sector Integrity Report",
     "ATMOSPHERIC_WASTE": "🚫 [Asteroids]: {count} dimensions destroyed (Scrap/Strings)",
     "NOSTRING_POLLUTION": "✅ [Shields]: No space-junk detected in the feature set.",

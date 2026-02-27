@@ -5,6 +5,7 @@ Theme:        The Grid / TRON Legacy
 Description:  Neon-circuitry based string table for the digital frontier.
 ===============================================================================
 """
+
 STRING_TABLE = {
     # System & Data Ingestion
     "SPACE_IGNITE": "🟦 [GRID]: Resolving {universe} sectors for User:{symbol}... {start} >> {end}",
@@ -19,8 +20,8 @@ STRING_TABLE = {
     "SINGULARITY_INIT": "🌀 [SINGULARITY]: Logic core instantiated on {device}",
     "SINGULARITY_LENS": "🥏 [LENS]: Aligning identity disc. {lens} protocols active.",
     "SPACE_MATERIALIZING": "🟦 [GRID]: Rezzing {name} for User:{symbol}...",
-    "COSMIC_NORMALIZATION": "🌀 [GRID]: Applying Bitstream Normalization...",
-    "REDSHIFT_NORMALIZE": "🌀 [GRID]: Shifting vectors. Relative coordinate normalization engaged.",
+    "COSMIC_NORMALIZATION": "🌀 [GRID]: Applying Bitstream Normalization (Redshift & Kinematics)...",
+    "REDSHIFT_NORMALIZE": "🌀 [GRID]: Shifting vectors. Z-Score coordinate normalization engaged.",
     "GRAVITATIONALLENS_INIT": "🥏 [LENS]: Piercing the digital void. GravitationalLens resolving hidden bits.",
     "STANDARDEYE_INIT": "🥏 [LENS]: Accessing User vision. StandardEye resolving hidden bits.",
     
@@ -49,6 +50,10 @@ STRING_TABLE = {
     "DIAG_UNAVAILABLE": "🟥 [DEBUG]: Bit-tensor unavailable. Check core dump.",
     "GENE_VITALITY_HEADER": "\n🧬 [High-Impact Logic Gates]:",
     "GENE_VITALITY_ROW": "   {rank}. {name:<20} | Vitality: {score:.4f}",
+
+    # Thermal & Maintenance (Missing Strings Added)
+    "THERMAL_SPIKE": "🟧 [CORE]: Thermal surge detected ({temp}°C). Diverting power to heat sinks...",
+    "THERMAL_RESUME": "🟦 [CORE]: Equilibrium restored ({temp}°C). Re-engaging primary light-cycles.",
     "CLEANUP_START": "\n🟦 [SYSTEM]: De-fragmenting the Oort sectors...",
     "CLEANUP_END": "🟦 [SYSTEM]: De-fragmentation complete. System stable.",
     
@@ -70,17 +75,19 @@ STRING_TABLE = {
     "PULSAR_SAVE_PENDING": "📍 [SYSTEM]: Archiving candidate program (F1={f1:.4f}, Prec={prec:.4f})...",
     "PULSAR_SAVE_ABORT": "🟥 [SYSTEM]: Archive aborted. {reason}",
     "PULSAR_PHYSICS_FAIL": "🟥 [SYSTEM]: Failed to serialize physics parameters: {error}",
-    "PULSAR_WINNER_EJECT": "🥇 [SYSTEM]: Winner Code Exported. Dimensions: {features} | F1: {f1:.4f}",
-    "PULSAR_CHUNK_LOG": "Buffer {chunk} | MaxProb: {max_p:.3f} | Targets: {targets:.0f} | Fired: {fired:.0f}",
+    "PULSAR_WINNER_EJECT": "🥇 [SYSTEM]: Winner Code Exported. Dimensions: {features} | F1: {f1:.4f} | Precision: {prec:.4f}",
+    "PULSAR_CHUNK_LOG": "Buffer {chunk} | MaxProb: {max_p:.3f} | Targets: {targets:.0f} | Fired: {fired:.0f} | F1: {f1:.4f}",
     
-    # Normalizer & Error States
-    "HALEBOPP_EJECT": "💠 [IO]: Target reached. Exporting program payload to 'checkpoints/{filename}'",
-    "HALEBOPP_DUMPGENES": "🔬 [IO]: Materialized {count} elite logic gates.",
+    # Hale-Bopp & Advanced Normalizer (Missing Strings Added)
+    "HALEBOPP_EJECT": "💠 [IO]: Sector target reached. Exporting program payload to 'checkpoints/{filename}'",
+    "HALEBOPP_DUMPGENES": "🔬 [IO]: Materialized {count} elite logic gates from the stream.",
+
+    # Audit & Error States
     "DIMENSIONAUDIT_REPORT": "\n🔬 [AUDIT]: Dimension Integrity Report",
     "ATMOSPHERIC_WASTE": "🟥 [WASTE]: {count} sectors dropped (String-corruption/Non-numeric)",
     "NOSTRING_POLLUTION": "🟦 [GRID]: No code-leakage detected in requested features.",
     "MATTER_CHECK_SUCCESS": "💎 [GRID]: All {count} sectors are solid (0 Null-bits).",
-    "VOID_REPORT_WARNING": "🟧 [GRID]: Null-bit leak identified in {count} sectors",
+    "VOID_REPORT_WARNING": "🟧 [GRID]: Null-bit leak identified in {count} sectors (NaNs)",
     "DATA_DENSITY_CRITICAL": "🟥 [CRITICAL]: {count} sectors have >50% data loss!",
     "UNINITIALIZED_RESOURCE_ERROR": "🟥 [GRID_ERROR]: No matter found. Resolve the Grid first.",
     "INITIALIZATION_FAILURE": "🟥 [SYSTEM_ERROR]: Runtime error during init: {e}",

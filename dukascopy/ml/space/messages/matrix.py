@@ -21,7 +21,7 @@ STRING_TABLE = {
     "SINGULARITY_LENS": "👁️ [Oracle]: Seeing beyond the code. {lens} filter engaged.",
     "SPACE_MATERIALIZING": "📞 [Operator]: Loading {name} for {symbol} into the Construct...",
     "COSMIC_NORMALIZATION": "🌀 [Matrix]: Stripping the simulation. Standardizing bitstreams...",
-    "REDSHIFT_NORMALIZE": "🌀 [Matrix]: Applying relative coordinate shift. You are beginning to believe.",
+    "REDSHIFT_NORMALIZE": "🌀 [Matrix]: Applying relative coordinate shift. Z-Score normalization applied.",
     "GRAVITATIONALLENS_INIT": "👁️ [Oracle]: Piercing the veil. GravitationalLens resolving hidden code.",
     "STANDARDEYE_INIT": "👁️ [Oracle]: Viewing the raw code. StandardEye resolving hidden code.",
     
@@ -50,6 +50,10 @@ STRING_TABLE = {
     "DIAG_UNAVAILABLE": "❌ [Error]: Data stream interrupted. Tensor unavailable.",
     "GENE_VITALITY_HEADER": "\n🧬 [Source Code Vitality Top 10]:",
     "GENE_VITALITY_ROW": "   {rank}. {name:<20} | Vitality: {score:.4f}",
+
+    # Thermal & Physics (Missing Strings Added)
+    "THERMAL_SPIKE": "🔥 [System]: Agent detected. Heat signature rising ({temp}°C). Jumping to secondary hardline...",
+    "THERMAL_RESUME": "📞 [Operator]: Trace cleared ({temp}°C). Re-inserting into the simulation.",
     "CLEANUP_START": "\n📞 [Operator]: Knock, knock, Neo. Clearing the cache...",
     "CLEANUP_END": "✅ [Operator]: System purged. Construct stable.",
     
@@ -71,12 +75,17 @@ STRING_TABLE = {
     "PULSAR_SAVE_PENDING": "📍 [Operator]: Exporting optimized program (F1={f1:.4f}, Prec={prec:.4f})...",
     "PULSAR_SAVE_ABORT": "🛑 [Operator]: Export failed. {reason}",
     "PULSAR_PHYSICS_FAIL": "⚠️ [Error]: Failed to extract Z-space physics: {error}",
-    "PULSAR_WINNER_EJECT": "🥇 [Operator]: Program Ejected. Features: {features} | F1: {f1:.4f}",
-    "PULSAR_CHUNK_LOG": "Stream {chunk} | MaxProb: {max_p:.3f} | Anomalies: {targets:.0f} | Fired: {fired:.0f}",
+    "PULSAR_WINNER_EJECT": "🥇 [Operator]: Program Ejected. Features: {features} | F1: {f1:.4f} | Precision: {prec:.4f}",
+    "PULSAR_CHUNK_LOG": "Stream {chunk} | MaxProb: {max_p:.3f} | Anomalies: {targets:.0f} | Fired: {fired:.0f} | F1: {f1:.4f}",
     
+    # Hale-Bopp & Advanced Normalization
+    "HALEBOPP_EJECT": "🚁 [Operator]: Hardline reached. Exporting program payload to 'checkpoints/{filename}'",
+    "HALEBOPP_DUMPGENES": "🔬 [Oracle]: Extracted {count} core logic patterns from the source.",
+    "COSMIC_NORMALIZATION": "🔭 [Oracle]: Calibrating the Construct kinematics and bitstream flow...",
+
     # Audit & Error States
     "DIMENSIONAUDIT_REPORT": "\n🔬 [Audit]: Dimension Integrity Report",
-    "ATMOSPHERIC_WASTE": "🚫 [Noise]: {count} string-polluted dimensions removed.",
+    "ATMOSPHERIC_WASTE": "🚫 [Noise]: {count} string-polluted dimensions removed (Non-Numeric/Strings).",
     "NOSTRING_POLLUTION": "✅ [Clean]: No string pollution detected in the stream.",
     "MATTER_CHECK_SUCCESS": "💎 [Solid]: All {count} dimensions are optimized (0 NaNs).",
     "VOID_REPORT_WARNING": "⚠️ [Void]: {count} dimensions contain null bytes (NaNs)",

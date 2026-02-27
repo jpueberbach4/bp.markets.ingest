@@ -53,6 +53,10 @@ STRING_TABLE = {
     "CLEANUP_START": "\n🧹 [MegaMaid]: Changing from suck to blow...",
     "CLEANUP_END": "✅ [MegaMaid]: Druidia is empty. Singularity stable.",
     
+    # Thermal & Physics (Missing Strings Added)
+    "THERMAL_SPIKE": "🔥 [Radar]: Raspberry! Only one man would dare give me the raspberry: ({temp}°C).",
+    "THERMAL_RESUME": "❄️ [Radar]: Liquid Schwartz levels stabilized ({temp}°C). Resume the search!",
+
     # Space & Matter Checks
     "SPACE_IGNITE_START": "🌌 [Omaha]: Launching Spaceball One for {symbol}...",
     "SPACE_BOUNDARY": "🚧 [Boundary]: Who made this man a gunner? Boundary at {date}!",
@@ -72,14 +76,19 @@ STRING_TABLE = {
     "PULSAR_SAVE_ABORT": "🛑 [Abort]: Out of coffee! Save aborted. {reason}",
     "PULSAR_PHYSICS_FAIL": "⚠️ [Error]: My brains are going into my feet! {error}",
     "PULSAR_WINNER_EJECT": "🥇 [Result]: Winner Ejected to Video. Features: {features} | F1: {f1:.4f}",
-    "PULSAR_CHUNK_LOG": "Chunk {chunk} | Plaid: {max_p:.3f} | Targets: {targets:.0f} | Fired: {fired:.0f}",
+    "PULSAR_CHUNK_LOG": "Chunk {chunk} | Plaid: {max_p:.3f} | Targets: {targets:.0f} | Fired: {fired:.0f} | F1: {f1:.4f}",
     
+    # Hale-Bopp & Redshift (Missing Strings Added)
+    "HALEBOPP_EJECT": "☄️ [Escape]: Get the Winnebago! Ejecting core payload to 'checkpoints/{filename}'",
+    "HALEBOPP_DUMPGENES": "🔬 [Yogurt]: Look in the fortune cookie! Materialized {count} elite dimensions.",
+    "REDSHIFT_NORMALIZE": "🌀 [Grid]: Keep combing the desert! Z-Score normalization.",
+
     # Audit & Error States
     "DIMENSIONAUDIT_REPORT": "\n🔬 [Audit]: MegaMaid Sector Integrity Report",
-    "ATMOSPHERIC_WASTE": "🚫 [Waste]: {count} dimensions went from suck to blow.",
+    "ATMOSPHERIC_WASTE": "🚫 [Waste]: {count} dimensions went from suck to blow (Non-Numeric/Strings).",
     "NOSTRING_POLLUTION": "✅ [Audit]: No raspberry jam detected in requested features.",
     "MATTER_CHECK_SUCCESS": "💎 [Solid]: All {count} dimensions are Druish (0 NaNs).",
-    "VOID_REPORT_WARNING": "⚠️ [Void]: {count} dimensions contain industrial strength vacuum holes.",
+    "VOID_REPORT_WARNING": "⚠️ [Void]: {count} dimensions contain industrial strength vacuum holes (NaNs).",
     "DATA_DENSITY_CRITICAL": "🚨 [Critical]: {count} columns are Assholes! Data loss > 50%!",
     "UNINITIALIZED_RESOURCE_ERROR": "❌ [Error]: No air! Open the canned atmosphere first.",
     "INITIALIZATION_FAILURE": "❌ [Error]: Ship hit the self-destruct: {e}",

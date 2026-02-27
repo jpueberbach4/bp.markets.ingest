@@ -21,7 +21,7 @@ STRING_TABLE = {
     "SINGULARITY_LENS": "👓 [Moat]: Refining our view. {lens} perspective applied to avoid permanent loss of capital.",
     "SPACE_MATERIALIZING": "📦 [Acquisition]: Purchasing {name} for User:{symbol}. Adding to the conglomerate...",
     "COSMIC_NORMALIZATION": "🌀 [Accounting]: Standardizing the balance sheet. Adjusting for GAAP...",
-    "REDSHIFT_NORMALIZE": "🌀 [Valuation]: Discounting future cash flows. Normalized coordinates applied.",
+    "REDSHIFT_NORMALIZE": "🌀 [Valuation]: Discounting future cash flows. Z-Score normalization applied.",
     "GRAVITATIONALLENS_INIT": "👓 [Intrinsics]: Piercing the market noise. GravitationalLens finding intrinsic value.",
     "STANDARDEYE_INIT": "👓 [Intrinsics]: Reading the annual report. StandardEye resolving hidden assets.",
     
@@ -50,6 +50,10 @@ STRING_TABLE = {
     "DIAG_UNAVAILABLE": "❌ [Error]: Ledger corrupted. Financial statements unavailable.",
     "GENE_VITALITY_HEADER": "\n🧬 [Durable Moat Features Top 10]:",
     "GENE_VITALITY_ROW": "   {rank}. {name:<20} | Book Value: {score:.4f}",
+
+    # Thermal & Physics (Synchronized with Spacey)
+    "THERMAL_SPIKE": "🔥 [Margin]: Market euphoria detected ({temp}°C). Be fearful while others are greedy...",
+    "THERMAL_RESUME": "❄️ [Margin]: Market panic subsided ({temp}°C). Margin of safety restored.",
     "CLEANUP_START": "\n🧹 [Audit]: Selling off the non-core assets...",
     "CLEANUP_END": "✅ [Audit]: Conglomerate stable. Books are balanced.",
     
@@ -71,17 +75,22 @@ STRING_TABLE = {
     "PULSAR_SAVE_PENDING": "📍 [Archives]: Documenting winning strategy (F1={f1:.4f}, Prec={prec:.4f})...",
     "PULSAR_SAVE_ABORT": "🛑 [Archives]: Acquisition rejected by the board. {reason}",
     "PULSAR_PHYSICS_FAIL": "⚠️ [Error]: Failed to extract economic physics: {error}",
-    "PULSAR_WINNER_EJECT": "🥇 [Result]: Winner Acquired. Moat Features: {features} | F1: {f1:.4f}",
-    "PULSAR_CHUNK_LOG": "Portfolio {chunk} | Yield: {max_p:.3f} | Assets: {targets:.0f} | Buys: {fired:.0f}",
+    "PULSAR_WINNER_EJECT": "🥇 [Result]: Winner Acquired. Moat Features: {features} | F1: {f1:.4f} | Precision: {prec:.4f}",
+    "PULSAR_CHUNK_LOG": "Portfolio {chunk} | Yield: {max_p:.3f} | Assets: {targets:.0f} | Buys: {fired:.0f} | F1: {f1:.4f}",
     
+    # Hale-Bopp & Advanced Normalization
+    "HALEBOPP_EJECT": "☄️ [Exit]: Long-term target reached. Delivering payload to 'checkpoints/{filename}'",
+    "HALEBOPP_DUMPGENES": "🔬 [Audit]: Materialized {count} elite economic dimensions.",
+    "COSMIC_NORMALIZATION": "🔭 [Audit]: Applying Prudent Normalization (Value & Kinematics)...",
+
     # Audit & Error States
     "DIMENSIONAUDIT_REPORT": "\n🔬 [Audit]: Asset Integrity Report",
-    "ATMOSPHERIC_WASTE": "🚫 [Waste]: {count} junk-bond dimensions dropped.",
+    "ATMOSPHERIC_WASTE": "🚫 [Waste]: {count} junk-bond dimensions dropped (Non-Numeric/Strings).",
     "NOSTRING_POLLUTION": "✅ [Audit]: No creative accounting found in requested features.",
     "MATTER_CHECK_SUCCESS": "💎 [Solid]: All {count} dimensions have a high margin of safety (0 NaNs).",
     "VOID_REPORT_WARNING": "⚠️ [Void]: {count} dimensions contain accounting black holes (NaNs)",
     "DATA_DENSITY_CRITICAL": "🚨 [Critical]: {count} columns are technically insolvent (>50% empty)!",
-    "UNINITIALIZED_RESOURCE_ERROR": "❌ [Error]: No capital found. Fund the account first.",
+    "UNINITIALIZED_RESOURCE_ERROR": "❌ [Error]: No capital found. Fund the account and ignite the universe first.",
     "INITIALIZATION_FAILURE": "❌ [Error]: Market crash during init: {e}",
     "GENERATION_SUMMARY_HEADER": "\n📊 [Period {gen} Earnings] ({duration:.1f}s)",
     "METRIC_F1_BLOCK": "   F1:          Avg {avg_f1:.4f} | Max {max_f1:.4f}",

@@ -21,7 +21,7 @@ STRING_TABLE = {
     "SINGULARITY_LENS": "👁️ [Hypnocil]: Looking through the fog. {lens} protocol engaged.",
     "SPACE_MATERIALIZING": "🏚️ [1428]: Rezzing {name} for {symbol}. Sweet dreams...",
     "COSMIC_NORMALIZATION": "🌀 [Surgery]: Peeling back the skin. Z-space prep starting.",
-    "REDSHIFT_NORMALIZE": "🌀 [Distortion]: The walls are stretching. Relative coordinates applied.",
+    "REDSHIFT_NORMALIZE": "🌀 [Distortion]: The walls are stretching. Z-Score normalization applied.",
     "GRAVITATIONALLENS_INIT": "👁️ [DreamState]: Seeing into your mind. GravitationalLens finding the fear.",
     "STANDARDEYE_INIT": "👁️ [Wide Awake]: I can see you! StandardEye engaged.",
     
@@ -50,6 +50,10 @@ STRING_TABLE = {
     "DIAG_UNAVAILABLE": "❌ [Static]: The TV is just static. Tensor unavailable.",
     "GENE_VITALITY_HEADER": "\n🧬 [Deadly Indicators Top 10]:",
     "GENE_VITALITY_ROW": "   {rank}. {name:<20} | Vitality: {score:.4f}",
+
+    # Thermal & Physics (Missing Strings Added)
+    "THERMAL_SPIKE": "🔥 [Boiler]: It's getting hot in here ({temp}°C). The steam is rising...",
+    "THERMAL_RESUME": "🧤 [Dream]: The furnace cooled down ({temp}°C). Back to the shadows.",
     "CLEANUP_START": "\n🧹 [Janitor]: Sweeping up the remains. No witnesses...",
     "CLEANUP_END": "✅ [Stable]: The dream is quiet. For now.",
     
@@ -71,19 +75,22 @@ STRING_TABLE = {
     "PULSAR_SAVE_PENDING": "📍 [Trophy]: Pinning nightmare to the wall (F1={f1:.4f}, Prec={prec:.4f})...",
     "PULSAR_SAVE_ABORT": "🛑 [Interrupted]: Someone woke up. Save aborted. {reason}",
     "PULSAR_PHYSICS_FAIL": "⚠️ [Burned]: The data is scorched: {error}",
-    "PULSAR_WINNER_EJECT": "🥇 [Eject]: Nightmare exported. Features: {features} | F1: {f1:.4f}",
-    "PULSAR_CHUNK_LOG": "Cycle {chunk} | Horror: {max_p:.3f} | Victims: {targets:.0f} | Fired: {fired:.0f}",
+    "PULSAR_WINNER_EJECT": "🥇 [Eject]: Nightmare exported. Features: {features} | F1: {f1:.4f} | Precision: {prec:.4f}",
+    "PULSAR_CHUNK_LOG": "Cycle {chunk} | Horror: {max_p:.3f} | Victims: {targets:.0f} | Fired: {fired:.0f} | F1: {f1:.4f}",
     
-    # Normalizer & Error States
+    # Hale-Bopp & Advanced Normalization
     "HALEBOPP_EJECT": "🚁 [Escape]: LZ reached? No, it's just another dream. Payload to 'checkpoints/{filename}'",
     "HALEBOPP_DUMPGENES": "🔬 [Autopsy]: Extracted {count} razor-sharp dimensions.",
+    "COSMIC_NORMALIZATION": "🔭 [Autopsy]: Peeling back the layers of dream-state kinematics...",
+
+    # Audit & Error States
     "DIMENSIONAUDIT_REPORT": "\n🔬 [Autopsy]: Sector Integrity Report",
-    "ATMOSPHERIC_WASTE": "🚫 [Gutter]: {count} dimensions slaughtered (Non-numeric/Noise)",
+    "ATMOSPHERIC_WASTE": "🚫 [Gutter]: {count} dimensions slaughtered (Non-numeric/Noise).",
     "NOSTRING_POLLUTION": "✅ [Pure]: The blood is clean. No string pollution detected.",
     "MATTER_CHECK_SUCCESS": "💎 [Solid]: All {count} dimensions are sharp as a blade (0 NaNs).",
     "VOID_REPORT_WARNING": "⚠️ [Holes]: {count} dimensions are missing pieces (NaNs)",
     "DATA_DENSITY_CRITICAL": "🚨 [Dying]: {count} columns are bleeding out! Data loss > 50%!",
-    "UNINITIALIZED_RESOURCE_ERROR": "❌ [Sleepy]: You're not dreaming yet. Ignite the universe.",
+    "UNINITIALIZED_RESOURCE_ERROR": "❌ [Sleepy]: You're not dreaming yet. Ignite the universe first.",
     "INITIALIZATION_FAILURE": "❌ [Glitch]: The nightmare stalled: {e}",
     "GENERATION_SUMMARY_HEADER": "\n📊 [Night {gen} Summary] ({duration:.1f}s)",
     "METRIC_F1_BLOCK": "   F1:          Avg {avg_f1:.4f} | Max {max_f1:.4f}",

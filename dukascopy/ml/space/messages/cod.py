@@ -21,7 +21,7 @@ STRING_TABLE = {
     "SINGULARITY_LENS": "🔭 [Optics]: Thermal scope adjusted. {lens} filter active.",
     "SPACE_MATERIALIZING": "🚁 [Infil]: Dropping {name} for {symbol} into the AO.",
     "COSMIC_NORMALIZATION": "🌀 [Logistics]: Standardizing loadouts. Z-space prep engaged.",
-    "REDSHIFT_NORMALIZE": "🌀 [Ballistics]: Calculating bullet drop. Relative coordinate shift applied.",
+    "REDSHIFT_NORMALIZE": "🌀 [Ballistics]: Calculating bullet drop. Z-Score normalization applied.",
     "GRAVITATIONALLENS_INIT": "👁️ [Intel]: Scanning through walls. GravitationalLens pinpointing hostiles.",
     "STANDARDEYE_INIT": "👁️ [A-COG]: Clear view on the objective. StandardEye engaged.",
     
@@ -50,6 +50,10 @@ STRING_TABLE = {
     "DIAG_UNAVAILABLE": "❌ [Comms]: We've lost the uplink. Tensor data unavailable.",
     "GENE_VITALITY_HEADER": "\n🧬 [High-Value Indicators Top 10]:",
     "GENE_VITALITY_ROW": "   {rank}. {name:<20} | Vitality: {score:.4f}",
+
+    # Thermal & Physics (Missing Strings Added)
+    "THERMAL_SPIKE": "🔥 [Comms]: Hardware is red-lining ({temp}°C). Cease fire and cool down!",
+    "THERMAL_RESUME": "❄️ [Comms]: Temperatures stabilized ({temp}°C). Resume mission.",
     "CLEANUP_START": "\n🧹 [Sweep]: Cleaning up the AO. Leaving no trace...",
     "CLEANUP_END": "✅ [Sweep]: Perimeter secured. System stable.",
     
@@ -71,12 +75,15 @@ STRING_TABLE = {
     "PULSAR_SAVE_PENDING": "📍 [Intel]: Archiving mission data (F1={f1:.4f}, Prec={prec:.4f})...",
     "PULSAR_SAVE_ABORT": "🛑 [Command]: Negative, Ghost Rider. Save aborted. {reason}",
     "PULSAR_PHYSICS_FAIL": "⚠️ [Repair]: Armor is compromised: {error}",
-    "PULSAR_WINNER_EJECT": "🥇 [Exfil]: Extraction successful. Features: {features} | F1: {f1:.4f}",
-    "PULSAR_CHUNK_LOG": "Sector {chunk} | MaxProb: {max_p:.3f} | Targets: {targets:.0f} | Fired: {fired:.0f}",
+    "PULSAR_WINNER_EJECT": "🥇 [Exfil]: Extraction successful. Features: {features} | F1: {f1:.4f} | Precision: {prec:.4f}",
+    "PULSAR_CHUNK_LOG": "Sector {chunk} | MaxProb: {max_p:.3f} | Targets: {targets:.0f} | Fired: {fired:.0f} | F1: {f1:.4f}",
     
-    # Normalizer & Error States
+    # Hale-Bopp & Advanced Normalization
     "HALEBOPP_EJECT": "🚁 [Extraction]: LZ reached. Delivering payload to 'checkpoints/{filename}'",
     "HALEBOPP_DUMPGENES": "🔬 [Intel]: Recovered {count} high-value intelligence dimensions.",
+    "COSMIC_NORMALIZATION": "🔭 [Intel]: Calibrating ballistics and AO kinematics...",
+
+    # Audit & Error States
     "DIMENSIONAUDIT_REPORT": "\n🔬 [Briefing]: AO Integrity Report",
     "ATMOSPHERIC_WASTE": "🚫 [Waste]: {count} dimensions KIA (Non-numeric/Noise)",
     "NOSTRING_POLLUTION": "✅ [Clean]: Area is secure. No string pollution detected.",
@@ -85,7 +92,7 @@ STRING_TABLE = {
     "DATA_DENSITY_CRITICAL": "🚨 [Critical]: {count} columns are compromised! Data loss > 50%!",
     "UNINITIALIZED_RESOURCE_ERROR": "❌ [HQ]: We don't have the gear. Initialize the Op first.",
     "INITIALIZATION_FAILURE": "❌ [Error]: We've got a jam: {e}",
-    "GENERATION_SUMMARY_HEADER": "\n📊 [Wave {gen} Performance] ({duration:.1f}s)",
+    "GENERATION_SUMMARY_HEADER": "\n📊 [Wave {gen} Summary] ({duration:.1f}s)",
     "METRIC_F1_BLOCK": "   F1:          Avg {avg_f1:.4f} | Max {max_f1:.4f}",
     "METRIC_PRECISION_BLOCK": "   PRECISION:   Avg {avg_prec:.4f} | Max {max_prec:.4f}",
     "METRIC_ACTIVITY_BLOCK": "   ACTIVITY:    Confirmed {sigs} | Ratio {density:.4%}"
