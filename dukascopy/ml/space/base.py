@@ -4,11 +4,19 @@ from pathlib import Path
 import sys
 import importlib
 import random
-import torch
 import pandas as pd
 import numpy as np
 
-class BaseFlight(ABC):
+from ml.space.messages import STRING_TABLE
+
+class God(ABC):
+
+    def print(self, key: str, **kwargs):
+        """Ejects a string from the cosmic table with formatted parameters."""
+        msg = STRING_TABLE.get(key, f"UNRESOLVED MATTER: {key}")
+        print(msg.format(**kwargs))
+
+class BaseFlight(God):
     """
     Abstract base class for evolutionary orchestration engines.
     """
@@ -47,7 +55,7 @@ class BaseFlight(ABC):
         """
         pass
 
-class BaseUniverse(ABC):
+class BaseUniverse(God):
     """Abstract base class for feature universes."""
 
     @abstractmethod
@@ -94,7 +102,7 @@ class BaseUniverse(ABC):
         pass
 
 
-class BaseFactory:
+class BaseFactory(God):
     """Base class for factories that resolve classes via config-style paths."""
 
     def _load_from_config_string(class_path: str):
@@ -154,7 +162,7 @@ class BaseFactory:
 
 
 
-class BaseSingularity(ABC):
+class BaseSingularity(God):
     """
     Abstract predictive core.
 
