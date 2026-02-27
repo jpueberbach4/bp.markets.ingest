@@ -1,0 +1,91 @@
+[INFO]: Passing coordinates: --universe MilkyWay
+[INFO] [System] Initializing instance of MilkyWay for asset EUR-USD...
+[INFO] [Persistence] Worker thread 'Hale-Bopp' initialized. Queue capacity: 100.
+[INFO] [Persistence] Worker thread 'Halley' initialized. Queue capacity: 100.
+[INFO] [ModelEngine] Predictive core instance successfully initialized on hardware: cuda.
+[INFO] [ModelEngine] Initializing GravitationalLens optimization module.
+[INFO] [DataLoader] Loading dataset for symbol EUR-USD...
+[INFO] [DataLoader] Maximum timestamp identified: 2025-12-30.
+[METRIC] Target Column: example-pivot-finder_30_bottoms
+[METRIC] Total Observations: 4647
+[METRIC] Total Target Signals: 44
+[INFO] [Preprocessor] Dropped 1 non-numeric columns.
+[INFO] [Preprocessor] Retained 98 numeric feature columns.
+[INFO] [Normalization] Applying Redshift & Optional Kinematics...
+[INFO] [Preprocessor] Applying Z-Score normalization to tensor data.
+
+[INFO] [DataAudit] Feature Dimension Integrity and Statistical Report:
+============================================================
+[INFO] [DataAudit] Data cleaning completed: 1 non-numeric/string-polluted dimensions removed from feature set.
+   - fractaldimension_30__market_state
+------------------------------------------------------------
+[INFO] [DataAudit] Data integrity verification complete: All 98 feature dimensions contain zero null values (NaN).
+============================================================
+[INFO] [Preprocessor] Normalization pipeline completed. Features processed: 98.
+[INFO] [Orchestrator] Starting evolutionary training loop.
+
+============================================================
+[INFO] [Orchestrator] Starting generation 1 of 4000.
+============================================================
+Batch 0 | Max Prob: 0.985 | Targets: 14 | Signals: 462 | F1: 0.1000
+Batch 1 | Max Prob: 0.997 | Targets: 14 | Signals: 346 | F1: 0.1579
+[INFO] [Metrics] Update: new F1 record (0.1579 > -1.0000)
+
+[METRIC] Generation 1 Summary (Runtime: 5.6s)
+   F1 Score:     Mean: 0.0144 | Max: 0.1579
+   Precision:    Mean: 0.0142 | Max: 0.1667
+   Activity:     Total Signals: 9827 | Mean Density: 0.7044%
+   Winner Sigs:  24
+[DEBUG] [Diagnostics] Model 702 active at indices: [263, 365, 399, 400, 401, 638, 639, 645, 648, 649, 651, 652, 659, 687, 688, 689, 965, 1348, 1349, 1353]...
+[INFO] [Metrics] Performance improved. New F1 maximum: 0.1579 (Previous: -1.0000).
+[INFO] [Persistence] Queuing model export (F1=0.1579, Precision=0.1250).
+[INFO] [Export] Model saved successfully. Features: 24 | F1: 0.1579 | Precision: 0.1250
+[INFO] [Persistence] Exporting model state checkpoint to 'checkpoints/model-best-gen1-f1-0.1579.pt'.
+
+[METRIC] Top 10 Features by Importance Score:
+   1. example-multi-tf-rsi_GBP-USD_14_14_14_14__rsi1W | Score: 0.0132
+   2. example-multi-tf-rsi_USTBOND.TR-USD_14_14_14_14__rsi4h | Score: 0.0127
+   3. adx_14__plus_di      | Score: 0.0126
+   4. bbands_20_2.0__mid   | Score: 0.0124
+   5. example-multi-tf-rsi_USTBOND.TR-USD_14_14_14_14__rsi | Score: 0.0122
+   6. example-multi-tf-rsi_DEU.IDX-EUR_14_14_14_14__rsi1d | Score: 0.0122
+   7. example-multi-tf-rsi_GBP-USD_14_14_14_14__rsi1d | Score: 0.0122
+   8. keltner_20_1.5__upper | Score: 0.0121
+   9. adx_14__adx          | Score: 0.0121
+   10. obv                  | Score: 0.0120
+[INFO] [Evolution] Preserving elite model (F1=0.1579) at index 1.
+
+============================================================
+[INFO] [Orchestrator] Starting generation 2 of 4000.
+============================================================
+Batch 0 | Max Prob: 0.809 | Targets: 14 | Signals: 63 | F1: 0.1600
+Batch 1 | Max Prob: 0.849 | Targets: 14 | Signals: 79 | F1: 0.1333
+[INFO] [Metrics] Update: new F1 record (0.1600 > 0.1579)
+
+[METRIC] Generation 2 Summary (Runtime: 4.1s)
+   F1 Score:     Mean: 0.0143 | Max: 0.1600
+   Precision:    Mean: 0.0169 | Max: 0.1818
+   Activity:     Total Signals: 3169 | Mean Density: 0.2272%
+   Winner Sigs:  11
+[DEBUG] [Diagnostics] Model 99 active at indices: [661, 662, 819, 820, 858, 861, 915, 916, 1039, 1041, 1101]
+[INFO] [Metrics] Performance improved. New F1 maximum: 0.1600 (Previous: 0.1579).
+[INFO] [Persistence] Queuing model export (F1=0.1600, Precision=0.1818).
+[INFO] [Export] Model saved successfully. Features: 24 | F1: 0.1600 | Precision: 0.1818
+[INFO] [Persistence] Exporting model state checkpoint to 'checkpoints/model-best-gen2-f1-0.1600.pt'.
+
+[METRIC] Top 10 Features by Importance Score:
+   1. bbands_20_2.0__mid   | Score: 0.0122
+   2. donchian-width_20__width | Score: 0.0116
+   3. example-multi-tf-rsi_GBP-USD_14_14_14_14__rsi1W | Score: 0.0114
+   4. adl                  | Score: 0.0113
+   5. donchian_20__mid     | Score: 0.0109
+   6. hma_9                | Score: 0.0108
+   7. bbands_20_2.0__upper | Score: 0.0106
+   8. example-cross-divergence_USTBOND.TR-USD_BUND.TR-EUR_20_rsi_14 | Score: 0.0106
+   9. kaufman-er_10__er    | Score: 0.0105
+   10. donchian_20__upper   | Score: 0.0104
+[INFO] [Evolution] Preserving elite model (F1=0.1600) at index 1.
+
+============================================================
+[INFO] [Orchestrator] Starting generation 3 of 4000.
+============================================================
