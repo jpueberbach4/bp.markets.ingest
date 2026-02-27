@@ -1,3 +1,21 @@
+# Alerting System
+
+The alerting system isn’t live yet, but it has been moved up in priority. I’ve started gradually integrating it into my workflow.
+
+Today: Finalizing the ML component — improving modularity, increasing decoupling, and running final checks.
+
+Tomorrow: Building the forward-testing tooling for the ML models.
+
+Sunday: Running both forward tests and candle-by-candle tests on Model 3750.
+
+This model is outperforming my expectations by a wide margin, so I need to evaluate how it behaves in a “semi-live” environment. That should provide valuable new insights.
+
+Two weeks ago, I didn’t know anything about machine learning.
+
+Regarding the scaling issue: it’s identified. One feature in the dataset is disproportionately strong — it effectively overwhelms the neurons, causing the model to default to low-confidence outputs rather than acting decisively. I’m revisiting the transferability aspect again to address this properly.
+
+It’s a busy phase.
+
 # ML
 
 A beta "play-version" is released. You can find it in the ml folder. It's research-grade stuff and may be still a bit rough. You need a cuda-capable GPU to use this feature.
