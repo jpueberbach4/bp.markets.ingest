@@ -43,5 +43,14 @@ STRING_TABLE = {
     "DATA_AUDIT_SIGS": "📊 [Data Audit]: Signals found: {sigs}",
     "SPACE_ERROR_TARGET": "⚠️ [Space Error]: Target column '{target}' not found!",
     "SPACE_CLEANUP_STRINGS": "🧹 [Space]: Radiated {count} string-polluted dimensions.",
-    "SPACE_DISCOVERY": "✅ [Space]: Discovered {count} valid dimensions."
+    "SPACE_DISCOVERY": "✅ [Space]: Discovered {count} valid dimensions.",
+    "CORE_QUANTUM_LOCK": "💎 [Singularity]: Quantum Lock: Champion (F1={f1:.4f}) pinned to Elite Slot 1",
+    "CORE_FIX_INDIVIDUAL": "🔧 Post-processing fix for individual {i}",
+    "CORE_CHAMP_LOST": "  ⚠️ [Evolution]: Champion lost! Restoring to position 1",
+    "PULSAR_NEW_RECORD": "🔥 [Evolution]: New High-Water Mark: {reason}",
+    "PULSAR_SAVE_PENDING": "📍 [Singularity]: Saving pending best model with F1={f1:.4f}, Precision={prec:.4f}",
+    "PULSAR_SAVE_ABORT": "🛑 [Singularity]: Save aborted. {reason}",
+    "PULSAR_PHYSICS_FAIL": "⚠️ [Singularity]: Failed to extract Redshift physics: {error}",
+    "PULSAR_WINNER_EJECT": "🥇 [Singularity]: Atomic Winner Ejected. Features: {features} | F1: {f1:.4f} | Precision: {prec:.4f}",
+    "PULSAR_CHUNK_LOG": "Chunk {chunk} | MaxP: {max_p:.3f} | Targets: {targets:.0f} | Fired: {fired:.0f} | F1: {f1:.4f}"
 }
