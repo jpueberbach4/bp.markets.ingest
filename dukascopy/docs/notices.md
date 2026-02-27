@@ -1,3 +1,36 @@
+# ML
+
+Everything is overloadable now. You can specify your classes in config.user and just specify it with type argument in the YAML.
+
+eg
+
+```yaml
+MilkyWay:
+  type: config.user.ml.classes.universes.MyCustomUniverse
+  fabric:
+    ...
+
+  flight:
+    type: config.user.ml.classes.flights.MyCustomFlight
+    settings:
+    ...
+
+  singularity:
+    type: config.user.ml.classes.singularies.MyCustomSingularity
+    lens:
+      type: config.user.ml.classes.lenses.MyCustomLossFunction
+    ...
+  center:
+    - example-pivot-finder_30_bottoms  # Core signal anchor: pivot-based bottom detection over 30-bar window
+
+  normalizers:
+    Kinematics: 
+      type: config.user.ml.classes.normalizers.MyCustomNormalizer
+
+... and so on...
+
+```
+
 # Alerting System
 
 The alerting system isn’t live yet, but it has been moved up in priority. I’ve started gradually integrating it into my workflow.
