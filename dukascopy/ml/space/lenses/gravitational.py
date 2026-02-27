@@ -24,7 +24,7 @@ from ml.space.space import Lens
 class GravitationalLens(Lens):
     """Focal Loss for rare-event magnification in time-series or binary signals."""
 
-    def __init__(self, alpha: float = 0.99, gamma: float = 3.0):
+    def __init__(self, config):
         """Initialize GravitationalLens with weighting parameters.
 
         Args:
@@ -32,8 +32,9 @@ class GravitationalLens(Lens):
             gamma (float): Focusing parameter to reduce loss for well-classified examples (default 3.0).
         """
         super().__init__()
-        self.alpha = alpha
-        self.gamma = gamma
+        self.config = config
+        self.alpha = float(self.config.get("alpha"))
+        self.gamma = float(self.config.get("gamma"))
 
     def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
         """Compute the focal loss for binary classification.

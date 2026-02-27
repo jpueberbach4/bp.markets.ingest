@@ -57,7 +57,7 @@ import pandas as pd
 from typing import Optional
 
 from ml.space.space import Singularity
-from ml.space.lenses.spectograph import Spectrograph
+from ml.space.lenses.factory import LensFactory
 
 class EventHorizonSingularity(Singularity):
     """
@@ -85,7 +85,7 @@ class EventHorizonSingularity(Singularity):
         self.verbose = bool(self.config.get("verbose", True))
 
         # TODO: should use a lenses config in configuration
-        self.spectrograph = Spectrograph(mode="focal", alpha=0.99, gamma=2.0)
+        self.lens = LensFactory.manifest("Gravitational", self.config.get("lens"))
         
         self.population = None  
         self.thresholds = None
@@ -288,7 +288,7 @@ class EventHorizonSingularity(Singularity):
 
                 # Custom loss + sparsity penalty
                 loss = (
-                    self.spectrograph.analyze(logits, y_train)
+                    self.lens.forward(logits, y_train)
                     + (torch.sigmoid(logits).mean() * self.penalty_coeff)
                 )
 

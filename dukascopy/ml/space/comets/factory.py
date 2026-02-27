@@ -61,5 +61,5 @@ class CometFactory(BaseFactory):
 
         # Raise error for unknown comet types
         raise ValueError(
-            f"🌌 [OortCloud]: Unknown comet type '{comet_name}' requested."
+            f"🌌 [Comet]: Unknown comet type '{comet_name}' requested."
         )

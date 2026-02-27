@@ -62,7 +62,7 @@ import pandas as pd
 from typing import Optional
 
 from ml.space.space import Singularity
-from ml.space.lenses.spectograph import Spectrograph
+from ml.space.lenses.factory import LensFactory
 
 class PulsarSingularity(Singularity):
     """
@@ -101,9 +101,8 @@ class PulsarSingularity(Singularity):
         else:
             self.cuda_generator = self.torch_generator
 
-        # TODO: should use a lenses config in configuration
-        self.spectrograph = Spectrograph(mode="focal", alpha=0.99, gamma=2.0)
-        
+        self.lens = LensFactory.manifest("Gravitational", self.config.get("lens"))
+ 
         self.population = None  
         self.thresholds = None
         self.pop_W1 = None; self.pop_B1 = None
@@ -305,8 +304,8 @@ class PulsarSingularity(Singularity):
                 # Forward pass
                 logits = self._forward(x_train, w1, b1, w2, b2)
 
-                # FIX: Stronger sparsity penalty using KL divergence
-                main_loss = self.spectrograph.analyze(logits, y_train)
+                # Stronger sparsity penalty using KL divergence
+                main_loss = self.lens.forward(logits, y_train)
                 
                 # KL divergence penalty to force mean toward target density
                 target_mean = torch.tensor(self.target_density, device=self.device)

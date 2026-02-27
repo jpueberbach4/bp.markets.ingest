@@ -69,5 +69,5 @@ class SingularityFactory(BaseFactory):
 
         # Raise error for unknown types
         raise ValueError(
-            f"🌌 [Constellation]: Unknown singularity type '{singularity_name}' requested."
+            f"🌌 [Singularity]: Unknown singularity type '{singularity_name}' requested."
         )

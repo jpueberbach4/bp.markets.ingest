@@ -64,5 +64,5 @@ class UniverseFactory(BaseFactory):
             
         # Raise error for unknown universe types
         raise ValueError(
-            f"🌌 [Space]: Unknown universe type '{universe_name}' requested."
+            f"🌌 [Universe]: Unknown universe type '{universe_name}' requested."
         )
