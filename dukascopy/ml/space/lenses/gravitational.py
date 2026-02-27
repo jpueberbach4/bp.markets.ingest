@@ -36,7 +36,7 @@ class GravitationalLens(Lens):
         self.alpha = float(self.config.get("alpha"))
         self.gamma = float(self.config.get("gamma"))
 
-        print(f"👁️ [Lens]: Piercing the void. Using GravitationalLens to resolve hidden matter.")
+        self.print("GRAVITATIONALLENS_INIT")
 
     def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
         """Compute the focal loss for binary classification.

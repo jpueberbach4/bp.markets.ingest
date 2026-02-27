@@ -56,7 +56,7 @@ class Redshift(Normalizer):
         Returns:
             torch.Tensor: Normalized tensor with zero mean and unit variance.
         """
-        print(f"🌌 [Space]: Establishing physics. Z-Score normalization.")
+        self.print("REDSHIFT_NORMALIZE")
         mu = x.mean(dim=self.dim, keepdim=True)
         sigma = x.std(dim=self.dim, keepdim=True)
         

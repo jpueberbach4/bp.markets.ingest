@@ -7,7 +7,7 @@ import random
 import pandas as pd
 import numpy as np
 
-from ml.space.messages import STRING_TABLE
+from ml.space.messages.boring import STRING_TABLE
 
 class Fabric(ABC):
 
@@ -15,6 +15,9 @@ class Fabric(ABC):
         """Ejects a string from the cosmic table with formatted parameters."""
         msg = STRING_TABLE.get(key, f"UNRESOLVED MATTER: {key}")
         print(msg.format(**kwargs))
+
+class BaseComet(Fabric):
+    pass
 
 class BaseFlight(Fabric):
     """
@@ -160,7 +163,11 @@ class BaseFactory(Fabric):
             print(f"Error: Could not resolve '{class_path}'.\n{e}")
             sys.exit(1)
 
+class BaseLens(Fabric):
+    pass
 
+class BaseNormalizer(Fabric):
+    pass
 
 class BaseSingularity(Fabric):
     """

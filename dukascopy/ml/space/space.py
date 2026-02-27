@@ -42,11 +42,11 @@ import torch.nn as nn
 import pandas as pd
 import time
 
-from ml.space.base import BaseUniverse, BaseSingularity, BaseFlight
+from ml.space.base import BaseComet, BaseLens, BaseUniverse, BaseSingularity, BaseFlight, BaseNormalizer
 
 # -----------------------------------------------------------------------------------------------------------
 
-class Comet(ABC):
+class Comet(BaseComet):
     """
     Abstract base class for asynchronous persistence backends.
 
@@ -74,7 +74,7 @@ class Comet(ABC):
         os.makedirs('logs', exist_ok=True)  # Ensure log directory exists
         
         self._nucleus.start()  # Start background persistence worker
-        print(f"☄️ [Space]: Establishing Orbit for {self.name}. Tail length: {queue_size}")
+        self.print("COMET_ORBIT", name=self.name, size=queue_size)
 
     def _orbital_loop(self):
         """
@@ -299,7 +299,7 @@ class Flight(BaseFlight):
 
 # -----------------------------------------------------------------------------------------------------------
 
-class Lens(nn.Module, ABC):
+class Lens(nn.Module, BaseLens):
     """
     Abstract base class for loss functions.
 
@@ -328,7 +328,7 @@ class Lens(nn.Module, ABC):
 
 # -----------------------------------------------------------------------------------------------------------
 
-class Normalizer(nn.Module, ABC):
+class Normalizer(nn.Module, BaseNormalizer):
     """
     Abstract base class for feature scaling modules.
 
@@ -374,7 +374,7 @@ class Singularity(BaseSingularity):
         """
         self.device = torch.device(device)  # Resolve device
         self.model = None  # Placeholder for torch model
-        print(f"🌀 [Singularity]: Initialized on {self.device}")
+        self.print("SINGULARITY_INIT", device=self.device)
 
     def to_tensor(self, df: pd.DataFrame) -> torch.Tensor:
         """
@@ -431,7 +431,7 @@ class Universe(BaseUniverse):
             self.after_ms = int(datetime.fromisoformat(str(self.config.get('fabric').get('after'))).timestamp() * 1000)
             self.until_ms = int(datetime.fromisoformat(str(self.config.get('fabric').get('until'))).timestamp() * 1000)
 
-            print(f"🌌 [Space]: Materializing {type(self).__name__} for {self.symbol}...")
+            self.print("SPACE_MATERIALIZING", name=type(self).__name__, symbol=self.symbol)
 
             # Initialize Comets
             for comet_name in self.config.get('comets'):
@@ -465,16 +465,16 @@ class Universe(BaseUniverse):
             print("❌ [Space]: No matter found. Ignite the universe first.")
             return
 
-        print("\n🔬 [Space]: Dimension Audit Report")
+        self.print("DIMENSIONAUDIT_REPORT")
         print("=" * 60)
 
         if self._discarded_dimensions:
-            print(f"🚫 [Atmospheric Waste]: {len(self._discarded_dimensions)} dimensions dropped (Non-Numeric/Strings)")
+            self.print("ATMOSPHERIC_WASTE", count = len(self._discarded_dimensions))
             for col in self._discarded_dimensions:
                 print(f"   - {col}")
             print("-" * 60)
         else:
-            print("✅ No string pollution detected in requested features.")
+            self.print("NOSTRING_POLLUTION")
 
         nan_counts = self._feature_table.isna().sum()
         nan_percentages = (nan_counts / len(self._feature_table)) * 100
@@ -484,13 +484,13 @@ class Universe(BaseUniverse):
         }).query('void_count > 0').sort_values(by='void_count', ascending=False)
 
         if void_report.empty:
-            print(f"💎 Matter Check: All {len(self._feature_names)} dimensions are solid (0 NaNs).")
+            self.print("MATTER_CHECK_SUCCESS", count=len(self._feature_names))
         else:
-            print(f"⚠️ [Void Report]: {len(void_report)} dimensions contain NaNs")
+            self.print("VOID_REPORT_WARNING", count=len(void_report))
             print(void_report.to_string())
             critical = void_report[void_report['void_percent'] > 50]
             if not critical.empty:
-                print(f"🚨 CRITICAL: {len(critical)} columns are more than 50% empty!")
+                self.print("DATA_DENSITY_CRITICAL", count=len(critical))
 
         print("=" * 60)
         return void_report
@@ -504,7 +504,7 @@ class Universe(BaseUniverse):
         if self._feature_table is None:
             raise RuntimeError("Cannot Big Bang an unignited universe. Call ignite() first.")
 
-        print("🔭 [Space]: Applying Cosmic Normalization (Redshift & Kinematics)...")
+        self.print("COSMIC_NORMALIZATION")
 
         current_names = list(self._feature_table.columns)
         normalized_tensor = torch.tensor(self._feature_table.values, dtype=torch.float32)

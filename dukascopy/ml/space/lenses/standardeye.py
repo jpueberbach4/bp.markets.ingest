@@ -32,6 +32,8 @@ class StandardEye(Lens):
         super().__init__()
         self.loss = nn.BCEWithLogitsLoss()
 
+        self.print("STANDARDEYE_INIT")
+
     def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
         """
         Computes binary cross-entropy loss between predictions and targets.

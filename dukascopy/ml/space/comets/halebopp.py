@@ -70,7 +70,7 @@ class HaleBopp(Comet):
                 f.write(f"Slot {i:02d} | Index {idx:02d} | {name}\n")
 
         # Console feedback
-        print(f"🔬 [Hale-Bopp]: Materialized {len(readable_genes)} elite dimensions.")
+        self.print("HALEBOPP_DUMPGENES", count=len(readable_genes))
 
     def eject(self, filename: str, data: Any, is_model: bool, is_gene_dump: bool = False):
         """Save data to the local file system based on type.
@@ -89,7 +89,7 @@ class HaleBopp(Comet):
         """
         if is_model:
             # Save PyTorch model weights
-            print(f"☄️ [Hale-Bopp]: Perihelion reached. Ejecting core payload to 'checkpoints/{filename}'.")
+            self.print("HALEBOPP_EJECT", filename=filename)
             torch.save(data, f"checkpoints/{filename}")
 
         elif is_gene_dump:

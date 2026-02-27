@@ -52,5 +52,19 @@ STRING_TABLE = {
     "PULSAR_SAVE_ABORT": "🛑 [Singularity]: Save aborted. {reason}",
     "PULSAR_PHYSICS_FAIL": "⚠️ [Singularity]: Failed to extract Redshift physics: {error}",
     "PULSAR_WINNER_EJECT": "🥇 [Singularity]: Atomic Winner Ejected. Features: {features} | F1: {f1:.4f} | Precision: {prec:.4f}",
-    "PULSAR_CHUNK_LOG": "Chunk {chunk} | MaxP: {max_p:.3f} | Targets: {targets:.0f} | Fired: {fired:.0f} | F1: {f1:.4f}"
+    "PULSAR_CHUNK_LOG": "Chunk {chunk} | MaxP: {max_p:.3f} | Targets: {targets:.0f} | Fired: {fired:.0f} | F1: {f1:.4f}",
+    "REDSHIFT_NORMALIZE": "🌌 [Space]: Establishing physics. Z-Score normalization.",
+    "HALEBOPP_EJECT" : "☄️ [Hale-Bopp]: Perihelion reached. Ejecting core payload to 'checkpoints/{filename}'",
+    "HALEBOPP_DUMPGENES": "🔬 [Hale-Bopp]: Materialized {count} elite dimensions.",
+    "SPACE_MATERIALIZING": "🌌 [Space]: Materializing {name} for {symbol}...",
+    "COSMIC_NORMALIZATION":  "🔭 [Space]: Applying Cosmic Normalization (Redshift & Kinematics)...",
+    "GRAVITATIONALLENS_INIT": "👁️ [Lens]: Piercing the void. Using GravitationalLens to resolve hidden matter.",
+    "STANDARDEYE_INIT": "👁️ [Lens]: Piercing the void. Using StandardEye to resolve hidden matter.",
+    "SINGULARITY_INIT": "🌀 [Singularity]: Initialized on {device}",
+    "DIMENSIONAUDIT_REPORT": "\n🔬 [Space]: Dimension Audit Report",
+    "ATMOSPHERIC_WASTE": "🚫 [Atmospheric Waste]: {count} dimensions dropped (Non-Numeric/Strings)",
+    "NOSTRING_POLLUTION": "✅ No string pollution detected in requested features.",
+    "MATTER_CHECK_SUCCESS": "💎 Matter Check: All {count} dimensions are solid (0 NaNs).",
+    "VOID_REPORT_WARNING": "⚠️ [Void Report]: {count} dimensions contain NaNs",
+    "DATA_DENSITY_CRITICAL": "🚨 CRITICAL: {count} columns are more than 50% empty!"
 }
