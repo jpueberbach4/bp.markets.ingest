@@ -4,12 +4,15 @@ import os
 import pandas as pd
 import polars as pl
 import numpy as np
+import math
 from typing import List, Dict, Any
 from datetime import datetime, timezone
 from util.api import get_data
 
+NUMBER_DECIMALS = 10
+
 # ==========================================
-# 1. Neural Network Architecture
+# Neural Network Architecture
 # ==========================================
 class SingularityInference(nn.Module):
     def __init__(self, input_dim: int, hidden_dim: int):
@@ -26,7 +29,7 @@ class SingularityInference(nn.Module):
         return self.out_act(s2), h1, a1, s2
 
 # ==========================================
-# 2. Forensic Stepper Core
+# Forensic Stepper Core
 # ==========================================
 class ForensicWalkForward:
     def __init__(self, center: str, model_path: str, symbol: str, timeframe: str, start_ms: int, star_score=0.20, options: Dict = None):
@@ -39,8 +42,6 @@ class ForensicWalkForward:
         self.options = options if options else {}
         self.targets = None
 
-        self.star_score = star_score
-
         self.total_bars = 0
         
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -48,7 +49,12 @@ class ForensicWalkForward:
         self._load_targets()
         self._load_checkpoint()
         self.base_indicators = self._extract_indicators()
-    
+
+        self.star_score = star_score
+        self.score_window = []
+        self.ma_period = 2
+        self.last_ma = 0.0
+
     def _load_targets(self):
         print(f"🔍 [Forensic Stepper]: loading targets '{self.center}'...")
         center_df = get_data(
@@ -60,35 +66,28 @@ class ForensicWalkForward:
             indicators=[self.center], 
             options={**self.options, "return_polars": True} 
         )
-        # Set the total bars
         self.total_bars = len(center_df)
-        # Extract time_ms from all candles where the target column != 0
         target_times = center_df.filter(pl.col(self.center) != 0)["time_ms"].to_list()
         self.targets = set(target_times)
         print(f"🎯 [Forensic Stepper]: Extracted {len(self.targets)} confirmed target zones.")
                 
-
     def _load_checkpoint(self):
         print(f"🔍 [Forensic Stepper]: Interrogating checkpoint '{self.model_name}'...")
         if not os.path.exists(self.model_path):
             raise FileNotFoundError(f"Model not found at {self.model_path}")
             
-        # weights_only MUST be False here to load lists (feature_names) and dict metadata
         checkpoint = torch.load(self.model_path, map_location=self.device, weights_only=False)
         self.active_features = checkpoint.get('feature_names', [])
         self.threshold = float(checkpoint.get('threshold', 0.2433))
         
-        # Load normalization parameters
         self.means = checkpoint['means'].to(self.device)
         self.stds = checkpoint['stds'].to(self.device)
         
-        # Extract weights
         w1 = checkpoint['W1'].to(self.device)
         b1 = checkpoint['B1'].to(self.device).reshape(-1)
         w2 = checkpoint['W2'].to(self.device)
         b2 = checkpoint['B2'].to(self.device).reshape(-1)
         
-        # Hydrate the Neural Network
         in_dim, hid_dim = w1.shape
         self.model = SingularityInference(input_dim=in_dim, hidden_dim=hid_dim).to(self.device)
         self.model.l1.weight.data = w1.t()
@@ -98,7 +97,6 @@ class ForensicWalkForward:
         self.model.l2.weight.data = final_w2
         self.model.l2.bias.data = b2
         
-        # Lock in eval mode to prevent dropout/batchnorm artifacts
         self.model.eval()
 
     def _extract_indicators(self) -> List[str]:
@@ -108,11 +106,9 @@ class ForensicWalkForward:
         unique_indicators = set()
         
         for feature in self.active_features:
-            # Mirrors production: handles colons and dunders
             base_name = feature.split(':')[0].split('__')[0]
             unique_indicators.add(base_name)
             
-        # Explicitly add is-open to guarantee filtering is possible
         unique_indicators.add("is-open")
             
         return list(unique_indicators)
@@ -122,10 +118,8 @@ class ForensicWalkForward:
         Runs the neural net specifically on the final candle to guarantee
         zero look-ahead bias on the current step, utilizing EXACT production ordering.
         """
-        # 1. Convert to Pandas to mirror production pipeline
         pdf = raw_df.to_pandas()
         
-        # 2. Strict production filtering
         if 'is-open' in pdf.columns:
             inference_df = pdf[pdf['is-open'] == 0].copy()
         else:
@@ -134,10 +128,8 @@ class ForensicWalkForward:
         if inference_df.empty:
             return 0.0
             
-        # We only need to run inference on the final closed candle
         inference_df = inference_df.tail(1)
 
-        # 3. EXACT Production Ordering & Imputation
         ordered_columns = []
         for f in self.active_features:
             if f in inference_df.columns:
@@ -148,7 +140,6 @@ class ForensicWalkForward:
         raw_values = np.stack(ordered_columns, axis=1).astype(np.float32)
         raw_model_tensor = torch.from_numpy(raw_values).to(self.device)
 
-        # 4. Neural Execution
         with torch.no_grad():
             normalized_tensor = (raw_model_tensor - self.means) / (self.stds + 1e-8)
             
@@ -167,9 +158,6 @@ class ForensicWalkForward:
         
         walk_results = []
         num_steps = max_steps if max_steps > 0 else self.total_bars
-
-        star_lag = 6
-        star_count = 0
         
         for step in range(1, num_steps + 1):
             current_limit = step
@@ -200,22 +188,35 @@ class ForensicWalkForward:
             
             walk_results.append(latest_state)
 
-            stars = ''
-            if star_count > star_lag:
-                star_count = 0
-                stars = ''
+            precision = NUMBER_DECIMALS
 
-            if latest_score > self.star_score and star_count == 0:
-                star_count = 1
-
-            if star_count > 0:
-                stars = '*' * star_count
-                star_count = star_count + 1
-
-            if is_center_signal and star_count > 0:
-                star_count = star_lag
+            # --- MAGNITUDE WAVE LOGIC ---
+            self.score_window.append(latest_score)
+            if len(self.score_window) > self.ma_period:
+                self.score_window.pop(0)
+                
+            current_ma = sum(self.score_window) / len(self.score_window)
             
-            print(f"Step {step:>4}/{num_steps} | Bars: {len(raw_df):>4} | Time: {latest_state.get('time_ms', 'Unknown')} | Score: {latest_score:>6.10f} | Target: {is_center_signal:>1} | {stars}")
+            wave_height = 0
+            if current_ma > 0:
+                leading_zeros = int(abs(math.log10(current_ma)))
+                wave_height = max(0, 8 - leading_zeros)
+            
+            stars = ""
+            if wave_height > 0:
+                char = "*" if current_ma >= self.last_ma else "."
+                stars = char * wave_height
+                
+            self.last_ma = current_ma
+            
+            target_str = ""
+            if is_center_signal:
+                target_str = " HIT" if len(stars)>0 else " MISS"
+
+            print(f"Step {step:>4}/{num_steps} | Bars: {len(raw_df):>4} | "
+                  f"Time: {latest_state.get('time_ms')} | "
+                  f"Score: {latest_score:>.{precision}f} | "
+                  f"Target: {int(is_center_signal)} | {stars:<6}{target_str}")
             
         print("-" * 60)
         print("✅ [Forensic Stepper]: Walk-Forward Complete.")
