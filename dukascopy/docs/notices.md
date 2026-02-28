@@ -29,6 +29,12 @@ Been testing a lot. Best is to build a sniper for the daily chart. Example GBPUS
 
 I cancelled the run but likely it would have even gone higher, more recall under same precision.
 
+Corresponding real candle-by-candle walkforward test (2025-NOW) results: [here](../ml/logs/diagnostics3.txt).
+
+Guaranteed no peeking in future [here](../ml/diag/forensics2.py).
+
+Will do same for Yen and a few indices tomorrow.
+
 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
