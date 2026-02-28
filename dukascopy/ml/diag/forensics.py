@@ -191,21 +191,18 @@ class ForensicWalkForward:
             precision = NUMBER_DECIMALS
 
             # --- MAGNITUDE WAVE LOGIC ---
-            self.score_window.append(latest_score)
+            latest_len = max(0, len(f"{latest_score:>.10f}".split('.')[1].lstrip('0'))-2)
+
+            self.score_window.append(latest_len)
             if len(self.score_window) > self.ma_period:
                 self.score_window.pop(0)
                 
-            current_ma = sum(self.score_window) / len(self.score_window)
-            
-            wave_height = 0
-            if current_ma > 0:
-                leading_zeros = int(abs(math.log10(current_ma)))
-                wave_height = max(0, 8 - leading_zeros)
+            current_ma = math.ceil(sum(self.score_window) / len(self.score_window))
             
             stars = ""
-            if wave_height > 0:
+            if current_ma > 0:
                 char = "*" if current_ma >= self.last_ma else "."
-                stars = char * wave_height
+                stars = char * current_ma
                 
             self.last_ma = current_ma
             
@@ -230,8 +227,8 @@ if __name__ == "__main__":
 
     stepper = ForensicWalkForward(
         center="example-pivot-finder_10_bottoms",  # We use 10 since that is a better match
-        model_path="checkpoints/model-best-gen25-f1-0.3750.pt",
-        symbol="EUR-USD",
+        model_path="checkpoints/model-best-gen20-f1-0.6316.pt",
+        symbol="GBP-USD",
         timeframe="4h",
         start_ms=epoch_ms,
         star_score=0.00000005, 

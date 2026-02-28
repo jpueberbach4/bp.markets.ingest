@@ -18,7 +18,7 @@ from typing import Optional
 
 from ml.space.space import Singularity
 from ml.space.lenses.factory import LensFactory
-from ml.space.singularities.cores.pulsar import PulsarCore
+from ml.space.singularities.cores.pulsar_core import PulsarCore
 
 class PulsarSingularity(Singularity):
     """Orchestrator for the Pulsar Evolutionary Core."""
