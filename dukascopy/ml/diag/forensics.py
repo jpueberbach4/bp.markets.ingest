@@ -54,6 +54,7 @@ class ForensicWalkForward:
         self.score_window = []
         self.ma_period = 2
         self.last_ma = 0.0
+        self.last_close = None
 
     def _load_targets(self):
         print(f"🔍 [Forensic Stepper]: loading targets '{self.center}'...")
@@ -183,6 +184,15 @@ class ForensicWalkForward:
             latest_state["ml_score"] = latest_score
             latest_state["ml_signal"] = latest_signal
 
+            # --- PERCENTAGE CHANGE CALCULATION ---
+            current_close = latest_state.get("close", 0.0)
+            pct_change = 0.0
+            if self.last_close is not None and self.last_close != 0:
+                pct_change = ((current_close - self.last_close) / self.last_close) * 100
+            
+            self.last_close = current_close # Update for next step
+            # -------------------------------------
+
             is_center_signal = latest_state["time_ms"] in self.targets
             latest_state["is_target"] = is_center_signal
             
@@ -210,26 +220,30 @@ class ForensicWalkForward:
             if is_center_signal:
                 target_str = " HIT" if len(stars)>0 else " MISS"
 
+            # Color/sign formatting for percentage
+            pct_str = f"{pct_change:+.4f}%"
+
             print(f"Step {step:>4}/{num_steps} | Bars: {len(raw_df):>4} | "
-                  f"Time: {latest_state.get('time_ms')} | "
                   f"Score: {latest_score:>.{precision}f} | "
-                  f"Target: {int(is_center_signal)} | {stars:<6}{target_str}")
+                  f"Target: {int(is_center_signal)} | {stars:<8}{target_str:<7} "
+                  f"{pct_str:<8}"
+            )
+            
             
         print("-" * 60)
         print("✅ [Forensic Stepper]: Walk-Forward Complete.")
         
         return pd.DataFrame(walk_results)
 
-
 if __name__ == "__main__":
-    dt_str = "2026-01-01"
+    dt_str = "2025-01-01"
     epoch_ms = int(datetime.strptime(dt_str, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp() * 1000)
 
     stepper = ForensicWalkForward(
         center="example-pivot-finder_10_bottoms",  # We use 10 since that is a better match
-        model_path="checkpoints/model-best-gen13-f1-0.6316.pt",
+        model_path="checkpoints/model-best-gen12-f1-0.7692.pt",
         symbol="GBP-USD",
-        timeframe="4h",
+        timeframe="1d",
         start_ms=epoch_ms,
         star_score=0.00000005, 
         options={"use_cache": False}

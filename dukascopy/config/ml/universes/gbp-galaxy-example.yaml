@@ -14,7 +14,7 @@ GBP-Galaxy:                        # Root experiment namespace
   type: MilkyWay                   # Declares a multi-component / multi-stage ML pipeline
 
   fabric:                          # Data source and time window configuration
-    matter: GBP-USD/4h             # Trading instrument and timeframe
+    matter: GBP-USD/1d             # Trading instrument and timeframe
     after: 2023-01-01              # Start date for historical data (prevents look-ahead bias)
     until: 2025-12-31              # End date for historical data
 
@@ -52,7 +52,7 @@ GBP-Galaxy:                        # Root experiment namespace
       gamma: 2.0                   # Nonlinear confidence amplification
 
   center:                          # Ground-truth or label generators
-    - example-pivot-finder_35_bottoms
+    - example-pivot-finder_10_bottoms
                                    # Provides historical bottom labels using pivot logic
 
   normalizers:                     # Feature normalization stage

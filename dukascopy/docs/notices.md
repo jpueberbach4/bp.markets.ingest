@@ -23,6 +23,13 @@ I didnt make it to finish up the Andromeda singularity. Tomorrow first the tooli
 - Walk forward tests
 - Candle-by-candle forward test
 
+Been testing a lot. Best is to build a sniper for the daily chart. Example GBPUSD (example is included in config, universe GBP-Galaxy):
+
+![GBP](../images/gbp-daily-sniper.png)
+
+I cancelled the run but likely it would have even gone higher, more recall under same precision.
+
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
