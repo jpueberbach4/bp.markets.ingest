@@ -197,7 +197,15 @@ class PulsarSingularity(Singularity):
                 # Feature Impact Telemetry
                 gene_imp = torch.bmm(w1.abs(), w2.abs()).squeeze(-1)
                 imp_norm = gene_imp / (gene_imp.sum(dim=1, keepdim=True) + 1e-7)
-                norm_scores = (best_score - best_score.min()) / (best_score.max() - best_score.min() + 1e-8)
+                
+                #norm_scores = (best_score - best_score.min()) / (best_score.max() - best_score.min() + 1e-8)
+                #safety
+                score_range = best_score.max() - best_score.min()
+                norm_scores = torch.where(
+                    score_range > 1e-8,
+                    (best_score - best_score.min()) / score_range,
+                    torch.full_like(best_score, 0.5)  # neutral contribution
+                )
 
                 self.core.gene_scores.scatter_add_(0, indices.view(-1), (imp_norm * norm_scores.view(-1, 1)).reshape(-1))
                 self.core.gene_usage.scatter_add_(0, indices.view(-1), torch.ones(indices.numel(), device=self.device))
@@ -286,8 +294,18 @@ class PulsarSingularity(Singularity):
             )
 
         # Proceed with save
-        winner_genes = self.core.population[winner_idx].cpu().tolist()
-        atomic_feature_map = [self.core.feature_names[i] for i in winner_genes]
+        #winner_genes = self.core.population[winner_idx].cpu().tolist()
+        #atomic_feature_map = [self.core.feature_names[i] for i in winner_genes]
+
+        unique_winner_genes = []
+        seen = set()
+        for g_idx in self.core.population[winner_idx].cpu().tolist():
+            feat_name = self.core.feature_names[g_idx]
+            if feat_name not in seen:
+                unique_winner_genes.append(g_idx)
+                seen.add(feat_name)
+        
+        atomic_feature_map = [self.core.feature_names[i] for i in unique_winner_genes]
 
         state = {
             'population': torch.arange(len(atomic_feature_map)),
@@ -308,11 +326,11 @@ class PulsarSingularity(Singularity):
             if hasattr(redshift, 'means') and hasattr(redshift, 'stds'):
                 try:
                     if torch.is_tensor(redshift.means):
-                        state['means'] = redshift.means.detach()[winner_genes].float().cpu()
-                        state['stds'] = redshift.stds.detach()[winner_genes].float().cpu()
+                        state['means'] = redshift.means.detach()[unique_winner_genes].float().cpu()
+                        state['stds'] = redshift.stds.detach()[unique_winner_genes].float().cpu()
                     else:
-                        state['means'] = torch.as_tensor(redshift.means)[winner_genes].float().cpu()
-                        state['stds'] = torch.as_tensor(redshift.stds)[winner_genes].float().cpu()
+                        state['means'] = torch.as_tensor(redshift.means)[unique_winner_genes].float().cpu()
+                        state['stds'] = torch.as_tensor(redshift.stds)[unique_winner_genes].float().cpu()
                 except Exception as e:
                     if self.verbose:
                         self.print("PULSAR_PHYSICS_FAIL", error=str(e))
