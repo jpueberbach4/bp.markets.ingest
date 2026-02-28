@@ -21,8 +21,8 @@ Euro-51:
   type: MilkyWay
   fabric:
     matter: EUR-USD/4h                        # Trading instrument and timeframe
-    after: 2023-01-01                         # Training data start
-    until: 2026-01-31                         # Training data end
+    after: 2024-01-01                         # Training data start
+    until: 2025-12-31                         # Training data end
 
   flight:
     type: MilleniumFalcon

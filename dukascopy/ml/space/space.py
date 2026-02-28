@@ -511,7 +511,30 @@ class Universe(BaseUniverse):
             if not critical.empty:
                 self.print("DATA_DENSITY_CRITICAL", count=len(critical))
 
-        print("=" * 60)
+        if self._target_series is not None:
+            total_bars = len(self._target_series)
+            oos_boundary = self.config.get("flight", {}).get("settings", {}).get("oos_boundary", 0.70)
+            split_idx = int(total_bars * oos_boundary)
+
+            is_targets = self._target_series.iloc[:split_idx]
+            oos_targets = self._target_series.iloc[split_idx:]
+
+            is_count = int(is_targets.sum())
+            oos_count = int(oos_targets.sum())
+            total_count = is_count + oos_count
+
+            is_pct = (is_count / len(is_targets)) * 100 if len(is_targets) > 0 else 0
+            oos_pct = (oos_count / len(oos_targets)) * 100 if len(oos_targets) > 0 else 0
+            oos_share = (oos_count / total_count * 100) if total_count > 0 else 0
+
+            print("🎯 [Audit]: Target density")
+            print("=" * 60)
+            print(f"   Total Targets Found:   {total_count}")
+            print(f"   In-Sample (IS) Count:  {is_count:<6} | Density: {is_pct:.4f}%")
+            print(f"   Out-of-Sample (OOS):   {oos_count:<6} | Density: {oos_pct:.4f}%")
+            print(f"   OOS Share of Total:    {oos_share:.2f}%")
+
+        print("-" * 60)
         return void_report
 
     def bigbang(self) -> Tuple[pd.DataFrame, pd.Series]:
