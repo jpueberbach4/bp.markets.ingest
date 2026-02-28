@@ -103,7 +103,6 @@ class PulsarSingularity(Singularity):
             for _ in range(self.epochs):
                 optimizer.zero_grad()
                 logits = self.core.forward(x_train, w1, b1, w2, b2)
-
                 main_loss = self.lens.forward(logits, y_train)
                 
                 target_mean = torch.tensor(self.target_density, device=self.device)
@@ -118,8 +117,11 @@ class PulsarSingularity(Singularity):
                 loss = main_loss + kl_penalty + b2_penalty
                 loss.backward()
 
+                # --- PROTECT GLOBAL ELITES ---
                 chunk_indices_global = torch.arange(i, end_i, device=self.device)
-                elite_mask = (chunk_indices_global == 0) | (chunk_indices_global == 1)
+                global_elites = torch.tensor([0, 1], device=self.device)
+                elite_mask = torch.isin(chunk_indices_global, global_elites)
+                
                 if elite_mask.any():
                     w1.grad[elite_mask] = 0
                     b1.grad[elite_mask] = 0
@@ -137,8 +139,6 @@ class PulsarSingularity(Singularity):
 
                 x_oos = self.lake[train_end:, indices].permute(1, 0, 2)
                 y_oos = self.y_all[:, train_end:, :].expand(curr_chunk, -1, -1)
-                oos_target_count = y_oos[0].sum().item()
-
                 oos_probs = torch.sigmoid(self.core.forward(x_oos, w1, b1, w2, b2))
 
                 best_score = torch.full((curr_chunk,), -1e9, device=self.device)
@@ -169,11 +169,7 @@ class PulsarSingularity(Singularity):
                     dev_low = torch.relu(min_density * 0.8 - density) * 6.0
                     score = score - (dev_high + dev_low)
 
-                    score = torch.where(
-                        (sig_count >= self.min_sigs) & (prec > 0.02),
-                        score,
-                        torch.full_like(score, -1e9)
-                    )
+                    score = torch.where((sig_count >= self.min_sigs) & (prec > 0.02), score, torch.full_like(score, -1e9))
 
                     mask = score > best_score
                     best_score[mask] = score[mask]
@@ -184,34 +180,15 @@ class PulsarSingularity(Singularity):
                     best_rec[mask] = rec[mask]
                     best_preds[mask] = preds[mask]
 
-                if self.verbose:
-                    self.print(
-                        "PULSAR_CHUNK_LOG", chunk=i//self.chunk_size, max_p=oos_probs.max().item(), 
-                        targets=oos_target_count, fired=best_sigs.max().item(), f1=best_f1.max().item()
-                    )
-
                 self.core.thresholds[i:end_i] = best_thresh
 
+                # Feature Impact Telemetry
                 gene_imp = torch.bmm(w1.abs(), w2.abs()).squeeze(-1)
                 imp_norm = gene_imp / (gene_imp.sum(dim=1, keepdim=True) + 1e-7)
+                norm_scores = (best_score - best_score.min()) / (best_score.max() - best_score.min() + 1e-8)
 
-                score_range = best_score.max() - best_score.min()
-                if score_range > 0.01:
-                    norm_scores = (best_score - best_score.min()) / (score_range + 1e-8)
-                else:
-                    norm_scores = torch.ones_like(best_score)
-
-                self.core.gene_scores.scatter_add_(
-                    0,
-                    indices.view(-1),
-                    (imp_norm * norm_scores.view(-1, 1)).reshape(-1)
-                )
-
-                self.core.gene_usage.scatter_add_(
-                    0,
-                    indices.view(-1),
-                    torch.ones(indices.numel(), device=self.device)
-                )
+                self.core.gene_scores.scatter_add_(0, indices.view(-1), (imp_norm * norm_scores.view(-1, 1)).reshape(-1))
+                self.core.gene_usage.scatter_add_(0, indices.view(-1), torch.ones(indices.numel(), device=self.device))
 
                 metrics["f1"].append(best_f1.detach().cpu())
                 metrics["sigs"].append(best_sigs.detach().cpu())
@@ -222,38 +199,37 @@ class PulsarSingularity(Singularity):
                 metrics["signal_map"].append(best_preds.squeeze(-1).detach().cpu())
 
         res = {k: torch.cat(v) for k, v in metrics.items()}
-
         self.latest_f1 = res["f1"].clone()
         self.latest_score = res["score"].clone()
-        self.latest_precision = res["precision"].clone() 
+        self.latest_precision = res["precision"].clone()
 
-        gen_best_idx = torch.argmax(self.latest_f1).item()
-        gen_best_f1 = self.latest_f1[gen_best_idx].item()
-        gen_best_prec = self.latest_precision[gen_best_idx].item()
-        
+        # Dave decision
         self._pending_save = False
-        if gen_best_f1 > self.global_best_f1:
-            self._pending_save = True
-            self._pending_save_idx = gen_best_idx
-            self._pending_save_f1 = gen_best_f1
-            self._pending_save_prec = gen_best_prec
-            reason = f"new F1 record ({gen_best_f1:.4f} > {self.global_best_f1:.4f})"
-            if self.verbose:
-                self.print("PULSAR_NEW_RECORD", reason=reason)
-        elif gen_best_f1 == self.global_best_f1 and gen_best_f1 > 0 and gen_best_prec > self.global_best_prec:
-            self._pending_save = True
-            self._pending_save_idx = gen_best_idx
-            self._pending_save_f1 = gen_best_f1
-            self._pending_save_prec = gen_best_prec
-            reason = f"same F1 ({gen_best_f1:.4f}) but better precision ({gen_best_prec:.4f} > {self.global_best_prec:.4f})"
-            if self.verbose:
-                self.print("PULSAR_NEW_RECORD", reason=reason)
-        
-        if gen_best_f1 > self.global_best_f1:
-            self.global_best_f1 = gen_best_f1
-            self.global_best_prec = gen_best_prec
-        elif gen_best_f1 == self.global_best_f1 and gen_best_prec > self.global_best_prec:
-            self.global_best_prec = gen_best_prec
+        if self.latest_f1 is not None:
+            gen_best_idx = torch.argmax(self.latest_f1).item()
+            gen_best_f1 = self.latest_f1[gen_best_idx].item()
+            gen_best_prec = self.latest_precision[gen_best_idx].item()
+
+            should_save = False
+            reason = ""
+
+            if gen_best_f1 > self.global_best_f1 + 1e-6:
+                should_save = True
+                reason = f"new F1 record ({gen_best_f1:.4f} > {self.global_best_f1:.4f})"
+            elif abs(gen_best_f1 - self.global_best_f1) < 1e-6 and gen_best_f1 > 0:
+                if gen_best_prec > self.global_best_prec + 1e-6:
+                    should_save = True
+                    reason = f"same F1 but better prec ({gen_best_prec:.4f} > {self.global_best_prec:.4f})"
+
+            if should_save:
+                self._pending_save = True
+                self._pending_save_idx = gen_best_idx
+                self._pending_save_f1 = gen_best_f1
+                self._pending_save_prec = gen_best_prec
+                self.global_best_f1 = gen_best_f1 
+                self.global_best_prec = gen_best_prec
+                if self.verbose:
+                    self.print("PULSAR_NEW_RECORD", reason=reason)
 
         return res
 
@@ -271,44 +247,36 @@ class PulsarSingularity(Singularity):
         return self.core.emit(features)
 
     def save_state(self, universe, filename: str, winner_idx: Optional[int] = None):
-        if hasattr(self, '_pending_save') and self._pending_save:
-            current_best_f1 = self._pending_save_f1
-            current_best_prec = self._pending_save_prec
-            if winner_idx is None:
-                winner_idx = self._pending_save_idx
-            self._pending_save = False
+        """
+        Saves the current best model state to disk.
+        - Uses pending fields if a save was queued in run_generation.
+        - Aborts immediately if no pending save (decision already made upstream).
+        """
+        if not hasattr(self, '_pending_save') or not self._pending_save:
             if self.verbose:
-                self.print("PULSAR_SAVE_PENDING", f1=current_best_f1, prec=current_best_prec)
-        else:
-            current_best_f1 = torch.max(self.latest_f1).item() if self.latest_f1 is not None else -1.0
-            current_best_idx = torch.argmax(self.latest_f1).item() if self.latest_f1 is not None else 0
-            current_best_prec = self.latest_precision[current_best_idx].item() if self.latest_precision is not None else 0.0
-            
-            should_save = False
-            reason = ""
-            if current_best_f1 > self.global_best_f1:
-                should_save = True
-                reason = f"new F1 record ({current_best_f1:.4f} > {self.global_best_f1:.4f})"
-            elif current_best_f1 == self.global_best_f1 and self.global_best_f1 > 0:
-                if current_best_prec > self.global_best_prec:
-                    should_save = True
-                    reason = f"same F1 ({current_best_f1:.4f}) but better precision ({current_best_prec:.4f} > {self.global_best_prec:.4f})"
-                else:
-                    reason = f"same F1 ({current_best_f1:.4f}) but precision not improved"
-            else:
-                reason = f"{current_best_f1:.4f} is not better than {self.global_best_f1:.4f}"
-            
-            if not should_save:
-                if self.verbose:
-                    self.print("PULSAR_SAVE_ABORT", reason=reason)
-                return
-            
-            if winner_idx is None:
-                winner_idx = current_best_idx
-        
+                self.print("PULSAR_SAVE_ABORT", reason="no pending save queued")
+            return
+
+        # Use only pending fields (set in run_generation)
+        current_best_f1  = self._pending_save_f1
+        current_best_prec = self._pending_save_prec
+        winner_idx       = self._pending_save_idx if winner_idx is None else winner_idx
+
+        # Clear pending flag
+        self._pending_save = False
+
+        if self.verbose:
+            self.print(
+                "PULSAR_SAVE_PENDING",
+                f1=current_best_f1,
+                prec=current_best_prec,
+                winner_idx=winner_idx
+            )
+
+        # Proceed with save
         winner_genes = self.core.population[winner_idx].cpu().tolist()
         atomic_feature_map = [self.core.feature_names[i] for i in winner_genes]
-        
+
         state = {
             'population': torch.arange(len(atomic_feature_map)),
             'threshold': self.core.thresholds[winner_idx].cpu(),
@@ -319,9 +287,10 @@ class PulsarSingularity(Singularity):
             'feature_names': atomic_feature_map,
             'config': self.config,
             'f1': current_best_f1,
-            'precision': current_best_prec 
+            'precision': current_best_prec
         }
-        
+
+        # Optional Redshift normalizer stats (unchanged)
         if hasattr(universe, '_normalizers') and 'Redshift' in universe._normalizers:
             redshift = universe._normalizers['Redshift']
             if hasattr(redshift, 'means') and hasattr(redshift, 'stds'):
@@ -335,10 +304,16 @@ class PulsarSingularity(Singularity):
                 except Exception as e:
                     if self.verbose:
                         self.print("PULSAR_PHYSICS_FAIL", error=str(e))
-        
+
         universe.eject(filename, state, is_model=True)
+
         if self.verbose:
-            self.print("PULSAR_WINNER_EJECT", features=len(atomic_feature_map), f1=current_best_f1, prec=current_best_prec)
+            self.print(
+                "PULSAR_WINNER_EJECT",
+                features=len(atomic_feature_map),
+                f1=current_best_f1,
+                prec=current_best_prec
+            )
 
     def state_dict(self):
         return {
