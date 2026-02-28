@@ -15,13 +15,14 @@
 # Note: this one is heavily commented by AI. Didnt check it.
 # Note: this one works actually pretty good
 # Note: some example connectors used in this file will eventually move to system-indicatos
+# Note: reason for move of connectors is the need to numba-jit optimize them
 
 Euro-51:
   type: MilkyWay
   fabric:
     matter: EUR-USD/4h                        # Trading instrument and timeframe
-    after: 2024-01-01                         # Training data start
-    until: 2025-12-31                         # Training data end
+    after: 2023-01-01                         # Training data start
+    until: 2026-01-31                         # Training data end
 
   flight:
     type: MilleniumFalcon
@@ -57,7 +58,7 @@ Euro-51:
       gamma: 2.0                              # Gradient scaling factor
 
   center:
-    - example-pivot-finder_50_bottoms         # Target labels (50-bar bottom detection)
+    - example-pivot-finder_35_bottoms         # Target labels
 
   normalizers:
     Kinematics: 
