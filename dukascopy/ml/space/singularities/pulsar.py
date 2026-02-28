@@ -141,6 +141,7 @@ class PulsarSingularity(Singularity):
                 y_oos = self.y_all[:, train_end:, :].expand(curr_chunk, -1, -1)
                 oos_probs = torch.sigmoid(self.core.forward(x_oos, w1, b1, w2, b2))
 
+                oos_target_count = y_oos[0].sum().item()
                 best_score = torch.full((curr_chunk,), -1e9, device=self.device)
                 best_f1 = torch.zeros(curr_chunk, device=self.device)
                 best_thresh = torch.full((curr_chunk,), 0.40, device=self.device)
@@ -179,6 +180,17 @@ class PulsarSingularity(Singularity):
                     best_prec[mask] = prec[mask]
                     best_rec[mask] = rec[mask]
                     best_preds[mask] = preds[mask]
+
+
+                if self.verbose:
+                    self.print(
+                        "PULSAR_CHUNK_LOG", 
+                        chunk=i//self.chunk_size, 
+                        max_p=oos_probs.max().item(), 
+                        targets=oos_target_count, 
+                        fired=best_sigs.max().item(), 
+                        f1=best_f1.max().item()
+                    )
 
                 self.core.thresholds[i:end_i] = best_thresh
 
