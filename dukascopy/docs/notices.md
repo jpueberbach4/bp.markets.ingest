@@ -2,6 +2,10 @@
 
 **Update**: First diagnostics results are in for EUR-USD and model 3750. This is a REAL candle by candle walkforward test performed on never-seen-before 2026 data. See [here](../ml/logs/diagnostics1.txt). More tests will be done. You can check the program used for testing [here](../ml/diag/forensics.py). Note: this is a first test. Will be busy with this almost all day. This first result gives me the confidence to continue testing. This is not a bad result. Preliminary conclusion: **YES, usable**.
 
+One take to get from this first test: The model signals before the bottom, not at it. This is predictive, not reactive.
+
+---
+
 A beta "play-version" is released. You can find it in the ml folder. It's research-grade stuff and may be still a bit rough. You need a cuda-capable GPU to use this feature.
 
 It's promising but serious work that (still) requires brutal validation.
