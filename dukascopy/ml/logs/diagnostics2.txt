@@ -1,0 +1,255 @@
+GBPUSD
+🔍 [Forensic Stepper]: loading targets 'example-pivot-finder_10_bottoms'...
+🎯 [Forensic Stepper]: Extracted 8 confirmed target zones.
+🔍 [Forensic Stepper]: Interrogating checkpoint 'model-best-gen13-f1-0.6316.pt'...
+🚀 [Forensic Stepper]: Initiating Walk-Forward for -1 steps.
+📦 Payload Indicators: ['volatility-ratio_20_2.0_1.0', 'example-multi-tf-rsi_EUR-USD_14_14_14_14', 'example-multi-tf-rsi_DOLLAR.IDX-USD_14_14_14_14', 'is-open', 'williamsr_14', 'kaufman-er_10', 'aroon_14', 'stochastic_5_3_3']
+------------------------------------------------------------
+Step    1/246 | Bars:    1 | Time: 1767312000000 | Score: 0.0000896229 | Target: 0 | **
+Step    2/246 | Bars:    2 | Time: 1767326400000 | Score: 0.0000298180 | Target: 0 | **
+Step    3/246 | Bars:    3 | Time: 1767340800000 | Score: 0.0000038650 | Target: 0 | **
+Step    4/246 | Bars:    4 | Time: 1767355200000 | Score: 0.0000149502 | Target: 0 | **
+Step    5/246 | Bars:    5 | Time: 1767369600000 | Score: 0.0000173632 | Target: 0 | **
+Step    6/246 | Bars:    6 | Time: 1767384000000 | Score: 0.0000019426 | Target: 0 | **
+Step    7/246 | Bars:    7 | Time: 1767571200000 | Score: 0.0000000279 | Target: 0 | .
+Step    8/246 | Bars:    8 | Time: 1767585600000 | Score: 0.0000000093 | Target: 0 |
+Step    9/246 | Bars:    9 | Time: 1767600000000 | Score: 0.0000000016 | Target: 0 |
+Step   10/246 | Bars:   10 | Time: 1767614400000 | Score: 0.0000000000 | Target: 0 |
+Step   11/246 | Bars:   11 | Time: 1767628800000 | Score: 0.0000000000 | Target: 0 |
+Step   12/246 | Bars:   12 | Time: 1767643200000 | Score: 0.0000000000 | Target: 0 |
+Step   13/246 | Bars:   13 | Time: 1767657600000 | Score: 0.0000000000 | Target: 0 |
+Step   14/246 | Bars:   14 | Time: 1767672000000 | Score: 0.0000000141 | Target: 0 |
+Step   15/246 | Bars:   15 | Time: 1767686400000 | Score: 0.0000000299 | Target: 0 |
+Step   16/246 | Bars:   16 | Time: 1767700800000 | Score: 0.0000000858 | Target: 0 |
+Step   17/246 | Bars:   17 | Time: 1767715200000 | Score: 0.0000000499 | Target: 0 |
+Step   18/246 | Bars:   18 | Time: 1767729600000 | Score: 0.0000000668 | Target: 0 |
+Step   19/246 | Bars:   19 | Time: 1767744000000 | Score: 0.0000000606 | Target: 0 |
+Step   20/246 | Bars:   20 | Time: 1767758400000 | Score: 0.0000000151 | Target: 0 |
+Step   21/246 | Bars:   21 | Time: 1767772800000 | Score: 0.0000000010 | Target: 0 |
+Step   22/246 | Bars:   22 | Time: 1767787200000 | Score: 0.0000000002 | Target: 0 |
+Step   23/246 | Bars:   23 | Time: 1767801600000 | Score: 0.0000000000 | Target: 0 |
+Step   24/246 | Bars:   24 | Time: 1767816000000 | Score: 0.0000000000 | Target: 0 |
+Step   25/246 | Bars:   25 | Time: 1767830400000 | Score: 0.0000000000 | Target: 0 |
+Step   26/246 | Bars:   26 | Time: 1767844800000 | Score: 0.0298523437 | Target: 0 | ***
+Step   27/246 | Bars:   27 | Time: 1767859200000 | Score: 0.0392575264 | Target: 0 | *****
+Step   28/246 | Bars:   28 | Time: 1767873600000 | Score: 0.0127199227 | Target: 0 | *****
+Step   29/246 | Bars:   29 | Time: 1767888000000 | Score: 0.0132690053 | Target: 0 | *****
+Step   30/246 | Bars:   30 | Time: 1767902400000 | Score: 0.0045732260 | Target: 0 | *****
+Step   31/246 | Bars:   31 | Time: 1767916800000 | Score: 0.0004277945 | Target: 0 | ....
+Step   32/246 | Bars:   32 | Time: 1767931200000 | Score: 0.0005326523 | Target: 0 | ...
+Step   33/246 | Bars:   33 | Time: 1767945600000 | Score: 0.0620109625 | Target: 0 | ****
+Step   34/246 | Bars:   34 | Time: 1767960000000 | Score: 0.2605038583 | Target: 0 | ******
+Step   35/246 | Bars:   35 | Time: 1767974400000 | Score: 0.0632968694 | Target: 0 | ******
+Step   36/246 | Bars:   36 | Time: 1767988800000 | Score: 0.0104057267 | Target: 0 | .....
+Step   37/246 | Bars:   37 | Time: 1768176000000 | Score: 0.5123878717 | Target: 1 | ****** HIT
+Step   38/246 | Bars:   38 | Time: 1768190400000 | Score: 0.1653064638 | Target: 0 | ******
+Step   39/246 | Bars:   39 | Time: 1768204800000 | Score: 0.0027209036 | Target: 0 | .....
+Step   40/246 | Bars:   40 | Time: 1768219200000 | Score: 0.0000139439 | Target: 0 | ...
+Step   41/246 | Bars:   41 | Time: 1768233600000 | Score: 0.0000018184 | Target: 0 | ..
+Step   42/246 | Bars:   42 | Time: 1768248000000 | Score: 0.0000003701 | Target: 0 | .
+Step   43/246 | Bars:   43 | Time: 1768262400000 | Score: 0.0000000179 | Target: 0 |
+Step   44/246 | Bars:   44 | Time: 1768276800000 | Score: 0.0000000141 | Target: 0 |
+Step   45/246 | Bars:   45 | Time: 1768291200000 | Score: 0.0000000001 | Target: 0 |
+Step   46/246 | Bars:   46 | Time: 1768305600000 | Score: 0.0000000006 | Target: 0 |
+Step   47/246 | Bars:   47 | Time: 1768320000000 | Score: 0.0000000005 | Target: 0 |
+Step   48/246 | Bars:   48 | Time: 1768334400000 | Score: 0.0000000013 | Target: 0 |
+Step   49/246 | Bars:   49 | Time: 1768348800000 | Score: 0.0000000009 | Target: 0 |
+Step   50/246 | Bars:   50 | Time: 1768363200000 | Score: 0.0000000002 | Target: 0 |
+Step   51/246 | Bars:   51 | Time: 1768377600000 | Score: 0.0000000001 | Target: 0 |
+Step   52/246 | Bars:   52 | Time: 1768392000000 | Score: 0.0000000000 | Target: 0 |
+Step   53/246 | Bars:   53 | Time: 1768406400000 | Score: 0.0000311137 | Target: 0 | *
+Step   54/246 | Bars:   54 | Time: 1768420800000 | Score: 0.0000558056 | Target: 0 | **
+Step   55/246 | Bars:   55 | Time: 1768435200000 | Score: 0.0000031667 | Target: 0 | **
+Step   56/246 | Bars:   56 | Time: 1768449600000 | Score: 0.0000002226 | Target: 0 | .
+Step   57/246 | Bars:   57 | Time: 1768464000000 | Score: 0.0000003286 | Target: 0 |
+Step   58/246 | Bars:   58 | Time: 1768478400000 | Score: 0.0063282023 | Target: 0 | **
+Step   59/246 | Bars:   59 | Time: 1768492800000 | Score: 0.1769583076 | Target: 0 | *****
+Step   60/246 | Bars:   60 | Time: 1768507200000 | Score: 0.0412978828 | Target: 0 | ******
+Step   61/246 | Bars:   61 | Time: 1768521600000 | Score: 0.0050791381 | Target: 0 | .....
+Step   62/246 | Bars:   62 | Time: 1768536000000 | Score: 0.0044525857 | Target: 0 | ....
+Step   63/246 | Bars:   63 | Time: 1768550400000 | Score: 0.0010838283 | Target: 0 | ****
+Step   64/246 | Bars:   64 | Time: 1768564800000 | Score: 0.0001381911 | Target: 0 | ****
+Step   65/246 | Bars:   65 | Time: 1768579200000 | Score: 0.0000003274 | Target: 0 | ..
+Step   66/246 | Bars:   66 | Time: 1768593600000 | Score: 0.0000003465 | Target: 0 |
+Step   67/246 | Bars:   67 | Time: 1768780800000 | Score: 0.2618603110 | Target: 1 | ***    HIT
+Step   68/246 | Bars:   68 | Time: 1768795200000 | Score: 0.0193692800 | Target: 0 | ******
+Step   69/246 | Bars:   69 | Time: 1768809600000 | Score: 0.0014481401 | Target: 0 | .....
+Step   70/246 | Bars:   70 | Time: 1768824000000 | Score: 0.0000035110 | Target: 0 | ...
+Step   71/246 | Bars:   71 | Time: 1768838400000 | Score: 0.0000000015 | Target: 0 | .
+Step   72/246 | Bars:   72 | Time: 1768852800000 | Score: 0.0000000034 | Target: 0 |
+Step   73/246 | Bars:   73 | Time: 1768867200000 | Score: 0.0000005253 | Target: 0 |
+Step   74/246 | Bars:   74 | Time: 1768881600000 | Score: 0.0000006822 | Target: 0 |
+Step   75/246 | Bars:   75 | Time: 1768896000000 | Score: 0.0000000041 | Target: 0 |
+Step   76/246 | Bars:   76 | Time: 1768910400000 | Score: 0.0000001294 | Target: 0 |
+Step   77/246 | Bars:   77 | Time: 1768924800000 | Score: 0.0000001495 | Target: 0 |
+Step   78/246 | Bars:   78 | Time: 1768939200000 | Score: 0.0000010740 | Target: 0 | *
+Step   79/246 | Bars:   79 | Time: 1768953600000 | Score: 0.0000001543 | Target: 0 | *
+Step   80/246 | Bars:   80 | Time: 1768968000000 | Score: 0.0000003207 | Target: 0 |
+Step   81/246 | Bars:   81 | Time: 1768982400000 | Score: 0.0000000101 | Target: 0 |
+Step   82/246 | Bars:   82 | Time: 1768996800000 | Score: 0.0000000124 | Target: 1 |        MISS
+Step   83/246 | Bars:   83 | Time: 1769011200000 | Score: 0.0000000001 | Target: 0 |
+Step   84/246 | Bars:   84 | Time: 1769025600000 | Score: 0.0203121230 | Target: 0 | ***
+Step   85/246 | Bars:   85 | Time: 1769040000000 | Score: 0.0003751665 | Target: 0 | ****
+Step   86/246 | Bars:   86 | Time: 1769054400000 | Score: 0.0000776197 | Target: 0 | ...
+Step   87/246 | Bars:   87 | Time: 1769068800000 | Score: 0.0000153453 | Target: 0 | ..
+Step   88/246 | Bars:   88 | Time: 1769083200000 | Score: 0.0000002739 | Target: 1 | .      HIT
+Step   89/246 | Bars:   89 | Time: 1769097600000 | Score: 0.0000005814 | Target: 0 |
+Step   90/246 | Bars:   90 | Time: 1769112000000 | Score: 0.0000000842 | Target: 0 |
+Step   91/246 | Bars:   91 | Time: 1769126400000 | Score: 0.0000000023 | Target: 0 |
+Step   92/246 | Bars:   92 | Time: 1769140800000 | Score: 0.0000000013 | Target: 0 |
+Step   93/246 | Bars:   93 | Time: 1769155200000 | Score: 0.0000000000 | Target: 0 |
+Step   94/246 | Bars:   94 | Time: 1769169600000 | Score: 0.0000000001 | Target: 0 |
+Step   95/246 | Bars:   95 | Time: 1769184000000 | Score: 0.0000000000 | Target: 0 |
+Step   96/246 | Bars:   96 | Time: 1769198400000 | Score: 0.0000000002 | Target: 0 |
+Step   97/246 | Bars:   97 | Time: 1769385600000 | Score: 0.0000007942 | Target: 0 |
+Step   98/246 | Bars:   98 | Time: 1769400000000 | Score: 0.0000000651 | Target: 0 |
+Step   99/246 | Bars:   99 | Time: 1769414400000 | Score: 0.0000000144 | Target: 0 |
+Step  100/246 | Bars:  100 | Time: 1769428800000 | Score: 0.0000000041 | Target: 0 |
+Step  101/246 | Bars:  101 | Time: 1769443200000 | Score: 0.0000000866 | Target: 0 |
+Step  102/246 | Bars:  102 | Time: 1769457600000 | Score: 0.0000001648 | Target: 0 |
+Step  103/246 | Bars:  103 | Time: 1769472000000 | Score: 0.0000001500 | Target: 0 |
+Step  104/246 | Bars:  104 | Time: 1769486400000 | Score: 0.0000001031 | Target: 0 |
+Step  105/246 | Bars:  105 | Time: 1769500800000 | Score: 0.0000000049 | Target: 0 |
+Step  106/246 | Bars:  106 | Time: 1769515200000 | Score: 0.0000001822 | Target: 0 |
+Step  107/246 | Bars:  107 | Time: 1769529600000 | Score: 0.0000000051 | Target: 0 |
+Step  108/246 | Bars:  108 | Time: 1769544000000 | Score: 0.0000000032 | Target: 0 |
+Step  109/246 | Bars:  109 | Time: 1769558400000 | Score: 0.0000017894 | Target: 0 | *
+Step  110/246 | Bars:  110 | Time: 1769572800000 | Score: 0.0000000961 | Target: 0 | *
+Step  111/246 | Bars:  111 | Time: 1769587200000 | Score: 0.0000037521 | Target: 0 | *
+Step  112/246 | Bars:  112 | Time: 1769601600000 | Score: 0.0000012373 | Target: 0 | *
+Step  113/246 | Bars:  113 | Time: 1769616000000 | Score: 0.0000001598 | Target: 0 | *
+Step  114/246 | Bars:  114 | Time: 1769630400000 | Score: 0.0000000112 | Target: 0 |
+Step  115/246 | Bars:  115 | Time: 1769644800000 | Score: 0.0000000007 | Target: 0 |
+Step  116/246 | Bars:  116 | Time: 1769659200000 | Score: 0.0000000075 | Target: 0 |
+Step  117/246 | Bars:  117 | Time: 1769673600000 | Score: 0.0000000155 | Target: 0 |
+Step  118/246 | Bars:  118 | Time: 1769688000000 | Score: 0.0000000002 | Target: 0 |
+Step  119/246 | Bars:  119 | Time: 1769702400000 | Score: 0.0000000000 | Target: 0 |
+Step  120/246 | Bars:  120 | Time: 1769716800000 | Score: 0.0000000000 | Target: 0 |
+Step  121/246 | Bars:  121 | Time: 1769731200000 | Score: 0.0000000000 | Target: 0 |
+Step  122/246 | Bars:  122 | Time: 1769745600000 | Score: 0.3915424645 | Target: 0 | ***
+Step  123/246 | Bars:  123 | Time: 1769760000000 | Score: 0.0060038599 | Target: 0 | *****
+Step  124/246 | Bars:  124 | Time: 1769774400000 | Score: 0.0003251372 | Target: 0 | ....
+Step  125/246 | Bars:  125 | Time: 1769788800000 | Score: 0.0001456573 | Target: 0 | ...
+Step  126/246 | Bars:  126 | Time: 1769803200000 | Score: 0.0001208872 | Target: 0 | ***
+Step  127/246 | Bars:  127 | Time: 1769990400000 | Score: 0.0041711912 | Target: 0 | ****
+Step  128/246 | Bars:  128 | Time: 1770004800000 | Score: 0.0019747994 | Target: 0 | ****
+Step  129/246 | Bars:  129 | Time: 1770019200000 | Score: 0.0283110458 | Target: 0 | *****
+Step  130/246 | Bars:  130 | Time: 1770033600000 | Score: 0.0044277725 | Target: 0 | *****
+Step  131/246 | Bars:  131 | Time: 1770048000000 | Score: 0.0993843079 | Target: 1 | *****  HIT
+Step  132/246 | Bars:  132 | Time: 1770062400000 | Score: 0.0426963456 | Target: 0 | *****
+Step  133/246 | Bars:  133 | Time: 1770076800000 | Score: 0.0352082849 | Target: 0 | *****
+Step  134/246 | Bars:  134 | Time: 1770091200000 | Score: 0.0046039857 | Target: 0 | *****
+Step  135/246 | Bars:  135 | Time: 1770105600000 | Score: 0.0001584604 | Target: 0 | ....
+Step  136/246 | Bars:  136 | Time: 1770120000000 | Score: 0.0001359431 | Target: 0 | ...
+Step  137/246 | Bars:  137 | Time: 1770134400000 | Score: 0.0000246358 | Target: 0 | ***
+Step  138/246 | Bars:  138 | Time: 1770148800000 | Score: 0.0000001360 | Target: 0 | .
+Step  139/246 | Bars:  139 | Time: 1770163200000 | Score: 0.0000000002 | Target: 0 |
+Step  140/246 | Bars:  140 | Time: 1770177600000 | Score: 0.0000000000 | Target: 0 |
+Step  141/246 | Bars:  141 | Time: 1770192000000 | Score: 0.0000000000 | Target: 0 |
+Step  142/246 | Bars:  142 | Time: 1770206400000 | Score: 0.0000000000 | Target: 0 |
+Step  143/246 | Bars:  143 | Time: 1770220800000 | Score: 0.0000000000 | Target: 0 |
+Step  144/246 | Bars:  144 | Time: 1770235200000 | Score: 0.0000000000 | Target: 0 |
+Step  145/246 | Bars:  145 | Time: 1770249600000 | Score: 0.0000000000 | Target: 0 |
+Step  146/246 | Bars:  146 | Time: 1770264000000 | Score: 0.0019269953 | Target: 0 | **
+Step  147/246 | Bars:  147 | Time: 1770278400000 | Score: 0.0046605547 | Target: 0 | ****
+Step  148/246 | Bars:  148 | Time: 1770292800000 | Score: 0.0988524556 | Target: 0 | *****
+Step  149/246 | Bars:  149 | Time: 1770307200000 | Score: 0.1638369262 | Target: 0 | ******
+Step  150/246 | Bars:  150 | Time: 1770321600000 | Score: 0.0914912969 | Target: 0 | ******
+Step  151/246 | Bars:  151 | Time: 1770336000000 | Score: 0.6963666081 | Target: 1 | ****** HIT
+Step  152/246 | Bars:  152 | Time: 1770350400000 | Score: 0.2482664585 | Target: 0 | ******
+Step  153/246 | Bars:  153 | Time: 1770364800000 | Score: 0.0959491059 | Target: 0 | ******
+Step  154/246 | Bars:  154 | Time: 1770379200000 | Score: 0.0007116124 | Target: 0 | ....
+Step  155/246 | Bars:  155 | Time: 1770393600000 | Score: 0.0000206744 | Target: 0 | ...
+Step  156/246 | Bars:  156 | Time: 1770408000000 | Score: 0.0000055985 | Target: 0 | ..
+Step  157/246 | Bars:  157 | Time: 1770595200000 | Score: 0.0000008662 | Target: 0 | .
+Step  158/246 | Bars:  158 | Time: 1770609600000 | Score: 0.0000001948 | Target: 0 |
+Step  159/246 | Bars:  159 | Time: 1770624000000 | Score: 0.0000000088 | Target: 0 |
+Step  160/246 | Bars:  160 | Time: 1770638400000 | Score: 0.0000001362 | Target: 0 |
+Step  161/246 | Bars:  161 | Time: 1770652800000 | Score: 0.0000000167 | Target: 0 |
+Step  162/246 | Bars:  162 | Time: 1770667200000 | Score: 0.0000000004 | Target: 0 |
+Step  163/246 | Bars:  163 | Time: 1770681600000 | Score: 0.0000000005 | Target: 0 |
+Step  164/246 | Bars:  164 | Time: 1770696000000 | Score: 0.0000000002 | Target: 0 |
+Step  165/246 | Bars:  165 | Time: 1770710400000 | Score: 0.0000000010 | Target: 0 |
+Step  166/246 | Bars:  166 | Time: 1770724800000 | Score: 0.0000000001 | Target: 0 |
+Step  167/246 | Bars:  167 | Time: 1770739200000 | Score: 0.0000000741 | Target: 0 |
+Step  168/246 | Bars:  168 | Time: 1770753600000 | Score: 0.0000001041 | Target: 0 |
+Step  169/246 | Bars:  169 | Time: 1770768000000 | Score: 0.0000099491 | Target: 0 | *
+Step  170/246 | Bars:  170 | Time: 1770782400000 | Score: 0.0000015024 | Target: 0 | *
+Step  171/246 | Bars:  171 | Time: 1770796800000 | Score: 0.0000000062 | Target: 0 | *
+Step  172/246 | Bars:  172 | Time: 1770811200000 | Score: 0.0000000050 | Target: 0 |
+Step  173/246 | Bars:  173 | Time: 1770825600000 | Score: 0.0000000017 | Target: 0 |
+Step  174/246 | Bars:  174 | Time: 1770840000000 | Score: 0.0000000011 | Target: 0 |
+Step  175/246 | Bars:  175 | Time: 1770854400000 | Score: 0.0010329152 | Target: 0 | **
+Step  176/246 | Bars:  176 | Time: 1770868800000 | Score: 0.0000104038 | Target: 0 | ***
+Step  177/246 | Bars:  177 | Time: 1770883200000 | Score: 0.0781607553 | Target: 0 | ****
+Step  178/246 | Bars:  178 | Time: 1770897600000 | Score: 0.0466646515 | Target: 0 | *****
+Step  179/246 | Bars:  179 | Time: 1770912000000 | Score: 0.0005372272 | Target: 0 | ....
+Step  180/246 | Bars:  180 | Time: 1770926400000 | Score: 0.0000666653 | Target: 0 | ...
+Step  181/246 | Bars:  181 | Time: 1770940800000 | Score: 0.0008128057 | Target: 0 | ***
+Step  182/246 | Bars:  182 | Time: 1770955200000 | Score: 0.0018544174 | Target: 0 | ****
+Step  183/246 | Bars:  183 | Time: 1770969600000 | Score: 0.0094786184 | Target: 1 | ****   HIT
+Step  184/246 | Bars:  184 | Time: 1770984000000 | Score: 0.0471622311 | Target: 0 | *****
+Step  185/246 | Bars:  185 | Time: 1770998400000 | Score: 0.0012648411 | Target: 0 | *****
+Step  186/246 | Bars:  186 | Time: 1771012800000 | Score: 0.0000004252 | Target: 0 | ..
+Step  187/246 | Bars:  187 | Time: 1771200000000 | Score: 0.0000058345 | Target: 0 | .
+Step  188/246 | Bars:  188 | Time: 1771214400000 | Score: 0.0000006920 | Target: 0 | *
+Step  189/246 | Bars:  189 | Time: 1771228800000 | Score: 0.0000000129 | Target: 0 |
+Step  190/246 | Bars:  190 | Time: 1771243200000 | Score: 0.0000001072 | Target: 0 |
+Step  191/246 | Bars:  191 | Time: 1771257600000 | Score: 0.0000000183 | Target: 0 |
+Step  192/246 | Bars:  192 | Time: 1771272000000 | Score: 0.0000000016 | Target: 0 |
+Step  193/246 | Bars:  193 | Time: 1771286400000 | Score: 0.0000000007 | Target: 0 |
+Step  194/246 | Bars:  194 | Time: 1771300800000 | Score: 0.0000000003 | Target: 0 |
+Step  195/246 | Bars:  195 | Time: 1771315200000 | Score: 0.0000325440 | Target: 0 | *
+Step  196/246 | Bars:  196 | Time: 1771329600000 | Score: 0.0004320757 | Target: 0 | ***
+Step  197/246 | Bars:  197 | Time: 1771344000000 | Score: 0.1442254335 | Target: 0 | *****
+Step  198/246 | Bars:  198 | Time: 1771358400000 | Score: 0.0057740672 | Target: 0 | *****
+Step  199/246 | Bars:  199 | Time: 1771372800000 | Score: 0.0051241079 | Target: 0 | ....
+Step  200/246 | Bars:  200 | Time: 1771387200000 | Score: 0.0071856393 | Target: 0 | ****
+Step  201/246 | Bars:  201 | Time: 1771401600000 | Score: 0.0003748531 | Target: 0 | ****
+Step  202/246 | Bars:  202 | Time: 1771416000000 | Score: 0.0000302891 | Target: 0 | ...
+Step  203/246 | Bars:  203 | Time: 1771430400000 | Score: 0.0000064241 | Target: 0 | ..
+Step  204/246 | Bars:  204 | Time: 1771444800000 | Score: 0.0719426572 | Target: 0 | ***
+Step  205/246 | Bars:  205 | Time: 1771459200000 | Score: 0.2440930754 | Target: 0 | ******
+Step  206/246 | Bars:  206 | Time: 1771473600000 | Score: 0.1638663411 | Target: 0 | ******
+Step  207/246 | Bars:  207 | Time: 1771488000000 | Score: 0.0772736296 | Target: 0 | ******
+Step  208/246 | Bars:  208 | Time: 1771502400000 | Score: 0.0975419506 | Target: 0 | .....
+Step  209/246 | Bars:  209 | Time: 1771516800000 | Score: 0.0858929306 | Target: 1 | *****  HIT
+Step  210/246 | Bars:  210 | Time: 1771531200000 | Score: 0.0500564054 | Target: 0 | *****
+Step  211/246 | Bars:  211 | Time: 1771545600000 | Score: 0.0120563861 | Target: 0 | *****
+Step  212/246 | Bars:  212 | Time: 1771560000000 | Score: 0.0037445188 | Target: 0 | *****
+Step  213/246 | Bars:  213 | Time: 1771574400000 | Score: 0.0017763501 | Target: 0 | ....
+Step  214/246 | Bars:  214 | Time: 1771588800000 | Score: 0.0001712017 | Target: 0 | ****
+Step  215/246 | Bars:  215 | Time: 1771603200000 | Score: 0.0000019041 | Target: 0 | ..
+Step  216/246 | Bars:  216 | Time: 1771617600000 | Score: 0.0000005140 | Target: 0 | .
+Step  217/246 | Bars:  217 | Time: 1771804800000 | Score: 0.0000000050 | Target: 0 |
+Step  218/246 | Bars:  218 | Time: 1771819200000 | Score: 0.0000001150 | Target: 0 |
+Step  219/246 | Bars:  219 | Time: 1771833600000 | Score: 0.0000000038 | Target: 0 |
+Step  220/246 | Bars:  220 | Time: 1771848000000 | Score: 0.0000000003 | Target: 0 |
+Step  221/246 | Bars:  221 | Time: 1771862400000 | Score: 0.0000000004 | Target: 0 |
+Step  222/246 | Bars:  222 | Time: 1771876800000 | Score: 0.0000000000 | Target: 0 |
+Step  223/246 | Bars:  223 | Time: 1771891200000 | Score: 0.0000000000 | Target: 0 |
+Step  224/246 | Bars:  224 | Time: 1771905600000 | Score: 0.0000000004 | Target: 0 |
+Step  225/246 | Bars:  225 | Time: 1771920000000 | Score: 0.0000000000 | Target: 0 |
+Step  226/246 | Bars:  226 | Time: 1771934400000 | Score: 0.0000000000 | Target: 0 |
+Step  227/246 | Bars:  227 | Time: 1771948800000 | Score: 0.0000000000 | Target: 0 |
+Step  228/246 | Bars:  228 | Time: 1771963200000 | Score: 0.0000000000 | Target: 0 |
+Step  229/246 | Bars:  229 | Time: 1771977600000 | Score: 0.0000000000 | Target: 0 |
+Step  230/246 | Bars:  230 | Time: 1771992000000 | Score: 0.0000045835 | Target: 0 | *
+Step  231/246 | Bars:  231 | Time: 1772006400000 | Score: 0.0000001124 | Target: 0 | *
+Step  232/246 | Bars:  232 | Time: 1772020800000 | Score: 0.0000000045 | Target: 0 |
+Step  233/246 | Bars:  233 | Time: 1772035200000 | Score: 0.0000000011 | Target: 0 |
+Step  234/246 | Bars:  234 | Time: 1772049600000 | Score: 0.0000000003 | Target: 0 |
+Step  235/246 | Bars:  235 | Time: 1772064000000 | Score: 0.0000000000 | Target: 0 |
+Step  236/246 | Bars:  236 | Time: 1772078400000 | Score: 0.0000000000 | Target: 0 |
+Step  237/246 | Bars:  237 | Time: 1772092800000 | Score: 0.0000000002 | Target: 0 |
+Step  238/246 | Bars:  238 | Time: 1772107200000 | Score: 0.0000000007 | Target: 0 |
+Step  239/246 | Bars:  239 | Time: 1772121600000 | Score: 0.0014590792 | Target: 0 | **
+Step  240/246 | Bars:  240 | Time: 1772136000000 | Score: 0.0060847215 | Target: 0 | ****
+Step  241/246 | Bars:  241 | Time: 1772150400000 | Score: 0.0023528433 | Target: 0 | ****
+Step  242/246 | Bars:  242 | Time: 1772164800000 | Score: 0.0113420468 | Target: 0 | *****
+Step  243/246 | Bars:  243 | Time: 1772179200000 | Score: 0.0004410618 | Target: 0 | ....
+Step  244/246 | Bars:  244 | Time: 1772193600000 | Score: 0.0018352501 | Target: 0 | ****
+Step  245/246 | Bars:  245 | Time: 1772208000000 | Score: 0.0016395701 | Target: 0 | ****
+Step  246/246 | Bars:  246 | Time: 1772222400000 | Score: 0.0031911633 | Target: 0 | ****
+
+BOTTOM GBPUSD? NOW?

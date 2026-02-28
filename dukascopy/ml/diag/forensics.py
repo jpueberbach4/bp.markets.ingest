@@ -191,7 +191,7 @@ class ForensicWalkForward:
             precision = NUMBER_DECIMALS
 
             # --- MAGNITUDE WAVE LOGIC ---
-            latest_len = max(0, len(f"{latest_score:>.10f}".split('.')[1].lstrip('0'))-2)
+            latest_len = max(0, len(f"{latest_score:>.10f}".split('.')[1].lstrip('0'))-4)
 
             self.score_window.append(latest_len)
             if len(self.score_window) > self.ma_period:
@@ -227,7 +227,7 @@ if __name__ == "__main__":
 
     stepper = ForensicWalkForward(
         center="example-pivot-finder_10_bottoms",  # We use 10 since that is a better match
-        model_path="checkpoints/model-best-gen20-f1-0.6316.pt",
+        model_path="checkpoints/model-best-gen13-f1-0.6316.pt",
         symbol="GBP-USD",
         timeframe="4h",
         start_ms=epoch_ms,
