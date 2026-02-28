@@ -1,8 +1,6 @@
-# Alerting/Trigger System
-
-This is getting more important. But first I need to know how to alert using the ML models. Thats why some tests need to be performed first. Measuring is knowing. The larger picture of this subsystem is that "business-rules" can be described in a YAML-alike syntax. A mini coding language expressed in simple YAML. 
-
 # ML
+
+**Update**: First diagnostics results are in for EUR-USD and model 3750. This is a REAL candle by candle walkforward test performed on never-seen-before 2026 data. See [here](../ml/logs/diagnostics1.txt). More tests will be done. You can check the program used for testing [here](../ml/diag/forensics.py). Note: this is a first test. Will be busy with this almost all day. This first result gives me the confidence to continue testing. This is not a bad result. Preliminary conclusion: **YES, usable**.
 
 A beta "play-version" is released. You can find it in the ml folder. It's research-grade stuff and may be still a bit rough. You need a cuda-capable GPU to use this feature.
 
