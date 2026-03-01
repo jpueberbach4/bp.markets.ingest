@@ -184,6 +184,8 @@ Very promising. The primary idea behind all of this project seems feasible.
 
 >Note to self: If you are 1000% sure the model architecture is stable, export the .pt to ONNX and then to TensorRT. 5-20x speedup on inference.
 
+PS: i know this is complex/very advanced stuff for a "typical trader with some python experience". It was for me too. Like one and a half week ago i also was in the "how the hell should i approach this. i have zero experience"-mode... in the end it turned out pretty well. The concepts look difficult at first but eventually the `aha` moment comes and then you think `wait. i am starting to grasp the stuff and it clicks all in place`. wait for the documentation, will be fine if you cannot grasp it just yet.
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
