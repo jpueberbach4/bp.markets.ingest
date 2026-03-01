@@ -11,7 +11,7 @@ Ok. I have been playing with this all weekend. Here is the heads-up
 - is it CPU capable? `Yes, its capable but NO, you should have a Cuda capable GPU`
 - Did you try tops-hunting, instead of only bottoms? `Not yet, but the plan is to have a 1d bottomdetect, have it enter positions and step out at tops (automated).`
 - Are you going to use this yourself? `More tests needed, but very likely (money is involved so need to be 1000% sure)`
-- So what's the plan now you achieved 86 percent accuracy? `Broader tests on more assets. Seeing if the approach works for commodities/stocks/indices (today tests)`
+- So what's the plan now you achieved 86 percent accuracy? `Broader tests on more assets. Seeing if the approach works for commodities/stocks/indices (today tests)`. See [more assets](../images/ml-example/) to follow.
 - Are you going to write up all of this? `Yes. Thats something for early next week. There is a LOT to tell on neuro-evolution.`
 - What diagnostics are available? `Inspection of the model, threshold scan and walkforward tests. More will get added`
 - Performance? `poor (in my world). the inference is just not as fast as i would like it to be. tried memory residency but still poor. researching. it currently feels like i am dragging an anchor.`

@@ -1,20 +1,22 @@
 # =================================================================================================
-# GBP HUNTER CONFIGURATION: AI-Powered GBP-USD Bottom Detection System
+# GBP HUNTER CONFIGURATION: AI-Powered BRENT-USD Bottom Detection System
 # =================================================================================================
 # Trains an evolutionary neural network to detect high-probability
-# bottom reversals on GBP-USD using a 4-hour timeframe.
+# bottom reversals on BRENT-USD using a 4-hour timeframe.
 # The model blends momentum, volatility, trend, regime, and cross-market context.
 # =================================================================================================
 #
-# Note: THIS IS AN EXTREME-MODEL AND GBP-USD SPECIFIC. IT SEVERELY PENALIZES NON-PRECISION
+# Note: THIS IS AN EXTREME-MODEL AND BRENT-USD SPECIFIC. IT SEVERELY PENALIZES NON-PRECISION
 #       IT WILL TAKE A LOT OF YOUR GPU. USE NVTOP TO CHECK MEMORY USAGE. ADJUST GPU_CHUNK
 #       CHUNK SIZE TO CONSUME YOUR NVRAM FOR 80-90%. THIS IS A LONGRUNNER. BUT PRECISE.
+#
+# ALSO: MAKE SURE YOU HAVE CONFIGURED BRENT AS PANAMA. SEE OTHER DOCUMENTATION FOR HOWTO
 
-GBP-Galaxy:                        # Root experiment namespace
+BRENT:                             # Root experiment namespace
   type: MilkyWay                   # Declares a multi-component / multi-stage ML pipeline
 
   fabric:                          # Data source and time window configuration
-    matter: GBP-USD/1d             # Trading instrument and timeframe
+    matter: BRENT.CMD-USD-PANAMA/1d # Trading instrument and timeframe
     after: 2023-01-01              # Start date for historical data (prevents look-ahead bias)
     until: 2025-12-31              # End date for historical data
 
@@ -32,7 +34,7 @@ GBP-Galaxy:                        # Root experiment namespace
       hotness_min: 80              # Lower bound for signal aggressiveness
       gpu_chunk: 500               # Batch size for GPU evaluation
       min_signals: 6               # Minimum number of signals required to act
-      target_density: 0.008        # Desired signal frequency (controls overtrading)
+      target_density: 0.03         # Desired signal frequency (controls overtrading)
       precision_exp: 10            # Exponent applied to precision during fitness scoring
       penalty_coeff: 4.5           # Penalty for false positives / noisy signals
       thresh_steps: 201            # Threshold sweep resolution for signal calibration
@@ -116,15 +118,12 @@ GBP-Galaxy:                        # Root experiment namespace
     - kalman_1e-5_0.01             # Kalman filter trend estimator
 
     # 7. CROSS-SYMBOL CONTEXT (Intermarket confirmation)
-    - example-multi-tf-rsi_GBP-USD_14_14_14_14
-                                   # Multi-timeframe RSI on GBP-USD
     - example-multi-tf-rsi_EUR-USD_14_14_14_14
                                    # EUR-USD correlation context
     - example-multi-tf-rsi_DOLLAR.IDX-USD_14_14_14_14
                                    # Dollar strength / weakness proxy
 
     # 8. CROSS-SYMBOL DIVERGENCES
-    - example-cross-divergence_GBP-USD_DOLLAR.IDX-USD_20_rsi_14
-                                   # GBP vs DXY RSI divergence
-    - example-cross-divergence_UKGILT.TR-GBP_USTBOND.TR-USD_20_rsi_14
-                                   # UK vs US yield divergence (macro risk signal)
+    - example-cross-divergence_EUR-USD_DOLLAR.IDX-USD_20_rsi_14
+    - example-cross-divergence_BRENT.CMD-USD-PANAMA_DOLLAR.IDX-USD_20_rsi_14
+                                   # BRENT vs DXY RSI divergence
