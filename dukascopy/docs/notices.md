@@ -14,7 +14,7 @@ Ok. I have been playing with this all weekend. Here is the heads-up
 - So what's the plan now you achieved 86 percent accuracy? `Broader tests on more assets. Seeing if the approach works for commodities/stocks/indices (today tests)`
 - Are you going to write up all of this? `Yes. Thats something for early next week. There is a LOT to tell on neuro-evolution.`
 - What diagnostics are available? `Inspection of the model, threshold scan and walkforward tests. More will get added`
-- Performance? `poor (in my world). the inference is just not as fast as i would like it to be. tried memory residency but still poor. researching.`
+- Performance? `poor (in my world). the inference is just not as fast as i would like it to be. tried memory residency but still poor. researching. it currently feels like i am dragging an anchor.`
 - Any short term related stuff? `Yes. Some of the example indicators will be made more robust and get integrated as system indicators. I will also share the "no-peek-ahead" fixes which i have locally.`
 - Andromeda? `shifted to next week. Also different approach. I will abstract the "get_data" in the core code instead. You will be able to feed get_data options to select what kind of API it should use (HTTP, Bootstrap or files)`
 
