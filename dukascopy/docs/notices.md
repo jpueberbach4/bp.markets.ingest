@@ -170,6 +170,8 @@ Step   96/301 | Time: 2025-05-15 00:00:00 | Bars:   96 | Close:   1.33007 (+0.29
 ...
 ```
 
+>Note: the second fire is interesting. It basically catches a falling-knife. Don't know if i will have the "balls" to enter positions on these kind of candles. We'll see in paper trading.
+
 This is not the end of the ML-experience. I will be doubling down on lower timeframes but 1d is the first target to get stable and it is already nearly at that. Documentation will come. In a somewhat similar style as `configuration.md`. From introduction, to concepts, to caveats, to guided most-complex asset configuration.
 
 You need to know some stuff about tuning model parameters in the universes. How to penalize for precision, how to build a carpet bomber, what features to select, the generic thinking way behind all of this stuff. A seperate document will be created on how to extend the code.
