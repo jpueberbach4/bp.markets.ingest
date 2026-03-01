@@ -1,5 +1,7 @@
 # ML
 
+Note: Kinematics will get replaced with selective RNN. Do not use Kinematics. It is still working but just dont use it. RNN is smarter approach. Kinematics deprecated.
+
 Ok. I have been playing with this all weekend. Here is the heads-up
 
 - Is it useful? `Yes`
@@ -264,6 +266,7 @@ We have added several deep-dive guides to help you leverage the latest performan
 * **[Adjustments.md](adjustments.md)** – Implementation guide for Panama rolls, Dividends, and Multiplicative splits.
 * **[Templates.md](templates.md)** – Guidelines for "God-tier" indicator performance using Polars/Rust to bypass the Python GIL.
 * **[Code Examples](../config/plugins/indicators/)** – Direct reference for plugin and indicator development.
+
 
 
 
