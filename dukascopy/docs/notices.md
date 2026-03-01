@@ -6,14 +6,14 @@ Ok. I have been playing with this all weekend. Here is the heads-up
 - What timeframe works this best on? `1d forex (only tested it there atm)` 
 - What is the maximum accuracy you achieved? `86% (where the missing 14% are misses)` 
 - Is that in-sample, OOS-train, or truly OOS? `All 3 combined in a single scan (2025-NOW)`
-- Are you happy? `VERY!. Worth the effort.`
+- Are you happy? `VERY! Worth the effort.`
 - Is there diagnostic tooling? Yes, there is. `./run-mldiag.sh`
 - is it CPU capable? `Yes, its capable but NO, you should have a Cuda capable GPU`
 - Did you try tops-hunting, instead of only bottoms? `Not yet, but the plan is to have a 1d bottomdetect, have it enter positions and step out at tops (automated).`
 - Are you going to use this yourself? `More tests needed, but very likely (money is involved so need to be 1000% sure)`
 - So what's the plan now you achieved 86 percent accuracy? `Broader tests on more assets. Seeing if the approach works for commodities/stocks/indices (today tests)`
 - Are you going to write up all of this? `Yes. Thats something for early next week. There is a LOT to tell on neuro-evolution.`
-- Are there diagnostics tools? `Yes, there are. Inspection of the model, threshold scan and walkforward tests`
+- What diagnostics are available? `Inspection of the model, threshold scan and walkforward tests. More wull get added`
 
 Example diagnostics command and output:
 
