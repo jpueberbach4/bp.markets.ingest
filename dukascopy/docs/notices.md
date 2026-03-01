@@ -194,7 +194,7 @@ In short, workflow: Train → Diagnose → Deploy → Alert → Review → Execu
 
 There are currently 3 example universes in the config folder.
 
-- universe: BRENT/1d
+- universe: BRENT/1d (you need to have it [panama-adjusted](adjustments.md))
 - universe: GBP/1d
 - universe: MilkyWay/4h (this one still needs tuning)
 
