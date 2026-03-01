@@ -13,7 +13,7 @@ Ok. I have been playing with this all weekend. Here is the heads-up
 - Are you going to use this yourself? `More tests needed, but very likely (money is involved so need to be 1000% sure)`
 - So what's the plan now you achieved 86 percent accuracy? `Broader tests on more assets. Seeing if the approach works for commodities/stocks/indices (today tests)`
 - Are you going to write up all of this? `Yes. Thats something for early next week. There is a LOT to tell on neuro-evolution.`
-- What diagnostics are available? `Inspection of the model, threshold scan and walkforward tests. More wull get added`
+- What diagnostics are available? `Inspection of the model, threshold scan and walkforward tests. More will get added`
 - Any short term related stuff? `Yes. Some of the example indicators will be made more robust and get integrated as system indicators`
 
 Example diagnostics command and output:
@@ -176,7 +176,7 @@ You need to know some stuff about tuning model parameters in the universes. How 
 
 Give me a few days to write the stuff up. Will be like 4-5 A4 pages of information.
 
-VERY PROMISING RESULTS. I LIKE IT.
+Very promising. The primary idea behind all of this project seems feasible.
 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
