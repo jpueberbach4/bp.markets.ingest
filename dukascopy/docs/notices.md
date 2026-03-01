@@ -14,7 +14,7 @@ Ok. I have been playing with this all weekend. Here is the heads-up
 - So what's the plan now you achieved 86 percent accuracy? `Broader tests on more assets. Seeing if the approach works for commodities/stocks/indices (today tests)`
 - Are you going to write up all of this? `Yes. Thats something for early next week. There is a LOT to tell on neuro-evolution.`
 - What diagnostics are available? `Inspection of the model, threshold scan and walkforward tests. More will get added`
-- Any short term related stuff? `Yes. Some of the example indicators will be made more robust and get integrated as system indicators`
+- Any short term related stuff? `Yes. Some of the example indicators will be made more robust and get integrated as system indicators. I will also share the "no-peek-ahead" fixes which i have locally.`
 
 Example diagnostics command and output:
 
