@@ -192,6 +192,14 @@ Expect +- 60 setups per year on 10 assets +-. The more diverse assets, the more 
 
 In short, workflow: Train → Diagnose → Deploy → Alert → Review → Execute
 
+There are currently 3 example universes in the config folder.
+
+- universe: DAX/1d
+- universe: GBP/1d
+- universe: MilkyWay/4h (this one still needs tuning)
+
+Note: the example connectors need updates. Coming. Next week another major update round. The ML NN engine holds up across assets (1d). Some additional config arguments need to be implemented for precision. Also, next week.  For today i am done. 
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
