@@ -19,7 +19,8 @@ Ok. I have been playing with this all weekend. Here is the heads-up
 Example diagnostics command and output:
 
 ```sh
-./run-mldiag.sh --mode full --model checkpoints/model-best-gen12-f1-0.7692.pt --symbol GBP-USD --timeframe 1d --center example-pivot-finder_10_bottoms --threshold 0.23
+./run-mldiag.sh --mode full --model checkpoints/model-best-gen12-f1-0.7692.pt \
+--symbol GBP-USD --timeframe 1d --center example-pivot-finder_10_bottoms --threshold 0.23
 
 🧬 [Model Inspector]: Initiating Deep Scan of 'model-best-gen12-f1-0.7692.pt'
 ======================================================================
