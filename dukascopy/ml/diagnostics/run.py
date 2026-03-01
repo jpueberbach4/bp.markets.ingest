@@ -90,14 +90,14 @@ ML DIAGNOSTIC SUITE - USAGE EXAMPLES
    needing to load market data.
    
    Command:
-     python run_diagnostics.py --mode inspect --model checkpoints/model-best.pt
+     ./run-mldiag.sh --mode inspect --model checkpoints/model-best.pt
 
 2. SCAN MODE: Discover the "Sniper" Threshold
    Run vectorized bulk inference across an entire dataset to find the exact 
    threshold that yields 1.0000 Precision and the maximum F1 Score.
    
    Command:
-     python run_diagnostics.py --mode scan --model checkpoints/model-best.pt \\
+     ./run-mldiag.sh --mode scan --model checkpoints/model-best.pt \\
        --symbol EUR-USD --timeframe 1d --start 2025-01-01 \\ 
        --center example-pivot-finder_10_bottoms
 
@@ -106,24 +106,24 @@ ML DIAGNOSTIC SUITE - USAGE EXAMPLES
    Optionally test a specific threshold or limit the number of steps.
    
    Command:
-     python run_diagnostics.py --mode walk --model checkpoints/model-best.pt \\
+     ./run-mldiag.sh --mode walk --model checkpoints/model-best.pt \\
        --symbol GBP-USD --start 2025-06-01 --threshold 0.8687 --steps 100 \\
-       --center example-pivot-finder_10_bottoms
+       --center example-pivot-finder_10_bottoms --after 2025-01-01
 
 4. FULL SUITE: The Ultimate Validation Run
    Automatically chains all tools: Inspects genes -> Scans for the Sniper 
    threshold -> Feeds that threshold directly into a Walk-Forward test.
    
    Command:
-     python run_diagnostics.py --mode full --model checkpoints/model-best.pt \\
+     ./run-mldiag.sh --mode full --model checkpoints/model-best.pt \\
        --symbol GBP-USD --timeframe 4h --start 2026-01-01 \\
-       --center example-pivot-finder_10_bottoms
+       --center example-pivot-finder_10_bottoms --after 2025-01-01
 ================================================================================
 """
 
     # Instantiate the custom argument parser with extended formatting enabled
     parser = MilkyWayParser(
-        description="MilkyWay Full Diagnostic Suite: Forensic Tooling for Neuro-Evolved Models.",
+        description="Full Diagnostic Suite: Forensic Tooling for Neuro-Evolved Models.",
         epilog=extended_help_examples,
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
