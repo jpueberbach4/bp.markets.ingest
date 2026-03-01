@@ -194,7 +194,7 @@ In short, workflow: Train → Diagnose → Deploy → Alert → Review → Execu
 
 There are currently 3 example universes in the config folder.
 
-- universe: DAX/1d
+- universe: BRENT/1d
 - universe: GBP/1d
 - universe: MilkyWay/4h (this one still needs tuning)
 
