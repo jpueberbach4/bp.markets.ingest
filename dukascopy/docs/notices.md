@@ -182,6 +182,8 @@ Give me a few days to write the stuff up. Will be like 4-5 A4 pages of informati
 
 Very promising. The primary idea behind all of this project seems feasible.
 
+>Note to self: If you are 1000% sure the model architecture is stable, export the .pt to ONNX and then to TensorRT. 5-20x speedup on inference.
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
