@@ -188,6 +188,8 @@ PS: i know this is complex/very advanced stuff for a "typical trader with some p
 
 PS: i will build a simple first-version alert system that sends you an email on "fires". Workflow is like this. You train for all the assets you want to monitor. You then perform a diagnostic to determine the optimal threshold. You put in an `alert.yaml` your SMTP server, optional credentials, TLS yes/no, email-adres and, and some basic rules (model-name, asset, timeframe, threshold). Then you add the alert-script to run at the close of daily candle times (depends on your timezone). I will make sure it does a `run.sh` first. When it finds a "fires"-signal, it sends you an email, per-asset. You can then use rules in your email client to group them. I need it for myself to start testing `semi-automated` trading. Basically testing the live-edge with this stuff. Hope to do this "first-version" next week, somewhere.
 
+Expect +- 60 setups per year on 10 assets +-. The more diverse assets, the more signals. Still need to do PNL testing. Seeing how many trades are profitable and what the max drawdown is when wrong. There will be a diagnostic script for this too. Its the logical next step for diagnostics.
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
