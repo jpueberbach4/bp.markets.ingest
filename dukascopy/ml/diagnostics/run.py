@@ -82,7 +82,7 @@ def main():
     # Multi-line epilog containing extended usage examples
     extended_help_examples = """
 ================================================================================
-MILKYWAY DIAGNOSTIC SUITE - USAGE EXAMPLES
+ML DIAGNOSTIC SUITE - USAGE EXAMPLES
 ================================================================================
 
 1. INSPECT MODE: Gene & Topology Analysis
@@ -98,7 +98,8 @@ MILKYWAY DIAGNOSTIC SUITE - USAGE EXAMPLES
    
    Command:
      python run_diagnostics.py --mode scan --model checkpoints/model-best.pt \\
-       --symbol EUR-USD --timeframe 1d --start 2025-01-01
+       --symbol EUR-USD --timeframe 1d --start 2025-01-01 \\ 
+       --center example-pivot-finder_10_bottoms
 
 3. WALK-FORWARD MODE: Candle-by-Candle Forensic Test
    Simulate live market execution step-by-step with zero look-ahead bias. 
@@ -106,7 +107,8 @@ MILKYWAY DIAGNOSTIC SUITE - USAGE EXAMPLES
    
    Command:
      python run_diagnostics.py --mode walk --model checkpoints/model-best.pt \\
-       --symbol GBP-USD --start 2025-06-01 --threshold 0.8687 --steps 100
+       --symbol GBP-USD --start 2025-06-01 --threshold 0.8687 --steps 100 \\
+       --center example-pivot-finder_10_bottoms
 
 4. FULL SUITE: The Ultimate Validation Run
    Automatically chains all tools: Inspects genes -> Scans for the Sniper 
@@ -114,7 +116,8 @@ MILKYWAY DIAGNOSTIC SUITE - USAGE EXAMPLES
    
    Command:
      python run_diagnostics.py --mode full --model checkpoints/model-best.pt \\
-       --symbol GBP-USD --timeframe 4h --start 2026-01-01
+       --symbol GBP-USD --timeframe 4h --start 2026-01-01 \\
+       --center example-pivot-finder_10_bottoms
 ================================================================================
 """
 
