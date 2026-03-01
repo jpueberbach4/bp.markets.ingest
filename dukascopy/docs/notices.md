@@ -190,6 +190,8 @@ PS: i will build a simple first-version alert system that sends you an email on 
 
 Expect +- 60 setups per year on 10 assets +-. The more diverse assets, the more signals. Still need to do PNL testing. Seeing how many trades are profitable and what the max drawdown is when wrong. There will be a diagnostic script for this too. Its the logical next step for diagnostics.
 
+In short, workflow: Train → Diagnose → Deploy → Alert → Review → Execute
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
