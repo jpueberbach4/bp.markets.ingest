@@ -35,7 +35,7 @@ Guaranteed no peeking in future [here](../ml/diag/forensics2.py).
 
 Will do same for Yen and a few indices tomorrow.
 
-PS: important note: signals decay over time. frequent retraining likely needed.
+PS: important note: signals decay over time. frequent retraining likely needed. This requires constant management to stay accurate. One key insight added.
 
 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
