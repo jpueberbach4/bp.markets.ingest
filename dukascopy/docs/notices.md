@@ -11,7 +11,7 @@ Ok. I have been playing with this all weekend. Here is the heads-up
 - Is there diagnostic tooling? Yes, there is. `./run-mldiag.sh`
 - is it CPU capable? `Yes, its capable but NO, you should have a Cuda capable GPU`
 - Did you try tops-hunting, instead of only bottoms? `Not yet, but the plan is to have a 1d bottomdetect, have it enter positions and step out at tops (automated).`
-- Are you going to use this yourself? `More tests needed, but very likely (money is involved so need to be 1000% sure)`
+- Are you going to use this yourself? `Very likely (money is involved so need to be 1000% sure)`
 - So what's the plan now you achieved 86 percent accuracy? `Broader tests on more assets. Seeing if the approach works for commodities/stocks/indices (today tests)`. See [more assets](../images/ml-example/) to follow.
 - Are you going to write up all of this? `Yes. Thats something for early next week. There is a LOT to tell on neuro-evolution.`
 - What diagnostics are available? `Inspection of the model, threshold scan and walkforward tests. More will get added`
@@ -45,7 +45,6 @@ Next is:
 - Alerting
 - Kinematics is deprecated. SRNN (Selective Recurring Neural Network) will be implemented instead.
 - Indicator updates
-- More asset-scanning/more tests
 
 There are currently 3 example universes in the config folder.
 
