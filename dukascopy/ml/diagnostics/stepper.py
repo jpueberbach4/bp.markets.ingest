@@ -284,23 +284,39 @@ class ForensicWalkForward(BaseDiagnostic):
         # Determine number of steps to execute
         num_steps = max_steps if max_steps > 0 else self.total_bars
 
+        # Fetch the data
+        base_df = get_data(
+            self.symbol,
+            self.timeframe,
+            after_ms=self.start_ms,
+            limit=self.total_bars,
+            order="asc",
+            indicators=self.base_indicators,
+            options={**self.options, "return_polars": True}
+        )
+
+        if base_df is None or len(base_df) == 0:
+            return
+
         for step in range(1, num_steps + 1):
 
             # Fetch data incrementally up to current step
-            raw_df = get_data(
-                self.symbol,
-                self.timeframe,
-                after_ms=self.start_ms,
-                limit=step,
-                order="asc",
-                indicators=self.base_indicators,
-                options={**self.options, "return_polars": True}
-            )
-
-            if raw_df is None or len(raw_df) == 0:
-                continue
+            raw_df = base_df[:step]
 
             # Run inference on latest bar
+            
+            # Note: although we use the tail(1) in run, we could theoretically pass
+            # only the last record. However, future plans include support for RNN.
+            # RNN looks at more "previous records" than only the last row. To support
+            # this, we leave this stuff in-place. For now. Until we know exactly how
+            # many rows a model "looks-back" (we need to store that info in the mode).
+            # RNN will be another great addition. Stay tuned.
+
+            # Note: although the last record may be is-open == 1, we pass it in. Any
+            # last open record will get the score value of the previous-last record.
+            # Inference is run on tail(1) in run_reference. 0:step is passed in, never
+            # empty slice. tail(1) has always a record. 
+
             latest_score = self._run_inference(raw_df)
 
             # Determine signal state
