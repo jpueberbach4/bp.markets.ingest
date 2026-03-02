@@ -4,7 +4,7 @@ Ok. I have been playing with this all weekend. Here is the heads-up
 
 - Is it useful? `Yes`
 - What timeframe works this best on? `1d forex (only tested it there atm)`
-- What assets are tested and confirmed?`BRENT-CMD-USD/1d, GBP-USD/1d, DEU.IDX-EUR/1d, BTC-USD/1d`
+- What assets are tested and confirmed?`BRENT-CMD-USD/1d, GBP-USD/1d, DEU.IDX-EUR/1d, BTC-USD/1d/4h`
 - What is the maximum accuracy you achieved? `86% (where the missing 14% are misses) on GBP-USD` 
 - Is that in-sample, OOS-train, or truly OOS? `All 3 combined in a single scan (2025-NOW)`
 - Are you happy? `Yes, worth the effort.`
