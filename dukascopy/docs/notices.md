@@ -4,9 +4,13 @@ You can read all about ML and neuro-evolution soon. I am currently writing up al
 
 I will be giving the alerting system a bit of priority. So, documentation and alerting system. After that comes the PNL stuff. And after that additional ML cores (SRNN and TFT).
 
-ATM one of the models is signaling loud for the EUR-USD.
+Meanwhile I have added some of my private indicators. CMF, Trix, MOM and Vortex. More will be added upcoming days.
 
-Meanwhile I have added some of my private indicators. CMF, Trix, MOM and Vortex. More will be added upcoming days. Cheers.
+Wil I be sharing the models themselves? As soon as I have done PNL testing and have tested them on the live edge (have a few running) etc I will share some. Cannot share models for which we dont know if they are profitable yes/no. Firing correctly yes/no on live edge. This needs to be clear first. 
+
+Also some models look regime-dependent. That needs to be out first.
+
+ATM one of the models is signaling loud for the EUR-USD. So, lets see.
 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
