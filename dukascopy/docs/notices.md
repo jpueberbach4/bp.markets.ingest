@@ -10,7 +10,7 @@ Wil I be sharing the models themselves? As soon as I have done PNL testing and h
 
 Also some models look regime-dependent. That needs to be out first.
 
-ATM one of the models is signaling loud for the EUR-USD. So, lets see.
+ATM one of the models is signaling loud for the EUR-USD. So, lets see (personal opinion is that it may drop to 1.1650-ish).
 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
