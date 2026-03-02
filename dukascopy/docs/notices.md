@@ -57,7 +57,7 @@ Next is:
 
 What is the idea behind the `squadron`. Have multiple types of models. All evaluating a last section of the input time-series. Have them vote as an "ensemble" on the last candle. If all models agree (or 2 out of 3, there will be, ultimately, 3 different model types): take position. See it as your local trading committee. This is the basic core concept where this is going. This is "BY FAR" not finished yet. Still a lot of work todo.
 
->This is a very powerful concept. It's "weapon-grade", when done.
+>This is a very powerful concept.
 
 There are currently 3 example universes in the config folder.
 
