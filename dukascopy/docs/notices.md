@@ -40,11 +40,18 @@ Give me a few days to write the stuff up. Will be like 4-5 A4 pages of informati
 
 Next is:
 
-- Additional tooling
-- PNL tooling and testing
-- Alerting
-- Kinematics is deprecated. SRNN (Selective Recurring Neural Network) will be implemented instead.
-- Indicator updates
+- PNL diagnostics \
+  This is a big tool, will take me a few days. Lots of stuff to support.
+- Additional tooling \
+  Various other tools to support the AI stuff, eg universe config generation
+- Alerting \
+  First version to start receiving emails when a model fires on the various dailies
+- Kinematics is deprecated \
+  SRNN (Selective Recurring Neural Network) will be implemented instead.
+- Indicator updates \
+  Make them resilient, beautiful and system-ready
+- Automated 'squadron building` \
+  Have the whole model building, diagnostic execution, PNL testing chained and automated 
 
 There are currently 3 example universes in the config folder.
 
