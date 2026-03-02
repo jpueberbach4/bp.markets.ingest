@@ -18,7 +18,7 @@ Ok. I have been playing with this all weekend. Here is the heads-up
 - Performance? `poor (in my world). the inference is just not as fast as i would like it to be. tried memory residency but still poor. researching. it currently feels like i am dragging an anchor.`
 - Any short term related stuff? `Yes. Some of the example indicators will be made more robust and get integrated as system indicators. I will also share the "no-peek-ahead" fixes which i have locally.`
 - Andromeda? `shifted to next week. Also different approach. I will abstract the "get_data" in the core code instead. You will be able to feed get_data options to select what kind of API it should use (HTTP, Bootstrap or files)`
-- What is the most interesting thing you discovered? `The models are VERY GOOD at exhaustion-candle detection. Sometimes falling knifes. Normally, I dont trade these kind of candles because too stressful although these are the candles that give a real edge. Don't know if i 'dare' to trade them when the model fires. You need 'iron balls' to do that.`
+- What is the most interesting thing you discovered? `The models are VERY GOOD at exhaustion-candle detection. Sometimes falling knifes. Normally, I dont trade these kind of candles because too stressful although these are the candles that give a real edge. Don't know if i 'dare' to trade them when the model fires. You need 'iron balls' to do that. It's like stepping in front of a freight train.`
 
 Example diagnostics command:
 
