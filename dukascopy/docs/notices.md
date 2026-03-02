@@ -48,7 +48,7 @@ Next is:
   First version to start receiving emails when a model fires on the various dailies
 - Kinematics is deprecated \
   SRNN (Selective Recurring Neural Network) will be implemented instead.
-- TFT (Temporal Fusion Transformer) is being looked at
+- TFT (Temporal Fusion Transformer) is being looked at \
   Will get implemented as a seperate "singularity". Issue: "model compatibility".
 - Indicator updates \
   Make them resilient, beautiful and system-ready
