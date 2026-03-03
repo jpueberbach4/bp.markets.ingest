@@ -2,6 +2,9 @@ import yaml
 from dataclasses import dataclass, fields, field
 from typing import Dict, List, Optional, Type, TypeVar, Any
 import glob
+from pathlib import Path
+import orjson
+# Config loading optimization (currently responsible for 80 percent of startup lag)
 # Config loading optimization (currently responsible for 80 percent of startup lag)
 import yaml
 try:
@@ -9,6 +12,14 @@ try:
 except ImportError:
     from yaml import SafeLoader, SafeDumper
 
+import fastjsonschema
+def _get_validator():
+    schema_path = Path(__file__).parent.resolve() / "schema.json"
+    with open(schema_path, "rb") as f:
+        schema = orjson.loads(f.read())
+    return fastjsonschema.compile(schema)
+
+VALIDATE_CONFIG = _get_validator()
 
 @dataclass
 class BuilderPaths:
@@ -181,10 +192,69 @@ def load_config_data(config_class: Type[T], data: Dict[str, Any]) -> T:
     return config_class(**final_args)
 
 
-def load_app_config(file_path: str = 'config.yaml') -> AppConfig:
+def load_app_config(file_path: str = "config.yaml") -> AppConfig:
+    """
+    Load the full application configuration from a YAML file.
+
+    This function resolves any YAML `includes`, parses the resulting configuration,
+    and maps it into the strongly-typed `AppConfig` dataclass hierarchy. If loading
+    or parsing fails for any reason, a default `AppConfig` instance is returned to
+    allow the application to continue running with safe defaults.
+
+    Parameters
+    ----------
+    file_path : str, optional
+        Path to the root YAML configuration file. Defaults to "config.yaml".
+
+    Returns
+    -------
+    AppConfig
+        Fully populated application configuration object, or a default instance
+        if an error occurs during loading.
+    """
+    # Resolve YAML includes and load the merged YAML content as a string
+    try:
+        cache_enable = False
+
+        yaml_cache_path = Path(f"{file_path}.cache") 
+
+        if cache_enable and yaml_cache_path.exists():
+            with open(yaml_cache_path, "r") as f:
+                yaml_data = yaml.load(f, Loader=SafeLoader)
+                return load_config_data(AppConfig, yaml_data)
+
+
+        yaml_str = resolve_yaml_includes_to_string(file_path)
+        # Parse the resolved YAML string into a Python dictionary
+        yaml_data = yaml.load(yaml_str, Loader=SafeLoader)
+
+        # Load JSON Schema
+        schema_path = Path(__file__).parent.resolve() / "schema.json"
+        with open(schema_path, "rb") as f:
+            schema = orjson.loads(f.read())
+
+        try:
+            # Use the pre-compiled fast validator
+            VALIDATE_CONFIG(yaml_data) 
+        except fastjsonschema.JsonSchemaException as e:
+            raise ValueError(f"Configuration invalid {list(e.path)}: {e.message}")
+
+    except (FileNotFoundError, yaml.YAMLError):
+        # Fall back to default configuration if loading or parsing fails
+        return AppConfig()
+
+    # Map the parsed configuration dictionary into the AppConfig dataclass
+    if cache_enable:
+        with open(yaml_cache_path, "w") as f:
+            f.write(yaml_str)
+
+    return load_config_data(AppConfig, yaml_data)
+
+def load_app_config_old(file_path: str = 'config.yaml') -> AppConfig:
     """Loads configuration from a YAML file into the AppConfig dataclass."""
     try:
         yaml_str = resolve_yaml_includes_to_string(file_path)
+        print(yaml_str)
         # Parse the resolved YAML string into a Python dictionary
         yaml_data = yaml.load(yaml_str, Loader=SafeLoader)
     except FileNotFoundError:

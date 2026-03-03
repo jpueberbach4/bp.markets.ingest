@@ -1,0 +1,444 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "additionalProperties": true,
+    "required": ["aggregate", "download", "orchestrator", "transform", "resample"],
+    "definitions": {
+        "path_string": {
+            "type": "string",
+            "minLength": 1
+        },
+        "time_string": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)(:[0-5]\\d)?$|^epoch$"
+        },
+        "date_string": {
+            "anyOf": [
+                {
+                    "type": "string"
+                },
+                {
+                    "type": "number"
+                },
+                {
+                    "type": "object"
+                },
+                {}
+            ]
+        },
+        "processing_step": {
+            "type": "object",
+            "properties": {
+                "action": { "type": "string" },
+                "ends_with": { "type": "array", "items": { "type": "string" } },
+                "offset": { "type": "integer" }
+            }
+        },
+        "timeframe_config": {
+            "type": "object",
+            "properties": {
+                "rule": { "type": "string" },
+                "label": { "enum": ["left", "right"] },
+                "closed": { "enum": ["left", "right"] },
+                "source": { "type": "string" },
+                "origin": { "$ref": "#/definitions/time_string" },
+                "pre": { "type": "object", "additionalProperties": { "$ref": "#/definitions/processing_step" } },
+                "post": { "type": "object", "additionalProperties": { "$ref": "#/definitions/processing_step" } }
+            },
+            "additionalProperties": false
+        },
+        "condition_config": {
+            "type": "object",
+            "properties": {
+                "column": { "type": "string" },
+                "operator": { "enum": [">=", "<=", ">", "<", "==", "!="] },
+                "value": { "type": "number" }
+            },
+            "required": ["column", "operator", "value"],
+            "additionalProperties": false
+        },
+        "rule_config": {
+            "type": "object",
+            "properties": {
+                "symbol": { "type": "string" },
+                "timeframe": { "type": "string" },
+                "indicators": { "type": "array", "items": { "type": "string" } },
+                "conditions": { 
+                    "type": "array", 
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "$ref": "#/definitions/condition_config"
+                        }
+                    }
+                }
+            },
+            "required": ["symbol", "timeframe", "indicators", "conditions"],
+            "additionalProperties": false
+        },
+        "alert_action": {
+            "type": "object",
+            "properties": {
+                "type": { "enum": ["mail", "webhook"] },
+                "address": { "type": "string" },
+                "subject": { "type": "string" },
+                "method": { "type": "string" },
+                "uri": { "type": "string" }
+            },
+            "required": ["type"],
+            "additionalProperties": false
+        },
+        "alert_config": {
+            "type": "object",
+            "properties": {
+                "weekdays": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 6 } },
+                "run-at": { "type": "string", "pattern": "^\\d{2}:\\d{2}:\\d{2}$" },
+                "from_date": { "$ref": "#/definitions/date_string" },
+                "to_date": { "$ref": "#/definitions/date_string" },
+                "actions": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/alert_action"
+                    }
+                },
+                "rules": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "$ref": "#/definitions/rule_config"
+                        }
+                    }
+                }
+            },
+            "required": ["weekdays", "run-at", "from_date", "to_date", "actions", "rules"],
+            "additionalProperties": false
+        }
+    },
+    "properties": {
+        "aggregate": {
+            "type": "object",
+            "properties": {
+                "fmode": { "enum": ["text", "binary"] },
+                "fsync": { "type": "boolean" },
+                "paths": {
+                    "type": "object",
+                    "properties": {
+                        "data": { "$ref": "#/definitions/path_string" },
+                        "source": { "$ref": "#/definitions/path_string" }
+                    }
+                }
+            }
+        },
+        "builder": {
+            "type": "object",
+            "properties": {
+                "fmode": { "enum": ["text", "binary"] },
+                "paths": {
+                    "type": "object",
+                    "properties": {
+                        "data": { "$ref": "#/definitions/path_string" },
+                        "temp": { "$ref": "#/definitions/path_string" }
+                    }
+                }
+            }
+        },
+        "download": {
+            "type": "object",
+            "properties": {
+                "max_retries": { "type": "integer", "minimum": 0 },
+                "backoff_factor": { "type": "number", "minimum": 1 },
+                "timeout": { "type": "integer", "minimum": 1 },
+                "rate_limit_rps": { "type": "number", "minimum": 0 },
+                "mode": { "type": "string" },
+                "jitter": { "type": "integer" },
+                "paths": {
+                    "type": "object",
+                    "properties": {
+                        "historic": { "$ref": "#/definitions/path_string" },
+                        "live": { "$ref": "#/definitions/path_string" }
+                    }
+                }
+            }
+        },
+        "http": {
+            "type": "object",
+            "properties": {
+                "fmode": { "enum": ["text", "binary"] },
+                "docs": { "type": "string" },
+                "listen": { "type": "string" },
+                "workers": { "type": "integer" },
+                "reload": { "type": "integer" },
+                "paths": { "type": "object" }
+            }
+        },
+        "ml": {
+            "type": "object",
+            "properties": {
+                "log_style": { "type": "string" },
+                "alerts": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/alert_config"
+                    }
+                },
+                "universes": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                            "type": { "type": "string" },
+                            "fabric": {
+                                "type": "object",
+                                "properties": {
+                                    "matter": { "type": "string" },
+                                    "after": { "$ref": "#/definitions/date_string" },
+                                    "until": { "$ref": "#/definitions/date_string" }
+                                }
+                            },
+                            "flight": {
+                                "type": "object",
+                                "properties": {
+                                    "type": { "type": "string" },
+                                    "settings": {
+                                        "type": "object",
+                                        "properties": {
+                                            "max_generations": { "type": "integer" },
+                                            "extinction_stagnation": { "type": "integer" },
+                                            "radiation_stagnation": { "type": "integer" },
+                                            "gene_count": { "type": "integer" },
+                                            "vitality_decay": { "type": "number" },
+                                            "population_size": { "type": "integer" },
+                                            "hidden_dim": { "type": "integer" },
+                                            "hotness_max": { "type": "integer" },
+                                            "hotness_min": { "type": "integer" },
+                                            "gpu_chunk": { "type": "integer" },
+                                            "min_signals": { "type": "integer" },
+                                            "target_density": { "type": "number" },
+                                            "precision_exp": { "type": "number" },
+                                            "penalty_coeff": { "type": "number" },
+                                            "thresh_steps": { "type": "integer" },
+                                            "verbose": { "type": "boolean" },
+                                            "oos_boundary": { "type": "number" },
+                                            "epochs": { "type": "integer" },
+                                            "weight_mutation_rate": { "type": "number" },
+                                            "save_metric": { "type": "string" },
+                                            "save_best_only": { "type": "boolean" }
+                                        }
+                                    }
+                                }
+                            },
+                            "singularity": {
+                                "type": "object",
+                                "properties": {
+                                    "type": { "type": "string" },
+                                    "device": { "type": "string" },
+                                    "lens": {
+                                        "type": "object",
+                                        "properties": {
+                                            "type": { "type": "string" },
+                                            "alpha": { "type": "number" },
+                                            "gamma": { "type": "number" }
+                                        }
+                                    }
+                                }
+                            },
+                            "center": { "type": "array", "items": { "type": "string" } },
+                            "normalizers": {
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "object",
+                                    "properties": {
+                                        "type": { "type": "string" },
+                                        "dim": { "type": "integer" },
+                                        "eps": {
+                                            "anyOf": [
+                                                { "type": "number" },
+                                                { "type": "string" }
+                                            ]
+                                        },
+                                        "disabled": { "type": "boolean" },
+                                        "filter": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inclusive": { "type": "array", "items": { "type": "string" } }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "comets": { "type": "array", "items": { "type": "string" } },
+                            "filter": { "type": "array", "items": { "type": "string" } },
+                            "features": { "type": "array", "items": { "type": "string" } }
+                        }
+                    }
+                }
+            }
+        },
+        "orchestrator": {
+            "type": "object",
+            "properties": {
+                "disable_download": { "type": "integer" },
+                "paths": {
+                    "type": "object",
+                    "properties": {
+                        "downloads": { "$ref": "#/definitions/path_string" },
+                        "locks": { "$ref": "#/definitions/path_string" },
+                        "transforms": { "$ref": "#/definitions/path_string" }
+                    }
+                }
+            }
+        },
+        "transform": {
+            "type": "object",
+            "properties": {
+                "time_shift_ms": { "type": "integer" },
+                "round_decimals": { "type": "integer" },
+                "fmode": { "enum": ["text", "binary"] },
+                "fsync": { "type": "boolean" },
+                "validate": { "type": "boolean" },
+                "paths": {
+                    "type": "object",
+                    "properties": {
+                        "data": { "$ref": "#/definitions/path_string" },
+                        "historic": { "$ref": "#/definitions/path_string" },
+                        "live": { "$ref": "#/definitions/path_string" }
+                    }
+                },
+                "timezones": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                            "offset_to_shift_map": { 
+                                "type": "object",
+                                "additionalProperties": { "type": "integer" }
+                            },
+                            "symbols": { "type": "array", "items": { "type": "string" } }
+                        }
+                    }
+                },
+                "symbols": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                            "source": { "type": "string" },
+                            "post": {
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "object",
+                                    "properties": {
+                                        "action": { "enum": ["+", "-", "*"] },
+                                        "columns": { "type": "array", "items": { "type": "string" } },
+                                        "value": { "type": "number" },
+                                        "from_date": { "type": "string" },
+                                        "to_date": { "type": "string" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "resample": {
+            "type": "object",
+            "properties": {
+                "round_decimals": { "type": "integer" },
+                "batch_size": { "type": "integer" },
+                "fmode": { "enum": ["text", "binary"] },
+                "fsync": { "type": "boolean" },
+                "paths": {
+                    "type": "object",
+                    "properties": {
+                        "data": { "$ref": "#/definitions/path_string" }
+                    }
+                },
+                "timeframes": { 
+                    "type": "object", 
+                    "additionalProperties": { 
+                        "type": "object",
+                        "properties": {
+                            "rule": { "type": "string" },
+                            "label": { "enum": ["left", "right"] },
+                            "closed": { "enum": ["left", "right"] },
+                            "source": { "type": "string" }
+                        }
+                    }
+                },
+                "symbols": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                            "timezone": { "type": "string" },
+                            "skip_timeframes": { "type": "array", "items": { "type": "string" } },
+                            "timeframes": { 
+                                "type": "object", 
+                                "additionalProperties": { 
+                                    "type": "object",
+                                    "properties": {
+                                        "origin": { "type": "string" },
+                                        "post": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "action": { "type": "string" },
+                                                    "ends_with": { "type": "array", "items": { "type": "string" } },
+                                                    "offset": { "type": "integer" }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "sessions": {
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "object",
+                                    "properties": {
+                                        "from_date": { "$ref": "#/definitions/date_string" },
+                                        "to_date": { "$ref": "#/definitions/date_string" },
+                                        "weekdays": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 6 } },
+                                        "ranges": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "from": { "$ref": "#/definitions/time_string" },
+                                                    "to": { "$ref": "#/definitions/time_string" }
+                                                }
+                                            }
+                                        },
+                                        "timeframes": { 
+                                            "type": "object", 
+                                            "additionalProperties": { 
+                                                "type": "object",
+                                                "properties": {
+                                                    "origin": { "type": "string" },
+                                                    "post": {
+                                                        "type": "object",
+                                                        "additionalProperties": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "action": { "type": "string" },
+                                                                "ends_with": { "type": "array", "items": { "type": "string" } },
+                                                                "offset": { "type": "integer" }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
