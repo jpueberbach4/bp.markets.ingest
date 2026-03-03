@@ -130,9 +130,6 @@ class EmailActionGmail(BaseAction):
             payload (Dict[str, Any]):
                 Alert data to include in email body.
         """
-        # Log execution entry for debugging
-        print("Executing action gmail")
-
         # Extract recipient address
         address = params.get("address")
 
