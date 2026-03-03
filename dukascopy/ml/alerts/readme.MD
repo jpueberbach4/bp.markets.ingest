@@ -2,6 +2,10 @@
 
 This allows you to set rules for alerting based on indicator values for a specific asset and timeframe.
 
+Note: with the latest version of the example-ml-pt indicator you can now store your models in a `dukascopy/models` folder. It will first check if it can find the model there, if not, it will fallback to the checkpoints directory.
+
+Note: you can use wildcards in run-at
+
 ## Configuration
 
 Example configuration
@@ -111,6 +115,15 @@ Sends:
 Executes the alerts every minute. However, when specified with run-at, it will only execute when run-at time is reached.
 
 Note: You must make sure that you have the latest version of the data with `./run.sh`.
+
+Note: best is to combine the run.sh with the alerts.sh, like this
+
+```sh
+*/5 * * * * cd /repos/bp.markets.ingest/dukascopy && ./run.sh && ./run-alerts.sh
+```
+
+You need to make sure that run-at is aligned with the schedule. Assuming completion of run.sh within 60 seconds, this should be fine. run-at should be in fragments of 5 minutes, in case above example.
+
 
 ## Webhook
 
