@@ -90,6 +90,8 @@ EUR:
           value: 60  # RSI must be 60 or below
 ```
 
+Update: I have now 10 models under the monitor. Lets see how they perform upcoming weeks. Development will continue meanwhile.
+
 # ML
 
 You can read all about ML and neuro-evolution soon. I am currently writing up all the knowhow needed to understand this stuff. It is promising but requires A LOT of tuning to be usable (read: reliable). Tune too much and you get overfitted. Looking into that atm. There must be some way to simplify this. Eg scanning data, comeup with a configuration proposal. Or at least minimum automated tweaking of config. It's very timeconsuming to get the models right (for lower TF's).
