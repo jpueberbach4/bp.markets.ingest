@@ -14,8 +14,11 @@ ATM one of the models is signaling for the EUR-USD. So, lets see (personal opini
 
 Update: it is already clear that manual intervention is needed and models cannot be trusted blindly. The model said long but i went short :). The committee wil get build. So you will have multiple models voting on the last slice of timeseries. Does the majority, weighted, agree -> send signal. Trying to add the different ML cores asap. Want to know if this approach brings more stability.
 
+There is one potential issue with the committee approach and that is the need for computational power. Instead of one model you will be training three at the same time. I will check if i can shortcut computation here and there by optimization. Especially TFT (Temporal Fusion Transformer) is computationally heavy.
+
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
 
 
