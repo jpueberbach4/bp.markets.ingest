@@ -79,11 +79,20 @@
         "alert_action": {
             "type": "object",
             "properties": {
-                "type": { "enum": ["mail", "webhook"] },
+                "type": { "enum": ["mail", "gmail", "webhook"] },
                 "address": { "type": "string" },
                 "subject": { "type": "string" },
                 "method": { "type": "string" },
-                "uri": { "type": "string" }
+                "uri": { "type": "string" },
+                "username": { "type": "string" },
+                "password": { "type": "string" },
+                "smtp_server": { "type": "string" },
+                "smtp_port": { 
+                    "anyOf": [
+                        { "type": "integer" },
+                        { "type": "string" }
+                    ] 
+                }
             },
             "required": ["type"],
             "additionalProperties": false

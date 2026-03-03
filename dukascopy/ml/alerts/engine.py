@@ -15,10 +15,9 @@ class AlertEngine:
         jobs = []
         for job_name, data in raw.items():
             actions = []
-            for act in data.get('action', []):
-                name = list(act.keys())[0]
-                params = act[name]
-                print(act)
+            # Use .items() to cleanly unpack the dictionary keys and values
+            for name, params in data.get('actions', {}).items():
+                print(f"Loading action module: {name}")
                 actions.append(ActionConfig(name=name, type=params.get('type'), params=params))
             
             rules = []
@@ -59,20 +58,40 @@ class AlertEngine:
     def process_jobs(self):
         current_time = datetime.now()
         current_weekday = current_time.weekday()
-        
+        current_hms = current_time.strftime('%H:%M:00')
+
         for job in self.jobs:
+            # weekday check
             if current_weekday not in job.weekdays:
                 continue
+
+            # from_date, to_date check
+            try:
+                fmt = '%Y-%m-%d %H:%M:%S'
+                job_start = job.from_date if isinstance(job.from_date, datetime) else datetime.strptime(str(job.from_date), fmt)
+                job_end = job.to_date if isinstance(job.to_date, datetime) else datetime.strptime(str(job.to_date), fmt)
                 
-            print(f"[{current_time.strftime('%H:%M:%S')}] Processing Job: {job.name}")
+                if not (job_start <= current_time <= job_end):
+                    continue
+            except Exception as e:
+                print(f"[Schedule Error] Date parsing failed for job {job.name}: {e}")
+                continue
+
+            # run-at check
+            if job.run_at and str(job.run_at).strip():
+                if job.run_at != current_hms:
+                    continue
+
+            print(f"[{current_time.strftime('%Y-%m-%d %H:%M:%S')}] Executing Job: {job.name}")
             
             for rule in job.rules:
                 options = {"return_polars": True}
+                
                 df = get_data(
                     symbol=rule.symbol,
                     timeframe=rule.timeframe,
                     after_ms=int((time.time() - 86400 * 5) * 1000), 
-                    limit=1000,
+                    limit=100000,
                     order="asc",
                     indicators=rule.indicators,
                     options=options
@@ -82,13 +101,17 @@ class AlertEngine:
                 
                 if is_triggered:
                     print(f"  -> Rule '{rule.name}' TRIGGERED on {rule.symbol}!")
+                    
+                    latest_data = df.tail(1).to_dicts()[0]
+                    
                     payload = {
                         "job": job.name,
                         "rule": rule.name,
                         "symbol": rule.symbol,
                         "time": current_time.isoformat(),
-                        "data": df.tail(1).to_dicts()[0]
+                        "data": latest_data
                     }
+                    
                     for action in job.actions:
                         ActionFactory.dispatch(action.type, action.params, payload)
                 else:
