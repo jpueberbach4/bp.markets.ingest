@@ -88,13 +88,17 @@ def get_cached_model(checkpoint_path: str, device: torch.device):
     return data
 
 def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
+    cancel_isopen = True
     from util.api import get_data_auto
     if df.empty:
         return pd.DataFrame({'score': 0.0, 'signal': 0.0}, index=df.index)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model_name = options.get('model-name', 'model-best.pt')
-    checkpoint_path = f"checkpoints/{model_name}"
+
+    checkpoint_path = f"models/{model_name}"
+    if not os.path.exists(checkpoint_path):
+        checkpoint_path = f"checkpoints/{model_name}"
 
     cached_data = get_cached_model(checkpoint_path, device)
     
@@ -109,7 +113,22 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     # Parent indicator extraction
     parent_indicators = list(set([f.split(':')[0].split('__')[0] for f in active_features]))
     raw_df = get_data_auto(df, indicators=parent_indicators + ["is-open"])
-    inference_df = raw_df[raw_df['is-open'] == 0].copy()
+
+    if cancel_isopen:
+        inference_df = raw_df.copy()
+    else:
+        inference_df = raw_df[raw_df['is-open'] == 0].copy()
+
+    # --- MISSING DATA AUDIT ---
+    nan_counts = inference_df[active_features].isna().sum()
+    nan_cols = nan_counts[nan_counts > 0]
+
+    if not nan_cols.empty:
+        print("\n" + "🚨" * 20)
+        print("CRITICAL: NaN Detected in Inference Columns!")
+        for col, count in nan_cols.items():
+            print(f"COLUMN: {col:<60} | MISSING BARS: {count}")
+        print("🚨" * 20 + "\n")
 
     if inference_df.empty:
         return pd.DataFrame({'score': 0.0, 'signal': 0.0}, index=df.index)
@@ -166,6 +185,7 @@ def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
     })
     stable_results['signal'] = np.where(stable_results['score'] > threshold_val, 1.0, 0.0)
 
+    # Final Merge & Timeline Unification
     final_df = df[['time_ms']].copy()
     final_df['time_ms'] = final_df['time_ms'].astype('int64')
     stable_results['time_ms'] = stable_results['time_ms'].astype('int64')

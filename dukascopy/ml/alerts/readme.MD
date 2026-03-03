@@ -1,6 +1,6 @@
 # Alerting
 
-Note: this is currently a continues process. Will be made cron compatible soon. 
+This allows you to set rules for alerting based on indicator values for a specific asset and timeframe.
 
 ## Configuration
 
@@ -16,6 +16,7 @@ EUR:
   weekdays: [0,1,2,3,4,5,6]  # Run every day of the week
 
   # Time of day when the process should execute (HH:MM:SS format)
+  # Use * as a wildcard. Eg run every 30 minutes, runat: *:30:00
   run-at: 00:00:00  # Run at midnight (left out = runs at every cron execution time)
 
   # Start date from which this configuration becomes active

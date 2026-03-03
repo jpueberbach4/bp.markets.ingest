@@ -10,7 +10,7 @@
         },
         "time_string": {
             "type": "string",
-            "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)(:[0-5]\\d)?$|^epoch$"
+            "pattern": "^([01*][0-9*]|2[0-3*]|\\*):([0-5*][0-9*]|\\*)(:[0-5*][0-9*]|\\*)?$|^epoch$"
         },
         "date_string": {
             "anyOf": [
@@ -95,7 +95,10 @@
             "type": "object",
             "properties": {
                 "weekdays": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 6 } },
-                "run-at": { "type": "string", "pattern": "^\\d{2}:\\d{2}:\\d{2}$" },
+                "run-at": { 
+                    "type": "string", 
+                    "pattern": "^([0-9*]{1,2}):([0-9*]{1,2}):([0-9*]{1,2})$" 
+                },
                 "from_date": { "$ref": "#/definitions/date_string" },
                 "to_date": { "$ref": "#/definitions/date_string" },
                 "actions": {

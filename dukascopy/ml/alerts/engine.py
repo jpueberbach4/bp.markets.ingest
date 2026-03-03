@@ -5,6 +5,7 @@ from ml.alerts.models import AlertJob, ActionConfig, Rule, Condition
 from ml.alerts.evaluator import RuleEvaluator
 from ml.alerts.actions import ActionFactory
 from util.api import get_data
+import re
 
 class AlertEngine:
     def __init__(self, config: Any):
@@ -77,9 +78,14 @@ class AlertEngine:
                 print(f"[Schedule Error] Date parsing failed for job {job.name}: {e}")
                 continue
 
-            # run-at check
+            # run-at check (with wildcard support)
             if job.run_at and str(job.run_at).strip():
-                if job.run_at != current_hms:
+                # replace a * with .. (2 characters)
+                pattern_str = str(job.run_at).replace('*', '..')
+                pattern = f"^{pattern_str}$"
+                
+                if not re.match(pattern, current_hms):
+                    # no match, next job
                     continue
 
             print(f"[{current_time.strftime('%Y-%m-%d %H:%M:%S')}] Executing Job: {job.name}")
