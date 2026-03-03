@@ -14,7 +14,7 @@ I needed automated alerts for models upon completion of daily candles.
 
 Note: since i have added schema json checking to the main config loader, this could break systems that have invalid config settings. It's a good thing to have the config matched up to the standards.
 
-Test your config by either running `./run-ml.sh` with a universe or `./run-alerts.sh`. The latter checks immediately, even if you dont have a config yet. 
+Test your config by either running `./run-ml.sh` with a universe or `./run-alerts.sh`. The latter checks immediately, no additional arguments needed.
 
 This can also be used for other indicators than models. Basically the whole set is supported.
 
