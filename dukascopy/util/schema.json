@@ -14,15 +14,9 @@
         },
         "date_string": {
             "anyOf": [
-                {
-                    "type": "string"
-                },
-                {
-                    "type": "number"
-                },
-                {
-                    "type": "object"
-                },
+                { "type": "string" },
+                { "type": "number" },
+                { "type": "object" },
                 {}
             ]
         },
@@ -120,7 +114,7 @@
                     }
                 }
             },
-            "required": ["weekdays", "run-at", "from_date", "to_date", "actions", "rules"],
+            "required": ["weekdays", "actions", "rules"], 
             "additionalProperties": false
         }
     },
