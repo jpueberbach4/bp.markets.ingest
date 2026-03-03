@@ -1,0 +1,32 @@
+EUR:
+  weekdays: [0,1,2,3,4,5,6]
+  run-at: 00:00:00
+  from_date: '2000-01-01'
+  to_date: '2017-05-14'
+  actions:
+    email:
+      type: gmail
+      address: your-email@outlook.com
+      subject: EUR-USD signal reached
+      username: from-email@gmail.com
+      password: <read ml/alerts/readme.MD>
+    webhook:
+      type: webhook
+      method: POST
+      uri: http://localhost:8000/logme 
+  rules:
+  - rule-1:
+      symbol: EUR-USD
+      timeframe: 1d
+      indicators:
+      - example-ml-pt_model-best-gen95-f1-0.8235.pt_1
+      - rsi_14
+      conditions:
+      - gt_threshold:
+          column: example-ml-pt_model-best-gen95-f1-0.8235.pt_1__score
+          operator: '>='
+          value: 0.0
+      - rsi_14:
+          column: rsi_14
+          operator: '<='
+          value: 60

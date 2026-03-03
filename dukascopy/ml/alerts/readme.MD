@@ -20,10 +20,10 @@ EUR:
 
   # Start date from which this configuration becomes active
   # Format: 'YYYY-MM-DD HH:MM:SS'
-  from_date: '2000-01-01 00:00:00'  # Active starting January 1, 2000
+  from_date: '2000-01-01'  # Active starting January 1, 2000
 
   # End date when this configuration stops being active
-  to_date: '3000-05-14 23:59:59'  # Active until May 14, 3000
+  to_date: '3000-05-14'  # Active until May 14, 3000
 
   # Actions to perform when rules/conditions are satisfied
   actions:
@@ -73,6 +73,50 @@ EUR:
           column: rsi_14  # RSI indicator column
           operator: '<='  # Less than or equal comparison
           value: 60  # RSI must be 60 or below
+```
+
+What This Configuration Does (Summary)
+
+- Runs daily at midnight
+
+- Active between 2000 and 3000
+
+- Monitors EUR-USD on 1-day timeframe
+
+Uses:
+
+- A machine learning model score
+
+- RSI(14) indicator
+
+Triggers actions when:
+
+- Model score ≥ 0.23
+
+- RSI ≤ 60
+
+Sends:
+
+- An email notification
+
+- A POST webhook request
+
+## Cron
+
+```sh
+* * * * * cd /repos/bp.markets.ingest/dukascopy && ./run-alerts.sh
+```
+
+Executes the alerts every minute. However, when specified with run-at, it will only execute when run-at time is reached.
+
+Note: You must make sure that you have the latest version of the data with `./run.sh`.
+
+## Webhook
+
+The above example does a POST request to the specified URL with the following payload:
+
+```json
+{'job': 'EUR', 'rule': 'rule-1', 'symbol': 'EUR-USD', 'time': '2026-03-03T16:30:00.017353', 'data': {'symbol': 'EUR-USD', 'timeframe': '1d', 'time_ms': 1772496000000, 'open': 1.16863, 'high': 1.17067, 'low': 1.153, 'close': 1.15489, 'volume': 146343.34, 'rsi_14': 29.223113503666028, 'example-ml-pt_model-best-gen95-f1-0.8235.pt_1__score': 0.006308595649898052, 'example-ml-pt_model-best-gen95-f1-0.8235.pt_1__signal': 0.0}}
 ```
 
 ## Gmail

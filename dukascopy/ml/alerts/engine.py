@@ -67,7 +67,7 @@ class AlertEngine:
 
             # from_date, to_date check
             try:
-                fmt = '%Y-%m-%d %H:%M:%S'
+                fmt = '%Y-%m-%d'
                 job_start = job.from_date if isinstance(job.from_date, datetime) else datetime.strptime(str(job.from_date), fmt)
                 job_end = job.to_date if isinstance(job.to_date, datetime) else datetime.strptime(str(job.to_date), fmt)
                 
