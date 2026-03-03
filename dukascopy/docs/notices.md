@@ -1,3 +1,21 @@
+# Alerts
+
+A "first-version" of alerting is implemented. Its a beta-version and is currently being tested. 
+
+See [here](../ml/alerts/readme.MD) for more information.
+
+You can specify indicators, a timeframe, a symbol and some basic rules. When it alerts, it can post to a webhook or send an email using gmail (or if you have a local smtp server, to localhost).
+
+Its very simplistic but covers the intension pretty well.
+
+I needed automated alerts for models upon completion of daily candles. 
+
+Note: since i have added schema json checking to the main config loader, this could break systems that have invalid config settings. It's a good thing to have the config matched up to the standards.
+
+Test your config by either running `./run-ml.sh` with a universe or `./run-alerts.sh`. The latter checks immediately, even if you dont have a config yet. 
+
+This can also be used for other indicators than models. Basically the whole set is supported.
+
 # ML
 
 You can read all about ML and neuro-evolution soon. I am currently writing up all the knowhow needed to understand this stuff. It is promising but requires A LOT of tuning to be usable (read: reliable). Tune too much and you get overfitted. Looking into that atm. There must be some way to simplify this. Eg scanning data, comeup with a configuration proposal. Or at least minimum automated tweaking of config. It's very timeconsuming to get the models right (for lower TF's).
