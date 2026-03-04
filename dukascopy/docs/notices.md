@@ -111,6 +111,8 @@ Update: starting to trust the models a tiny bit more. Seeing if they work the ot
 
 Tip: if you are using this ML stuff. Make SURE that you configure the pivot finder correctly. This is the most important thing for training. If you label wrongly you will get wrong models. I am writing it up but for those experimenting already, this is one of the KEY rules. Every timeframe asset combo has its own optimal pivot window setting (period). If your pivot finder marks noise, the model will fit to that and become inaccurate.
 
+Lesson: Fix the ground truth, and the neuro-evo suddenly starts behaving like it understands macro regime turns instead of fitting noise.
+
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
