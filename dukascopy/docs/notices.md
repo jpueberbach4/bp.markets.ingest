@@ -109,7 +109,7 @@ Note: clearly, there is more work todo. The committee will need to get build. Th
 
 Update: starting to trust the models a tiny bit more. Seeing if they work the other way around too. Tops-hunting.
 
-Tip: if you are using this ML stuff. Make SURE that you configure the pivot finder correctly. This is the most important thing for training. If you label wrongly you will get wrong models. I am writing it up but for those experimenting already, this is one of the KEY rules. Every timeframe asset combo has its own optimal pivot window setting (period).
+Tip: if you are using this ML stuff. Make SURE that you configure the pivot finder correctly. This is the most important thing for training. If you label wrongly you will get wrong models. I am writing it up but for those experimenting already, this is one of the KEY rules. Every timeframe asset combo has its own optimal pivot window setting (period). If your pivot finder marks noise, the model will fit to that and become inaccurate.
 
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
