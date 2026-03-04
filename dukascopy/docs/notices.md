@@ -96,6 +96,12 @@ Will be interesting to see if the models find the "war-bottoms". The switch from
 
 # ML
 
+Update: it kind of works but I am not happy with the signalling yet. Here is an example of the H4 eur-usd "sniper". It did alert, since i gave it a very low confidence level to trigger on.
+
+![Example](../images/ml-example/eur-4h-example-live-edge.png)
+
+Note: clearly, there is more work todo. The committee will need to get build. This could be a temporary consolidation zone. We will see when US opens up.
+
 You can read all about ML and neuro-evolution soon. I am currently writing up all the knowhow needed to understand this stuff. It is promising but requires A LOT of tuning to be usable (read: reliable). Tune too much and you get overfitted. Looking into that atm. There must be some way to simplify this. Eg scanning data, comeup with a configuration proposal. Or at least minimum automated tweaking of config. It's very timeconsuming to get the models right (for lower TF's).
 
 I will be giving the alerting system a bit of priority. So, documentation and alerting system. After that comes the PNL stuff. And after that additional ML cores (SRNN and TFT).
