@@ -106,11 +106,10 @@ Update: it kind of works but I am not happy with the signalling yet. Here is an 
 
 Note: clearly, there is more work todo. The committee will need to get build. This could be a temporary consolidation zone. We will see when US opens up. Given the nice recovery of US stocks yesterday, fear could be out-of-the-market. Donald has said that he will guide ships through the strait of Hormuz, when needed. Watch Brent and Gold.
 
-<<<<<<< HEAD
+
 Update: starting to trust the models a tiny bit more. Seeing if they work the other way around too. Tops-hunting.
-=======
+
 Tip: if you are using this ML stuff. Make SURE that you configure the pivot finder correctly. This is the most important thing for training. If you label wrongly you will get wrong models. I am writing it up but for those experimenting already, this is one of the KEY rules. Every timeframe asset combo has its own optimal pivot window setting (period).
->>>>>>> 1153817a3ac1763042153fd107216f3ca56f276d
 
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
