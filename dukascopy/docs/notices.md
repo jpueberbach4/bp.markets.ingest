@@ -106,9 +106,12 @@ Update: it kind of works but I am not happy with the signalling yet. Here is an 
 
 Note: clearly, there is more work todo. The committee will need to get build. This could be a temporary consolidation zone. We will see when US opens up. Given the nice recovery of US stocks yesterday, fear could be out-of-the-market. Donald has said that he will guide ships through the strait of Hormuz, when needed. Watch Brent and Gold.
 
+Tip: if you are using this ML stuff. Make SURE that you configure the pivot finder correctly. This is the most important thing for training. If you label wrongly you will get wrong models. I am writing it up but for those experimenting already, this is one of the KEY rules. Every timeframe asset combo has its own optimal pivot window setting (period).
+
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
 
 
 
