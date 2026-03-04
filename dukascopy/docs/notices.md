@@ -106,6 +106,8 @@ Update: it kind of works but I am not happy with the signalling yet. Here is an 
 
 Note: clearly, there is more work todo. The committee will need to get build. This could be a temporary consolidation zone. We will see when US opens up. Given the nice recovery of US stocks yesterday, fear could be out-of-the-market. Donald has said that he will guide ships through the strait of Hormuz, when needed. Watch Brent and Gold.
 
+Update: starting to trust the models a tiny bit more. Seeing if they work the other way around too. Tops-hunting.
+
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
