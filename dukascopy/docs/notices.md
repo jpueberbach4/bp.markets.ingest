@@ -96,7 +96,7 @@ Will be interesting to see if the models find the "war-bottoms". The switch from
 
 Have been doing some research on the 3-4 model committee approach. This should solve the fp issues. Expected recall of 70-85 percent. Expected precision 90 percent-ish. Fp per year per asset 1.5-4. Leadtime 1-6 bars (one of the main goals, want to know a bit before the bottom is in). I have played with TFT. The current abstraction is wellenough suited to implement both RNN and TFT. I will first implement it truly side-by-side and then optimize for performance.
 
-So ML will stay in experimental stage for now. Alerting is running on the existing models. They were optimized once more with a moee "loose configuration", shouldnt be overfitted anymore. So the waitgame is in.
+So ML will stay in experimental stage for now. Alerting is running on the existing models. They were optimized once more with a moee "loose configuration", shouldnt be overfitted anymore. So the waitgame is in. Consider this: garbage in == garbage out. Label properly!
 
 # ML
 
@@ -106,11 +106,17 @@ Update: it kind of works but I am not happy with the signalling yet. Here is an 
 
 Note: clearly, there is more work todo. The committee will need to get build. This could be a temporary consolidation zone. We will see when US opens up. Given the nice recovery of US stocks yesterday, fear could be out-of-the-market. Donald has said that he will guide ships through the strait of Hormuz, when needed. Watch Brent and Gold.
 
+<<<<<<< HEAD
 Update: starting to trust the models a tiny bit more. Seeing if they work the other way around too. Tops-hunting.
+=======
+Tip: if you are using this ML stuff. Make SURE that you configure the pivot finder correctly. This is the most important thing for training. If you label wrongly you will get wrong models. I am writing it up but for those experimenting already, this is one of the KEY rules. Every timeframe asset combo has its own optimal pivot window setting (period).
+>>>>>>> 1153817a3ac1763042153fd107216f3ca56f276d
 
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
+
 
 
 
