@@ -94,6 +94,10 @@ Update: I have now 10 models under the monitor. Lets see how they perform upcomi
 
 Will be interesting to see if the models find the "war-bottoms". The switch from risk-off to risk-on.
 
+Have been doing some research on the 3-4 model committee approach. This should solve the fp issues. Expected recall of 70-85 percent. Expected precision 90 percent-ish. Fp per year per asset 1.5-4. Leadtime 1-6 bars (one of the main goals, want to know a bit before the bottom is in). I have played with TFT. The current abstraction is wellenough suited to implement both RNN and TFT. I will first implement it truly side-by-side and then optimize for performance.
+
+So ML will stay in experimental stage for now. Alerting is running on the existing models. They were optimized once more with a moee "loose configuration", shouldnt be overfitted anymore. So the waitgame is in.
+
 # ML
 
 You can read all about ML and neuro-evolution soon. I am currently writing up all the knowhow needed to understand this stuff. It is promising but requires A LOT of tuning to be usable (read: reliable). Tune too much and you get overfitted. Looking into that atm. There must be some way to simplify this. Eg scanning data, comeup with a configuration proposal. Or at least minimum automated tweaking of config. It's very timeconsuming to get the models right (for lower TF's).
@@ -117,6 +121,7 @@ Update: i have done a "long training" of eur-usd. Now the model is quiet on the 
 # 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
 
 
 
