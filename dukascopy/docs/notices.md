@@ -96,7 +96,7 @@ Will be interesting to see if the models find the "war-bottoms". The switch from
 
 Have been doing some research on the 3-4 model committee approach. This should solve the fp issues. Expected recall of 70-85 percent. Expected precision 90 percent-ish. Fp per year per asset 1.5-4. Leadtime 1-6 bars (one of the main goals, want to know a bit before the bottom is in). I have played with TFT. The current abstraction is wellenough suited to implement both RNN and TFT. I will first implement it truly side-by-side and then optimize for performance.
 
-So ML will stay in experimental stage for now. Alerting is running on the existing models. They were optimized once more with a moee "loose configuration", shouldnt be overfitted anymore. So the waitgame is in.
+So ML will stay in experimental stage for now. Alerting is running on the existing models. They were optimized once more with a moee "loose configuration", shouldnt be overfitted anymore. So the waitgame is in. Consider this: garbage in == garbage out. Label properly!
 
 # ML
 
@@ -111,6 +111,7 @@ Tip: if you are using this ML stuff. Make SURE that you configure the pivot find
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
 
 
 
