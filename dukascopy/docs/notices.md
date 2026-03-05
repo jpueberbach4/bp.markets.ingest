@@ -20,7 +20,7 @@ Weekend will be another coding frenzy.
 
 Also: i am borrowing some techniques from [here](https://osf.io/preprints/osf/uabjg_v1) <!-- **this is pure gold**
 
-Update: The transformer has surpassed the neuro-evolution benchmark, achieving a peak F1 of 0.8824 by successfully identifying the market pivots. I use a sliding window approach on the OOS to ensure generalization; detected peaks consistently map to different relative indices. It looks like the model is reacting to real market-physics. I don't know for sure yet but the prints of some dates look good. They are top-regions; sometimes it marks 3 bars in a row. 
+Update: The transformer has surpassed the neuro-evolution benchmark, achieving a peak F1 of 0.8824 by successfully identifying the market pivots. I use a sliding window approach on the OOS to ensure generalization; detected peaks consistently map to different relative indices. It looks like the model is reacting to real market-physics. I don't know for sure yet but the prints of some dates look good. They are top-regions; sometimes it marks 3 bars in a row. This is BTW not a normal transformer. It borrows some tricks from neuro-evolution. You could consider it a hybrid.
 
 Next is visualizing this type of model. This was quite a battle. Hope the RNN will be easier.
 
@@ -142,6 +142,7 @@ Lesson: Fix the ground truth, and the neuro-evo suddenly starts behaving like it
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
 
 
 
