@@ -1,3 +1,21 @@
+# Update
+
+I’m currently working on the second model implementation—Model 2 of 3. This one is a causal transformer–based machine learning model. The third model will be an RNN (Recurrent Neural Network)–based implementation. All three models will support auto-tuning, which means manual tuning will largely disappear. Once this phase is complete, most of the configuration will be removed.
+
+With the transformer model, I’m already seeing F1 scores that are close to those produced by the first model (the MLP neural network).
+
+This is complex work and definitely not easy, but I’m confident I’ll reach the results I’m aiming for.
+
+I don’t have detailed accuracy statistics for the transformer yet, but I expect those by the weekend. Next week is dedicated to implementing the RNN model.
+
+In the end, we’ll have three very different models, each producing its own predictions. Two of them—the RNN and the transformer—can look into the causal past, while the current implementation only evaluates the present candle.
+
+I also need to improve the abstraction between flights and singularities. At the moment, singularities (the models) are tightly coupled to the flights (training loops). The goal is for a flight to be able to handle any model.
+
+This looks like a very promising direction for what I’m trying to achieve: detecting potential reversals just ahead of time. It likely won’t work for major geopolitical events, but for normal market conditions it should be effective. That said, everything is still highly experimental at this stage.
+
+The current model is already capable. Not flawless, but capable.
+
 # Alerts
 
 **THIS MAY BREAK YOUR SETUP IF YOUR CONFIG IS INVALID. UPDATE WITH CARE. THE ETL IS SAFE. IT USES ITS OWN SCHEMA.JSON FILE. THE API, ML AND ALERTS ARE AFFECTED ONLY**
