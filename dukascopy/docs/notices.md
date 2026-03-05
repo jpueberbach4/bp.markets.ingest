@@ -16,6 +16,8 @@ This looks like a very promising direction for what I’m trying to achieve: det
 
 The current model is already capable. Not flawless, but capable.
 
+Weekend will be another coding frenzy.
+
 # Alerts
 
 **THIS MAY BREAK YOUR SETUP IF YOUR CONFIG IS INVALID. UPDATE WITH CARE. THE ETL IS SAFE. IT USES ITS OWN SCHEMA.JSON FILE. THE API, ML AND ALERTS ARE AFFECTED ONLY**
