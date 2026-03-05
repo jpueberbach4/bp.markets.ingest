@@ -18,7 +18,11 @@ The current model is already capable. Not flawless, but capable.
 
 Weekend will be another coding frenzy.
 
-Also: i am borrowing some techniques from [here](https://osf.io/preprints/osf/uabjg_v1). eg the gaussian blur for these binary events <!-- **this is pure gold**
+Also: i am borrowing some techniques from [here](https://osf.io/preprints/osf/uabjg_v1) <!-- **this is pure gold**
+
+Update: The transformer has surpassed the neuro-evolution benchmark, achieving a peak F1 of 0.8824 by successfully identifying the market pivots. I use a sliding window approach on the OOS to ensure generalization; detected peaks consistently map to different relative indices. It looks like the model is reacting to real market-physics. I don't know for sure yet but the prints of some dates look good. They are top-regions; sometimes it marks 3 bars in a row. 
+
+Next is visualizing this type of model. This was quite a battle. Hope the RNN will be easier.
 
 # Alerts
 
