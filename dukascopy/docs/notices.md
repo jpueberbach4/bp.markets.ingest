@@ -18,7 +18,7 @@ The current model is already capable. Not flawless, but capable.
 
 Weekend will be another coding frenzy.
 
-Also: i am borrowing some techniques from [here](https://osf.io/preprints/osf/uabjg_v1). eg the gaussian blur for these binary events. 
+Also: i am borrowing some techniques from [here](https://osf.io/preprints/osf/uabjg_v1). eg the gaussian blur for these binary events <!-- **this is pure gold**
 
 # Alerts
 
