@@ -18,6 +18,8 @@ The current model is already capable. Not flawless, but capable.
 
 Weekend will be another coding frenzy.
 
+Also: i am borrowing some techniques from [here](https://osf.io/preprints/osf/uabjg_v1). eg the gaussian blur for these binary events. 
+
 # Alerts
 
 **THIS MAY BREAK YOUR SETUP IF YOUR CONFIG IS INVALID. UPDATE WITH CARE. THE ETL IS SAFE. IT USES ITS OWN SCHEMA.JSON FILE. THE API, ML AND ALERTS ARE AFFECTED ONLY**
@@ -136,6 +138,7 @@ Lesson: Fix the ground truth, and the neuro-evo suddenly starts behaving like it
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
 
 
 
