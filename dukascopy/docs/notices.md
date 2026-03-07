@@ -13,13 +13,67 @@ The "custom ensemble" will also get replaced with this library's metalearner. La
 
 Time was not "thrown away". Learned a great deal on "AI" (matrix math).
 
-Taking a day off to recover but i expect a breakthrough soon. This is likely feasible (for normal market conditions) since the neuro-evolution approach is already very promising, eventhough the model is not as confident yet as i would like it to be.
+Had a little bit of time, this eventdetector_ts library is great. I got it training after only 15 minutes of work...
 
-Next week updates.
+```sh
+Model: "transformer"
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Layer (type)                  ┃ Output Shape              ┃         Param # ┃ Connected to               ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ input (InputLayer)            │ (None, 76, 50)            │               0 │ -                          │
+├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤
+│ multi_head_attention          │ (None, 76, 50)            │         415,794 │ input[0][0], input[0][0],  │
+│ (MultiHeadAttention)          │                           │                 │ input[0][0]                │
+├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤
+│ add (Add)                     │ (None, 76, 50)            │               0 │ input[0][0],               │
+│                               │                           │                 │ multi_head_attention[0][0] │
+├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤
+│ layer_normalization           │ (None, 76, 50)            │             100 │ add[0][0]                  │
+│ (LayerNormalization)          │                           │                 │                            │
+├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤
+│ dense (Dense)                 │ (None, 76, 50)            │           2,550 │ layer_normalization[0][0]  │
+├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤
+│ dropout_1 (Dropout)           │ (None, 76, 50)            │               0 │ dense[0][0]                │
+├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤
+│ add_1 (Add)                   │ (None, 76, 50)            │               0 │ layer_normalization[0][0], │
+│                               │                           │                 │ dropout_1[0][0]            │
+├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤
+│ multi_head_attention_1        │ (None, 76, 50)            │         415,794 │ add_1[0][0], add_1[0][0],  │
+│ (MultiHeadAttention)          │                           │                 │ add_1[0][0]                │
+├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤
+│ add_2 (Add)                   │ (None, 76, 50)            │               0 │ input[0][0],               │
+│                               │                           │                 │ multi_head_attention_1[0]… │
+├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤
+│ layer_normalization_1         │ (None, 76, 50)            │             100 │ add_2[0][0]                │
+│ (LayerNormalization)          │                           │                 │                            │
+├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤
+│ dense_1 (Dense)               │ (None, 76, 50)            │           2,550 │ layer_normalization_1[0][… │
+├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤
+│ dropout_3 (Dropout)           │ (None, 76, 50)            │               0 │ dense_1[0][0]              │
+├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤
+│ add_3 (Add)                   │ (None, 76, 50)            │               0 │ layer_normalization_1[0][… │
+│                               │                           │                 │ dropout_3[0][0]            │
+├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤
+│ global_average_pooling1d      │ (None, 50)                │               0 │ add_3[0][0]                │
+│ (GlobalAveragePooling1D)      │                           │                 │                            │
+├───────────────────────────────┼───────────────────────────┼─────────────────┼────────────────────────────┤
+│ dense_2 (Dense)               │ (None, 1)                 │              51 │ global_average_pooling1d[… │
+└───────────────────────────────┴───────────────────────────┴─────────────────┴────────────────────────────┘
+ Total params: 836,939 (3.19 MB)
+ Trainable params: 836,939 (3.19 MB)
+ Non-trainable params: 0 (0.00 B)
+2026-03-07 16:37:13 [INFO] eventdetector_ts.models: None
+2026-03-07 16:37:13 [INFO] eventdetector_ts.models: Fitting of transformer...
+Epoch 1/250
+...
+```
+
+Next week i should have the metalearner running and have the first results. Had to be sure this is fairly easy to work with. It actually is. Not bad for a academic library. Thumbs up.
 
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
 
 
 
