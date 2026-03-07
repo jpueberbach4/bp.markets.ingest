@@ -13,6 +13,10 @@ The "custom ensemble" will also get replaced with this library's metalearner. La
 
 Time was not "thrown away". Learned a great deal on "AI" (matrix math).
 
+Taking a day off to recover but i expect a breakthrough soon. This is likely feasible (for normal market conditions) since the neuro-evolution approach is already very promising, eventhough the model is not as confident yet as i would like it to be.
+
+Next week updates.
+
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
