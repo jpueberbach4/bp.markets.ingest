@@ -191,21 +191,37 @@ class MilleniumFalcon(Flight):
             self.print("GENE_VITALITY_ROW", rank=rank+1, name=name, score=val.item())
 
     def _manage_thermals(self, max_temp: float, min_temp: float):
-        """Monitor GPU temperature to avoid hardware throttle or damage."""
+        """Monitor GPU temperature with environment-safe fallback."""
         if self.device != "cuda":
             return
-        try:
-            temperature = torch.cuda.temperature()
-        except AttributeError:
+            
+        def safe_get_temp():
+            try:
+                # Primary: Attempt the built-in PyTorch call
+                return torch.cuda.temperature()
+            except (AttributeError, TypeError):
+                # Fallback: Direct NVML query (bypasses the PyTorch 2.6 string bug)
+                try:
+                    import pynvml
+                    pynvml.nvmlInit()
+                    handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+                    temp = pynvml.nvmlDeviceGetTemperature(handle, 0)
+                    pynvml.nvmlShutdown()
+                    return temp
+                except:
+                    return None
+
+        temperature = safe_get_temp()
+        if temperature is None:
             return
 
         if temperature > max_temp:
             self.print("THERMAL_SPIKE", temp=temperature)
-            while temperature > min_temp:
+            while temperature is not None and temperature > min_temp:
                 time.sleep(5.0)
-                temperature = torch.cuda.temperature()
+                temperature = safe_get_temp()
             self.print("THERMAL_RESUME", temp=temperature)
-
+            
     def cleanup(self):
         """Clear memory and empty CUDA cache."""
         self.print("CLEANUP_START")
