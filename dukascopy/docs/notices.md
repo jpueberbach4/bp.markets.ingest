@@ -74,9 +74,12 @@ Couldnt let it: quick peek at performance-since it outputs histograms immediatel
 
 Bidirectional RNN is currently the strongest "scout" for 4H bottoms.
 
+Update: the eventdetector library is specialized for OFFLINE detection of events. Need to change it here and there to make it suitable for the live edge. This means that a modified eventdetector library will get included with this project.
+
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
 
 
 
