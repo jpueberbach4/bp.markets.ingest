@@ -76,9 +76,21 @@ Bidirectional RNN is currently the strongest "scout" for 4H bottoms.
 
 Update: the eventdetector library is specialized for OFFLINE detection of events. Need to change it here and there to make it suitable for the live edge. This means that a modified eventdetector library will get included with this project. Also, the library does have bugs. Solved already two.
 
+This is the issue with this library:
+
+```python
+# From prediction
+logger.info("Computing filtered predictions as a function of the mid-times of the overlapping partitions")
+    t, filtered_predicted_op = compute_op_as_mid_times(overlapping_partitions=dataset_as_overlapping_partitions,
+                                                       op_g=filtered_predicted_op)
+```
+
+If it finds a signal, it marks it in the middle of the window, causing an offset.
+
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
 
 
 
