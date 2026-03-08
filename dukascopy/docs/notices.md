@@ -72,9 +72,12 @@ Next week i should have the metalearner running and have the first results. Had 
 
 Couldnt let it: quick peek at performance-since it outputs histograms immediately. This is what it tells me: it detects bottom events with a 5-7 bar lead-time. So it sees something in the indicators that "causally" aligns and happens a few days before a bottom is in. Don't know exactly what yet, but next week I will know the exact rules. Need to test this on the live edge soon.
 
+Bidirectional RNN is currently the strongest "scout" for 4H bottoms.
+
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
 
 
 
