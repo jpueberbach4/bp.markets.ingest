@@ -34,7 +34,7 @@ filelock >= 3.16.1
 
 # HTTP requests (If downloading raw data)
 requests >= 2.22.0
-httpx >= 0.28.1        # Nicer for endpoint
+httpx[http2] >= 0.28.1        # Nicer for endpoint
 
 # Performance (Optional but good for high-freq data)
 orjson >= 3.10.15
