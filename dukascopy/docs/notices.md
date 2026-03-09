@@ -9,9 +9,12 @@ It may be a first breakthrough but I am heavily testing this first.
 
 Next on the list is regime detection.
 
+What are you trying to achieve? Find rare precursor patterns before reversals. Exploit them.
+
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
 
 
 
