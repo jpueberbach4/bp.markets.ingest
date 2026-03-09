@@ -8,7 +8,7 @@ fastapi >= 0.124.4
 pyarrow >= 17.0.0
 
 # Polars (for merging dataframes)
-polars >= 1.8.2
+polars >= 1.36.1
 
 # Numba (for fast python loops (indicator optimization, eg psar))
 numba >= 0.58.1
