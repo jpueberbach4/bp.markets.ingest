@@ -1,62 +1,54 @@
+import pandas as pd
+import numpy as np
 import polars as pl
 from typing import List, Dict, Any
+from functools import partial
+
+try:
+    import numba
+except ImportError:
+    raise ImportError("Numba is required. Run 'pip install numba' OR 'pip install -r requirements.txt'")
+
+from util.plugins.indicators.helpers.kalman_backend import _kalman_backend
+
 
 def description() -> str:
-    return (
-        "McClellan Oscillator and Summation Index: Calculates the difference between "
-        "a fast and slow exponential moving average of (Advances - Declines). "
-        "Implemented as pure Polars expressions for maximum execution performance."
-    )
+    return "The Kalman Filter is a recursive filter that tracks the 'true' state of price by filtering out noise."
 
 def meta() -> Dict:
     return {
         "author": "Google Gemini",
-        "version": "1.1",
-        "panel": 1,
+        "version": 1.1,
+        "panel": 0,
         "verified": 1,
-        "polars": 1,
-        "polars_expr": 1
+        "polars": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
-    slow_period = int(options.get("slow_period", 39))
-    return slow_period * 3 + 50
+    return 1
 
 def position_args(args: List[str]) -> Dict[str, Any]:
     return {
-        "fast_period": args[0] if len(args) > 0 else "19",
-        "slow_period": args[1] if len(args) > 1 else "39"
+        "q": args[0] if len(args) > 0 else "1e-5",
+        "r": args[1] if len(args) > 1 else "0.01"
     }
 
+def _kalman_map_wrapper(s: pl.Series, q: float, r: float) -> pl.Series:
+    values = s.to_numpy()
+    result = _kalman_backend(values, q, r)
+    return pl.Series(result)
+
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
-    fast_period = int(options.get("fast_period", 19))
-    slow_period = int(options.get("slow_period", 39))
+    try:
+        q_val = float(options.get('q', 1e-5))
+        r_val = float(options.get('r', 0.01))
+    except (ValueError, TypeError):
+        q_val, r_val = 1e-5, 0.01
 
-    mode = str(options.get("mode", "price_volume"))
-    has_volume = bool(options.get("has_volume", True))
-
-    if mode == "breadth":
-        ad_expr = pl.col("advances") - pl.col("declines")
-    elif mode == "up_down_volume":
-        ad_expr = pl.col("up_volume") - pl.col("down_volume")
-    else:
-        price_diff = pl.col("close").diff()
-        
-        if has_volume:
-            vol_expr = pl.col("volume")
-        else:
-            vol_expr = pl.lit(1.0)
-            
-        advances = pl.when(price_diff > 0).then(vol_expr).otherwise(0)
-        declines = pl.when(price_diff < 0).then(vol_expr).otherwise(0)
-        ad_expr = advances - declines
-
-    mcclellan_osc = (
-        ad_expr.ewm_mean(span=fast_period, adjust=False) - 
-        ad_expr.ewm_mean(span=slow_period, adjust=False)
-    )
+    mapper = partial(_kalman_map_wrapper, q=q_val, r=r_val)
 
     return [
-        mcclellan_osc.alias(f"{indicator_str}__osc"),
-        mcclellan_osc.cum_sum().alias(f"{indicator_str}__sum")
+        pl.col("close")
+        .map_batches(mapper, return_dtype=pl.Float64)
+        .alias(f"{indicator_str}__kalman")
     ]
