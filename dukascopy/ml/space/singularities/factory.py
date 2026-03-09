@@ -24,7 +24,6 @@ from typing import Dict, Any
 
 from ml.space.base import BaseFactory
 from ml.space.space import Singularity
-from ml.space.singularities.eventhorizon import EventHorizonSingularity
 from ml.space.singularities.pulsar import PulsarSingularity
 from ml.space.singularities.rpulsar import RPulsarSingularity
 
@@ -52,7 +51,6 @@ class SingularityFactory(BaseFactory):
         """
         # Registry mapping names to singularity classes
         registry = {
-            "EventHorizon": EventHorizonSingularity,
             "Pulsar": PulsarSingularity,
             "RPulsar": RPulsarSingularity,
         }

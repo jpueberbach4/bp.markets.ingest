@@ -6,7 +6,7 @@ def description() -> str:
         "Benchmark Bond Yield: Fetches a bond price benchmark (BUND, GILT, UST), "
         "merges it with the current asset timeline, and converts the price quote "
         "into a Yield-to-Maturity (YTM) percentage.\n\n"
-        "GILT.TR-GBP uses a 4% coupon and 15 year maturity, USTBOND.TR-USD uses a 6% coupon and 30 year maturity, and BUND.TR-EUR uses a 6% coupon and 10 year maturity by default. "
+        "UKGILT.TR-GBP uses a 4% coupon and 15 year maturity, USTBOND.TR-USD uses a 6% coupon and 30 year maturity, and BUND.TR-EUR uses a 6% coupon and 10 year maturity by default. "
     )
 
 def meta() -> Dict:
