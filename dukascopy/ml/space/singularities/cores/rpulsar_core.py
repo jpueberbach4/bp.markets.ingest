@@ -228,9 +228,6 @@ class RPulsarCore(Fabric):
         # Output bias initialized slightly negative to suppress early signals.
         self.pop_B2 = torch.full((self.pop_size, 1, 1), -2.0, device=self.device)
 
-        # Duplicate initialization (kept exactly as original code).
-        self.pop_B2 = torch.full((self.pop_size, 1, 1), -2.0, device=self.device)
-
         # Per-individual classification thresholds.
         self.thresholds = torch.full((self.pop_size,), 0.40, device=self.device)
 
