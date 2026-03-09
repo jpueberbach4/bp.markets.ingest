@@ -24,9 +24,12 @@ What is the current focus of the research? Temporal pattern recognition across a
 
 One interesting observation is that, with this R(ecurrent)Pulsar, the models are way more transferable. I will post animated gifs soon of this.
 
+PS: i know why they are more transferable. I handle inference differently. The means and stds are handled differently. So the lookback feature made it more precise and the new std/means handling made it transferable. Check.
+
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
 
 
 
