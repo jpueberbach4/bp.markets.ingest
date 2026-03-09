@@ -69,7 +69,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         timeline
         .join_asof(source_lazy, on="time_ms", strategy="backward")
         .select("dist")
-        .collect(streaming=True)
+        .collect(engine="streaming")
     )
 
     return result

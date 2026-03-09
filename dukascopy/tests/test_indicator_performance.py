@@ -42,8 +42,8 @@ class TestAllIndicatorsPerformance(unittest.TestCase):
             "symbol": ["EUR-USD"] * rows,
             "timeframe": ["1m"] * rows,
             # --- FIXES FOR INTEGRATION-TEST PLUGINS (NEED TO THINK OF BETTER SOLUTION SOON) ---
-            "rsi_14": np.random.uniform(30, 70, rows), # Required by rsi-1h4h1d-org
-            "is-open": np.zeros(rows, dtype=np.int32)  # Required by rsi-1h4h1d
+            #"rsi_14": np.random.uniform(30, 70, rows), # Required by rsi-1h4h1d-org
+            #"is-open": np.zeros(rows, dtype=np.int32)  # Required by rsi-1h4h1d
         }
 
         cls.master_pl = pl.DataFrame(data_dict)
@@ -61,9 +61,30 @@ class TestAllIndicatorsPerformance(unittest.TestCase):
 
     def _get_mock_get_data(self):
         def mock_get_data_impl(**kwargs):
-            if kwargs.get('options', {}).get('return_polars', False):
-                return self.master_pl.clone()
-            return self.master_pd.copy()
+            return_polars = kwargs.get('options', {}).get('return_polars', False)
+            requested_indicators = kwargs.get('indicators', [])
+            
+            if return_polars:
+                df = self.master_pl.clone()
+                # Dynamically inject requested indicator columns to prevent crashes
+                if requested_indicators:
+                    new_cols = []
+                    for ind in requested_indicators:
+                        if ind not in df.columns:
+                            # Generate safe dummy float data
+                            dummy_data = np.random.uniform(30, 70, len(df))
+                            new_cols.append(pl.Series(ind, dummy_data, dtype=pl.Float64))
+                    if new_cols:
+                        df = df.with_columns(new_cols)
+                return df
+            else:
+                df = self.master_pd.copy()
+                if requested_indicators:
+                    for ind in requested_indicators:
+                        if ind not in df.columns:
+                            df[ind] = np.random.uniform(30, 70, len(df))
+                return df
+
         return MagicMock(side_effect=mock_get_data_impl)
 
     def _load_plugin(self, file_path):

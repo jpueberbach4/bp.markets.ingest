@@ -12,7 +12,7 @@ def description() -> str:
 def meta() -> Dict:
     return {
         "author": "Google Gemini",
-        "version": 2.6, 
+        "version": 2.7, 
         "panel": 1,
         "verified": 1,
         "polars": 0,
@@ -89,7 +89,6 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
             options=api_opts
         )
 
-        # Not all data is available. Eg dollar data is only available 2017/9-ish
         if data.is_empty():
             return pl.DataFrame({
                 "time_ms": pl.Series([], dtype=pl.UInt64),
@@ -104,7 +103,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
             .filter(pl.col("is-open") == 0)
             .select([
                 pl.col("time_ms").cast(pl.UInt64),
-                pl.col(rsi_col).alias(alias)
+                pl.col(rsi_ind).alias(alias)  # FIX: Uses local rsi_ind argument instead of outer scope rsi_col
             ])
             .sort("time_ms")
         )
@@ -133,7 +132,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         .join_asof(lazy_1d, on="time_ms", strategy="backward")
         .join_asof(lazy_1W, on="time_ms", strategy="backward")
         .select(["rsi", "rsi4h", "rsi1d", "rsi1W"])
-        .collect(streaming=True)
+        .collect(engine="streaming")
     )
 
     # Stop profiling and print results if enabled

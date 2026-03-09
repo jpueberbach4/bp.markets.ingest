@@ -50,5 +50,5 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         .select([
             pl.col("acceleration").fill_null(0.0).fill_nan(0.0)
         ])
-        .collect(streaming=True)
+        .collect(engine="streaming")
     )

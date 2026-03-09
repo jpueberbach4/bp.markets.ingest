@@ -1,27 +1,25 @@
-import pandas as pd
-import numpy as np
 import polars as pl
 from typing import List, Dict, Any
 
 def description() -> str:
-    """
-    The Coppock Curve is a long-term momentum indicator. 
-    Formula: WMA_10(ROC_14 + ROC_11).
-    """
-    return "Coppock Curve: A long-term momentum oscillator using True Weighted Moving Average (WMA)."
+    return (
+        "Coppock Curve: A long-term momentum oscillator. "
+        "Formula: WMA(ROC_Long + ROC_Short). Updated for Polars 1.25+."
+    )
 
 def meta() -> Dict:
     return {
         "author": "Google Gemini",
-        "version": 1.1,
+        "version": 1.2,
         "panel": 1,
         "verified": 1,
-        "polars": 1 # Now uses True WMA via convolution
+        "polars": 1
     }
 
 def warmup_count(options: Dict[str, Any]) -> int:
-    # Requires max(roc) + wma_period
-    return int(options.get('roc_long', 14)) + int(options.get('wma_period', 10))
+    rl = int(options.get('roc_long', 14))
+    w = int(options.get('wma_period', 10))
+    return rl + w + 50
 
 def position_args(args: List[str]) -> Dict[str, Any]:
     return {
@@ -35,35 +33,28 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
     rs = int(options.get('roc_short', 11))
     w = int(options.get('wma_period', 10))
 
-    roc_l = (pl.col("close") - pl.col("close").shift(rl)) / pl.col("close").shift(rl)
-    roc_s = (pl.col("close") - pl.col("close").shift(rs)) / pl.col("close").shift(rs)
-    raw_coppock = (roc_l + roc_s) * 100 # Standard scaling
+    roc_l = (pl.col("close") / pl.col("close").shift(rl) - 1)
+    roc_s = (pl.col("close") / pl.col("close").shift(rs) - 1)
+    
+    coppock_raw = (roc_l + roc_s) * 100
 
-    def apply_wma(s: pl.Series) -> pl.Series:
-        values = s.to_numpy()
-        values_clean = np.nan_to_num(values)
-        weights = np.arange(1, w + 1)
-        w_sum = weights.sum()
-        conv = np.convolve(values_clean, weights, mode='full')
-        valid_conv = np.convolve(values_clean, weights, mode='valid')
-        result = valid_conv / w_sum
-        pad_size = len(values) - len(result)
-        final_out = np.concatenate([np.full(pad_size, np.nan), result])        
-        return pl.Series(final_out)
+    weights = list(range(1, w + 1))
+    w_sum = sum(weights)
+    
+    def _wma_logic(s: pl.Series) -> pl.Series:
+        import numpy as np
+        v = s.to_numpy()
+        if len(v) < w:
+            return pl.Series([None] * len(v), dtype=pl.Float64)
+        
+        res = np.convolve(v, np.array(weights)[::-1], mode='valid') / w_sum
+        return pl.Series(np.concatenate([np.full(w - 1, np.nan), res]), dtype=pl.Float64)
 
     return [
-        raw_coppock.map_batches(apply_wma).alias(f"{indicator_str}__value")
+        coppock_raw.rolling_map(
+            _wma_logic, 
+            window_size=w,
+        )
+        .fill_nan(None)
+        .alias(f"{indicator_str}__value")
     ]
-
-def calculate(df: pd.DataFrame, options: Dict[str, Any]) -> pd.DataFrame:
-    rl = int(options.get('roc_long', 14))
-    rs = int(options.get('roc_short', 11))
-    w = int(options.get('wma_period', 10))
-
-    roc_l = df['close'].pct_change(rl)
-    roc_s = df['close'].pct_change(rs)
-    res = (roc_l + roc_s) * 100
-    
-    weights = np.arange(1, w + 1)
-    coppock = res.rolling(w).apply(lambda x: np.dot(x, weights) / weights.sum(), raw=True)    
-    return pd.DataFrame({'value': coppock}, index=df.index)

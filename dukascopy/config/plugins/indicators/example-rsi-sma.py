@@ -22,7 +22,7 @@ def warmup_count(options: Dict[str, Any]) -> int:
     return (rsi_period * 3) + sma_period
 
 def position_args(args: List[str]) -> Dict[str, Any]:
-    return {
+    return {,
         "rsi_period": args[0] if len(args) > 0 else "14",
         "sma_period": args[1] if len(args) > 1 else "9"
     }

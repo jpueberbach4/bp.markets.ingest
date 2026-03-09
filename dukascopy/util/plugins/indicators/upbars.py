@@ -56,5 +56,5 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
             .cast(pl.Float64)
             .alias("consecutive_up")
         ])
-        .collect(streaming=True)
+        .collect(engine="streaming")
     )

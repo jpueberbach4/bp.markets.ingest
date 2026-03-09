@@ -67,5 +67,5 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         .select([
             pivot_expr.alias("major_pivot")
         ])
-        .collect(streaming=True)
+        .collect(engine="streaming")
     )

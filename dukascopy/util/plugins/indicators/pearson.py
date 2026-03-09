@@ -66,5 +66,5 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
             .round(6)
             .alias("correlation")
         ])
-        .collect(streaming=True)
+        .collect(engine="streaming")
     )

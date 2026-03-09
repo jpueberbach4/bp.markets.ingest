@@ -35,7 +35,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
     min_spacing = int(options.get('min-spacing', 5))
 
     # 1. Prepare smoothed series
-    df_raw = df.with_row_count("index").with_columns([
+    df_raw = df.with_row_index("index").with_columns([
         pl.col("close").rolling_mean(window_size=sma_period).alias("_sma")
     ])
     

@@ -63,8 +63,8 @@ def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Exp
         prev_h = high.shift(1)
         prev_l = low.shift(1)
     else:
-        prev_h = high.shift(1).rolling_max(window_size=period, min_periods=1)
-        prev_l = low.shift(1).rolling_min(window_size=period, min_periods=1)
+        prev_h = high.shift(1).rolling_max(window_size=period, min_samples=1)
+        prev_l = low.shift(1).rolling_min(window_size=period, min_samples=1)
     
     prev_c = close.shift(1)
 

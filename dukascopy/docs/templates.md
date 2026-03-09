@@ -269,7 +269,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         .join_asof(lazy_4h, on="time_ms", strategy="backward")
         .join_asof(lazy_1d, on="time_ms", strategy="backward")
         .select(["rsi", "rsi4h", "rsi1d"])
-        .collect(streaming=True)
+        .collect(engine="streaming")
     )
 
     # Stop profiling and print results if enabled
@@ -335,7 +335,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
             .otherwise(0.0)
             .alias("major_pivot")
         ])
-        .collect(streaming=True)
+        .collect(engine="streaming")
     )
 ```
 
@@ -425,7 +425,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
                 .fill_null(0.0)
                 .alias("dxy_pct")
         ])
-        .collect(streaming=True)
+        .collect(engine="streaming")
     )
 ```
 
@@ -533,7 +533,7 @@ def calculate(df: pl.DataFrame, options: Dict[str, Any]) -> pl.DataFrame:
         .select([
             pl.col(f"macro_lvl_{i+1}") for i in range(10)
         ])
-        .collect(streaming=True)
+        .collect(engine="streaming")
     )
 
 ```
