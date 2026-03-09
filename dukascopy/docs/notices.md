@@ -22,9 +22,12 @@ What are you trying to achieve? Find rare precursor patterns before reversals. E
 
 What is the current focus of the research? Temporal pattern recognition across a broad search space. I will soon start the "killer-search". Still writing features for that.
 
+One interesting observation is that, with this R(ecurrent)Pulsar, the models are way more transferable. 
+
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
 
 
 
