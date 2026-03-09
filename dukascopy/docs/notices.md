@@ -1,11 +1,16 @@
 
 ## ML
 
-Maybe a breakthrough. 
+Maybe a breakthrough. Standard transformers are very hard to use for very sparse events. The problem is the loss function. When you have only 1.3 percent of events it is very easy for a model to just predict 0 since it gives ~99 percent accuracy. I tried many things to get transformers to work, focal loss functions, additional penalties for being wrong, dynamic penalties, gaussian blur to make bottoms a multicandle event, sliding OOS windows to prevent it from memorizing timestamps and so on and on and on. The architecture complexity increased by magnitudes, so i decided to abandon the transformers.
+
+Instead i extended the neuro-evolution with lookback properties. The new engine "can see in the past". It can detect "certain moves" in indicators leading up to the event. 
+
+It may be a first breakthrough but I am heavily testing this first. 
 
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
 
 
 
