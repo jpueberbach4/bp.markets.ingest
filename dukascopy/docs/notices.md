@@ -1,8 +1,8 @@
 ## New Polars version
 
-I have upgraded to a newer python and a newer version of Polars. I saw that the unit-tests are broken and a lot of stuff has become deprecated. Only now i find out that stuff breaks on a newer Python version. 
+I have upgraded to a newer Python and a newer version of Polars. I saw that the unit-tests are broken and a lot of stuff has become deprecated. Only now i find out that stuff breaks on a newer Python version. 
 
-I am fixing it.
+I am fixing it. I will launch these fixes together with the new RPulsar engine. Somewhere this week.
 
 ## ML
 
@@ -21,6 +21,7 @@ What is the current focus of the research? Temporal pattern recognition across a
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
 
 
 
