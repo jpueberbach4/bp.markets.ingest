@@ -30,6 +30,8 @@ This is what I am working on. Signals are currently still faint-scaling issue-bu
 
 ![Example](../images/faint.gif)
 
+>Note: this is an non-optimized run. I just threw a random set of features at it. Imagine when i execute tailored features at it.... (still building)
+
 It is not great (yet) but slowly, bit-by-bit, getting there. This is a lot of work, a lot of research and measure and "inventing".
 
 Note: 2026 is unseen data for this model. So everything you see is completely OOS (Out-of-sample). Regime detection needs to be added.
@@ -37,6 +39,7 @@ Note: 2026 is unseen data for this model. So everything you see is completely OO
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
 
 
 
