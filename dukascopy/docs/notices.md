@@ -4,6 +4,8 @@ Because i need to give a demo tomorrow. Here is a high-level overview of this ar
 
 ![HL](../images/highlevel.png)
 
+Stays public. No worries.
+
 ## Less updates
 
 There have been a bit less updates and fixes. I was "completely into the transformers" for days. Now I have eliminated them-they are just not suitable for this, extended the default engine with temporal lookback features and after initial tests shown to be very promising I am back on the original track. Back to earth :)
@@ -45,6 +47,7 @@ Note: 2026 is unseen data for this model. So everything you see is completely OO
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
 
 
 
