@@ -44,9 +44,12 @@ It is not great (yet) but slowly, bit-by-bit, getting there. This is a lot of wo
 
 Note: 2026 is unseen data for this model. So everything you see is completely OOS (Out-of-sample). Regime detection needs to be added.
 
+Why do you share this? Because it goes in a very promising direction? The secret is not in the engine. The secret is in the features. See it like this: There is a pond of fish, i give you the rod. It's up to you what weights and material you use on the hook.
+
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
 
 
 
