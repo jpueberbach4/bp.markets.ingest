@@ -1,3 +1,9 @@
+## HL 
+
+Because i need to give a demo tomorrow. Here is a high-level overview of this architecture.
+
+![HL](../images/highlevel.png)
+
 ## Less updates
 
 There have been a bit less updates and fixes. I was "completely into the transformers" for days. Now I have eliminated them-they are just not suitable for this, extended the default engine with temporal lookback features and after initial tests shown to be very promising I am back on the original track. Back to earth :)
