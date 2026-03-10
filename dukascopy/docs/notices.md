@@ -4,6 +4,8 @@ Because i need to give a demo tomorrow. Here is a high-level overview of this ar
 
 ![HL](../images/highlevel.png)
 
+Stays public. No worries.
+
 ## Less updates
 
 There have been a bit less updates and fixes. I was "completely into the transformers" for days. Now I have eliminated them-they are just not suitable for this, extended the default engine with temporal lookback features and after initial tests shown to be very promising I am back on the original track. Back to earth :)
@@ -36,15 +38,20 @@ This is what I am working on. Signals are currently still faint-scaling issue-bu
 
 ![Example](../images/faint.gif)
 
->Note: this is an non-optimized run. I just threw a random set of features at it. Imagine when i execute tailored features at it.... (still building)
+>Note: this is an non-optimized run. I just threw a random set of features at it. Imagine when i execute tailored features at it.... (still building). What is most interesting is that it also "seems to work" for a reverse pair (USD-JPY). So it really found market structure.
 
 It is not great (yet) but slowly, bit-by-bit, getting there. This is a lot of work, a lot of research and measure and "inventing".
 
 Note: 2026 is unseen data for this model. So everything you see is completely OOS (Out-of-sample). Regime detection needs to be added.
 
+Why do you share this? Because it goes in a very promising direction? The secret is not in the engine. The secret is in the features. See it like this: There is a pond of fish, i give you the rod. It's up to you what weights and material you use on the hook.
+
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
+
+
 
 
 
