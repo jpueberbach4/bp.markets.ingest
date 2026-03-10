@@ -38,7 +38,7 @@ This is what I am working on. Signals are currently still faint-scaling issue-bu
 
 ![Example](../images/faint.gif)
 
->Note: this is an non-optimized run. I just threw a random set of features at it. Imagine when i execute tailored features at it.... (still building)
+>Note: this is an non-optimized run. I just threw a random set of features at it. Imagine when i execute tailored features at it.... (still building). What is most interesting is that it also "seems to work" for a reverse pair (USD-JPY). So it really found market structure.
 
 It is not great (yet) but slowly, bit-by-bit, getting there. This is a lot of work, a lot of research and measure and "inventing".
 
@@ -49,6 +49,7 @@ Why do you share this? Because it goes in a very promising direction? The secret
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
 
 
 
