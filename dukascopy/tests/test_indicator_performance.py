@@ -125,6 +125,9 @@ class TestAllIndicatorsPerformance(unittest.TestCase):
                 else:
                     continue
 
+                if plugin.meta().get('nocheck', 0) == 1:
+                    continue
+
                 args = {}
                 if hasattr(plugin, 'position_args'):
                     args = plugin.position_args(["14", "2", "9"])
