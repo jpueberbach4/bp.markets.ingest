@@ -2,11 +2,13 @@
 
 There have been a bit less updates and fixes. I was "completely into the transformers" for days. Now I have eliminated them-they are just not suitable for this, extended the default engine with temporal lookback features and after initial tests shown to be very promising I am back on the original track. Back to earth :)
 
-## New Polars version
+## New Python and Polars version
 
 I have upgraded to a newer Python and a newer version of Polars. I saw that the unit-tests are broken and a lot of stuff has become deprecated. Only now i find out that stuff breaks on a newer Python version. 
 
 I am fixing it. I will launch these fixes together with the new RPulsar engine. Somewhere this week.
+
+I will add update instructions.
 
 ## ML
 
@@ -24,7 +26,11 @@ What is the current focus of the research? Temporal pattern recognition across a
 
 One interesting observation is that, with this R(ecurrent)Pulsar, the models are way more transferable. I will post animated gifs soon of this.
 
-PS: i know why they are more transferable. I handle inference differently. The means and stds are handled differently. So the lookback feature made it more precise and the new std/means handling made it transferable. Check.
+This is what I am working on. Signals are currently still faint-scaling issue-but we are getting closer. This works on the live-edge.
+
+![Example](../images/faint.gif)
+
+It is not great (yet) but slowly, bit-by-bit, getting there. This is a lot of work, a lot of research and measure and "inventing".
 
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
