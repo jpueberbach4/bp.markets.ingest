@@ -229,7 +229,8 @@
                                             "epochs": { "type": "integer" },
                                             "weight_mutation_rate": { "type": "number" },
                                             "save_metric": { "type": "string" },
-                                            "save_best_only": { "type": "boolean" }
+                                            "save_best_only": { "type": "boolean" },
+                                            "lookback": { "type": "integer" }
                                         }
                                     }
                                 }
