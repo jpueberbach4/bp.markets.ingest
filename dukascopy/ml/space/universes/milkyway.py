@@ -68,12 +68,19 @@ class MilkyWay(Universe):
             if not pd.api.types.is_numeric_dtype(raw_target):
                 raw_target = pd.to_numeric(raw_target, errors='coerce').fillna(0)
 
-            pos_count = (raw_target == 1).sum()
-            neg_count = (raw_target == -1).sum()
+            # Store signal count before center application for auditing
+            sig_count = (raw_target != 0).sum()
+
+            # Now apply center (eg gaussian blur) to the target column before we do anything else
+            raw_target = self._center.apply(raw_target)
             
             self.print("DATA_AUDIT_TARGET", target=self.target_col)
             self.print("DATA_AUDIT_BARS", count=len(df))
-            self.print("DATA_AUDIT_SIGS", sigs=pos_count + neg_count)
+            self.print("DATA_AUDIT_SIGS", sigs=sig_count)
+
+            # After signal transformation, recount signals for auditing
+            sig_count = (raw_target != 0).sum()
+            self.print("DATA_AUDIT_SIGS_END", sigs=sig_count)
 
             self._target_series = (raw_target != 0).astype(np.float32)
             self._target_series.name = "target"

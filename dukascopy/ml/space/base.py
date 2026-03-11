@@ -25,6 +25,10 @@ class Fabric(ABC):
         msg = STRING_TABLE.get(key, f"UNRESOLVED MATTER: {key}")
         print(msg.format(**kwargs))
 
+
+class BaseCenter(Fabric):
+    pass
+
 class BaseComet(Fabric):
     pass
 

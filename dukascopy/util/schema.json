@@ -250,7 +250,13 @@
                                     }
                                 }
                             },
-                            "center": { "type": "array", "items": { "type": "string" } },
+                            "center": {
+                                "type": "object",
+                                "properties": {
+                                    "type": { "type": "string" },
+                                    "feature": { "type": "string" }
+                                }
+                            },
                             "normalizers": {
                                 "type": "object",
                                 "additionalProperties": {

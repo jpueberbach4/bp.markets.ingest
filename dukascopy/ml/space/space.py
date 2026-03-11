@@ -42,7 +42,13 @@ import torch.nn as nn
 import pandas as pd
 import time
 
-from ml.space.base import BaseComet, BaseLens, BaseUniverse, BaseSingularity, BaseFlight, BaseNormalizer
+from ml.space.base import BaseCenter, BaseComet, BaseLens, BaseUniverse, BaseSingularity, BaseFlight, BaseNormalizer
+
+# -----------------------------------------------------------------------------------------------------------
+
+class Center(BaseCenter):
+    pass
+
 
 # -----------------------------------------------------------------------------------------------------------
 
@@ -432,6 +438,7 @@ class Universe(BaseUniverse):
         self._discarded_dimensions = []  # Dropped non-numeric columns
         self._comets: Dict[str, Comet] = {}
         self._normalizers: Dict[str, Normalizer] = {}
+        self._center = None
 
         # Load features, filters, target
         self.features_to_request, self.filter_patterns, self.target_col = self._load_config()
@@ -445,6 +452,7 @@ class Universe(BaseUniverse):
         # Trick to prevent circular imports
         from ml.space.comets.factory import CometFactory
         from ml.space.normalizers.factory import NormalizerFactory
+        from ml.space.centers.factory import CenterFactory
         try:
             self.symbol, self.timeframe = self.config.get('fabric').get('matter').split('/', 1)
             self.after_ms = int(datetime.fromisoformat(str(self.config.get('fabric').get('after'))).timestamp() * 1000)
@@ -462,8 +470,11 @@ class Universe(BaseUniverse):
                 if not is_disabled:
                     self._normalizers[normalizer_name] = NormalizerFactory.manifest(normalizer_name, normalizer_config)
 
-            center = self.config.get('center', [])
-            target = center[0] if isinstance(center, list) and center else None
+            # Initialize center
+            center_config = self.config.get('center', {})
+            self._center = CenterFactory.manifest(center_config.get('type'), center_config)
+
+            target = center_config.get('feature')
 
             features = self.config.get('features', [])
             if target and target not in features:
