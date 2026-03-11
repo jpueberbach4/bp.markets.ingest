@@ -20,8 +20,10 @@ Key Capabilities:
 from typing import Dict, Any
 from ml.space.base import BaseFactory
 from ml.space.space import Center
+from ml.space.centers.boxcarleft import BoxcarLeft
 from ml.space.centers.gaussianleft import GaussianLeft
 from ml.space.centers.default import Default
+from ml.space.centers.linearleft import LinearLeft
 
 
 
@@ -48,8 +50,10 @@ class CenterFactory(BaseFactory):
         """
         # Registry mapping center names to their classes
         registry = {
+            "BoxcarLeft": BoxcarLeft,
             "Default": Default,
             "GaussianLeft": GaussianLeft,
+            "LinearLeft": LinearLeft
         }
 
         # Create center instance if name exists in registry
