@@ -107,7 +107,7 @@ router = APIRouter(
 @router.get("/list/indicators/{request_uri:path}")
 async def list_indicators(
     request_uri: str,
-    order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
+    order: Optional[str] = Query("asc", pattern="^(asc|desc)$"),
     callback: Optional[str] = "__bp_callback",
     id: Optional[str] = None,
     symbol: Optional[str] = None,
@@ -337,7 +337,7 @@ async def get_ohlcv(
     request_uri: str,
     limit: Optional[int] = Query(1440, gt=0, le=1000000),
     offset: Optional[int] = Query(0, ge=0, le=1000000),
-    order: Optional[str] = Query("asc", regex="^(asc|desc)$"),
+    order: Optional[str] = Query("asc", pattern="^(asc|desc)$"),
     callback: Optional[str] = "__bp_callback",
     filename: Optional[str] = "data.csv",
     id: Optional[str] = None,
