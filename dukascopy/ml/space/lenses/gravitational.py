@@ -57,8 +57,11 @@ class GravitationalLens(Lens):
         # pt: probability assigned to the true class for each example
         pt = torch.where(targets == 1.0, probs, 1.0 - probs)
 
-        # Apply focal loss weighting
-        focal_loss = self.alpha * (1.0 - pt) ** self.gamma * bce_loss
+        # alpha_t: dynamically apply alpha to the positive class and (1 - alpha) to the negative class
+        alpha_t = torch.where(targets == 1.0, self.alpha, 1.0 - self.alpha)
+
+        # Apply focal loss weighting with corrected alpha balancing
+        focal_loss = alpha_t * (1.0 - pt) ** self.gamma * bce_loss
 
         # Return mean loss over the batch
         return focal_loss.mean()

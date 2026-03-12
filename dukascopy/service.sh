@@ -1,5 +1,7 @@
 #!/bin/bash
 
+unset LD_LIBRARY_PATH
+
 SERVICE_NAME="api/run.py"
 PIDFILE="./data/http.pid"
 

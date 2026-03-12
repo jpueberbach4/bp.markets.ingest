@@ -256,9 +256,11 @@ class RPulsarSingularity2(Singularity):
                 )
                 
                 # L1 penalty on the final bias to encourage sparse activations
-                b2_penalty = 0.001 * torch.abs(b2).mean()
-                
-                loss = main_loss + kl_penalty + b2_penalty
+                b2_penalty = 0.01 * torch.relu(b2).mean()
+
+                quiet_zone_penalty = 0.05 * torch.mean(torch.relu(logits + 10.0) * (1.0 - y_train))
+
+                loss = quiet_zone_penalty + main_loss + kl_penalty + b2_penalty
                 loss.backward()
 
                 # Protect global elites (indices 0 and 1) from gradient degradation.
@@ -308,7 +310,7 @@ class RPulsarSingularity2(Singularity):
                 best_preds = torch.zeros_like(oos_probs, device=self.device)
 
                 # Grid search optimal signal thresholds
-                for t in torch.linspace(0.15, 0.85, self.thresh_steps):
+                for t in torch.linspace(0.01, 0.50, self.thresh_steps):
                     preds = (oos_probs > t).float()
                     sig_count = preds.sum(dim=1).view(-1)
                     density = preds.mean(dim=1).view(-1)
@@ -380,6 +382,9 @@ class RPulsarSingularity2(Singularity):
                 metrics["recall"].append(best_rec.detach().cpu())
                 metrics["score"].append(best_score.detach().cpu())
                 metrics["signal_map"].append(best_preds.squeeze(-1).detach().cpu())
+
+                if self.verbose and i == 0:  # Only run for the first chunk to avoid spam
+                    self.core.diagnostic(x_oos, w1, b1, w2, b2)
 
         # Compile final generation metrics
         res = {k: torch.cat(v) for k, v in metrics.items()}

@@ -3,7 +3,7 @@
 File:        rpulsar.py
 Author:      JP Ueberbach
 Created:     2026-03-08
-Revision:    Documentation expansion and inline comment clarification
+Revision:    1D-CNN Orchestrator Alignment Update
 
 Description:
     Evolutionary neural feature-selection and signal-emission engine.
@@ -356,8 +356,10 @@ class RPulsarSingularity(Singularity):
                 # Persist optimal thresholds found during grid search
                 self.core.thresholds[i:end_i] = best_thresh
 
-                # Calculate relative impact of specific genes based on weight magnitude
-                gene_imp = torch.bmm(w1.abs(), w2.abs()).squeeze(-1)
+                # Calculate relative impact of specific genes based on 1D-CNN filter magnitude
+                # w1 shape: (Chunk_Size, Hidden_Dim, Gene_Count, Kernel_Size)
+                # Summing across the Filters (dim 1) and Time (dim 3) provides the exact structural impact of the Gene (dim 2)
+                gene_imp = w1.abs().sum(dim=(1, 3))
                 imp_norm = gene_imp / (gene_imp.sum(dim=1, keepdim=True) + 1e-7)
                 
                 # Normalize performance scores to assign proportional vitality to active genes
