@@ -15,19 +15,23 @@ start() {
 }
 
 stop() {
-    if [ -f $PIDFILE ]; then
-        PID=$(cat $PIDFILE)
-        echo "Stopping: $SERVICE_NAME (PID: $PID)..."
-        kill $PID && rm $PIDFILE
-    else
-        echo "Not Running: No PID file found for $SERVICE_NAME."
-    fi
+    echo "Stopping all Python processes related to $SERVICE_NAME..."
+
+    pkill -f "$SERVICE_NAME"
+
+    pkill -f "multiprocessing.resource_tracker"
+    pkill -f "multiprocessing.spawn"
+
+    rm -f $PIDFILE
+    
+    sleep 2
+    echo "Cleanup complete."
 }
 
 case "$1" in
     start)   start ;;
     stop)    stop ;;
-    restart) stop; sleep 1; start ;;
+    restart) stop; sleep 2; start ;;
     status)  pgrep -fl "$SERVICE_NAME" || echo "Service is stopped." ;;
     *)       echo "Usage: $0 {start|stop|restart|status}" ;;
 esac
