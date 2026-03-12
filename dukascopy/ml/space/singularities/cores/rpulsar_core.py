@@ -3,7 +3,7 @@
 File:        rpulsar_core.py
 Author:      JP Ueberbach
 Created:     2026-03-08
-Revision:    1D-CNN Sequence Architecture Update
+Revision:    1D-CNN Macro-Stencil Architecture (Zero-Lag)
 
 Description:
     Evolutionary neural feature-selection and signal-emission engine.
@@ -13,38 +13,23 @@ Description:
     boundaries within large indicator spaces.
 
     Each individual in the population represents:
-
         • A sparse set of selected features ("genes")
         • A 1D Convolutional Neural Network (CNN) operating on those features
         • A signal threshold used for classification
 
     The system combines two optimization mechanisms:
-
         1. Gradient-based learning within individuals
         2. Genetic evolution across generations
 
-Core Evolutionary Concepts:
-    • Population-based search
-    • Elitism (champion preservation)
-    • Genetic crossover between individuals (Gene-level Conv filter swapping)
-    • Mutation of both genes and neural weights
-    • Feature vitality tracking across generations
-
-Neural Architecture (1D-CNN):
-    Each individual uses a Convolutional network to preserve chronological sequence:
+Neural Architecture (1D-CNN Macro-Stencil):
+    The Kernel Size is locked to the Lookback window. The CNN acts as a single,
+    massive 24-bar stencil that evaluates the entire macro-structure at once.
+    This completely eliminates lag-echoes and memory-buffer artifacts.
 
         Input:  (Gene_Count, Lookback window)
-        Conv1D: Sweeps a chronological kernel across time
-        Pool1D: Extracts dominant structural peaks
+        Conv1D: Macro-Kernel (Kernel_Size == Lookback) -> Output Dim = 1
         Hidden: GELU activation
         Output: Single logit score
-
-Signal Generation:
-    Individuals emit binary signals using:
-
-        sigmoid(logit) > threshold
-
-    Thresholds evolve alongside the network weights.
 
 ===============================================================================
 """
@@ -61,10 +46,6 @@ class RPulsarCore(Fabric):
     """
     Core evolutionary neural engine responsible for population management,
     neural computation, and genetic evolution.
-
-    This class encapsulates all heavy tensor operations and evolutionary
-    mechanics used to optimize feature combinations and neural weights
-    simultaneously.
     """
 
     def __init__(self, config, device, seed=42):
@@ -81,17 +62,13 @@ class RPulsarCore(Fabric):
         self.verbose = bool(self.config.get("verbose", True))
         self.lookback = int(self.config.get('lookback', 24))
 
-        # CNN Architectural parameters
-        # Kernel size limits how many candles the Conv1D looks at per step.
-        self.kernel_size = min(int(self.config.get('kernel_size', 5)), self.lookback)
-        if self.kernel_size < 1: self.kernel_size = 1
+        # MACRO-STENCIL: Kernel size is strictly locked to the lookback window.
+        # This forces the network to evaluate the entire 24-bar structure holistically,
+        # completely destroying any possibility of a Lag Echo.
+        self.kernel_size = self.lookback
         
-        self.pool_size = 2
-        
-        # Calculate resulting temporal dimensions after Conv and Pool
-        self.l_out = self.lookback - self.kernel_size + 1
-        self.l_out_pool = max(1, self.l_out // self.pool_size)
-        self.flatten_dim = self.hidden_dim * self.l_out_pool
+        # Because Kernel == Lookback, the convolutional output length is exactly 1.
+        self.flatten_dim = self.hidden_dim
 
         # Torch random generators
         self.torch_generator = torch.Generator(device='cpu').manual_seed(self.seed)
@@ -128,7 +105,7 @@ class RPulsarCore(Fabric):
             for _ in range(self.pop_size)
         ]).long()
 
-        # W1 represents the 1D Convolutional filters for each individual.
+        # W1 represents the 1D Convolutional Macro-Filters for each individual.
         # Shape: (Population, Filters, Channels (Genes), Kernel_Size)
         self.pop_W1 = (
             torch.randn(self.pop_size, self.hidden_dim, self.gene_count, self.kernel_size, device=self.device)
@@ -138,7 +115,7 @@ class RPulsarCore(Fabric):
         # Conv1D Bias
         self.pop_B1 = torch.zeros(self.pop_size, self.hidden_dim, device=self.device)
 
-        # Output Dense layer mapping the pooled chronological features to a single logit.
+        # Output Dense layer mapping the 1D features to a single logit.
         self.pop_W2 = (
             torch.randn(self.pop_size, self.flatten_dim, 1, device=self.device)
             * np.sqrt(2.0 / self.flatten_dim)
@@ -156,11 +133,7 @@ class RPulsarCore(Fabric):
 
     def forward(self, x, w1, b1, w2, b2):
         """
-        Execute the 1D-CNN forward pass for a batch of individuals.
-        Uses grouped convolutions to process the entire population batch in parallel.
-
-        Args:
-            x (torch.Tensor): Flattened input from orchestrator (Chunk_Size, Num_Windows, Gene_Count * Lookback)
+        Execute the 1D-CNN Macro-Stencil forward pass for a batch of individuals.
         """
         chunk_size, num_windows, _ = x.shape
 
@@ -175,21 +148,18 @@ class RPulsarCore(Fabric):
         w1_conv = w1.view(chunk_size * self.hidden_dim, self.gene_count, self.kernel_size)
         b1_conv = b1.view(chunk_size * self.hidden_dim)
 
-        # Apply 1D Convolution over the chronological sequence
-        # Output: (Num_Windows, Chunk_Size * Hidden_Dim, L_out)
+        # Apply 1D Convolution over the chronological sequence.
+        # Because Kernel_Size == Lookback, Output length is exactly 1.
+        # Output: (Num_Windows, Chunk_Size * Hidden_Dim, 1)
         conv_out = F.conv1d(x_conv, w1_conv, bias=b1_conv, groups=chunk_size)
 
         # Apply GELU activation
         h1 = F.gelu(conv_out)
 
-        # Apply 1D Max Pooling to extract dominant structural features across time
-        # Output: (Num_Windows, Chunk_Size * Hidden_Dim, L_out_pool)
-        h1_pool = F.max_pool1d(h1, kernel_size=self.pool_size)
-
         # Reshape back to individual networks for the final Dense layer
-        # Shape: (Chunk_Size, Num_Windows, Hidden_Dim * L_out_pool)
-        h1_reshaped = h1_pool.view(num_windows, chunk_size, self.hidden_dim, self.l_out_pool)
-        h1_dense_input = h1_reshaped.permute(1, 0, 2, 3).reshape(chunk_size, num_windows, self.flatten_dim)
+        # Shape: (Chunk_Size, Num_Windows, Hidden_Dim)
+        h1_reshaped = h1.view(num_windows, chunk_size, self.hidden_dim)
+        h1_dense_input = h1_reshaped.permute(1, 0, 2)
 
         # Final linear projection producing a single logit output
         return torch.bmm(h1_dense_input, w2) + b2
@@ -197,7 +167,6 @@ class RPulsarCore(Fabric):
     def evolve(self, latest_f1, latest_score):
         """
         Apply evolutionary operators to produce the next generation.
-        Crossover specifically swaps Conv1D filters at the gene level.
         """
         f1_scores = latest_f1.to(self.device).flatten()
         primary_scores = latest_score.to(self.device).flatten()
@@ -378,7 +347,7 @@ class RPulsarCore(Fabric):
                 self.pop_B2[0:1],
             )
 
-            # Return raw, natural probabilities (EMA removed)
+            # Return raw, natural probabilities
             probs = torch.sigmoid(logits).cpu().numpy().flatten()
             padding = np.array([0.0] * (self.lookback - 1))
 
