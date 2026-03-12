@@ -26,7 +26,6 @@ from ml.space.base import BaseFactory
 from ml.space.space import Singularity
 from ml.space.singularities.pulsar import PulsarSingularity
 from ml.space.singularities.rpulsar import RPulsarSingularity
-from ml.space.singularities.rpulsar2 import RPulsarSingularity2
 
 class SingularityFactory(BaseFactory):
     """Factory for creating singularity instances."""
@@ -53,8 +52,7 @@ class SingularityFactory(BaseFactory):
         # Registry mapping names to singularity classes
         registry = {
             "Pulsar": PulsarSingularity,
-            "RPulsar": RPulsarSingularity,
-            "RPulsar2": RPulsarSingularity2,
+            "RPulsar": RPulsarSingularity
         }
 
         # Attempt to create singularity from registry
