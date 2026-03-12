@@ -22,11 +22,14 @@ This is with a DEFAULT SET of features and FULLY OOS. Never seen data. Works on 
 
 Quite a journey. 
 
-Kinematics is also back on the table.
+Kinematics is also back on the table. Detecting tops cleanly is (much) harder than detecting bottoms.
+
+Well-known sayings about this: Markets take the stairs up and the elevator down | Bottoms are an event. Tops are a process.
 
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
 
 
 
