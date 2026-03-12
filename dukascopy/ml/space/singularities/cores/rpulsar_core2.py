@@ -3,7 +3,7 @@
 File:        rpulsar_core2.py
 Author:      JP Ueberbach
 Created:     2026-03-12
-Revision:    Rough Path Log-Signature Engine (signatory integration)
+Revision:    Native PyTorch Rough Path Engine (Zero Dependency)
 
 Description:
     Evolutionary neural feature-selection and signal-emission engine.
@@ -12,10 +12,11 @@ Description:
     designed to discover high-value feature combinations and neural decision
     boundaries within large indicator spaces.
 
-    *ROUGH PATH UPDATE*: This engine now utilizes the `signatory` library 
-    to compute the Log-Signature of the selected temporal feature paths.
-    This provides rigorous mathematical translation invariance and captures 
-    the sequential lead-lag relationships (cross-terms) of the indicators.
+    *ROUGH PATH UPDATE*: This engine computes the Depth-2 Log-Signature
+    using pure, native PyTorch tensor operations. It mathematically extracts
+    the Lead-Lag Levy Area (cross-terms) without relying on external C++ 
+    libraries like `signatory` or `roughpy`, ensuring maximum CUDA throughput
+    and zero installation friction.
 
     Each individual in the population represents:
         • A sparse set of selected features ("genes")
@@ -49,7 +50,6 @@ Requirements:
     • PyTorch
     • NumPy
     • Pandas
-    • Signatory (pip install signatory)
 
 ===============================================================================
 """
@@ -59,18 +59,13 @@ import torch.nn.functional as F
 import numpy as np
 import pandas as pd
 
-try:
-    import signatory
-except ImportError:
-    raise ImportError("The 'signatory' library is required for Rough Path features. Please run: pip install signatory")
-
 from ml.space.base import Fabric
 
 
 class RPulsarCore2(Fabric):
     """
     Core evolutionary neural engine responsible for population management,
-    neural computation, and genetic evolution via Rough Path Signatures.
+    neural computation, and genetic evolution via Native Rough Path Signatures.
 
     Attributes:
         config (dict): Runtime configuration dictionary.
@@ -81,7 +76,7 @@ class RPulsarCore2(Fabric):
         gene_count (int): Number of features used per individual.
         hidden_dim (int): Size of the neural network hidden layer.
 
-        sig_depth (int): The truncation depth of the Log-Signature.
+        sig_depth (int): Hardcoded to 2 for native PyTorch execution.
         sig_channels (int): The resulting dimensionality of the Log-Signature.
         input_dim (int): Total input dim (Log-Signature + Basepoint).
 
@@ -112,19 +107,21 @@ class RPulsarCore2(Fabric):
         self.verbose = bool(self.config.get("verbose", True))
         self.lookback = int(self.config.get('lookback', 8))
 
-        # Rough Path Theory Configuration
-        self.sig_depth = int(self.config.get('sig_depth', 2))
+        # Rough Path Theory Configuration (Native Depth 2)
+        self.sig_depth = 2 
         
-        # Calculate the exact dimension of the compressed Lie Algebra tensor
-        self.sig_channels = signatory.logsignature_channels(self.gene_count, self.sig_depth)
+        # Exact calculation for Depth 2 Free Lie Algebra dimensions:
+        # Depth 1 = gene_count
+        # Depth 2 = (gene_count * (gene_count - 1)) / 2  (Skew-symmetric upper triangle)
+        self.sig_channels = self.gene_count + (self.gene_count * (self.gene_count - 1)) // 2
         
         # We append the Basepoint (current absolute value) to the signature 
         # to break translation invariance when needed.
         self.input_dim = self.sig_channels + self.gene_count
 
         if self.verbose:
-            self.print(f"ROUGH_PATH_INIT: Channels={self.gene_count}, Depth={self.sig_depth}")
-            self.print(f"ROUGH_PATH_INIT: LogSig Dim={self.sig_channels}, Total Input={self.input_dim}")
+            self.print(f"NATIVE_ROUGH_PATH_INIT: Channels={self.gene_count}, Depth={self.sig_depth}")
+            self.print(f"NATIVE_ROUGH_PATH_INIT: LogSig Dim={self.sig_channels}, Total Input={self.input_dim}")
 
         # Deterministic generators
         self.torch_generator = torch.Generator(device='cpu').manual_seed(self.seed)
@@ -144,6 +141,9 @@ class RPulsarCore2(Fabric):
         self.gene_scores = None
         self.gene_usage = None
         self.feature_names = None
+        
+        # Cache triu indices for extremely fast Levy area extraction during forward pass
+        self.triu_idx = torch.triu_indices(self.gene_count, self.gene_count, offset=1, device=self.device)
 
     def init_population(self, num_indicators: int, feature_names: list):
         self.feature_names = feature_names
@@ -156,7 +156,7 @@ class RPulsarCore2(Fabric):
             for _ in range(self.pop_size)
         ]).long()
 
-        # W1 dimension is now mapped to the Log-Signature + Basepoint
+        # W1 dimension is mapped to the Log-Signature + Basepoint
         self.pop_W1 = (
             torch.randn(self.pop_size, self.input_dim, self.hidden_dim, device=self.device)
             * np.sqrt(2.0 / self.input_dim)
@@ -175,20 +175,40 @@ class RPulsarCore2(Fabric):
         self.gene_scores = torch.zeros(num_indicators, device=self.device)
         self.gene_usage = torch.zeros(num_indicators, device=self.device)
 
+    def compute_native_logsig(self, path):
+        """
+        Computes the Depth-2 Log-Signature entirely within PyTorch.
+        Path shape expected: (Batch, Time, Channels)
+        """
+        # 1. Depth 1: The simple path increment (Final - Initial)
+        depth_1 = path[:, -1, :] - path[:, 0, :]
+        
+        # 2. Depth 2: The Levy Area (Iterated Cross-Integrals)
+        # Using the discrete trapezoidal rule: 0.5 * sum(X_t * X_{t+1}^T - X_{t+1} * X_t^T)
+        X_t = path[:, :-1, :]
+        X_t_plus_1 = path[:, 1:, :]
+        
+        # Einstein summation for batched outer products over time
+        # b = batch, t = time, i = channel 1, j = channel 2
+        cross = torch.einsum('bti,btj->bij', X_t, X_t_plus_1) - torch.einsum('bti,btj->bij', X_t_plus_1, X_t)
+        area = 0.5 * cross
+        
+        # The matrix is skew-symmetric, so we flatten only the upper triangle
+        depth_2 = area[:, self.triu_idx[0], self.triu_idx[1]]
+        
+        return torch.cat([depth_1, depth_2], dim=1)
+
     def forward(self, x, w1, b1, w2, b2):
         """
-        Execute the neural forward pass using Log-Signatures.
+        Execute the neural forward pass using Native Log-Signatures.
         """
         B, T, _ = x.shape
 
-        # Reshape flat windows back to spatial/temporal grids
-        # Unfold creates (Time, Gene, Lookback), we need (Batch, Time, Lookback, Channels)
-        # for Signatory to correctly trace the path.
+        # Unfold creates (Time, Gene, Lookback) -> Transpose to (Batch*Time, Lookback, Gene_Count)
         path = x.view(B * T, self.gene_count, self.lookback).transpose(1, 2)
 
-        # Compute the Log-Signature of the path
-        # signatory expects shape: (batch, stream, channels)
-        logsig = signatory.logsignature(path, self.sig_depth)
+        # Compute the Log-Signature natively
+        logsig = self.compute_native_logsig(path)
 
         # Extract the Basepoint (the absolute state at the final step of the lookback)
         basepoint = path[:, -1, :]
