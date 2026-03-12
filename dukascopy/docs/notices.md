@@ -14,7 +14,7 @@ to solve the final issues.
 
 Sorry this takes a bit. It's advanced. 
 
-Update: getting really really close now. Rough path was not the solution. The solution seems to be in an other path.
+Update: getting really really close now. Rough path was not the solution. The solution seems to be in an other path (Macro-stencil CNN).
 
 ![Getting close](../images/gettingclose.png)
 
@@ -25,6 +25,7 @@ Quite a journey.
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
+
 
 
 
