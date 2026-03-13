@@ -93,7 +93,7 @@ class MilkyWay(Universe):
         for pattern in self.filter_patterns:
             cols_to_drop.extend(fnmatch.filter(df.columns, pattern))
 
-        metadata = ['time_ms', 'symbol', 'open', 'high', 'low', 'close', 'volume', 'timeframe']
+        metadata = ['time_ms', 'symbol', 'timeframe']
         final_drops = list(set(cols_to_drop + [c for c in metadata if c in df.columns]))
         if self.target_col in df.columns and self.target_col not in final_drops:
             final_drops.append(self.target_col)

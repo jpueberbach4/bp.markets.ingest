@@ -2,6 +2,8 @@
 
 export PYTHONPATH=$PYTHONPATH:$(pwd)
 
+unset LD_LIBRARY_PATH
+
 echo "🛰️ [Space]: Passing coordinates: $@"
 
 python3 ml/run.py "$@"
