@@ -25,6 +25,10 @@ def _ema_talib_logic(series: pl.Expr, period: int) -> pl.Expr:
         .ewm_mean(span=period, adjust=False)
     )
 
+def warmup_count(options: Dict[str, Any]) -> int:
+    # Slow EMA lookback + signal EMA lookback for stable outputs
+    return int(options.get('slow', 26)) + int(options.get('signal', 9))
+
 def calculate_polars(indicator_str: str, options: Dict[str, Any]) -> List[pl.Expr]:
     fast = int(options.get('fast', 12))
     slow = int(options.get('slow', 26))

@@ -321,17 +321,29 @@ class RPulsarSingularity(Singularity):
                     rec = tp / (tp + fn + 1e-8)
                     f1 = 2 * prec * rec / (prec + rec + 1e-8)
 
-                    # Custom scoring function prioritizing F1 bounded by exponential precision
-                    score = f1 * torch.clamp(torch.pow(prec, self.precision_exp), max=5.0)
+                    # --- NEW SCORING: Smooth F-Beta Formulation ---
+                    # Beta=0.5 heavily weights Precision over Recall without creating a cliff
+                    beta = 0.5
+                    fbeta = (1 + beta**2) * (prec * rec) / ((beta**2 * prec) + rec + 1e-8)
+                    
+                    # Base score incorporates the precision exponent gracefully
+                    score = fbeta * torch.clamp(torch.pow(prec, self.precision_exp), max=5.0)
 
                     # Penalize models diverging significantly from the target signal density
+                    # Using a ratio penalty instead of harsh flat subtractions
                     min_density = self.min_sigs / oos_probs.shape[1]
-                    dev_high = torch.relu(density - self.target_density * 1.5) * 15.0
-                    dev_low = torch.relu(min_density * 0.8 - density) * 6.0
-                    score = score - (dev_high + dev_low)
+                    
+                    density_ratio_high = density / (self.target_density * 2.0 + 1e-8)
+                    density_ratio_low = min_density / (density + 1e-8)
+                    
+                    penalty = torch.ones_like(score)
+                    penalty = torch.where(density_ratio_high > 1.0, penalty / density_ratio_high, penalty)
+                    penalty = torch.where(density_ratio_low > 1.0, penalty / density_ratio_low, penalty)
+                    
+                    score = score * penalty
 
                     # Eradicate non-viable strategies (too few signals or abysmal precision)
-                    score = torch.where((sig_count >= self.min_sigs) & (prec > 0.02), score, torch.full_like(score, -1e9))
+                    score = torch.where((sig_count >= self.min_sigs) & (prec > 0.05), score, torch.full_like(score, -1e9))
 
                     mask = score > best_score
                     best_score[mask] = score[mask]

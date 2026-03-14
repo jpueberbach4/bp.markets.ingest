@@ -59,6 +59,10 @@ class MilkyWay(Universe):
         )
 
         df = raw_polars.to_pandas()
+
+        print(self.after_ms)
+
+        print(df["matrix-profile_EUR-USD_24_macd-12-26-9_0__macd_dist"])
         max_time_date = pd.to_datetime(df['time_ms'].max(), unit='ms').strftime('%Y-%m-%d')
         self.print("SPACE_BOUNDARY", date=max_time_date)
 
