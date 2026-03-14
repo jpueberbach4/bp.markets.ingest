@@ -26,6 +26,8 @@ Kinematics is also back on the table. Detecting tops cleanly is (much) harder th
 
 Well-known sayings about this: Markets take the stairs up and the elevator down | Bottoms are an event. Tops are a process.
 
+I am also adding matrix profiles to increase precision. Tricky part is to elinimate lookahead bias everywhere.
+
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
