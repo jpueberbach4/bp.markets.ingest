@@ -26,7 +26,7 @@ Kinematics is also back on the table. Detecting tops cleanly is (much) harder th
 
 Well-known sayings about this: Markets take the stairs up and the elevator down | Bottoms are an event. Tops are a process.
 
-I am also adding matrix profiles to increase precision. Tricky part is to elinimate lookahead bias everywhere.
+I am also adding matrix profiles to increase precision. Tricky part is to elinimate lookahead bias everywhere. I am using matrix profiles to pre-select what features to be fed into the neural networks. Matrix profiles tell me something about the correlation between indicators and tops. Eg do they make about the same pattern everytime on a top -> preselect.
 
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
