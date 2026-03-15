@@ -34,6 +34,8 @@ If you use this stuff. Be aware of this.
 
 Final note: higher F1 does not mean better model. For USDJPY my best model is actually F1 0.1333.
 
+NOTE: This is unfinished stuff. I am deep into the trenches atm. Have a seperate branch where i am experimenting with lots of other approaches. Also seeing on how to pull additional information which is absolutely required, without tripping any alarms :)
+
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
