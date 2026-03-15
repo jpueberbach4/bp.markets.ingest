@@ -38,6 +38,8 @@ This research may take another couple of weeks. Eventually i will release someth
 
 I am close but not satisfied.
 
+Concept drift is my biggest enemy atm.
+
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
 This project is a high-performance market research and analysis tool focused on feature engineering. While optimized for **"mechanical sympathy"** at the hardware level, these latest additions focus on improving the daily workflow for developers and researchers.
