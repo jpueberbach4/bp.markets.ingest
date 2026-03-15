@@ -26,7 +26,7 @@ I have released an experimental branch. Note that this branch required Python 3.
 
 ![USDJPY](../images/experimental/usdjpy4ht.png)
 
-It contains an example configuration for the RPulsar and detecting USD-JPY H4 tops. It is signalling that a potential top may be in atm but with this war-stuff going on it may be incorrect. Japan is heavily import-net dependent on oil. Currently not a safe-haven. Yen could crash all the way to 165. Historically, the BOJ intervened when Yen became too weak, around USDJPY 160 (the BOJ psychological barrier).
+It contains an example configuration for the RPulsar and detecting USD-JPY H4 tops. It is signalling that a potential top may be in atm but with this war-stuff going on it may be incorrect. Japan is heavily import-net dependent on oil. Currently not a safe-haven. Yen could crash all the way to 165. Historically, the BOJ intervened when Yen became too weak, around USDJPY 160 (the BOJ psychological barrier). Extra caveat for Yen: the whole retail world is shorting USD-JPY atm, so there is a nice liquidity pool on the upside (stoplosses). Sentiment is over 80 percent short. Which is a huge warning flag to not yet short this.
 
 This is a perfect example of why tops-detection cannot fully work in "special contexts".
 
