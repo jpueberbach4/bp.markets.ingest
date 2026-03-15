@@ -1,6 +1,8 @@
 
 ## ML
 
+**Note:** To release at least something atm, i have decided to put an "experimental/rpulsar" branch up. The branch contains an example configuration for the RPulsar and detecting USD-JPY H4 tops. However, read the important notices below.
+
 There is still work to do. Some bottoms are V-shapes, others are consolidating for some time. For even better detection some additional changes are needed. 
 
 I am currently looking into the works of 
@@ -24,13 +26,15 @@ I have released an experimental branch. Note that this branch required Python 3.
 
 ![USDJPY](../images/experimental/usdjpy4ht.png)
 
-It contains an example configuration for the RPulsar and detecting USD-JPY H4 tops. It is signalling that a potential top may be in atm but with this war-stuff going on it may be incorrect. Japan is heavily import-net dependent on oil. Currently not a safe-haven. Yen could crash all the way to 165. Historically, the BOJ intervened when Yen became too weak, around USDJPY 160 (the BOJ psychological barrier).
+It contains an example configuration for the RPulsar and detecting USD-JPY H4 tops. It is signalling that a potential top may be in atm but with this war-stuff going on it may be incorrect. Japan is heavily import-net dependent on oil. Currently not a safe-haven. Yen could crash all the way to 165. Historically, the BOJ intervened when Yen became too weak, around USDJPY 160 (the BOJ psychological barrier). Extra caveat for Yen: the whole retail world is shorting USD-JPY atm, so there is a nice liquidity pool on the upside (stoplosses). Sentiment is over 80 percent short. Which is a huge warning flag to not yet short this.
 
 This is a perfect example of why tops-detection cannot fully work in "special contexts".
 
 If you use this stuff. Be aware of this. 
 
 Final note: higher F1 does not mean better model. For USDJPY my best model is actually F1 0.1333.
+
+NOTE: This is unfinished stuff. I am deep into the trenches atm. Have a seperate branch where i am experimenting with lots of other approaches. Also seeing on how to pull additional information which is absolutely required, without tripping any alarms :)
 
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
