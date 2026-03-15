@@ -20,25 +20,17 @@ Update: getting really really close now. Rough path was not the solution. The so
 
 This is with a DEFAULT SET of features and FULLY OOS. Never seen data. Works on live edge. Almost tradeable. Almost. One of the tops is missed. The biggest one. It frontruns it. Seems a feature-issue. So am re-adding macro-features.
 
-Quite a journey. 
+I have released an experimental branch. Note that this branch required Python 3.9 and a GPU. 
 
-Kinematics is also back on the table. Detecting tops cleanly is (much) harder than detecting bottoms.
+![USDJPY](../images/experimental/usdjpy4ht.png)
 
-Well-known sayings about this: Markets take the stairs up and the elevator down | Bottoms are an event. Tops are a process.
+It contains an example configuration for the RPulsar and detecting USD-JPY H4 tops. It is signalling that a potential top may be in atm but with this war-stuff going on it may be incorrect. Japan is heavily import-net dependent on oil. Currently not a safe-haven. Yen could crash all the way to 165. Historically, the BOJ intervened when Yen became too weak, around USDJPY 160 (the BOJ psychological barrier).
 
-I am also adding matrix profiles to increase precision. Tricky part is to elinimate lookahead bias everywhere. I am using matrix profiles to pre-select what features to be fed into the neural networks. Matrix profiles tell me something about the correlation between indicators and tops. Eg do they make about the same pattern everytime on a top -> preselect.
+This is a perfect example of why tops-detection cannot fully work in "special contexts".
 
-This is a very challenging problem that has been chased by many traders and professionals. It is impossible to get a 100 percent accuracy because of the nature of markets. Markets are nonstationary, noisy and extremely efficient in killing edges. I am atm in a deep research phase. Playing with many different neural nets and even reinforcement learning. 
+If you use this stuff. Be aware of this. 
 
-While the code hasnt been updated for some time now, know that deep research work is in progress. 
-
-I know that i am trying to solve the unsolvable but a steady 54-60 percent precision is enough (using proper RR).
-
-This research may take another couple of weeks. Eventually i will release something working :)
-
-I am close but not satisfied.
-
-Concept drift is my biggest enemy atm.
+Final note: higher F1 does not mean better model. For USDJPY my best model is actually F1 0.1333.
 
 ## 🚀 Release Update: Developer UX & Surgical Maintenance
 
