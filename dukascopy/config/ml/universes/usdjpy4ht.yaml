@@ -1,0 +1,127 @@
+# =================================================================================================
+# USDJPY TOP HUNTER CONFIGURATION: AI-Powered USD-JPY Top Detection System (4H)
+# =================================================================================================
+# Trains an evolutionary neural network to detect high-probability
+# top reversals on USD-JPY using a 4-Hour (4h) timeframe.
+# The model blends momentum, volatility, trend, regime, and cross-market context.
+# =================================================================================================
+#
+# IMPORTANT! USE EXAMPLE-ML-RPT INDICATOR TO VISUALIZE MODEL OUTPUT AND CALIBRATE THRESHOLDS.
+# IMPORTANT! HIGHER F1 DOES NOT MEAN BETTER TRADING PERFORMANCE. MY BEST MODEL IS ACTUALLY F1 0.13!
+# IMPORTANT! REGIMES CAN CHANGE! YOU NEED TO RETRAIN PERIODICALLY AND MONITOR FOR PERFORMANCE DRIFT.
+# IMPORTANT! THIS CONFIG IS A STARTING POINT. YOU MUST ITERATE AND EXPERIMENT TO FIND WHAT WORKS BEST
+#            FOR YOUR TRADING STYLE, RISK TOLERANCE, AND MARKET CONDITIONS. THE BEST CONFIG FOR 2025 
+#            MAY NOT BE THE BEST IN 2026.
+# IMPORTANT! PAST PEFORMANCE IS NOT INDICATIVE OF FUTURE RESULTS. ALWAYS BACKTEST AND PAPER TRADE 
+#            BEFORE GOING LIVE.
+# IMPORTANT! THIS IS WITHOUT MACRO CONTEXT!
+
+USDJPY4HT:                         # Root experiment namespace
+  type: MilkyWay                   # Declares a multi-component / multi-stage ML pipeline
+
+  fabric:                          # Data source and time window configuration
+    matter: USD-JPY/4h             # Trading instrument and timeframe (Daily)
+    after: 2023-01-01              # Start date for historical data (prevents look-ahead bias)
+    until: 2025-12-31              # End date for historical data (~750 trading days)
+
+  flight:                          # Evolutionary training engine
+    type: MilleniumFalcon          # Evolutionary neural network optimizer
+    settings:
+      max_generations: 1000        # Maximum evolutionary iterations
+      extinction_stagnation: 50    # Reset all genes when no improvement for 50 generations
+      radiation_stagnation: 30     # After 30 generations no improvement, inject fresh DNA
+      gene_count: 10               # Number of TOP-N genes to build models with
+      vitality_decay: 0.25         # How fast top performance genes should decay
+      population_size: 600         # Size of the NN population (how many neural nets)
+      hidden_dim: 64               # Number of neurons in the middle layer (do not make too high, overfit-risk)
+      hotness_max: 88              # How hot your GPU may get before cooling down
+      hotness_min: 80              # When GPU hot, it pauses, when reaches this temperature, it resumes
+      gpu_chunk: 250               # Batch size for GPU evaluation (monitor your GPU memory with NVTOP)
+      min_signals: 10              # Discard any models that do not reach this number of signals fired 
+      target_density: 0.015        # Match this exactly with the initial audit information when you run it
+      precision_exp: 2.5           # How much precision should get rewarded
+      penalty_coeff: 1.5           # How much being wrong should get penalized
+      thresh_steps: 101            # Threshold sweep resolution for signal calibration
+      verbose: true                # Enables detailed training logs
+      oos_boundary: 0.70           # Out-of-sample performance cutoff (70 percent in-sample, 30 percent out-sample)
+      epochs: 5                    # Number of passes for each neural net in each loop (dont set high, overfit-risk)
+      weight_mutation_rate: 0.02   # Probability of mutating network weights in NN (stable vs exploring)
+      save_metric: f1              # Metric used to rank and save models (unused atm)
+      dropout_rate: 0.15           # Number of neurons randomly being turned of in each training loop
+      initial_bias: -8             # Model should be quiet most of the time (if have noise, decrease this)
+      lookback: 24                 # Lookback this many candles to identify tops
+
+  singularity:                     # Model execution and inference environment
+    type: RPulsar                  # The RPulsar is the engine with RNN and Macro stencil CNN
+    device: cuda                   # Runs on GPU (CPU will be slow. This stuff is not suitable for CPU-only)
+    lens:                          # Output shaping / probability calibration
+      type: Gravitational
+      alpha: 0.85                  # Mistake on a "Sell" signal is much more expensive than a mistake on a "No Trade" signal
+      gamma: 2.0                   # Aggressively shrinks the loss from easy/well-classified noise
+
+  center:
+    type: Default                  # I advise not to use any of the other atm
+    feature: example-pivot-finder-close_24_tops
+                                   # Provides historical bottom labels using pivot logic on Close prices
+  normalizers:                     # Feature normalization stage
+    Redshift:
+      type: Redshift               # Zero-mean / variance-stabilizing normalizer
+      dim: 0                       # Normalize along feature dimension
+      eps: 1e-8                    # Numerical stability constant (prevent division by 0)
+
+  comets:                          # Auxiliary signal injectors / observers
+    - HaleBopp                     # Example built-in comet module
+    #- config.user.ml.comets.Halley # User-defined comet module
+
+  filter:                          # Columns explicitly allowed into the model
+    - open                         # Candle open price
+    - high                         # Candle high price
+    - low                          # Candle low price
+    - close                        # Candle close price
+    - volume                       # Trade volume
+    - symbol                       # Instrument identifier
+    - timeframe                    # Timeframe metadata
+
+  features:                        # Feature engineering layer
+                                   # All features are numeric and time-aligned
+
+    # 1. OVERSOLD CONFIRMATION (Cable-specific volatility behavior)
+    - williamsr_14                 # Momentum-based oversold indicator
+    - cci_20                       # Commodity Channel Index for deviation extremes
+    - stochastic_5_3_3             # Fast stochastic oscillator (array-based)
+
+    # 2. BUY / SELL PRESSURE
+    - mfi_14                       # Money Flow Index (price + volume)
+    - cmf_20                       # Chaikin Money Flow (accumulation/distribution)
+    - obv                          # On-Balance Volume (classic volume baseline)
+
+    # 3. STATISTICAL MEAN REVERSION & VOLATILITY
+    - zscore_20                    # Normalized deviation from rolling mean
+    - bbands_20_2.0                # Bollinger Bands (array-based)
+    - bbands-width_20_2.0          # Bollinger Band width (volatility proxy)
+    - donchian_20                  # Donchian Channels (classic breakout/range baseline)
+
+    # 4. MOMENTUM & VELOCITY
+    - macd_12_26_9                 # Moving Average Convergence Divergence (classic momentum)
+    - mom_14                       # Classic Momentum indicator
+    - trix_15                      # Triple Exponential Average (smooth momentum)
+    - uo_7_14_20                   # Ultimate Oscillator (multi-timeframe momentum)
+    - ppo_12_26_9                  # Percentage Price Oscillator
+    - roc_14                       # Rate of Change
+
+    # 5. VOLATILITY REGIME
+    - atr_14                       # Average True Range (array-based)
+    - atrp_14                      # ATR normalized by price
+    - volatility-ratio_20_2.0_1.0  # Short vs long volatility comparison
+    - choppiness_14                # Trend vs range regime classifier
+
+    # 6. TREND CONTEXT
+    - adx_14                       # Trend strength (array-based)
+    - aroon_14                     # Trend direction and exhaustion (array-based)
+    - vortex_14                    # Vortex indicator (positive/negative trend movement)
+    - kaufman-er_10                # Market efficiency ratio
+    - fractaldimension_30          # Market roughness / complexity
+    - psar_0.02_0.2                # Parabolic SAR
+    - ichimoku_9_26_52             # Ichimoku cloud components
+    - mcginley_14                  # Adaptive moving average
+    - kalman_1e-5_0.01             # Kalman filter trend estimator
