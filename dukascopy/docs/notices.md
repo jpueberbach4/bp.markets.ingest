@@ -1,6 +1,8 @@
 
 ## ML
 
+**Note:** To release at least something atm, i have decided to put an "experimental/rpulsar" branch up. The branch contains an example configuration for the RPulsar and detecting USD-JPY H4 tops. However, read the important notices below.
+
 There is still work to do. Some bottoms are V-shapes, others are consolidating for some time. For even better detection some additional changes are needed. 
 
 I am currently looking into the works of 
